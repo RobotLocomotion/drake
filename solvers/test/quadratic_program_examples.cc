@@ -164,6 +164,9 @@ void QuadraticProgram0::CheckSolution(
     // accuracy solution. We should set the accuracy tolerance
     // MSK_DPARAM_INTPNT_QO_REL_TOL_GAP to 1E-10 to improve the accuracy.
     tol = 3E-5;
+  } else if (result.get_solver_id() == ClpSolver::id()) {
+    // CLP uses its barrier method for QPs, which is less accurate here.
+    tol = 1E-7;
   }
   EXPECT_TRUE(CompareMatrices(result.GetSolution(x_), x_expected_, tol,
                               MatrixCompareType::absolute));

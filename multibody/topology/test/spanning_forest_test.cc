@@ -279,6 +279,45 @@ GTEST_TEST(SpanningForest, JointCoordinateStartsForFusedAndUnfusedWelds) {
   EXPECT_FALSE(graph.joint_by_index(weld23).mobod_index().is_valid());
 }
 
+/* World is not part of any Tree, so its tree index is invalid. When welded
+Links are fused, any Link welded (directly or indirectly) to World follows the
+World Mobod, so it is not part of any Tree either. */
+GTEST_TEST(SpanningForest, LinksFusedToWorldHaveNoTree) {
+  LinkJointGraph graph;
+  const SpanningForest& forest = graph.forest();
+  graph.RegisterJointType("revolute", 1, 1);
+
+  // World -weld-> link1 -weld-> link2 -revolute-> link3
+  const ModelInstanceIndex model_instance(1);
+  const LinkIndex link1 = graph.AddLink("link1", model_instance);
+  const LinkIndex link2 = graph.AddLink("link2", model_instance);
+  const LinkIndex link3 = graph.AddLink("link3", model_instance);
+  graph.AddJoint("weld01", model_instance, "weld", world_index(), link1);
+  graph.AddJoint("weld12", model_instance, "weld", link1, link2);
+  graph.AddJoint("revolute23", model_instance, "revolute", link2, link3);
+
+  // Without fusion, only World lacks a Tree; the welded links get zero-dof
+  // Mobods that are part of a Tree.
+  ASSERT_TRUE(graph.BuildForest());
+  EXPECT_EQ(forest.num_trees(), 1);
+  EXPECT_FALSE(forest.link_to_tree_index(world_index()).is_valid());
+  EXPECT_EQ(forest.link_to_tree_index(link1), TreeIndex(0));
+  EXPECT_EQ(forest.link_to_tree_index(link2), TreeIndex(0));
+  EXPECT_EQ(forest.link_to_tree_index(link3), TreeIndex(0));
+
+  // With fusion, link1 and link2 follow the World Mobod and so have no Tree.
+  graph.SetGlobalForestBuildingOptions(
+      ForestBuildingOptions::kFuseWeldedLinksAssemblies);
+  ASSERT_TRUE(graph.BuildForest());
+  EXPECT_EQ(forest.num_trees(), 1);
+  EXPECT_FALSE(forest.link_to_tree_index(world_index()).is_valid());
+  EXPECT_EQ(graph.link_by_index(link1).mobod_index(), MobodIndex(0));
+  EXPECT_EQ(graph.link_by_index(link2).mobod_index(), MobodIndex(0));
+  EXPECT_FALSE(forest.link_to_tree_index(link1).is_valid());
+  EXPECT_FALSE(forest.link_to_tree_index(link2).is_valid());
+  EXPECT_EQ(forest.link_to_tree_index(link3), TreeIndex(0));
+}
+
 /* Creates a straightforward graph of two trees each with multiple branches,
 plus a lone unattached free link. There are no welds or reverse joints or loops.
 We intentionally jumble the link numbering to make sure we don't get the right

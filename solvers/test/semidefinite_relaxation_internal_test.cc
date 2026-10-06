@@ -121,7 +121,7 @@ GTEST_TEST(MakeSemidefiniteRelaxationInternalTest,
   relaxation.AddDecisionVariables(Vector<Variable, 1>{one});
   relaxation.AddDecisionVariables(prog.decision_variables());
   MatrixX<Variable> X;
-  std::map<Variable, int> variables_to_sorted_indices;
+  std::map<Variable, int, Variable::CompareLess> variables_to_sorted_indices;
   InitializeSemidefiniteRelaxationForProg(prog, one, &relaxation, &X,
                                           &variables_to_sorted_indices, 1);
   MatrixX<Variable> Y(prog.num_vars(), prog.num_vars());
@@ -179,7 +179,7 @@ class MakeSemidefiniteRelaxationTestFixture : public ::testing::Test {
   Variable one_;
 
   MatrixX<Variable> X_;
-  std::map<Variable, int> variables_to_sorted_indices_;
+  std::map<Variable, int, Variable::CompareLess> variables_to_sorted_indices_;
 };
 
 TEST_F(MakeSemidefiniteRelaxationTestFixture,

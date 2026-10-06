@@ -171,7 +171,8 @@ TEST_F(MonomialBasisElementTest, DefaultConstructors) {
 
 TEST_F(MonomialBasisElementTest, ConstructFromVariable) {
   const MonomialBasisElement m1{var_x_};
-  const std::map<Variable, int> powers{m1.var_to_degree_map()};
+  const std::map<Variable, int, Variable::CompareLess> powers{
+      m1.var_to_degree_map()};
 
   // Checks that powers = {x ↦ 1}.
   ASSERT_EQ(powers.size(), 1u);
@@ -289,7 +290,7 @@ TEST_F(MonomialBasisElementTest, ToMonomial1) {
 
 // Converts expression x * y to monomial.
 TEST_F(MonomialBasisElementTest, ToMonomial2) {
-  std::map<Variable, int> powers;
+  std::map<Variable, int, Variable::CompareLess> powers;
   powers.emplace(var_x_, 1);
   powers.emplace(var_y_, 1);
   MonomialBasisElement expected(powers);
@@ -305,7 +306,7 @@ TEST_F(MonomialBasisElementTest, ToMonomial3) {
 
 // Converts expression x^3 * y to monomial.
 TEST_F(MonomialBasisElementTest, ToMonomial4) {
-  std::map<Variable, int> powers;
+  std::map<Variable, int, Variable::CompareLess> powers;
   powers.emplace(var_x_, 3);
   powers.emplace(var_y_, 1);
   MonomialBasisElement expected(powers);
@@ -315,7 +316,8 @@ TEST_F(MonomialBasisElementTest, ToMonomial4) {
 
 // Converts expression x*(y+z) - x*y to monomial
 TEST_F(MonomialBasisElementTest, ToMonomial5) {
-  std::map<Variable, int> powers({{var_x_, 1}, {var_z_, 1}});
+  std::map<Variable, int, Variable::CompareLess> powers(
+      {{var_x_, 1}, {var_z_, 1}});
   MonomialBasisElement expected(powers);
   EXPECT_EQ(MonomialBasisElement(x_ * z_), expected);
   EXPECT_EQ(MonomialBasisElement(x_ * (y_ + z_) - x_ * y_), expected);

@@ -1364,8 +1364,9 @@ R"""(The solve time inside Clarabel in seconds.)""";
 R"""(A wrapper to call CLP using Drake's MathematicalProgram.
 
 Note:
-    Currently our ClpSolver has a memory issue when solving a QP. The
-    user should be aware of this risk.
+    For programs with a quadratic cost, ClpSolver uses CLP's barrier
+    method; CLP's simplex method fails on some feasible QPs. See
+    #22985.
 
 Note:
     The authors can adjust the problem scaling option by setting
@@ -11161,6 +11162,11 @@ it).)""";
         // Source: drake/solvers/solver_id.h
         const char* doc = R"""()""";
       } operator_ne;
+      // Symbol: drake::solvers::operator<
+      struct /* operator_lt */ {
+        // Source: drake/solvers/solver_id.h
+        const char* doc = R"""()""";
+      } operator_lt;
       // Symbol: drake::solvers::to_string
       struct /* to_string */ {
         // Source: drake/solvers/common_solver_option.h

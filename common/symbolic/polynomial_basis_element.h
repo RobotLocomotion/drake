@@ -56,7 +56,7 @@ class PolynomialBasisElement {
    * @note we will ignore the variable with degree 0.
    */
   explicit PolynomialBasisElement(
-      const std::map<Variable, int>& var_to_degree_map);
+      const std::map<Variable, int, Variable::CompareLess>& var_to_degree_map);
 
   /**
    * Constructs a polynomial basis, such that it contains the variable-to-degree
@@ -69,7 +69,8 @@ class PolynomialBasisElement {
 
   virtual ~PolynomialBasisElement();
 
-  [[nodiscard]] const std::map<Variable, int>& var_to_degree_map() const {
+  [[nodiscard]] const std::map<Variable, int, Variable::CompareLess>&
+  var_to_degree_map() const {
     return var_to_degree_map_;
   }
 
@@ -79,7 +80,8 @@ class PolynomialBasisElement {
    * get_powers() function. We will remove this get_powers() function when
    * Monomial class is deprecated.
    */
-  [[nodiscard]] const std::map<Variable, int>& get_powers() const {
+  [[nodiscard]] const std::map<Variable, int, Variable::CompareLess>&
+  get_powers() const {
     return var_to_degree_map_;
   }
 
@@ -120,12 +122,14 @@ class PolynomialBasisElement {
   // Partially evaluate a polynomial basis element, where @p e does not
   // necessarily contain all the variables in this basis element. The
   // evaluation result is coeff * new_basis_element.
-  void DoEvaluatePartial(const Environment& e, double* coeff,
-                         std::map<Variable, int>* new_basis_element) const;
+  void DoEvaluatePartial(
+      const Environment& e, double* coeff,
+      std::map<Variable, int, Variable::CompareLess>* new_basis_element) const;
 
   int* get_mutable_total_degree() { return &total_degree_; }
 
-  std::map<Variable, int>* get_mutable_var_to_degree_map() {
+  std::map<Variable, int, Variable::CompareLess>*
+  get_mutable_var_to_degree_map() {
     return &var_to_degree_map_;
   }
 
@@ -148,7 +152,7 @@ class PolynomialBasisElement {
 
   // Internally, the polynomial basis is represented as a mapping from a
   // variable to its degree.
-  std::map<Variable, int> var_to_degree_map_;
+  std::map<Variable, int, Variable::CompareLess> var_to_degree_map_;
   int total_degree_{};
 };
 
@@ -197,10 +201,14 @@ struct BasisElementGradedReverseLexOrder {
       // Because both of them are 1.
       return false;
     }
-    const std::map<Variable, int>& powers1{m1.get_powers()};
-    const std::map<Variable, int>& powers2{m2.get_powers()};
-    std::map<Variable, int>::const_iterator it1{powers1.cbegin()};
-    std::map<Variable, int>::const_iterator it2{powers2.cbegin()};
+    const std::map<Variable, int, Variable::CompareLess>& powers1{
+        m1.get_powers()};
+    const std::map<Variable, int, Variable::CompareLess>& powers2{
+        m2.get_powers()};
+    std::map<Variable, int, Variable::CompareLess>::const_iterator it1{
+        powers1.cbegin()};
+    std::map<Variable, int, Variable::CompareLess>::const_iterator it2{
+        powers2.cbegin()};
     while (it1 != powers1.cend() && it2 != powers2.cend()) {
       const Variable& var1{it1->first};
       const Variable& var2{it2->first};

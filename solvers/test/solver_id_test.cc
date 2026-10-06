@@ -1,5 +1,6 @@
 #include "drake/solvers/solver_id.h"
 
+#include <set>
 #include <utility>
 
 #include <gtest/gtest.h>
@@ -25,6 +26,20 @@ GTEST_TEST(SolverId, Equality) {
   EXPECT_TRUE(SolverId{"x"} != SolverId{"x"});
   EXPECT_FALSE(SolverId{"a"} == SolverId{"b"});
   EXPECT_TRUE(SolverId{"a"} != SolverId{"b"});
+}
+
+GTEST_TEST(SolverId, Less) {
+  // An ID is not less than itself.
+  SolverId a{"a"};
+  SolverId b{"b"};
+  EXPECT_NE(a < b, b < a);
+  EXPECT_FALSE(a < a);
+
+  // IDs can be used as keys in ordered containers.
+  std::set<SolverId> ids{a, b, a};
+  EXPECT_EQ(ids.size(), 2);
+  EXPECT_EQ(ids.count(a), 1);
+  EXPECT_EQ(ids.count(SolverId{"a"}), 0);
 }
 
 GTEST_TEST(SolverId, Copy) {

@@ -290,6 +290,7 @@ MODULE_SETTINGS = {
         "srcs_extra": [
             "Filters/Core/vtkAppendFilter.cxx",
             "Filters/Core/vtkAppendPolyData.cxx",
+            "Filters/Core/vtkCellCenters.cxx",
             "Filters/Core/vtkDecimatePro.cxx",
             "Filters/Core/vtkFeatureEdges.cxx",
             "Filters/Core/vtkGlyph3D.cxx",

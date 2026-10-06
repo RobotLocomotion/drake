@@ -638,6 +638,11 @@ void NloptSolver::DoSolve2(const MathematicalProgram& prog,
         result->set_solution_result(SolutionResult::kSolverSpecificError);
       }
     }
+    // NLopt can report success with a NaN solution (#24995).
+    if (result->get_solution_result() == SolutionResult::kSolutionFound &&
+        result->get_x_val().array().isNaN().any()) {
+      result->set_solution_result(SolutionResult::kSolverSpecificError);
+    }
   } catch (std::invalid_argument&) {
     result->set_solution_result(SolutionResult::kInvalidInput);
   } catch (std::bad_alloc&) {

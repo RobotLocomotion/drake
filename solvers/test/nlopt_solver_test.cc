@@ -1,6 +1,7 @@
 #include "drake/solvers/nlopt_solver.h"
 
 #include <limits>
+#include <memory>
 
 #include <gtest/gtest.h>
 
@@ -76,6 +77,57 @@ GTEST_TEST(NloptSolverTest, VacuousConstraintRow) {
     const auto result = solver.Solve(prog);
     EXPECT_TRUE(result.is_success());
     EXPECT_NEAR(result.GetSolution(x)(0) + result.GetSolution(x)(1), 1.0, 1e-6);
+  }
+}
+
+// Constraint x >= 1 whose gradient is NaN for 0.4 < x < 0.6.
+class NanGradientConstraint final : public Constraint {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(NanGradientConstraint);
+
+  NanGradientConstraint()
+      : Constraint(1, 1, Vector1d(1.0),
+                   Vector1d(std::numeric_limits<double>::infinity())) {}
+
+ private:
+  void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
+              Eigen::VectorXd* y) const final {
+    *y = x;
+  }
+
+  void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
+              AutoDiffVecXd* y) const final {
+    *y = x;
+    if (0.4 < x(0).value() && x(0).value() < 0.6) {
+      (*y)(0).derivatives().setConstant(
+          std::numeric_limits<double>::quiet_NaN());
+    }
+  }
+
+  void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
+              VectorX<symbolic::Expression>* y) const final {
+    *y = x.cast<symbolic::Expression>();
+  }
+};
+
+// Regression test for issue #24995: NLopt can terminate with a NaN solution,
+// which must not be reported as a success.
+GTEST_TEST(NloptSolverTest, NanSolutionIsNotSuccess) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<1>();
+  prog.AddQuadraticCost(pow(x(0) - 2.0, 2));
+  prog.AddConstraint(std::make_shared<NanGradientConstraint>(), x);
+  NloptSolver solver;
+  if (solver.available()) {
+    SolverOptions options;
+    options.SetOption(solver.id(), NloptSolver::AlgorithmName(),
+                      "LD_AUGLAG_EQ");
+    // Keeps the test fast; NLopt still stops on XTOL_REACHED at NaN.
+    options.SetOption(solver.id(), NloptSolver::MaxEvalName(), 10);
+    const auto result = solver.Solve(prog, Vector1d(0.5), options);
+    EXPECT_FALSE(result.is_success());
+    EXPECT_EQ(result.get_solution_result(),
+              SolutionResult::kSolverSpecificError);
   }
 }
 

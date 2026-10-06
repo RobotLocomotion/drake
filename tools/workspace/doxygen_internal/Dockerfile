@@ -21,8 +21,8 @@ RUN export DEBIAN_FRONTEND=noninteractive \
     python3 \
     wget \
   && rm -rf /var/lib/apt/lists/*
-ARG DOXYGEN_VERSION=1.17.0
-ARG DOXYGEN_SHA256=fa4c3dd78785abc11ccc992bc9c01e7a8c3120fe14b8a8dfd7cefa7014530814
+ARG DOXYGEN_VERSION=1.18.0
+ARG DOXYGEN_SHA256=a1deed70a6785bbec95a2b2a9e419dc7f7b223a9d74a8644ae611c8e2dcdd354
 RUN wget --quiet "https://drake-mirror.csail.mit.edu/other/doxygen/doxygen-${DOXYGEN_VERSION}.src.tar.gz" \
   && echo "${DOXYGEN_SHA256}  doxygen-${DOXYGEN_VERSION}.src.tar.gz" | sha256sum --check - \
   && tar -xzf "doxygen-${DOXYGEN_VERSION}.src.tar.gz" \

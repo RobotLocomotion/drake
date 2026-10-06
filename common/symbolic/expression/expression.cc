@@ -765,15 +765,15 @@ const Expression& get_second_argument(const Expression& e) {
 double get_constant_in_addition(const Expression& e) {
   return to_addition(e).get_constant();
 }
-const map<Expression, double>& get_expr_to_coeff_map_in_addition(
-    const Expression& e) {
+const map<Expression, double, Expression::CompareLess>&
+get_expr_to_coeff_map_in_addition(const Expression& e) {
   return to_addition(e).get_expr_to_coeff_map();
 }
 double get_constant_in_multiplication(const Expression& e) {
   return to_multiplication(e).get_constant();
 }
-const map<Expression, Expression>& get_base_to_exponent_map_in_multiplication(
-    const Expression& e) {
+const map<Expression, Expression, Expression::CompareLess>&
+get_base_to_exponent_map_in_multiplication(const Expression& e) {
   return to_multiplication(e).get_base_to_exponent_map();
 }
 
@@ -1093,13 +1093,13 @@ void Gemm<reverse>::CalcDV(const MatrixRef<double>& D,
         inner_vars.emplace_back(var);
       }
     }
-    std::sort(inner_vars.begin(), inner_vars.end(), std::less<Variable>{});
+    std::sort(inner_vars.begin(), inner_vars.end(), Variable::CompareLess{});
 
     // Compute the var_index that projects this V block into inner_vars.
     for (int k = 0; k < max_k; ++k) {
       const Variable& var = !reverse ? V(k, i) : V(i, k);
       auto iter = std::lower_bound(inner_vars.begin(), inner_vars.end(), var,
-                                   std::less<Variable>{});
+                                   Variable::CompareLess{});
       DRAKE_ASSERT(iter != inner_vars.end());
       DRAKE_ASSERT(iter->get_id() == var.get_id());
       const int index = std::distance(inner_vars.begin(), iter);
@@ -1127,7 +1127,7 @@ void Gemm<reverse>::CalcDV(const MatrixRef<double>& D,
 
       // Convert the sum to the ExpressionAdd representation, skipping zeros,
       // but for now in vector-pair form instead of map form.
-      using TermsMap = map<Expression, double>;
+      using TermsMap = map<Expression, double, Expression::CompareLess>;
       using TermsVec = absl::InlinedVector<TermsMap::value_type, kSmallSize>;
       TermsVec terms_vec;
       for (size_t t = 0; t < inner_coeffs.size(); ++t) {
