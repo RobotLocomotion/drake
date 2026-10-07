@@ -22,6 +22,7 @@ package(default_visibility = [
 ])
 
 exports_files([
+    "CPPLINT.cfg",
     ".clang-format",
 ])
 

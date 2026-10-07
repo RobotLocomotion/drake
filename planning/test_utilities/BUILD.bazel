@@ -7,6 +7,11 @@ load(
 
 package(default_visibility = ["//visibility:public"])
 
+exports_files([
+    "collision_ground_plane.sdf",
+    "flying_robot_base.sdf",
+])
+
 drake_cc_package_library(
     name = "test_utilities",
     testonly = True,
