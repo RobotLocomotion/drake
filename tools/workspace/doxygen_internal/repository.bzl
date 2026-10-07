@@ -86,8 +86,8 @@ def doxygen_internal_repository(
         name = name,
         repository = "doxygen/doxygen",
         upgrade_type = "release",
-        commit = "Release_1_17_0",
+        commit = "Release_1_18_0",
         platform = "noble",
-        sha256 = "59d61aa931ac87689e66279e3567ca9114ccabf500d92d449f5ecc834320843e",  # noqa
+        sha256 = "adae132287d9ba1b9993b952b84a4dc86114c726286f2ab9f55741d4de901d74",  # noqa
         mirrors = mirrors,
     )

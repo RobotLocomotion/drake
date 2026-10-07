@@ -11,8 +11,8 @@ def scs_internal_repository(
         drake/tools/workspace/qdldl_internal/README.md.
         """,
         upgrade_type = "release",
-        commit = "3.2.11",
-        sha256 = "ceb5d9ecf35836ee7e0ce64566190f11a99314ec8143dbb909329809afa3f77f",  # noqa
+        commit = "3.3.1",
+        sha256 = "99a1437b2508ed29933d259793a5745f29000fd8ec58f63a8f54a20006aacb86",  # noqa
         build_file = ":package.BUILD.bazel",
         patches = [
             ":patches/upstream/include_paths.patch",

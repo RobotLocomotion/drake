@@ -11,6 +11,7 @@
 #include "drake/solvers/clarabel_solver.h"
 #include "drake/solvers/clp_solver.h"
 #include "drake/solvers/csdp_solver.h"
+#include "drake/solvers/daqp_solver.h"
 #include "drake/solvers/equality_constrained_qp_solver.h"
 #include "drake/solvers/get_program_type.h"
 #include "drake/solvers/gurobi_solver.h"
@@ -72,10 +73,11 @@ class StaticSolverInterface {
 };
 
 // The list of all solvers compiled in Drake.
-constexpr std::array<StaticSolverInterface, 13> kKnownSolvers{
+constexpr std::array<StaticSolverInterface, 14> kKnownSolvers{
     StaticSolverInterface::Make<ClarabelSolver>(),
     StaticSolverInterface::Make<ClpSolver>(),
     StaticSolverInterface::Make<CsdpSolver>(),
+    StaticSolverInterface::Make<DaqpSolver>(),
     StaticSolverInterface::Make<EqualityConstrainedQPSolver>(),
     StaticSolverInterface::Make<GurobiSolver>(),
     StaticSolverInterface::Make<IpoptSolver>(),
@@ -195,12 +197,19 @@ void GetAvailableSolversHelper(
           // reasonable accuracy, so I put it before SNOPT/IPOPT/NLOPT (which
           // are often slower than OSQP).
           OsqpSolver,
-          // TODO(hongkai.dai): add CLP to this list when we resolve the
-          // memory issue in CLP. Dispreferred (generic nonlinear solvers). I
-          // find SNOPT often faster than IPOPT. NLOPT is less reliable.
+          // DAQP is a dense active-set solver: accurate and very fast on small
+          // QPs, but it does not exploit sparsity. It is listed after the
+          // sparse solvers so that it is not chosen automatically for large
+          // problems.
+          DaqpSolver,
+          // Dispreferred (generic nonlinear solvers). I find SNOPT often
+          // faster than IPOPT. NLOPT is less reliable.
           SnoptSolver, IpoptSolver, NloptSolver,
           // Dispreferred (ADMM, low accuracy).
-          ScsSolver>(result);
+          ScsSolver,
+          // Dispreferred. CLP solves QPs with its barrier method, but is not
+          // tuned for the QPs Drake typically forms.
+          ClpSolver>(result);
       return;
     }
     case ProgramType::kSOCP: {
@@ -308,9 +317,9 @@ void GetAvailableSolversHelper(
         // other case statements shown above.
         AddSolversIfAvailable<LinearSystemSolver, EqualityConstrainedQPSolver,
                               MosekSolver, GurobiSolver, ClarabelSolver,
-                              OsqpSolver, ClpSolver, MobyLcpSolver, SnoptSolver,
-                              IpoptSolver, NloptSolver, CsdpSolver, ScsSolver>(
-            result);
+                              OsqpSolver, DaqpSolver, ClpSolver, MobyLcpSolver,
+                              SnoptSolver, IpoptSolver, NloptSolver, CsdpSolver,
+                              ScsSolver>(result);
       }
       return;
     }

@@ -12,16 +12,16 @@ module(
 
 # Add starlark rules.
 
-bazel_dep(name = "apple_support", version = "2.8.1")  # Keep this in sync with cmake/MODULE.bazel.in.  # noqa
+bazel_dep(name = "apple_support", version = "2.9.1")  # Keep this in sync with cmake/MODULE.bazel.in.  # noqa
 bazel_dep(name = "bazel_features", version = "1.51.0")
 bazel_dep(name = "bazel_skylib", version = "1.9.2")
 bazel_dep(name = "platforms", version = "1.1.0")  # Keep this in sync with cmake/MODULE.bazel.in.  # noqa
-bazel_dep(name = "rules_cc", version = "0.2.22")
+bazel_dep(name = "rules_cc", version = "0.2.25")
 bazel_dep(name = "rules_java", version = "9.9.0")
 bazel_dep(name = "rules_jvm_external", version = "7.1")
 bazel_dep(name = "rules_license", version = "1.0.0")
-bazel_dep(name = "rules_python", version = "2.3.2")  # Keep this in sync with cmake/MODULE.bazel.in.  # noqa
-bazel_dep(name = "rules_rs", version = "0.0.110")  # Keep this in sync with cmake/MODULE.bazel.in.  # noqa
+bazel_dep(name = "rules_python", version = "2.3.4")  # Keep this in sync with cmake/MODULE.bazel.in.  # noqa
+bazel_dep(name = "rules_rs", version = "0.0.112")  # Keep this in sync with cmake/MODULE.bazel.in.  # noqa
 bazel_dep(name = "rules_shell", version = "0.8.0")
 bazel_dep(name = "with_cfg.bzl", version = "1.0.0")
 
@@ -86,23 +86,23 @@ bazel_dep(name = "spdlog", version = "1.17.0", repo_name = "module_spdlog")  # n
 # For first-party Bazel builds (by Drake Developers), the non-module flavor
 # is used by default.
 
-bazel_dep(name = "glib", version = "2.82.2.bcr.10", repo_name = "module_glib")
+bazel_dep(name = "glib", version = "2.82.2.bcr.11", repo_name = "module_glib")
 
 # Add non-replaceable C/C++ module dependencies that are used by Drake's
 # implementation.
 
 bazel_dep(name = "libjpeg_turbo", version = "3.1.3.bcr.6", repo_name = "module_libjpeg")
-bazel_dep(name = "nanobind", version = "3.0.1", repo_name = "module_nanobind")
+bazel_dep(name = "nanobind", version = "3.1.0", repo_name = "module_nanobind")
 bazel_dep(name = "nlohmann_json", version = "3.12.0.bcr.2", repo_name = "module_nlohmann_json")
 bazel_dep(name = "robin-map", version = "1.4.1", repo_name = "module_robin_map")
 bazel_dep(name = "suitesparse", version = "7.12.3", repo_name = "module_suitesparse")
-bazel_dep(name = "zlib", version = "1.3.2", repo_name = "module_zlib")
+bazel_dep(name = "zlib", version = "1.3.2.bcr.2", repo_name = "module_zlib")
 
 # Add additional modules we use at build-time (not runtime dependencies).
 
 bazel_dep(name = "libx11", version = "1.8.12.bcr.5")
 bazel_dep(name = "nasm", version = "3.02")
-bazel_dep(name = "patchelf", version = "0.18.0.bcr.1")
+bazel_dep(name = "patchelf", version = "0.19.1")
 
 # Configure the Python toolchain.
 
@@ -128,7 +128,7 @@ uv = use_extension(
     "@rules_python//python/uv:uv.bzl",
     "uv",
 )
-uv.configure(version = "0.9.27")
+uv.configure(version = "0.12.11")
 
 pip = use_extension("@rules_python//python/extensions:pip.bzl", "pip")
 
@@ -235,7 +235,7 @@ use_repo(maven, "drake_maven_internal")
 
 bazel_dep(
     name = "buildifier_prebuilt",
-    version = "8.5.1.4",
+    version = "10.1.0",
     dev_dependency = True,
 )
 bazel_dep(
@@ -279,7 +279,7 @@ single_version_override(
 
 bazel_dep(
     name = "llvm",
-    version = "0.8.19",
+    version = "0.8.24",
     dev_dependency = True,
 )
 # N.B. We must NOT register llvm's toolchain here. We want to use the
@@ -332,6 +332,7 @@ use_repo(
     "common_robotics_utilities_internal",
     "csdp_internal",
     "curl_internal",
+    "daqp_internal",
     "fcl_internal",
     "gfortran_internal",
     "gklib_internal",

@@ -5620,7 +5620,14 @@ Precondition:
 Note: There are more numerical recipes for region of attraction
 analysis that could extend the current implementation. Do report an
 issue if you discover a system for which this code does not perform
-well.)""";
+well.
+
+Raises:
+    RuntimeError if an SOS solve fails or its returned certificate
+    fails numerical validation. Polynomial coefficient equalities and
+    conic constraints are checked with options.certificate_tolerance.
+    Passing these checks is not a rigorous certificate of an inner
+    approximation.)""";
         } RegionOfAttraction;
         // Symbol: drake::systems::analysis::RegionOfAttractionOptions
         struct /* RegionOfAttractionOptions */ {
@@ -5640,6 +5647,17 @@ attraction algorithm.)""";
 R"""(Passes this object to an Archive. Refer to yaml_serialization "YAML
 Serialization" for background.)""";
           } Serialize;
+          // Symbol: drake::systems::analysis::RegionOfAttractionOptions::certificate_tolerance
+          struct /* certificate_tolerance */ {
+            // Source: drake/systems/analysis/region_of_attraction.h
+            const char* doc =
+R"""(Absolute tolerance used to check polynomial coefficient equalities and
+conic constraints after each SOS solve. Must be finite and
+nonnegative. This is independent of the solver's own stopping
+tolerances. Increasing it can admit less accurate certificates;
+passing these numerical checks does not rigorously certify an inner
+approximation.)""";
+          } certificate_tolerance;
           // Symbol: drake::systems::analysis::RegionOfAttractionOptions::lyapunov_candidate
           struct /* lyapunov_candidate */ {
             // Source: drake/systems/analysis/region_of_attraction.h
@@ -5687,6 +5705,7 @@ more details.)""";
           } use_implicit_dynamics;
           auto Serialize__fields() const {
             return std::array{
+              std::make_pair("certificate_tolerance", certificate_tolerance.doc),
               std::make_pair("lyapunov_candidate", lyapunov_candidate.doc),
               std::make_pair("solver_id", solver_id.doc),
               std::make_pair("solver_options", solver_options.doc),

@@ -661,6 +661,7 @@ LinkOrdinal LinkJointGraph::AddShadowLink(LinkOrdinal primary_link_ordinal,
                                           bool shadow_is_parent) {
   /* Caution: this Link reference will be invalid after the emplace. */
   const Link& primary_link = links(primary_link_ordinal);
+  DRAKE_DEMAND(!primary_link.is_world());  // We never split World.
   const LinkIndex primary_link_index = primary_link.index();
   const int shadow_num = primary_link.num_shadows() + 1;
   /* Name should be <primary_name>$<shadow_num> (unique within primary's model

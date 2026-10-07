@@ -22,12 +22,10 @@ namespace drake {
 namespace multibody {
 namespace internal {
 
-/* Constructs and returns a suitable discrete update manager for a
- MultibodyPlant given the type of contact solver.
+/* Constructs and returns a discrete update manager.
  @tparam_default_scalar */
 template <typename T>
-std::unique_ptr<DiscreteUpdateManager<T>> MakeDiscreteUpdateManager(
-    DiscreteContactSolver contact_solver);
+std::unique_ptr<DiscreteUpdateManager<T>> MakeDiscreteUpdateManager();
 
 }  // namespace internal
 }  // namespace multibody

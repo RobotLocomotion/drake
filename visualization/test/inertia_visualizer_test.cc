@@ -4,6 +4,7 @@
 #include <memory>
 #include <string>
 #include <utility>
+#include <vector>
 
 #include <fmt/format.h>
 #include <gtest/gtest.h>
@@ -106,6 +107,68 @@ TEST_F(InertiaVisualizerConfigTest, InertiaButNoIllustrationConfig) {
 
   EXPECT_FALSE(meshcat_->HasPath("/drake/illustration/acrobot"));
   EXPECT_TRUE(meshcat_->HasPath("/drake/inertia/InertiaVisualizer/acrobot"));
+}
+
+// When MultibodyPlant models a closed kinematic loop it splits a link into a
+// primary link and an ephemeral "shadow" copy, which carries half of the
+// primary's mass and has a pose of its own. It is a body like any other here,
+// so it gets an inertia ellipsoid of its own -- showing the shadow's share of
+// the mass, where the shadow actually is.
+GTEST_TEST(InertiaVisualizerTest, ShadowLinkGetsAnEllipsoid) {
+  // A minimal closed loop: two links joined to World and to each other.
+  constexpr char kLoopSdf[] = R"""(
+  <?xml version="1.0"?>
+  <sdf version="1.7">
+    <model name="loop">
+      <link name="upper"/>
+      <link name="lower"/>
+      <joint name="world_upper" type="revolute">
+        <parent>world</parent>
+        <child>upper</child>
+        <axis><xyz>0 0 1</xyz></axis>
+      </joint>
+      <joint name="world_lower" type="revolute">
+        <parent>world</parent>
+        <child>lower</child>
+        <axis><xyz>0 0 1</xyz></axis>
+      </joint>
+      <joint name="upper_lower" type="revolute">
+        <parent>upper</parent>
+        <child>lower</child>
+        <axis><xyz>0 0 1</xyz></axis>
+      </joint>
+    </model>
+  </sdf>
+  )""";
+  systems::DiagramBuilder<double> builder;
+  auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.01);
+  plant.SetEnableLoopTopology(true);
+  Parser(&plant).AddModelsFromString(kLoopSdf, "sdf");
+  plant.Finalize();
+
+  // Breaking the loop added an ephemeral shadow body, with a frame of its own.
+  ASSERT_EQ(plant.num_loop_constraints(), 1);
+  const multibody::BodyIndex shadow_index(plant.num_bodies() - 1);
+  const multibody::RigidBody<double>& shadow = plant.get_body(shadow_index);
+  ASSERT_TRUE(shadow.is_ephemeral());
+  ASSERT_TRUE(plant.GetBodyFrameIdIfExists(shadow_index).has_value());
+
+  InertiaVisualizer<double>::AddToBuilder(&builder, plant, &scene_graph);
+
+  // The visualizer registers one frame per body it draws an ellipsoid for, so
+  // the shadow is drawn iff a frame named for it turns up in SceneGraph.
+  const std::string expected_name = fmt::format(
+      "InertiaVisualizer::{}::{}",
+      plant.GetModelInstanceName(shadow.model_instance()), shadow.name());
+  const geometry::SceneGraphInspector<double>& inspector =
+      scene_graph.model_inspector();
+  std::vector<std::string> frame_names;
+  for (const geometry::FrameId frame_id : inspector.GetAllFrameIds()) {
+    frame_names.push_back(inspector.GetName(frame_id));
+  }
+  EXPECT_TRUE(std::find(frame_names.begin(), frame_names.end(),
+                        expected_name) != frame_names.end())
+      << "No SceneGraph frame named '" << expected_name << "'.";
 }
 
 // This class allows testing the results of inertia geometry calculation.

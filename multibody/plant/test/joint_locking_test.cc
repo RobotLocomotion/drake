@@ -302,24 +302,11 @@ INSTANTIATE_TEST_SUITE_P(IndexPermutations, JointLockingTest,
                          ::testing::Values(0, 1));
 
 struct TrajectoryTestConfig {
-  std::optional<DiscreteContactSolver> solver;
+  bool is_discrete{false};
 };
 
-std::ostream& operator<<(std::ostream& out, DiscreteContactSolver solver) {
-  switch (solver) {
-    case DiscreteContactSolver::kSap: {
-      out << "SAP";
-      break;
-    }
-  }
-  return out;
-}
-
 std::ostream& operator<<(std::ostream& out, const TrajectoryTestConfig& c) {
-  if (c.solver.has_value()) {
-    return out << *c.solver;
-  }
-  return out << "continuous";
+  return out << (c.is_discrete ? "discrete" : "continuous");
 }
 
 // Fixture to construct two plants. Each containing a single double pendulum.
@@ -330,8 +317,8 @@ class TrajectoryTest : public ::testing::TestWithParam<TrajectoryTestConfig> {
  public:
   void SetUp() {
     TrajectoryTestConfig config = GetParam();
-    plant_welded_ = MakeDoublePendulumPlant(true, config.solver);
-    plant_locked_ = MakeDoublePendulumPlant(false, config.solver);
+    plant_welded_ = MakeDoublePendulumPlant(true, config.is_discrete);
+    plant_locked_ = MakeDoublePendulumPlant(false, config.is_discrete);
   }
 
   // Create a plant with a XZ-planar double pendulum where the masses are
@@ -343,11 +330,11 @@ class TrajectoryTest : public ::testing::TestWithParam<TrajectoryTestConfig> {
   // corresponding to the configuration (0, kElbowPosition) in the model with
   // two joints.
   std::unique_ptr<MultibodyPlant<double>> MakeDoublePendulumPlant(
-      bool weld_elbow, std::optional<DiscreteContactSolver> solver) {
+      bool weld_elbow, bool is_discrete) {
     std::unique_ptr<MultibodyPlant<double>> plant;
-    const double plant_timestep = solver.has_value() ? kTimestep : 0.0;
+    const double plant_timestep = is_discrete ? kTimestep : 0.0;
     plant = std::make_unique<MultibodyPlant<double>>(plant_timestep);
-    if (plant->is_discrete()) {
+    if (is_discrete) {
       plant->set_discrete_contact_approximation(
           DiscreteContactApproximation::kSap);
     }
@@ -483,8 +470,8 @@ TEST_P(TrajectoryTest, CompareWeldAndLocked) {
 // Test joint locking with continuous and SAP.
 std::vector<TrajectoryTestConfig> MakeTrajectoryTestCases() {
   return std::vector<TrajectoryTestConfig>{
-      {.solver = std::nullopt},
-      {.solver = DiscreteContactSolver::kSap},
+      {.is_discrete = false},
+      {.is_discrete = true},
   };
 }
 
@@ -494,17 +481,13 @@ INSTANTIATE_TEST_SUITE_P(JointLockingTests, TrajectoryTest,
 
 struct FilteredContactResultsConfig {
   ContactModel contact_model{ContactModel::kPoint};
-  std::optional<DiscreteContactSolver> solver;
+  bool is_discrete{false};
 };
 
 std::ostream& operator<<(std::ostream& out,
                          const FilteredContactResultsConfig& c) {
   out << internal::GetStringFromContactModel(c.contact_model) << "_";
-  if (c.solver.has_value()) {
-    out << *c.solver;
-  } else {
-    out << "continuous";
-  }
+  out << (c.is_discrete ? "discrete" : "continuous");
   return out;
 }
 
@@ -515,7 +498,7 @@ class FilteredContactResultsTest
  public:
   void SetUp() {
     FilteredContactResultsConfig config = GetParam();
-    const double time_step = config.solver.has_value() ? kTimestep : 0.0;
+    const double time_step = config.is_discrete ? kTimestep : 0.0;
 
     systems::DiagramBuilder<double> builder;
     plant_ = &AddMultibodyPlantSceneGraph(&builder, time_step).plant;
@@ -694,12 +677,10 @@ TEST_P(FilteredContactResultsTest, VerifyLockedResults) {
 std::vector<FilteredContactResultsConfig>
 MakeFilteredContactResultsTestCases() {
   return std::vector<FilteredContactResultsConfig>{
-      {.contact_model = ContactModel::kPoint, .solver = std::nullopt},
-      {.contact_model = ContactModel::kHydroelastic, .solver = std::nullopt},
-      {.contact_model = ContactModel::kPoint,
-       .solver = DiscreteContactSolver::kSap},
-      {.contact_model = ContactModel::kHydroelastic,
-       .solver = DiscreteContactSolver::kSap},
+      {.contact_model = ContactModel::kPoint, .is_discrete = false},
+      {.contact_model = ContactModel::kHydroelastic, .is_discrete = false},
+      {.contact_model = ContactModel::kPoint, .is_discrete = true},
+      {.contact_model = ContactModel::kHydroelastic, .is_discrete = true},
   };
 }
 

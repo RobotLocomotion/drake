@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 
+#include "drake/common/diagnostic_policy.h"
 #include "drake/multibody/parsing/detail_common.h"
 #include "drake/multibody/parsing/detail_parsing_workspace.h"
 #include "drake/multibody/parsing/model_directives.h"
@@ -20,8 +21,12 @@ namespace internal {
 ScopedName DmdScopedNameJoin(const std::string& namespace_name,
                              const std::string& element_name);
 
-// TODO(#18052): diagnostic policy?
-parsing::ModelDirectives LoadModelDirectives(const DataSource& data_source);
+// Loads model directives from the given data source, reporting errors via
+// @p diagnostic. Returns std::nullopt if an error was reported (and the
+// diagnostic policy did not throw).
+std::optional<parsing::ModelDirectives> LoadModelDirectives(
+    const DataSource& data_source,
+    const drake::internal::DiagnosticPolicy& diagnostic);
 
 std::vector<parsing::ModelInstanceInfo> ParseModelDirectives(
     const parsing::ModelDirectives& directives,

@@ -69,9 +69,7 @@ def _error(message: str) -> None:
 
 @functools.cache
 def _workspace_dir() -> Path:
-    """Returns the Path of the Drake workspace (source builds only; does not
-    work for binary installs).
-    """
+    """Returns the Path of the Drake workspace (source builds only)."""
     assert _MY_DIR.name == "setup", _MY_DIR
     return _MY_DIR.parent
 
@@ -536,27 +534,31 @@ def main():
         format="%(levelname)s: %(message)s",
     )
 
+    # Check if we are in a binary package.
+    is_binary_package = not (_MY_DIR / "ubuntu/packages.json").exists()
+
     # Initialize argparse.
     parser = argparse.ArgumentParser(
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    parser.add_argument(
-        "--developer",
-        action="store_const",
-        dest="flavor",
-        default=Flavor.BUILD,
-        const=Flavor.DEVELOPER,
-        help="Install prerequisites needed only by Drake Developers.",
-    )
-    parser.add_argument(
-        "--user-environment-only",
-        action="store_true",
-        help=(
-            "Update per-user config snippets needed only by Drake Developers, "
-            "but don't install any system-wide packages."
-        ),
-    )
+    if not is_binary_package:
+        parser.add_argument(
+            "--developer",
+            action="store_const",
+            dest="flavor",
+            default=Flavor.BUILD,
+            const=Flavor.DEVELOPER,
+            help="Install prerequisites needed only by Drake Developers.",
+        )
+        parser.add_argument(
+            "--user-environment-only",
+            action="store_true",
+            help=(
+                "Update per-user config snippets needed only by Drake "
+                "Developers, but don't install any system-wide packages."
+            ),
+        )
     parser.add_argument(
         "--without-update",
         dest="allow_update",
@@ -575,6 +577,9 @@ def main():
         help="Enable verbosity.",
     )
     args = parser.parse_args()
+    if is_binary_package:
+        args.flavor = Flavor.BINARY
+        args.user_environment_only = False
     if args.verbose:
         logging.getLogger().setLevel(logging.DEBUG)
 

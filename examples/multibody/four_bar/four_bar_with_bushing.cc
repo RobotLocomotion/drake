@@ -81,7 +81,7 @@ int do_main() {
 
   // Make and add the four_bar model from an SDF model.
   const std::string sdf_url =
-      "package://drake/examples/multibody/four_bar/four_bar.sdf";
+      "package://drake/examples/multibody/four_bar/four_bar_with_bushing.sdf";
   Parser parser(&builder);
   parser.AddModelsFromUrl(sdf_url);
 

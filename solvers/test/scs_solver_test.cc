@@ -195,7 +195,7 @@ TEST_F(UnboundedLinearProgramTest0, TestUnbounded) {
 TEST_F(DuplicatedVariableLinearProgramTest1, Test) {
   ScsSolver solver;
   if (solver.is_available()) {
-    CheckSolution(solver, std::nullopt, 1E-5);
+    CheckSolution(solver, std::nullopt, 1E-4);
   }
 }
 
@@ -327,7 +327,7 @@ GTEST_TEST(TestL2NormCost, ShortestDistanceToThreePoints) {
 GTEST_TEST(TestL2NormCost, ShortestDistanceFromCylinderToPoint) {
   ScsSolver solver;
   ShortestDistanceFromCylinderToPoint tester{};
-  tester.CheckSolution(solver);
+  tester.CheckSolution(solver, std::nullopt, 1E-4);
 }
 
 GTEST_TEST(TestL2NormCost, ShortestDistanceFromPlaneToTwoPoints) {

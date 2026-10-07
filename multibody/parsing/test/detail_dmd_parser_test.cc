@@ -1,5 +1,7 @@
 #include "drake/multibody/parsing/detail_dmd_parser.h"
 
+#include <filesystem>
+#include <fstream>
 #include <string>
 #include <tuple>
 #include <vector>
@@ -26,6 +28,9 @@ using drake::internal::DiagnosticPolicy;
 using Eigen::Vector3d;
 using geometry::SceneGraph;
 using math::RigidTransformd;
+using parsing::AddDirectives;
+using parsing::AddFrame;
+using parsing::ModelDirective;
 using parsing::ModelDirectives;
 using parsing::ModelInstanceInfo;
 using schema::Transform;
@@ -537,6 +542,94 @@ directives:
       {}, ModelDirectives());
   /* Deformables aren't associated with any joint */
   DRAKE_EXPECT_THROWS_MESSAGE(ParseModelDirectives(directives), ".*no Joint.*");
+}
+
+/* With a non-fatal error policy, schema-invalid directives must not crash. */
+TEST_F(DmdParserTest, NonFatalInvalidDirectives) {
+  const std::string contents = R"(
+directives:
+- add_model_instance:
+    name: ""
+)";
+  auto maybe = LoadModelDirectives({DataSource::kContents, &contents},
+                                   diagnostic_policy_);
+  EXPECT_FALSE(maybe.has_value());
+  EXPECT_THAT(
+      TakeError(),
+      testing::MatchesRegex(".*add_model_instance.*name.*must be non-empty.*"));
+}
+
+/* With a non-fatal error policy, a missing directives file must not crash. */
+TEST_F(DmdParserTest, NonFatalMissingFile) {
+  const std::string missing = "/no/such/directives.dmd.yaml";
+  auto maybe = LoadModelDirectives({DataSource::kFilename, &missing},
+                                   diagnostic_policy_);
+  EXPECT_FALSE(maybe.has_value());
+  EXPECT_THAT(TakeError(),
+              testing::MatchesRegex(".*No such file.*directives.dmd.yaml.*"));
+}
+
+/* With a non-fatal error policy, add_frame with an empty base_frame and
+ add_directives with a missing model instance must not crash. */
+TEST_F(DmdParserTest, NonFatalParseErrors) {
+  // Build directive structs directly to bypass schema IsValid() checks that
+  // LoadModelDirectives would perform first.
+  {
+    ModelDirectives directives;
+    ModelDirective directive;
+    AddFrame add_frame;
+    add_frame.name = "f";
+    // Leave base_frame unset.
+    directive.add_frame = add_frame;
+    directives.directives.push_back(directive);
+
+    EXPECT_NO_THROW(ParseModelDirectives(directives));
+    EXPECT_THAT(TakeError(),
+                testing::MatchesRegex(".*empty base frame is ambiguous.*"));
+  }
+
+  {
+    ModelDirectives directives;
+    ModelDirective directive;
+    AddDirectives add_directives;
+    add_directives.file = "package://drake/does_not_matter.dmd.yaml";
+    add_directives.model_namespace = "missing_instance";
+    directive.add_directives = add_directives;
+    directives.directives.push_back(directive);
+
+    EXPECT_NO_THROW(ParseModelDirectives(directives));
+    EXPECT_THAT(TakeError(),
+                testing::MatchesRegex(
+                    ".*Namespace 'missing_instance' does not exist as model "
+                    "instance.*"));
+  }
+}
+
+/* Nested add_directives whose child file fails schema validation must continue
+ without crashing (covers the LoadModelDirectives failure continue path). */
+TEST_F(DmdParserTest, NonFatalNestedDirectivesLoadFailure) {
+  const std::filesystem::path child =
+      std::filesystem::path(temp_directory()) / "bad_child.dmd.yaml";
+  {
+    std::ofstream out(child);
+    out << R"(
+directives:
+- add_model_instance:
+    name: ""
+)";
+  }
+
+  ModelDirectives directives;
+  ModelDirective directive;
+  AddDirectives add_directives;
+  add_directives.file = "file://" + child.string();
+  directive.add_directives = add_directives;
+  directives.directives.push_back(directive);
+
+  EXPECT_NO_THROW(ParseModelDirectives(directives));
+  EXPECT_THAT(
+      TakeError(),
+      testing::MatchesRegex(".*add_model_instance.*name.*must be non-empty.*"));
 }
 
 }  // namespace

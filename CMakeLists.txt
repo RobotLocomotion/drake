@@ -77,8 +77,8 @@ set(BAZELRC_IMPORTS "tools/bazel-build.rc")
 # For Ubuntu, don't make as harsh a check for minimum supported version
 # since Drake *can* compile on non-Ubuntu UNIX, even though it's not
 # officially supported.
-set(MINIMUM_DARWIN_VERSION 24)
-set(MINIMUM_MACOS_CODENAME "Sequoia")
+set(MINIMUM_DARWIN_VERSION 25)
+set(MINIMUM_MACOS_CODENAME "Tahoe")
 
 if(APPLE)
   if(CMAKE_SYSTEM_VERSION VERSION_LESS ${MINIMUM_DARWIN_VERSION})
@@ -595,6 +595,7 @@ define_bool_option("WITH_RENDER_GLTF_CLIENT" "RenderEngineGltfClient")
 define_bool_option("WITH_CLARABEL" "Clarabel")
 define_bool_option("WITH_CLP" "CLP")
 define_bool_option("WITH_CSDP" "CSDP")
+define_bool_option("WITH_DAQP" "DAQP")
 define_bool_option("WITH_IPOPT" "Ipopt")
 define_bool_option("WITH_NLOPT" "NLopt")
 define_bool_option("WITH_OSQP" "OSQP")

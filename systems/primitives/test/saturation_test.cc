@@ -6,6 +6,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
+#include "drake/common/unused.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/fixed_input_port_value.h"
 #include "drake/systems/framework/test_utilities/scalar_conversion.h"
@@ -88,19 +89,19 @@ template <typename T>
 void SaturationTest(bool run_constant_saturation_test) {
   // Tests for error thrown due to incorrectly initialized Saturation. (Both
   // max and min value ports are disabled).
-  EXPECT_ANY_THROW(std::make_unique<Saturation<T>>(0 /* input_size */));
+  EXPECT_ANY_THROW(unused(std::make_unique<Saturation<T>>(0 /* input_size */)));
 
   // Tests for error thrown due to incorrectly initialized Saturation. (u_min
   // and u_max have unequal lengths).
-  EXPECT_ANY_THROW(
+  EXPECT_ANY_THROW(unused(
       std::make_unique<Saturation<T>>(Vector3<T>(1.0, -4.5, -2.5) /* u_min */,
-                                      Vector2<T>(3.0, 5.0) /* u_max */));
+                                      Vector2<T>(3.0, 5.0) /* u_max */)));
 
   // Tests for error thrown due to incorrectly initialized Saturation. (u_min
   // >= u_max along some or all dimensions).
-  EXPECT_ANY_THROW(
+  EXPECT_ANY_THROW(unused(
       std::make_unique<Saturation<T>>(Vector3<T>(1.0, -4.5, -2.5) /* u_min */,
-                                      Vector3<T>(0.75, 5.0, 2.0) /* u_max */));
+                                      Vector3<T>(0.75, 5.0, 2.0) /* u_max */)));
 
   // Arbitrary choice of limits for the test.
   Vector4<T> kUMax, kUMin;

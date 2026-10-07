@@ -375,11 +375,11 @@ private:
     Eigen::Index inner_stride() const {
         if constexpr (StrideType::InnerStrideAtCompileTime == Eigen::Dynamic)
             if constexpr (ndim_v<T> == 1)
-                return caster.value.stride(0);
+                return (Eigen::Index) caster.value.stride(0);
             else if constexpr (T::IsRowMajor)
-                return caster.value.stride(1);
+                return (Eigen::Index) caster.value.stride(1);
             else
-                return caster.value.stride(0);
+                return (Eigen::Index) caster.value.stride(0);
         else
             return StrideType::InnerStrideAtCompileTime;
     }
@@ -389,9 +389,9 @@ private:
             if constexpr (ndim_v<T> == 1)
                 return (Eigen::Index) caster.value.shape(0);
             else if constexpr (T::IsRowMajor)
-                return caster.value.stride(0);
+                return (Eigen::Index) caster.value.stride(0);
             else
-                return caster.value.stride(1);
+                return (Eigen::Index) caster.value.stride(1);
         else
             return StrideType::OuterStrideAtCompileTime;
     }

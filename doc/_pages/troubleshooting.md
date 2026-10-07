@@ -285,7 +285,7 @@ See also: [Memory management with the Python Bindings](/python_bindings.html#mem
 
 ## LCM on macOS {#lcm-macos}
 
-When building and testing Drake from source on macOS 15 (Sequoia), you may
+When building and testing Drake from source on macOS, you may
 encounter issues with [LCM](https://lcm-proj.github.io/lcm/index.html).
 In particular, an error message that can arise is: "LCM self test failed!!
 Check your routing tables and firewall settings." LCM relies on

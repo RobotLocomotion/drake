@@ -248,24 +248,21 @@ def _test_tagname(test_case: TestCase, tag_prefix: str) -> str:
     Generates a Docker tag name for a test-role TestCase and tag prefix.
     """
     platform = test_case.platform.alias
-    manager = test_case.python_manager.value
+    python_manager = test_case.python_manager.value
     python_tag = test_case.python.tag
-    return f"{TAG_BASE}:{tag_prefix}-{platform}-py{python_tag}-{manager}"
+    return f"{TAG_BASE}:{tag_prefix}-{platform}-py{python_tag}-{python_manager}"
 
 
 def _build_stage(target, args, tag_prefix, stage=None):
     """
-    Runs a Docker build and return the build tag.
+    Runs a Docker build and returns the build tag.
     """
 
     # Generate canonical tag from target.
     tag = _build_tagname(target, tag_prefix)
 
     # Generate extra arguments to specify what stage to build.
-    if stage is not None:
-        extra = ["--target", stage]
-    else:
-        extra = []
+    extra = [] if stage is None else ["--target", stage]
 
     # Run the build.
     print("[-] Build", tag, extra + args)
@@ -319,6 +316,7 @@ def _build_image(target, identifier, version, options):
     if options.tag_stages:
         # Inspect Dockerfile, find stages, and build them.
         dockerfile = os.path.join(resource_root, "Dockerfile")
+        tag = None
         with open(dockerfile, encoding="utf-8") as f:
             for line in f:
                 if line.startswith("FROM"):
@@ -326,6 +324,7 @@ def _build_image(target, identifier, version, options):
                     tag = _build_stage(
                         target, args, tag_prefix=stage, stage=stage
                     )
+        assert tag is not None, f"No named stages found in {dockerfile}"
     else:
         tag = _build_stage(target, args, tag_prefix=identifier)
         _images_to_remove.add(tag)

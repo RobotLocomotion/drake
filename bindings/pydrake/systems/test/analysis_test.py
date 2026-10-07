@@ -132,6 +132,8 @@ class TestAnalysis(unittest.TestCase):
         options.use_implicit_dynamics = False
         options.solver_id = None
         options.solver_options = None
+        self.assertEqual(options.certificate_tolerance, 1e-6)
+        options.certificate_tolerance = 1e-7
         V = RegionOfAttraction(system=sys, context=context, options=options)
         self.assertIsInstance(V, Expression)
         self.assertGreater(len(repr(options)), 0)

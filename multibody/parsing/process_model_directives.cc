@@ -193,14 +193,24 @@ std::vector<ModelInstanceInfo> ProcessModelDirectives(
 
 ModelDirectives LoadModelDirectives(const std::filesystem::path& filename) {
   const std::string filename_str = filename.string();
-  return multibody::internal::LoadModelDirectives(
-      {DataSource::kFilename, &filename_str});
+  ::drake::internal::DiagnosticPolicy policy;
+  std::optional<ModelDirectives> result =
+      multibody::internal::LoadModelDirectives(
+          {DataSource::kFilename, &filename_str}, policy);
+  // Default policy throws on error, so a missing value is unexpected.
+  DRAKE_DEMAND(result.has_value());
+  return *result;
 }
 
 ModelDirectives LoadModelDirectivesFromString(
     const std::string& model_directives) {
-  return multibody::internal::LoadModelDirectives(
-      {DataSource::kContents, &model_directives});
+  ::drake::internal::DiagnosticPolicy policy;
+  std::optional<ModelDirectives> result =
+      multibody::internal::LoadModelDirectives(
+          {DataSource::kContents, &model_directives}, policy);
+  // Default policy throws on error, so a missing value is unexpected.
+  DRAKE_DEMAND(result.has_value());
+  return *result;
 }
 
 void FlattenModelDirectives(const ModelDirectives& directives,

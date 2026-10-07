@@ -36,7 +36,8 @@ const double kInf = std::numeric_limits<double>::infinity();
 // DoMakeSemidefiniteRelaxation, we sort the decision variables in the
 // semidefinite variables (and hence the implied constraints).
 std::vector<int> FindDecisionVariableIndices(
-    const std::map<Variable, int>& variables_to_sorted_indices,
+    const std::map<Variable, int, Variable::CompareLess>&
+        variables_to_sorted_indices,
     const VectorXDecisionVariable& vars) {
   std::vector<int> indices;
   indices.reserve(vars.rows());
@@ -81,7 +82,7 @@ bool CheckProgramHasNonConvexQuadratics(const MathematicalProgram& prog) {
 void InitializeSemidefiniteRelaxationForProg(
     const MathematicalProgram& prog, const Variable& one,
     MathematicalProgram* relaxation, MatrixX<Variable>* X,
-    std::map<Variable, int>* variables_to_sorted_indices,
+    std::map<Variable, int, Variable::CompareLess>* variables_to_sorted_indices,
     std::optional<int> group_number) {
   DRAKE_DEMAND(relaxation != nullptr);
   DRAKE_DEMAND(X != nullptr);
@@ -97,7 +98,7 @@ void InitializeSemidefiniteRelaxationForProg(
   VectorX<Variable> sorted_variables = prog.decision_variables();
   std::sort(sorted_variables.data(),
             sorted_variables.data() + sorted_variables.size(),
-            std::less<Variable>{});
+            Variable::CompareLess{});
   // X = xxᵀ; x = [prog.decision_vars(); 1].
   X->resize(prog.num_vars() + 1, prog.num_vars() + 1);
   X->topLeftCorner(prog.num_vars(), prog.num_vars()) =
@@ -118,7 +119,8 @@ void InitializeSemidefiniteRelaxationForProg(
 
 void DoLinearizeQuadraticCostsAndConstraints(
     const MathematicalProgram& prog, const MatrixXDecisionVariable& X,
-    const std::map<Variable, int>& variables_to_sorted_indices,
+    const std::map<Variable, int, Variable::CompareLess>&
+        variables_to_sorted_indices,
     MathematicalProgram* relaxation) {
   DRAKE_DEMAND(relaxation != nullptr);
   // Returns the {a, vars} in relaxation, such that a' vars = 0.5*tr(QY). This
@@ -190,7 +192,8 @@ void DoLinearizeQuadraticCostsAndConstraints(
 
 void DoAddImpliedLinearConstraints(
     const MathematicalProgram& prog, const MatrixXDecisionVariable& X,
-    const std::map<Variable, int>& variables_to_sorted_indices,
+    const std::map<Variable, int, Variable::CompareLess>&
+        variables_to_sorted_indices,
     MathematicalProgram* relaxation) {
   DRAKE_DEMAND(relaxation != nullptr);
   // Assemble one big Ay <= b matrix from all bounding box constraints
@@ -293,7 +296,8 @@ void DoAddImpliedLinearConstraints(
 
 void DoAddImpliedLinearEqualityConstraints(
     const MathematicalProgram& prog, const MatrixXDecisionVariable& X,
-    const std::map<Variable, int>& variables_to_sorted_indices,
+    const std::map<Variable, int, Variable::CompareLess>&
+        variables_to_sorted_indices,
     MathematicalProgram* relaxation) {
   DRAKE_DEMAND(relaxation != nullptr);
   // Linear equality constraints.

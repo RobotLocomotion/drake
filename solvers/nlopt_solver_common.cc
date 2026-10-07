@@ -53,6 +53,14 @@ std::string NloptSolver::XAbsoluteToleranceName() {
   return "xtol_abs";
 }
 
+std::string NloptSolver::FRelativeToleranceName() {
+  return "ftol_rel";
+}
+
+std::string NloptSolver::FAbsoluteToleranceName() {
+  return "ftol_abs";
+}
+
 std::string NloptSolver::MaxEvalName() {
   return "max_eval";
 }
@@ -61,8 +69,40 @@ std::string NloptSolver::MaxTimeName() {
   return "max_time";
 }
 
+std::string NloptSolver::StopValName() {
+  return "stopval";
+}
+
 std::string NloptSolver::AlgorithmName() {
   return "algorithm";
+}
+
+std::string NloptSolver::LocalOptimizerAlgorithmName() {
+  return "local_optimizer_algorithm";
+}
+
+std::string NloptSolver::LocalOptimizerXRelativeToleranceName() {
+  return "local_optimizer_xtol_rel";
+}
+
+std::string NloptSolver::LocalOptimizerXAbsoluteToleranceName() {
+  return "local_optimizer_xtol_abs";
+}
+
+std::string NloptSolver::LocalOptimizerFRelativeToleranceName() {
+  return "local_optimizer_ftol_rel";
+}
+
+std::string NloptSolver::LocalOptimizerFAbsoluteToleranceName() {
+  return "local_optimizer_ftol_abs";
+}
+
+std::string NloptSolver::LocalOptimizerMaxEvalName() {
+  return "local_optimizer_max_eval";
+}
+
+std::string NloptSolver::LocalOptimizerMaxTimeName() {
+  return "local_optimizer_max_time";
 }
 
 }  // namespace solvers

@@ -86,7 +86,7 @@ class SinCosVisitor {
   [[nodiscard]] Expression VisitAddition(const Expression& e,
                                          TrigStatus status) const {
     const double c{get_constant_in_addition(e)};
-    std::map<Expression, double> expr_to_coeff_map{
+    std::map<Expression, double, Expression::CompareLess> expr_to_coeff_map{
         get_expr_to_coeff_map_in_addition(e)};
     if (status == kInsideSin) {
       if (c != 0.0) {
@@ -121,8 +121,8 @@ class SinCosVisitor {
   [[nodiscard]] Expression VisitMultiplication(const Expression& e,
                                                TrigStatus status) const {
     const double c{get_constant_in_multiplication(e)};
-    const std::map<Expression, Expression>& base_to_exponent_map{
-        get_base_to_exponent_map_in_multiplication(e)};
+    const std::map<Expression, Expression, Expression::CompareLess>&
+        base_to_exponent_map{get_base_to_exponent_map_in_multiplication(e)};
     if (status == kInsideSin) {
       std::string msg = fmt::format(
           "Got sin({}), but we only support sin(c*x) where c is an integer (c "

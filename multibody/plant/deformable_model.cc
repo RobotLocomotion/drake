@@ -63,6 +63,15 @@ DeformableBodyId DeformableModel<T>::RegisterDeformableBody(
           "given model.",
           model_instance_name, name));
     }
+    if (this->plant().HasBodyNamed(name, model_instance)) {
+      const std::string& model_instance_name =
+          this->plant().GetModelInstanceName(model_instance);
+      throw std::logic_error(fmt::format(
+          "RegisterDeformableBody(): Model instance '{}' already contains a "
+          "rigid body named '{}'. Body names must be unique within a given "
+          "model.",
+          model_instance_name, name));
+    }
     /* Register the geometry with SceneGraph. */
     SceneGraph<T>& scene_graph = this->mutable_scene_graph();
     const ScopedName scoped_name(
@@ -435,14 +444,6 @@ void DeformableModel<T>::DoDeclareSystemResources() {
     return;
   } else {
     if (!is_empty()) {
-      if (this->plant().get_discrete_contact_solver() !=
-          DiscreteContactSolver::kSap) {
-        throw std::runtime_error(
-            "DeformableModel is only supported by the SAP contact solver. "
-            "Please use `kSap`, `kLagged`, or `kSimilar` as the discrete "
-            "contact approximation for the MultibodyPlant containing "
-            "deformable bodies.");
-      }
       if (!this->plant().is_discrete()) {
         throw std::runtime_error(
             "Deformable body simulation is only supported with discrete time "

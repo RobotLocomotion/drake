@@ -32,6 +32,7 @@ top-level documentation for :py:mod:`pydrake.math`.
   internal::DefineSolversClarabel(m);
   internal::DefineSolversClp(m);
   internal::DefineSolversCsdp(m);
+  internal::DefineSolversDaqp(m);
   internal::DefineSolversGurobi(m);
   internal::DefineSolversIpopt(m);
   internal::DefineSolversMobyLCP(m);

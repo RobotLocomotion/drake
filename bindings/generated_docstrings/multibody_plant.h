@@ -1098,8 +1098,8 @@ Raises:
     RuntimeError if the model instance does not exist.
 
 Raises:
-    RuntimeError if a deformable body with the same name has already
-    been registered to the model instance.
+    RuntimeError if a deformable body or rigid body with the same name
+    has already been registered to the model instance.
 
 Raises:
     RuntimeError if Finalize() has been called on the multibody plant
@@ -2544,12 +2544,7 @@ Raises:
     RuntimeError if bodies A and B are the same body.
 
 Raises:
-    RuntimeError if the MultibodyPlant has already been finalized.
-
-Raises:
-    RuntimeError if ``this`` MultibodyPlant's underlying contact
-    solver is not SAP. (i.e. get_discrete_contact_solver() !=
-    DiscreteContactSolver∷kSap))""";
+    RuntimeError if the MultibodyPlant has already been finalized.)""";
         } AddBallConstraint;
         // Symbol: drake::multibody::MultibodyPlant::AddCouplerConstraint
         struct /* AddCouplerConstraint */ {
@@ -2577,12 +2572,7 @@ Raises:
     if joint0 and joint1 are not both single-dof joints.
 
 Raises:
-    RuntimeError if the MultibodyPlant has already been finalized.
-
-Raises:
-    RuntimeError if ``this`` MultibodyPlant's underlying contact
-    solver is not SAP. (i.e. get_discrete_contact_solver() !=
-    DiscreteContactSolver∷kSap))""";
+    RuntimeError if the MultibodyPlant has already been finalized.)""";
         } AddCouplerConstraint;
         // Symbol: drake::multibody::MultibodyPlant::AddDistanceConstraint
         struct /* AddDistanceConstraint */ {
@@ -2659,12 +2649,7 @@ Raises:
     RuntimeError if ``damping`` is not positive nor zero.
 
 Raises:
-    RuntimeError if the MultibodyPlant has already been finalized.
-
-Raises:
-    RuntimeError if ``this`` MultibodyPlant's underlying contact
-    solver is not SAP. (i.e. get_discrete_contact_solver() !=
-    DiscreteContactSolver∷kSap))""";
+    RuntimeError if the MultibodyPlant has already been finalized.)""";
         } AddDistanceConstraint;
         // Symbol: drake::multibody::MultibodyPlant::AddDummyModel
         struct /* AddDummyModel */ {
@@ -2910,9 +2895,9 @@ Example of usage:
 
 Parameter ``name``:
     A string that identifies the new body to be added to ``this``
-    model. A RuntimeError is thrown if a body named ``name`` already
-    is part of ``model_instance``. See HasBodyNamed(),
-    RigidBody∷name().
+    model. A RuntimeError is thrown if a rigid or deformable body
+    named ``name`` already is part of ``model_instance``. See
+    HasBodyNamed(), RigidBody∷name().
 
 Parameter ``model_instance``:
     A model instance index which this body is part of.
@@ -2954,9 +2939,9 @@ Example of usage:
 
 Parameter ``name``:
     A string that identifies the new body to be added to ``this``
-    model. A RuntimeError is thrown if a body named ``name`` already
-    is part of the model in the default model instance. See
-    HasBodyNamed(), RigidBody∷name().
+    model. A RuntimeError is thrown if a rigid or deformable body
+    named ``name`` already is part of the model in the default model
+    instance. See HasBodyNamed(), RigidBody∷name().
 
 Parameter ``M_BBo_B``:
     The SpatialInertia of the new rigid body to be added to ``this``
@@ -3092,12 +3077,7 @@ Precondition:
     ``damping >= 0`` (if not std∷nullopt).
 
 Raises:
-    RuntimeError if the MultibodyPlant has already been finalized.
-
-Raises:
-    RuntimeError if ``this`` MultibodyPlant's underlying contact
-    solver is not SAP. (i.e. get_discrete_contact_solver() !=
-    DiscreteContactSolver∷kSap).)""";
+    RuntimeError if the MultibodyPlant has already been finalized.)""";
         } AddTendonConstraint;
         // Symbol: drake::multibody::MultibodyPlant::AddWeldConstraint
         struct /* AddWeldConstraint */ {
@@ -3126,12 +3106,7 @@ Raises:
     RuntimeError if bodies A and B are the same body.
 
 Raises:
-    RuntimeError if the MultibodyPlant has already been finalized.
-
-Raises:
-    RuntimeError if ``this`` MultibodyPlant's underlying contact
-    solver is not SAP. (i.e. get_discrete_contact_solver() !=
-    DiscreteContactSolver∷kSap))""";
+    RuntimeError if the MultibodyPlant has already been finalized.)""";
         } AddWeldConstraint;
         // Symbol: drake::multibody::MultibodyPlant::CalcBiasCenterOfMassTranslationalAcceleration
         struct /* CalcBiasCenterOfMassTranslationalAcceleration */ {
@@ -4498,6 +4473,9 @@ Parameter ``frame_F``:
 Parameter ``body_indexes``:
     Array of selected bodies. This method does not distinguish between
     welded bodies, joint-connected bodies, etc.
+
+Raises:
+    RuntimeError if ``frame_F`` does not belong to ``this`` plant.
 
 Raises:
     RuntimeError if body_indexes contains an invalid BodyIndex or if
@@ -8207,7 +8185,10 @@ calls will always return the same value.)""";
         struct /* num_constraints */ {
           // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
-R"""(Returns the total number of constraints specified by the user.)""";
+R"""(Returns the total number of constraints in this model. Prior to
+Finalize() these are just the constraints specified by the user.
+Finalize() may add "ephemeral" constraints of its own; see
+num_loop_constraints().)""";
         } num_constraints;
         // Symbol: drake::multibody::MultibodyPlant::num_coupler_constraints
         struct /* num_coupler_constraints */ {
@@ -8248,6 +8229,17 @@ R"""(Returns the number of joints in the model.
 See also:
     AddJoint().)""";
         } num_joints;
+        // Symbol: drake::multibody::MultibodyPlant::num_loop_constraints
+        struct /* num_loop_constraints */ {
+          // Source: drake/multibody/plant/multibody_plant.h
+          const char* doc =
+R"""(Returns the number of ephemeral weld constraints that Finalize() added
+in order to close topological loops. Each of these welds a shadow link
+to the link it is split from; see SetEnableLoopTopology(). These are
+included in num_constraints() and num_weld_constraints(), and are
+indistinguishable from user-added welds to the constraint solvers.
+Returns zero prior to Finalize().)""";
+        } num_loop_constraints;
         // Symbol: drake::multibody::MultibodyPlant::num_misc_continuous_states
         struct /* num_misc_continuous_states */ {
           // Source: drake/multibody/plant/multibody_plant.h
@@ -8337,7 +8329,10 @@ calls will always return the same value.)""";
         struct /* num_weld_constraints */ {
           // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
-R"""(Returns the total number of weld constraints specified by the user.)""";
+R"""(Returns the total number of weld constraints. Before Finalize() these
+are just the weld constraints specified by the user. Finalize() may
+add "ephemeral" weld constraints of its own; see
+num_loop_constraints().)""";
         } num_weld_constraints;
         // Symbol: drake::multibody::MultibodyPlant::physical_models
         struct /* physical_models */ {
@@ -8384,14 +8379,6 @@ Raises:
           // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Sets the discrete contact model approximation.
-
-Note:
-    Calling this method also sets the contact solver type (see
-    get_discrete_contact_solver()) according to: -
-    DiscreteContactApproximation∷kSap,
-    DiscreteContactApproximation∷kSimilar and
-    DiscreteContactApproximation∷kLagged set the solver to
-    DiscreteContactSolver∷kSap.
 
 Raises:
     iff ``this`` plant is continuous (i.e. is_discrete() is

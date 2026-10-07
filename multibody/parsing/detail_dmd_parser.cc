@@ -16,6 +16,7 @@ namespace drake {
 namespace multibody {
 namespace internal {
 
+using drake::internal::DiagnosticPolicy;
 using parsing::GetScopedFrameByName;
 using parsing::ModelDirectives;
 using parsing::ModelInstanceInfo;
@@ -29,7 +30,8 @@ void AddWeld(const Frame<double>& parent_frame,
              const Frame<double>& child_frame,
              const math::RigidTransform<double>& X_PC,
              MultibodyPlant<double>* plant,
-             std::vector<ModelInstanceInfo>* added_models) {
+             std::vector<ModelInstanceInfo>* added_models,
+             const DiagnosticPolicy& diagnostic) {
   plant->WeldFrames(parent_frame, child_frame, X_PC);
   if (added_models) {
     // Record weld info into crappy ModelInstanceInfo struct.
@@ -43,7 +45,13 @@ void AddWeld(const Frame<double>& parent_frame,
         info.X_PC = X_PC;
       }
     }
-    DRAKE_THROW_UNLESS(found);
+    if (!found) {
+      diagnostic.Error(fmt::format(
+          "add_weld: child frame '{}' (model instance '{}') does not match "
+          "any model added by these directives",
+          child_frame.name(),
+          plant->GetModelInstanceName(child_frame.model_instance())));
+    }
   }
 }
 
@@ -201,9 +209,10 @@ void ParseModelDirectivesImpl(const ModelDirectives& directives,
       auto& frame = *directive.add_frame;
       drake::log()->debug("  add_frame: {}", frame.name);
       if (!frame.X_PF.base_frame) {
-        // This would be caught elsewhere, but it is clearer to throw here.
-        throw std::logic_error(
+        // This would be caught elsewhere, but it is clearer to diagnose here.
+        diagnostic.Error(
             "add_frame directive with empty base frame is ambiguous");
+        continue;
       }
       // Only override instance if scope is explicitly specified.
       std::optional<ModelInstanceIndex> instance;
@@ -234,7 +243,7 @@ void ParseModelDirectivesImpl(const ModelDirectives& directives,
       }
       AddWeld(get_scoped_frame(directive.add_weld->parent),
               get_scoped_frame(directive.add_weld->child), X_PC, plant,
-              added_models);
+              added_models, diagnostic);
 
     } else if (directive.add_collision_filter_group) {
       // If there's no geometry registered, there's nothing to be done with
@@ -277,9 +286,10 @@ void ParseModelDirectivesImpl(const ModelDirectives& directives,
       drake::log()->debug("    new_model_namespace: {}", new_model_namespace);
       if (!new_model_namespace.empty() &&
           !plant->HasModelInstanceNamed(new_model_namespace)) {
-        throw std::runtime_error(
+        diagnostic.Error(
             fmt::format("Namespace '{}' does not exist as model instance",
                         new_model_namespace));
+        continue;
       }
       const ResolveUriResult resolved =
           ResolveUri(diagnostic, sub.file, package_map, {});
@@ -288,9 +298,12 @@ void ParseModelDirectivesImpl(const ModelDirectives& directives,
         continue;
       }
       const std::string filename = resolved.full_path.string();
-      auto sub_directives =
-          LoadModelDirectives({DataSource::kFilename, &filename});
-      ParseModelDirectivesImpl(sub_directives, new_model_namespace, workspace,
+      std::optional<ModelDirectives> sub_directives =
+          LoadModelDirectives({DataSource::kFilename, &filename}, diagnostic);
+      if (!sub_directives.has_value()) {
+        continue;
+      }
+      ParseModelDirectivesImpl(*sub_directives, new_model_namespace, workspace,
                                added_models);
     }
   }
@@ -304,7 +317,8 @@ ScopedName DmdScopedNameJoin(const std::string& namespace_name,
   return ScopedName::Join(namespace_name, element_name);
 }
 
-ModelDirectives LoadModelDirectives(const DataSource& data_source) {
+std::optional<ModelDirectives> LoadModelDirectives(
+    const DataSource& data_source, const DiagnosticPolicy& diagnostic) {
   // Even though the 'defaults' we use to start parsing here are empty, by
   // providing any defaults at all, the effect during parsing will be that any
   // of the users' ModelDirective structs and sub-structs will _also_ start
@@ -318,8 +332,9 @@ ModelDirectives LoadModelDirectives(const DataSource& data_source) {
     drake::log()->debug("LoadModelDirectives: {}", filename);
 
     if (!std::filesystem::exists({filename})) {
-      throw std::runtime_error(
+      diagnostic.Error(
           fmt::format("No such file {} during LoadModelDirectives", filename));
+      return std::nullopt;
     }
 
     directives = yaml::LoadYamlFile<ModelDirectives>(
@@ -329,7 +344,9 @@ ModelDirectives LoadModelDirectives(const DataSource& data_source) {
     directives = yaml::LoadYamlString<ModelDirectives>(
         data_source.contents(), std::nullopt /* child_name */, defaults);
   }
-  DRAKE_THROW_UNLESS(directives.IsValid());
+  if (!directives.IsValid(diagnostic)) {
+    return std::nullopt;
+  }
   return directives;
 }
 
@@ -365,11 +382,13 @@ std::vector<ModelInstanceIndex> DmdParserWrapper::AddAllModels(
     const DataSource& data_source,
     const std::optional<std::string>& parent_model_name,
     const ParsingWorkspace& workspace) {
-  // TODO(#18052): diagnostic policy?
-  ModelDirectives directives = LoadModelDirectives(data_source);
-  // TODO(#18052): diagnostic policy?
+  std::optional<ModelDirectives> directives =
+      LoadModelDirectives(data_source, workspace.diagnostic);
+  if (!directives.has_value()) {
+    return {};
+  }
   const std::vector<ModelInstanceInfo> infos =
-      ParseModelDirectives(directives, parent_model_name, workspace);
+      ParseModelDirectives(*directives, parent_model_name, workspace);
   std::vector<ModelInstanceIndex> results;
   results.reserve(infos.size());
   for (const auto& info : infos) {

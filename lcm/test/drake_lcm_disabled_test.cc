@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/common/unused.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/lcm/drake_lcm_log.h"
 #include "drake/lcmt_drake_signal.hpp"
@@ -15,8 +16,9 @@ GTEST_TEST(DrakeLcmDisabledTest, DrakeLcm) {
   EXPECT_FALSE(DrakeLcm::available());
 
   DrakeLcm dut;
-  EXPECT_NO_THROW(std::make_unique<DrakeLcm>("memq://"));
-  EXPECT_NO_THROW(std::make_unique<DrakeLcm>(DrakeLcmParams{"memq://"}));
+  EXPECT_NO_THROW(unused(std::make_unique<DrakeLcm>("memq://")));
+  EXPECT_NO_THROW(
+      unused(std::make_unique<DrakeLcm>(DrakeLcmParams{"memq://"})));
 
   const std::string channel = "DRAKE_LCM_DISABLED_TEST";
   const lcmt_drake_signal signal{};

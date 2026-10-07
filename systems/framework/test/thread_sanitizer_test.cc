@@ -5,6 +5,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
+#include "drake/common/unused.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/vector_system.h"
 
@@ -92,8 +93,8 @@ GTEST_TEST(ThreadSanitizerTest, SharedFrozenContextTest) {
       std::async(std::launch::async, context_ro_operation, context.get());
 
   // Wait for operations to complete, and ensure they don't throw.
-  DRAKE_EXPECT_NO_THROW(context_ro_operation_1.get());
-  DRAKE_EXPECT_NO_THROW(context_ro_operation_2.get());
+  DRAKE_EXPECT_NO_THROW(unused(context_ro_operation_1.get()));
+  DRAKE_EXPECT_NO_THROW(unused(context_ro_operation_2.get()));
 
   // Thaw context.
   context->UnfreezeCache();

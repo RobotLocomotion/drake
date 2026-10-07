@@ -130,11 +130,14 @@ GTEST_TEST(OpenGlInstanceTest, Validity) {
                                      AbstractValue::Make(RenderLabel(13))};
   const ShaderProgramData color_data(ShaderId::get_new_id(),
                                      AbstractValue::Make(33));
+  const bool casts_shadows = true;
 
   const OpenGlInstance instance(geometry_index, scale.head<3>(), geometry,
-                                color_data, depth_data, label_data);
+                                color_data, depth_data, label_data,
+                                casts_shadows);
 
   EXPECT_EQ(instance.geometry, geometry_index);
+  EXPECT_EQ(instance.casts_shadows, casts_shadows);
   EXPECT_TRUE(CompareMatrices(instance.T_GN, T_GN_expected));
   EXPECT_TRUE(CompareMatrices(instance.N_GN, N_GN_expected));
 

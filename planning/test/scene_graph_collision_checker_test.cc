@@ -363,6 +363,106 @@ GTEST_TEST(SceneGraphCollisionCheckerTest, ClearanceThreeSpheres) {
   EXPECT_TRUE(CompareMatrices(clearance.jacobians(), expected_jacobians, tol));
 }
 
+// Creates a robot sphere on a prismatic joint that slides toward a welded
+// environment sphere, and checks the RobotClearance query over a variety of
+// paddings and postures.
+//
+//    robot sphere (r=0.1)           environment sphere (r=0.2)
+//         ( )------- q ------->               (  )
+//        x=0                                  x=1
+//
+// The gap between the two surfaces is always (0.7 - q), so the padded distance
+// is always (0.7 - q - padding) and its gradient with respect to q is always
+// -1, no matter the padding or the posture.
+GTEST_TEST(SceneGraphCollisionCheckerTest, ClearancePaddingGradientSign) {
+  RobotDiagramBuilder<double> builder;
+  const std::string model_data = R"""(
+<?xml version='1.0'?>
+<sdf xmlns:drake='http://drake.mit.edu' version='1.9'>
+<world name='default'>
+  <model name='robot'>
+    <link name='ball'>
+      <collision name='ball_collision'>
+        <geometry><sphere><radius>0.1</radius></sphere></geometry>
+      </collision>
+    </link>
+    <joint name='ball_joint' type='prismatic'>
+      <parent>world</parent>
+      <child>ball</child>
+      <axis><xyz>1 0 0</xyz></axis>
+    </joint>
+  </model>
+  <model name='environment'>
+    <link name='post'>
+      <pose>1 0 0 0 0 0</pose>
+      <collision name='post_collision'>
+        <geometry><sphere><radius>0.2</radius></sphere></geometry>
+      </collision>
+    </link>
+    <joint name='post_joint' type='fixed'>
+      <parent>world</parent>
+      <child>post</child>
+    </joint>
+  </model>
+</world>
+</sdf>
+)""";
+  builder.parser().AddModelsFromString(model_data, "sdf");
+
+  const auto& plant = builder.plant();
+
+  CollisionCheckerParams params;
+  params.model = builder.Build();
+  params.robot_model_instances.push_back(plant.GetModelInstanceByName("robot"));
+  params.configuration_distance_function = [](const VectorXd& q1,
+                                              const VectorXd& q2) {
+    return (q1 - q2).norm();
+  };
+  params.edge_step_size = 0.05;
+  SceneGraphCollisionChecker dut(std::move(params));
+
+  const BodyIndex ball = plant.GetBodyByName("ball").index();
+  const BodyIndex post = plant.GetBodyByName("post").index();
+
+  // The distance between the sphere centers at q = 0, less the two radii.
+  const double gap_at_zero = 1.0 - 0.1 - 0.2;
+  const double tol = 1e-9;
+  const double influence = 99999999;
+
+  // Each case below is a (padding, q) pair. The last two are a regression test
+  // for #25016: when the padding moves the distance across zero (in either
+  // direction), the sign of the gradient was chosen from the padded distance
+  // rather than from the unpadded distance that the witness points came from,
+  // so the reported jacobian pointed the wrong way.
+  const std::vector<std::pair<double, double>> cases = {
+      // Cases where the padding does not change the sign of the distance.
+      {0.0, 0.68},    // No padding; the geometries are separated.
+      {0.0, 0.78},    // No padding; the geometries are penetrating.
+      {0.05, 0.0},    // Positive padding; still comfortably separated.
+      {0.05, 0.75},   // Positive padding; already penetrating.
+      {-0.05, 0.78},  // Negative padding; still penetrating.
+      // Cases where the padding moves the distance across zero.
+      {0.05, 0.68},   // Separated, but reported as a collision.
+      {-0.05, 0.72},  // Penetrating, but reported as clear.
+  };
+  for (const auto& [padding, q_value] : cases) {
+    SCOPED_TRACE(fmt::format("padding = {}, q = {}", padding, q_value));
+    dut.SetPaddingAllRobotEnvironmentPairs(padding);
+    const VectorXd q = VectorXd::Constant(1, q_value);
+    const RobotClearance clearance = dut.CalcRobotClearance(q, influence);
+    ASSERT_EQ(clearance.size(), 1);
+    EXPECT_EQ(clearance.num_positions(), 1);
+    EXPECT_THAT(clearance.robot_indices(), ElementsAre(ball));
+    EXPECT_THAT(clearance.other_indices(), ElementsAre(post));
+    EXPECT_THAT(clearance.collision_types(),
+                ElementsAre(RobotCollisionType::kEnvironmentCollision));
+    EXPECT_NEAR(clearance.distances()(0), gap_at_zero - q_value - padding, tol);
+    // Increasing q always moves the ball closer to the post, so the distance
+    // always decreases at a rate of 1.0, in every regime.
+    EXPECT_NEAR(clearance.jacobians()(0, 0), -1.0, tol);
+  }
+}
+
 // Checks RobotClearance when the robot is an arm (only) but inboard of the
 // arm we have a mobile chassis that is not part of a robot from the point
 // of view of CollisionChecker (e.g., we're only planning for the arm).
