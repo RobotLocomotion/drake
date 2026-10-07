@@ -385,7 +385,10 @@ install(
     ],
     hdrs = [":libdrake_headers"],
     hdr_dest = "include/drake",
-    allowed_externals = ["//:LICENSE.TXT"],  # Root for our #include paths.
+    allowed_externals = [
+        # Root for our #include paths.
+        "//:drake_shared_library",
+    ],
     visibility = ["//:__pkg__"],
     deps = [
         ":install_cmake_config",

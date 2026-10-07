@@ -438,6 +438,7 @@ drake_cc_library(
     name = "deprecation_example_class_documentation",
     testonly = True,
     hdrs = ["test/deprecation_example/example_class_documentation.h"],
+    declare_installed_headers = False,
     tags = ["nolint"],
 )
 
@@ -778,7 +779,7 @@ drake_py_unittest(
 drake_py_unittest(
     name = "yaml_typed_test",
     data = [
-        "//common/yaml:test/yaml_io_test_input_1.yaml",
+        "//common/yaml:yaml_io_test_input",
     ],
     deps = [
         ":common",

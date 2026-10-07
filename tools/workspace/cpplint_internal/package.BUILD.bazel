@@ -8,12 +8,13 @@ package(default_visibility = ["//visibility:public"])
 
 py_binary(
     name = "cpplint",
-    srcs = [
-        "cpplint.py",
-    ],
+    srcs = ["cpplint.py"],
     main = "cpplint.py",
     python_version = "PY3",
     srcs_version = "PY3",
 )
 
-exports_files(["drake_repository_metadata.json"])
+exports_files([
+    "cpplint.py",
+    "drake_repository_metadata.json",
+])

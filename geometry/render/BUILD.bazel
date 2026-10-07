@@ -148,6 +148,15 @@ genrule(
     visibility = ["//visibility:private"],
 )
 
+# This should be removed once render_vtk no longer uses PYRAMID_RESOURCES.
+exports_files(
+    glob(
+        ["test/meshes/fully_textured_pyramid*"],
+        allow_empty = False,
+    ),
+    visibility = ["//geometry/render_vtk:__pkg__"],
+)
+
 filegroup(
     name = "test_models",
     testonly = 1,
