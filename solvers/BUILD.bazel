@@ -71,7 +71,6 @@ drake_cc_package_library(
         ":create_constraint",
         ":create_cost",
         ":csdp_solver",
-        ":daqp_solver",
         ":decision_variable",
         ":equality_constrained_qp_solver",
         ":evaluator_base",
@@ -177,7 +176,6 @@ drake_cc_library(
         ":clarabel_solver",
         ":clp_solver",
         ":csdp_solver",
-        ":daqp_solver",
         ":equality_constrained_qp_solver",
         ":get_program_type",
         ":gurobi_solver",
@@ -637,7 +635,6 @@ drake_cc_library(
         ":clarabel_solver",
         ":clp_solver",
         ":csdp_solver",
-        ":daqp_solver",
         ":gurobi_solver",
         ":ipopt_solver",
         ":mathematical_program",
@@ -1054,27 +1051,6 @@ drake_cc_variant_library(
 )
 
 drake_cc_variant_library(
-    name = "daqp_solver",
-    opt_in_condition = "//tools/workspace/daqp_internal:enabled",
-    srcs_always = ["daqp_solver_common.cc"],
-    srcs_enabled = ["daqp_solver.cc"],
-    srcs_disabled = ["no_daqp.cc"],
-    hdrs = ["daqp_solver.h"],
-    deps = [
-        ":solver_base",
-    ],
-    implementation_deps_always = [
-        ":aggregate_costs_constraints",
-        ":mathematical_program",
-    ],
-    implementation_deps_enabled = [
-        ":mathematical_program_result",
-        ":specific_options",
-        "@daqp_internal//:daqp",
-    ],
-)
-
-drake_cc_variant_library(
     name = "clarabel_solver",
     opt_in_condition = "//tools/workspace/clarabel_cpp_internal:enabled",
     srcs_always = ["clarabel_solver_common.cc"],
@@ -1439,18 +1415,6 @@ drake_cc_googletest(
         ":second_order_cone_program_examples",
         ":semidefinite_program_examples",
         ":sos_examples",
-        "//common/test_utilities:eigen_matrix_compare",
-        "//common/test_utilities:expect_throws_message",
-    ],
-)
-
-drake_cc_googletest(
-    name = "daqp_solver_test",
-    deps = [
-        ":choose_best_solver",
-        ":daqp_solver",
-        ":mathematical_program",
-        ":quadratic_program_examples",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
     ],

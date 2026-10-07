@@ -152,7 +152,6 @@ all of their maintainers, whose work is essential to Drake's success:
   * [clarabel](https://github.com/oxfordcontrol/Clarabel.cpp)
   * [clp](https://github.com/coin-or/clp)
   * [csdp](https://github.com/coin-or/csdp)
-  * [daqp](https://github.com/darnstrom/daqp)
   * [ipopt](https://github.com/coin-or/ipopt)
   * [lapack](https://github.com/Reference-LAPACK/lapack)
   * [metis](https://github.com/KarypisLab/METIS)

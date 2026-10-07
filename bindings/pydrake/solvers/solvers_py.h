@@ -27,9 +27,6 @@ void DefineSolversClp(py::module_ m);
 /* Defines the CSDP bindings. See solvers_py_csdp.cc. */
 void DefineSolversCsdp(py::module_ m);
 
-/* Defines the DAQP bindings. See solvers_py_daqp.cc. */
-void DefineSolversDaqp(py::module_ m);
-
 /* Defines the evaluators. See solvers_py_evaluator.cc. */
 void DefineSolversEvaluators(py::module_ m);
 

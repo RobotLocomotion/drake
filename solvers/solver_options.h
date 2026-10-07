@@ -58,10 +58,6 @@ https://oxfordcontrol.github.io/ClarabelDocs/stable/api_settings/
 Note that `direct_solve_method` is not supported in Drake yet. Clarabel's
 boolean options should be passed as integers (0 or 1).
 
-"DAQP" -- Parameter name and values as specified in the struct DAQPSettings
-https://darnstrom.github.io/daqp/parameters/ (see DaqpSolver for the supported
-subset).
-
 "CSDP" -- Parameter name and values as specified at
 https://manpages.ubuntu.com/manpages/focal/en/man1/csdp-randgraph.1.html */
 struct SolverOptions final {

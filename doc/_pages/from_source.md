@@ -181,8 +181,6 @@ Adjusting open-source dependencies:
   See `ClpSolver::available()` to retrieve this setting at runtime.
 * `WITH_CSDP` (default `ON`). When `ON`, enables the `CsdpSolver` in the build.
   See `CsdpSolver::available()` to retrieve this setting at runtime.
-* `WITH_DAQP` (default `ON`). When `ON`, enables the `DaqpSolver` in the build.
-  See `DaqpSolver::available()` to retrieve this setting at runtime.
 * `WITH_IPOPT` (default `ON`). When `ON`, enables the `IpoptSolver` in the build.
   See `IpoptSolver::available()` to retrieve this setting at runtime.
 * `WITH_NLOPT` (default `ON`). When `ON`, enables the `NloptSolver` in the build.
