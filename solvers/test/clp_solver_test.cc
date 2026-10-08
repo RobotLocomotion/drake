@@ -25,70 +25,56 @@ INSTANTIATE_TEST_SUITE_P(
 
 TEST_F(InfeasibleLinearProgramTest0, TestInfeasible) {
   ClpSolver solver;
-  if (solver.available()) {
-    auto result = solver.Solve(*prog_, {}, {});
-    auto& details = result.get_solver_details<ClpSolver>();
-    if (details.clp_version == "1.17.8") {
-      // This version of CLP is buggy and reports the wrong answer.
-      return;
-    }
-    EXPECT_EQ(result.get_solution_result(),
-              SolutionResult::kInfeasibleConstraints);
-    EXPECT_TRUE(std::isinf(result.get_optimal_cost()));
-    EXPECT_GT(result.get_optimal_cost(), 0.);
-    // This code is defined in ClpModel::status()
-    const int CLP_INFEASIBLE = 1;
-    EXPECT_EQ(details.status, CLP_INFEASIBLE);
+  auto result = solver.Solve(*prog_, {}, {});
+  auto& details = result.get_solver_details<ClpSolver>();
+  if (details.clp_version == "1.17.8") {
+    // This version of CLP is buggy and reports the wrong answer.
+    return;
   }
+  EXPECT_EQ(result.get_solution_result(),
+            SolutionResult::kInfeasibleConstraints);
+  EXPECT_TRUE(std::isinf(result.get_optimal_cost()));
+  EXPECT_GT(result.get_optimal_cost(), 0.);
+  // This code is defined in ClpModel::status()
+  const int CLP_INFEASIBLE = 1;
+  EXPECT_EQ(details.status, CLP_INFEASIBLE);
 }
 
 TEST_F(UnboundedLinearProgramTest0, TestUnbounded) {
   ClpSolver solver;
-  if (solver.available()) {
-    auto result = solver.Solve(*prog_, {}, {});
-    EXPECT_FALSE(result.is_success());
-    EXPECT_EQ(result.get_solution_result(), SolutionResult::kUnbounded);
-    EXPECT_TRUE(std::isinf(result.get_optimal_cost()));
-    EXPECT_LT(result.get_optimal_cost(), 0.);
-    // This code is defined in ClpModel::status()
-    const int CLP_UNBOUNDED = 2;
-    EXPECT_EQ(result.get_solver_details<ClpSolver>().status, CLP_UNBOUNDED);
-  }
+  auto result = solver.Solve(*prog_, {}, {});
+  EXPECT_FALSE(result.is_success());
+  EXPECT_EQ(result.get_solution_result(), SolutionResult::kUnbounded);
+  EXPECT_TRUE(std::isinf(result.get_optimal_cost()));
+  EXPECT_LT(result.get_optimal_cost(), 0.);
+  // This code is defined in ClpModel::status()
+  const int CLP_UNBOUNDED = 2;
+  EXPECT_EQ(result.get_solver_details<ClpSolver>().status, CLP_UNBOUNDED);
 }
 
 TEST_F(DuplicatedVariableLinearProgramTest1, Test) {
   ClpSolver solver;
-  if (solver.available()) {
-    CheckSolution(solver);
-  }
+  CheckSolution(solver);
 }
 
 GTEST_TEST(TestDual, DualSolution1) {
   ClpSolver solver;
-  if (solver.available()) {
-    TestLPDualSolution1(solver);
-  }
+  TestLPDualSolution1(solver);
 }
 
 GTEST_TEST(TestDual, DualSolution2) {
   ClpSolver solver;
-  if (solver.available()) {
-    TestLPDualSolution2(solver);
-  }
+  TestLPDualSolution2(solver);
 }
 
 GTEST_TEST(TestDual, DualSolution3) {
   ClpSolver solver;
-  if (solver.available()) {
-    TestLPDualSolution3(solver);
-  }
+  TestLPDualSolution3(solver);
 }
 
 GTEST_TEST(TestDual, DualSolution4) {
   ClpSolver solver;
-  if (solver.available()) {
-    TestLPDualSolution4(solver);
-  }
+  TestLPDualSolution4(solver);
 }
 
 GTEST_TEST(TestDual, DualSolution5) {
@@ -102,7 +88,7 @@ GTEST_TEST(QPtest, TestUnconstrainedQP) {
   prog.AddQuadraticCost(x(0) * x(0));
 
   ClpSolver solver;
-  if (solver.available()) {
+  {
     auto result = solver.Solve(prog, {}, {});
     EXPECT_TRUE(result.is_success());
     const double tol = 1E-10;
@@ -113,7 +99,7 @@ GTEST_TEST(QPtest, TestUnconstrainedQP) {
 
   // Add additional quadratic costs
   prog.AddQuadraticCost((x(1) + x(2) - 2) * (x(1) + x(2) - 2));
-  if (solver.available()) {
+  {
     auto result = solver.Solve(prog, {}, {});
     EXPECT_TRUE(result.is_success());
     const double tol = 1E-10;
@@ -126,7 +112,7 @@ GTEST_TEST(QPtest, TestUnconstrainedQP) {
   // Add linear costs.
   prog.AddLinearCost(4 * x(0) + 5);
   // Now the cost is (x₀ + 2)² + (x₁ + x₂ - 2)² + 1
-  if (solver.available()) {
+  {
     auto result = solver.Solve(prog, {}, {});
     EXPECT_TRUE(result.is_success());
     const double tol = 1E-10;
@@ -150,16 +136,12 @@ INSTANTIATE_TEST_SUITE_P(
 
 GTEST_TEST(QPtest, TestUnitBallExample) {
   ClpSolver solver;
-  if (solver.available()) {
-    TestQPonUnitBallExample(solver);
-  }
+  TestQPonUnitBallExample(solver);
 }
 
 GTEST_TEST(QPtest, TestQuadraticCostVariableOrder) {
   ClpSolver solver;
-  if (solver.available()) {
-    TestQuadraticCostVariableOrder(solver);
-  }
+  TestQuadraticCostVariableOrder(solver);
 }
 
 // Regression test for #22985: a quadratic cost whose variables are ordered
@@ -200,24 +182,20 @@ GTEST_TEST(QPtest, TestInfeasible) {
 
   ClpSolver solver;
   // The program is infeasible.
-  if (solver.available()) {
-    auto result = solver.Solve(prog, {}, {});
-    EXPECT_EQ(result.get_solution_result(),
-              SolutionResult::kInfeasibleConstraints);
-    EXPECT_EQ(result.get_optimal_cost(),
-              MathematicalProgram::kGlobalInfeasibleCost);
-    EXPECT_EQ(result.get_solver_details<ClpSolver>().status, 1);
-  }
+  auto result = solver.Solve(prog, {}, {});
+  EXPECT_EQ(result.get_solution_result(),
+            SolutionResult::kInfeasibleConstraints);
+  EXPECT_EQ(result.get_optimal_cost(),
+            MathematicalProgram::kGlobalInfeasibleCost);
+  EXPECT_EQ(result.get_solver_details<ClpSolver>().status, 1);
 }
 
 GTEST_TEST(ClpSolverTest, Version) {
   ClpSolver solver;
   MathematicalProgram prog;
   MathematicalProgramResult result = solver.Solve(prog);
-  if (solver.available()) {
-    auto& details = result.get_solver_details<ClpSolver>();
-    EXPECT_NE(details.clp_version, "");
-  }
+  auto& details = result.get_solver_details<ClpSolver>();
+  EXPECT_NE(details.clp_version, "");
 }
 
 GTEST_TEST(ClpSolverTest, DualSolution1) {
@@ -252,9 +230,7 @@ GTEST_TEST(ClpSolverTest, EqualityConstrainedQPDualSolution2) {
 
 GTEST_TEST(ClpSolverTest, TestNonconvexQP) {
   ClpSolver solver;
-  if (solver.available()) {
-    TestNonconvexQP(solver, true);
-  }
+  TestNonconvexQP(solver, true);
 }
 
 // This is a code coverage test, not a functional test.  If the code that
@@ -268,11 +244,9 @@ GTEST_TEST(ClpSolverTest, TestVerbosity) {
   options.SetOption(CommonSolverOption::kPrintToConsole, 1);
 
   ClpSolver solver;
-  if (solver.available()) {
-    // This will print stuff to the console, but we don't have any
-    // easy way to check that.
-    solver.Solve(prog, {}, options);
-  }
+  // This will print stuff to the console, but we don't have any
+  // easy way to check that.
+  solver.Solve(prog, {}, options);
 }
 GTEST_TEST(ClpSolverTest, TestNumericalScaling) {
   ClpSolver solver;
@@ -345,13 +319,15 @@ GTEST_TEST(ClpSolverTest, DenseQuadraticProgram) {
   ASSERT_TRUE(clp_result.is_success());
 
   ClarabelSolver clarabel_solver;
-  const auto clarabel_result = clarabel_solver.Solve(prog, {}, {});
-  ASSERT_TRUE(clarabel_result.is_success());
+  if (clarabel_solver.available()) {
+    const auto clarabel_result = clarabel_solver.Solve(prog, {}, {});
+    ASSERT_TRUE(clarabel_result.is_success());
 
-  EXPECT_NEAR(clp_result.get_optimal_cost(), clarabel_result.get_optimal_cost(),
-              1E-6);
-  EXPECT_TRUE(CompareMatrices(clp_result.GetSolution(x),
-                              clarabel_result.GetSolution(x), 1E-5));
+    EXPECT_NEAR(clp_result.get_optimal_cost(),
+                clarabel_result.get_optimal_cost(), 1E-6);
+    EXPECT_TRUE(CompareMatrices(clp_result.GetSolution(x),
+                                clarabel_result.GetSolution(x), 1E-5));
+  }
 }
 
 // A QP with bounds but no linear constraints, where some variables are free.

@@ -1367,6 +1367,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "clp_solver_test",
+    opt_in_condition = "//tools/workspace/clp_internal:enabled",
     deps = [
         ":clarabel_solver",
         ":clp_solver",
@@ -1408,6 +1409,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "csdp_solver_test",
+    opt_in_condition = "//tools/workspace/csdp_internal:enabled",
     deps = [
         ":csdp_solver",
         ":csdp_test_examples",
@@ -1547,33 +1549,22 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "ipopt_solver_internal_test",
-    copts = select({
-        "//tools/workspace/ipopt_internal:enabled": [
-            "-DDRAKE_IPOPT_SOLVER_INTERNAL_TEST_HAS_IPOPT=1",
-        ],
-        "//conditions:default": [],
-    }),
+    opt_in_condition = "//tools/workspace/ipopt_internal:enabled",
+    build_when_skipped = False,
     deps = [
+        ":ipopt_solver_internal",
         ":mathematical_program",
         "//common/test_utilities:eigen_matrix_compare",
-    ] + select({
-        "//tools/workspace/ipopt_internal:enabled": [
-            ":ipopt_solver_internal",
-            "@ipopt_internal//:ipopt",
-        ],
-        "//conditions:default": [],
-    }),
+        "@ipopt_internal//:ipopt",
+    ],
 )
 
 drake_cc_googletest(
     name = "ipopt_solver_test",
-    copts = select({
-        "//tools/workspace/ipopt_internal:enabled": [
-            "-DDRAKE_IPOPT_SOLVER_TEST_HAS_IPOPT=1",
-        ],
-        "//conditions:default": [],
-    }),
+    opt_in_condition = "//tools/workspace/ipopt_internal:enabled",
+    build_when_skipped = False,
     deps = [
+        ":ipopt_solver",
         ":linear_program_examples",
         ":mathematical_program",
         ":mathematical_program_test_util",
@@ -1583,12 +1574,8 @@ drake_cc_googletest(
         "//common:temp_directory",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
-    ] + select({
-        "//tools/workspace/ipopt_internal:enabled": [
-            "@ipopt_internal//:ipopt",
-        ],
-        "//conditions:default": [],
-    }),
+        "@ipopt_internal//:ipopt",
+    ],
 )
 
 config_setting(
@@ -1714,6 +1701,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "nlopt_solver_test",
+    opt_in_condition = "//tools/workspace/nlopt_internal:enabled",
     deps = [
         ":linear_program_examples",
         ":mathematical_program",
@@ -1810,6 +1798,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "osqp_solver_test",
+    opt_in_condition = "//tools/workspace/osqp_internal:enabled",
     deps = [
         ":mathematical_program",
         ":mathematical_program_test_util",
@@ -1857,6 +1846,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "clarabel_solver_test",
+    opt_in_condition = "//tools/workspace/clarabel_cpp_internal:enabled",
     deps = [
         ":clarabel_solver",
         ":exponential_cone_program_examples",
@@ -1875,6 +1865,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "scs_solver_test",
+    opt_in_condition = "//tools/workspace/scs_internal:enabled",
     deps = [
         ":exponential_cone_program_examples",
         ":l2norm_cost_examples",
