@@ -48,7 +48,7 @@ drake_py_binary(
         ":sphinx_input.txt",
     ],
     # The pydrake API reference is generated using nanobind.
-    use_alt_binder = True,
+    use_nanobind = True,
     visibility = ["//doc:__pkg__"],
     deps = [
         ":pydrake_sphinx_extension_py",
