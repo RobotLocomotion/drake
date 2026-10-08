@@ -78,9 +78,18 @@ enumerate_filegroup(
     data = [":header_and_footer_images"],
 )
 
+genrule(
+    name = "generate_versions_yml",
+    srcs = ["//:.bazelversion"],
+    outs = ["_data/versions.yml"],
+    # Create a file that looks like "bazel: X.Y\n".
+    cmd = "echo -n 'bazel: ' > $@ && cat $(execpath //:.bazelversion) >> $@",
+)
+
 filegroup(
     name = "pages_input",
     srcs = [
+        ":_data/versions.yml",
         "_config.yml",
         "_release-notes/index.html",
         "images/drake-dragon.png",
