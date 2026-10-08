@@ -2,12 +2,16 @@
 
 #include <algorithm>
 #include <array>
+#include <cfenv>
+#include <cfloat>
 #include <cmath>
 #include <fstream>
+#include <iterator>
 #include <limits>
 #include <memory>
 #include <numeric>
 #include <string>
+#include <vector>
 
 #include <fmt/format.h>
 #include <fmt/ostream.h>
@@ -15,7 +19,6 @@
 #include <libqhullcpp/Qhull.h>
 #include <libqhullcpp/QhullVertexSet.h>
 
-#include "drake/common/is_approx_equal_abstol.h"
 #include "drake/common/overloaded.h"
 #include "drake/geometry/optimization/affine_subspace.h"
 #include "drake/geometry/read_obj.h"
@@ -93,6 +96,144 @@ MatrixXd GetConvexHullVertices(const PolygonSurfaceMesh<double>& hull) {
     vertices.col(vi) = hull.vertex(vi);
   }
   return vertices;
+}
+
+/* Upper bounds on a + b and a * b: a result rounded to nearest is less than
+its successor. */
+double AddUp(double a, double b) {
+  return std::nextafter(a + b, std::numeric_limits<double>::infinity());
+}
+
+double MulUp(double a, double b) {
+  return std::nextafter(a * b, std::numeric_limits<double>::infinity());
+}
+
+/* Upper bound on ‖A‖∞, i.e., the largest row sum, for nonnegative A. */
+double InfNormUp(const MatrixXd& A) {
+  const MatrixXd A_T = A.transpose();
+  double result = 0;
+  for (int i = 0; i < A_T.cols(); ++i) {
+    double sum = 0;
+    for (const double a : A_T.col(i)) {
+      sum = AddUp(sum, a);
+    }
+    result = std::max(result, sum);
+  }
+  return result;
+}
+
+/* Returns true if the arithmetic matches the model used by CertifyWeights:
+IEEE double precision, rounding to nearest, no excess precision, and gradual
+underflow (subnormals are neither flushed to zero nor read as zero). */
+bool HasIeeeArithmetic() {
+  volatile double tiny = std::numeric_limits<double>::min();
+  volatile double subnormal = std::numeric_limits<double>::denorm_min();
+  volatile double two = 2.0;
+  return std::numeric_limits<double>::is_iec559 && FLT_EVAL_METHOD == 0 &&
+         std::fegetround() == FE_TONEAREST && tiny / two != 0 &&
+         subnormal * two != 0;
+}
+
+/* Returns true if we can prove that x is exactly a convex combination of the
+columns of V with positive weights on the support of `alpha` (an approximate
+solution). Returning false is inconclusive. */
+bool CertifyWeights(const MatrixXd& V, const Eigen::Ref<const VectorXd>& x,
+                    const VectorXd& alpha) {
+  const int n = V.rows();
+  const Eigen::VectorXi indices =
+      Eigen::VectorXi::LinSpaced(alpha.size(), 0, alpha.size() - 1);
+  std::vector<int> support;
+  std::copy_if(indices.begin(), indices.end(), std::back_inserter(support),
+               [&alpha](int i) {
+                 return alpha[i] > 0;
+               });
+  const int k = support.size();
+  if (k < n + 1 || !HasIeeeArithmetic()) {
+    return false;
+  }
+
+  // Write V α = x, ∑ α = 1 on the support as M α = c, scaling the last row to
+  // match V. These entries are exact.
+  const double s = std::max(1.0, V.cwiseAbs().maxCoeff());
+  MatrixXd M(n + 1, k);
+  M << V(eigen_all, support), RowVectorXd::Constant(k, s);
+  VectorXd c(n + 1);
+  c << x, s;
+
+  // Refine α with an approximate right inverse R of M, so the residual is
+  // limited by rounding error rather than by the solver tolerance.
+  const MatrixXd R = M.completeOrthogonalDecomposition().pseudoInverse();
+  VectorXd w = alpha(support);
+  for (int i = 0; i < 2; ++i) {
+    w += R * (c - M * w);
+  }
+  MatrixXd W(k, n + 2);
+  W << w, R;
+  if (!W.allFinite()) {
+    return false;
+  }
+
+  // Bound Y = [c, I] - M W = [c - M w, I - M R] entrywise, allowing for
+  // underflow (Higham, Accuracy and Stability of Numerical Algorithms, 2nd ed.,
+  // (2.8) pp. 56-57 and (3.4) p. 63).
+  const double gamma = (k + 1) * std::ldexp(1.0, -52);
+  const double eta = (k + 1) * std::numeric_limits<double>::denorm_min();
+  MatrixXd C(n + 1, n + 2);
+  C << c, MatrixXd::Identity(n + 1, n + 1);
+  const MatrixXd Y = C - M * W;
+  const MatrixXd MW = (M.cwiseAbs() * W.cwiseAbs()).unaryExpr([&](double p) {
+    return MulUp(AddUp(p, eta), 1 + gamma);
+  });
+  const MatrixXd Y_bound =
+      MatrixXd::NullaryExpr(n + 1, n + 2, [&](Eigen::Index i, Eigen::Index j) {
+        return AddUp(AddUp(std::abs(Y(i, j)),
+                           MulUp(gamma, AddUp(std::abs(C(i, j)), MW(i, j)))),
+                     eta);
+      });
+  if (!Y_bound.allFinite()) {
+    return false;
+  }
+
+  // If ‖I - M R‖∞ ≤ 1/2, then δ = R (M R)⁻¹ (c - M w) solves M δ = c - M w
+  // with ‖δ‖∞ ≤ 2 ‖R‖∞ ‖c - M w‖∞ (Golub & Van Loan, Matrix Computations, 4th
+  // ed., Lemma 2.3.3), so w + δ is an exact positive solution if that bound is
+  // less than min(w).
+  const double rho = Y_bound.col(0).maxCoeff();
+  const double g = InfNormUp(Y_bound.rightCols(n + 1));
+  const double r = InfNormUp(R.cwiseAbs());
+  return g <= 0.5 && MulUp(MulUp(2, r), rho) < w.minCoeff();
+}
+
+/* Returns true if we can prove that x is in the convex hull of the columns of
+V, given approximate weights `alpha` from an LP. Returning false is
+inconclusive. */
+bool CertifyPointInConvexHull(const MatrixXd& V,
+                              const Eigen::Ref<const VectorXd>& x,
+                              const VectorXd& alpha) {
+  // A basic LP solution usually picks out a simplex that contains x.
+  if (CertifyWeights(V, x, alpha)) {
+    return true;
+  }
+
+  // Otherwise, look for weights bounded away from zero. With α = β + t,
+  // max t s.t. V (β + t) = x, ∑ (β + t) = 1, β ≥ 0, t ≥ 0.
+  const int n = V.rows();
+  const int m = V.cols();
+  MatrixXd A(n + 1, m + 1);
+  A << V, V.rowwise().sum(), RowVectorXd::Ones(m), static_cast<double>(m);
+  VectorXd b(n + 1);
+  b << x, 1;
+  MathematicalProgram prog;
+  VectorXDecisionVariable beta_t = prog.NewContinuousVariables(m + 1, "beta");
+  prog.AddLinearCost(Vector1d(-1.0), beta_t.tail<1>());
+  prog.AddLinearEqualityConstraint(A, b, beta_t);
+  prog.AddBoundingBoxConstraint(0, 1.0, beta_t);
+  const auto result = solvers::Solve(prog);
+  if (!result.is_success()) {
+    return false;
+  }
+  const VectorXd sol = result.GetSolution(beta_t);
+  return CertifyWeights(V, x, (sol.head(m).array() + sol(m)).matrix());
 }
 
 }  // namespace
@@ -527,7 +668,7 @@ std::optional<VectorXd> VPolytope::DoMaybeGetFeasiblePoint() const {
 
 bool VPolytope::DoPointInSet(const Eigen::Ref<const VectorXd>& x,
                              double tol) const {
-  if (vertices_.cols() == 0) {
+  if (vertices_.cols() == 0 || !x.allFinite()) {
     return false;
   }
 
@@ -547,6 +688,12 @@ bool VPolytope::DoPointInSet(const Eigen::Ref<const VectorXd>& x,
   // vertex mean.
   if ((vals.array() < -tol).all() && (x - vertex_mean).norm() > 1e-13) {
     return false;
+  }
+
+  // x is within tol of a vertex.
+  if (((vertices_.colwise() - x).cwiseAbs().colwise().maxCoeff().array() <= tol)
+          .any()) {
+    return true;
   }
 
   const int n = ambient_dimension();
@@ -578,7 +725,16 @@ bool VPolytope::DoPointInSet(const Eigen::Ref<const VectorXd>& x,
   // Note: The max(alpha, 0) and normalization were required for Gurobi.
   const VectorXd alpha_sol = result.GetSolution(alpha).cwiseMax(0);
   const VectorXd x_sol = vertices_ * alpha_sol / (alpha_sol.sum());
-  return is_approx_equal_abstol(x, x_sol, tol);
+  const double residual = (x - x_sol).lpNorm<Eigen::Infinity>();
+  if (tol > 0 && residual <= tol) {
+    return true;
+  }
+  // The solver may be less accurate than tol; if x looks like it's in the set,
+  // try to prove it exactly.
+  const double solver_tol =
+      1e-6 * std::max(1.0, vertices_.cwiseAbs().maxCoeff());
+  return tol >= 0 && residual <= solver_tol &&
+         CertifyPointInConvexHull(vertices_, x, alpha_sol);
 }
 
 std::pair<VectorX<Variable>, std::vector<Binding<Constraint>>>
