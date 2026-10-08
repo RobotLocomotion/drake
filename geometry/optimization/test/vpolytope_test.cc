@@ -1,5 +1,6 @@
 #include "drake/geometry/optimization/vpolytope.h"
 
+#include <cmath>
 #include <limits>
 #include <memory>
 #include <string>
@@ -56,11 +57,8 @@ GTEST_TEST(VPolytopeTest, TriangleTest) {
   EXPECT_FALSE(V.IsEmpty());
 
   const Eigen::Vector2d center = triangle.rowwise().mean();
-  // Mosek worked with 1e-15.
-  // Gurobi worked with 1e-15 (see the note about alpha_sol in the method).
-  // CLP needed 1e-11.
+  EXPECT_TRUE(V.PointInSet(center));
   const double kTol = 1e-11;
-  EXPECT_TRUE(V.PointInSet(center, kTol));
   for (int i = 0; i < 3; ++i) {
     const Eigen::Vector2d v = triangle.col(i);
     const Eigen::Vector2d at_tol =
@@ -68,14 +66,14 @@ GTEST_TEST(VPolytopeTest, TriangleTest) {
     EXPECT_TRUE(CompareMatrices(v, at_tol, 2.0 * kTol));
     EXPECT_FALSE(CompareMatrices(v, at_tol, .5 * kTol));
 
-    EXPECT_TRUE(V.PointInSet(v, kTol));
+    EXPECT_TRUE(V.PointInSet(v));
     EXPECT_TRUE(V.PointInSet(at_tol, 2.0 * kTol));
     EXPECT_FALSE(V.PointInSet(at_tol, 0.5 * kTol));
   }
 
   // Test MaybeGetFeasiblePoint.
   ASSERT_TRUE(V.MaybeGetFeasiblePoint().has_value());
-  EXPECT_TRUE(V.PointInSet(V.MaybeGetFeasiblePoint().value(), kTol));
+  EXPECT_TRUE(V.PointInSet(V.MaybeGetFeasiblePoint().value()));
 }
 
 GTEST_TEST(VPolytopeTest, SinglePoint) {
@@ -130,14 +128,12 @@ GTEST_TEST(VPolytopeTest, UnitBoxTest) {
       out_W{1.1, 1.2, 0.4};
 
   // Test PointInSet.
-  // Mosek worked with 1e-14; CLP needed 1e-11.
-  const double kTol = 1e-11;
-  EXPECT_TRUE(V.PointInSet(in1_W, kTol));
-  EXPECT_TRUE(V.PointInSet(in2_W, kTol));
-  EXPECT_FALSE(V.PointInSet(out_W, kTol));
+  EXPECT_TRUE(V.PointInSet(in1_W));
+  EXPECT_TRUE(V.PointInSet(in2_W));
+  EXPECT_FALSE(V.PointInSet(out_W));
 
   ASSERT_TRUE(V.MaybeGetFeasiblePoint().has_value());
-  EXPECT_TRUE(V.PointInSet(V.MaybeGetFeasiblePoint().value(), kTol));
+  EXPECT_TRUE(V.PointInSet(V.MaybeGetFeasiblePoint().value()));
 
   // Test AddPointInSetConstraints.
   EXPECT_TRUE(CheckAddPointInSetConstraints(V, in1_W));
@@ -157,7 +153,10 @@ GTEST_TEST(VPolytopeTest, UnitBoxTest) {
     EXPECT_TRUE(result.is_success());
     const auto new_vars_val = result.GetSolution(new_vars);
     const Eigen::Vector3d x_val = result.GetSolution(x);
-    EXPECT_TRUE(CompareMatrices(x_val, V.vertices() * new_vars_val, kTol));
+    // The solver only satisfies x = V α to within its own tolerance.
+    const double kSolverTol = 1e-11;
+    EXPECT_TRUE(
+        CompareMatrices(x_val, V.vertices() * new_vars_val, kSolverTol));
   }
 
   // Test SceneGraph constructor.
@@ -166,9 +165,9 @@ GTEST_TEST(VPolytopeTest, UnitBoxTest) {
 
   VPolytope V_scene_graph(query, geom_id);
   EXPECT_EQ(V.ambient_dimension(), 3);
-  EXPECT_TRUE(V.PointInSet(in1_W, kTol));
-  EXPECT_TRUE(V.PointInSet(in2_W, kTol));
-  EXPECT_FALSE(V.PointInSet(out_W, kTol));
+  EXPECT_TRUE(V.PointInSet(in1_W));
+  EXPECT_TRUE(V.PointInSet(in2_W));
+  EXPECT_FALSE(V.PointInSet(out_W));
 }
 
 // Tests correct handling of the edge case for the "fail fast heuristic" in
@@ -178,8 +177,77 @@ GTEST_TEST(VPolytopeTest, UnitBoxTest) {
 GTEST_TEST(VPolytopeTest, PointInSetFailFastEdgeCase) {
   VPolytope V = VPolytope::MakeUnitBox(3);
   Eigen::VectorXd vertex_mean = V.vertices().rowwise().mean();
-  const double kTol = 1e-11;
-  EXPECT_TRUE(V.PointInSet(vertex_mean, kTol));
+  EXPECT_TRUE(V.PointInSet(vertex_mean));
+}
+
+// With tol = 0, PointInSet proves exact membership, so it accepts interior
+// points very close to the boundary and rejects points outside by one ulp.
+GTEST_TEST(VPolytopeTest, PointInSetZeroTolerance) {
+  for (int dim : {2, 3, 6}) {
+    const VPolytope V = VPolytope::MakeUnitBox(dim);
+    // A point inside, but very close to, the face x₀ = 1.
+    const double kDepth = 1e-10;
+    Eigen::VectorXd x = Eigen::VectorXd::Constant(dim, 0.3);
+    x[0] = 1 - kDepth;
+    EXPECT_TRUE(V.PointInSet(x));
+    x[0] = std::nextafter(1.0, 2.0);
+    EXPECT_FALSE(V.PointInSet(x));
+  }
+}
+
+GTEST_TEST(VPolytopeTest, PointInSetNonFinite) {
+  const VPolytope V = VPolytope::MakeUnitBox(2);
+  const double nan = std::numeric_limits<double>::quiet_NaN();
+  const double inf = std::numeric_limits<double>::infinity();
+  EXPECT_FALSE(V.PointInSet(Vector2d(1, nan)));
+  // Even a generous tolerance doesn't admit a NaN.
+  const double kTol = 0.1;
+  EXPECT_FALSE(V.PointInSet(Vector2d(nan, 0), kTol));
+  EXPECT_FALSE(V.PointInSet(Vector2d(inf, 0)));
+}
+
+GTEST_TEST(VPolytopeTest, PointInSetNegativeTolerance) {
+  const VPolytope V = VPolytope::MakeUnitBox(2);
+  // A negative tolerance is never satisfied, even by an interior point or a
+  // vertex.
+  const double kTol = -1e-9;
+  EXPECT_FALSE(V.PointInSet(Vector2d(0.1, 0.2), kTol));
+  EXPECT_FALSE(V.PointInSet(Vector2d(1, 1), kTol));
+}
+
+// With tol = 0, points outside by the smallest representable amount are never
+// reported to be in the set. Points exactly on the boundary that are not
+// vertices can't be proven to be in the set, so they aren't either.
+GTEST_TEST(VPolytopeTest, PointInSetZeroToleranceBoundary) {
+  Eigen::Matrix<double, 2, 3> triangle;
+  // clang-format off
+  triangle << 0, 1, 0,
+              0, 0, 1;
+  // clang-format on
+  const VPolytope V(triangle);
+  for (int i = 1; i < 20; ++i) {
+    const double a = i / 20.0;
+    // Two representable doubles above the rounded 1 - a, so a + b > 1.
+    const double b = std::nextafter(std::nextafter(1 - a, 2.0), 2.0);
+    EXPECT_FALSE(V.PointInSet(Vector2d(a, b)));
+  }
+  EXPECT_FALSE(V.PointInSet(Vector2d(0.5, 0.5)));
+  // The same boundary point is accepted with any tolerance above the solver's
+  // error.
+  const double kTol = 1e-12;
+  EXPECT_TRUE(V.PointInSet(Vector2d(0.5, 0.5), kTol));
+}
+
+// The triangle conv{e₁, e₂, e₃} lies in the plane ∑ xᵢ = 1. In exact
+// arithmetic, the coordinates of (0.1, 0.2, 0.7) sum to 1 - 2⁻⁵⁵, so this point
+// is not in the set, though it is within any small tolerance of it.
+GTEST_TEST(VPolytopeTest, PointInSetNotFullDimensional) {
+  const VPolytope V(Eigen::Matrix3d::Identity());
+  const Vector3d x(0.1, 0.2, 0.7);
+  EXPECT_FALSE(V.PointInSet(x));
+  // x is within 2⁻⁵⁵ of the set, so a small tolerance accepts it.
+  const double kTol = 1e-9;
+  EXPECT_TRUE(V.PointInSet(x, kTol));
 }
 
 GTEST_TEST(VPolytopeTest, ArbitraryBoxTest) {
@@ -199,13 +267,12 @@ GTEST_TEST(VPolytopeTest, ArbitraryBoxTest) {
   EXPECT_LE(query.ComputeSignedDistanceToPoint(in2_W)[0].distance, 0.0);
   EXPECT_GE(query.ComputeSignedDistanceToPoint(out_W)[0].distance, 0.0);
 
-  const double kTol = 1e-11;
-  EXPECT_TRUE(V.PointInSet(in1_W, kTol));
-  EXPECT_TRUE(V.PointInSet(in2_W, kTol));
-  EXPECT_FALSE(V.PointInSet(out_W, kTol));
+  EXPECT_TRUE(V.PointInSet(in1_W));
+  EXPECT_TRUE(V.PointInSet(in2_W));
+  EXPECT_FALSE(V.PointInSet(out_W));
 
   ASSERT_TRUE(V.MaybeGetFeasiblePoint().has_value());
-  EXPECT_TRUE(V.PointInSet(V.MaybeGetFeasiblePoint().value(), kTol));
+  EXPECT_TRUE(V.PointInSet(V.MaybeGetFeasiblePoint().value()));
 
   EXPECT_TRUE(CheckAddPointInSetConstraints(V, in1_W));
   EXPECT_TRUE(CheckAddPointInSetConstraints(V, in2_W));
@@ -225,12 +292,12 @@ GTEST_TEST(VPolytopeTest, ArbitraryBoxTest) {
   VPolytope V_F(query2, geom_id, frame_id);
 
   const RigidTransformd X_FW = X_WF.inverse();
-  EXPECT_TRUE(V_F.PointInSet(X_FW * in1_W, kTol));
-  EXPECT_TRUE(V_F.PointInSet(X_FW * in2_W, kTol));
-  EXPECT_FALSE(V_F.PointInSet(X_FW * out_W, kTol));
+  EXPECT_TRUE(V_F.PointInSet(X_FW * in1_W));
+  EXPECT_TRUE(V_F.PointInSet(X_FW * in2_W));
+  EXPECT_FALSE(V_F.PointInSet(X_FW * out_W));
 
   ASSERT_TRUE(V_F.MaybeGetFeasiblePoint().has_value());
-  EXPECT_TRUE(V_F.PointInSet(V_F.MaybeGetFeasiblePoint().value(), kTol));
+  EXPECT_TRUE(V_F.PointInSet(V_F.MaybeGetFeasiblePoint().value()));
 }
 
 // Check if the set of vertices equals to the set of vertices_expected.
@@ -330,11 +397,10 @@ GTEST_TEST(VPolytopeTest, UnitBox6DTest) {
   Vector6d in1_W{Vector6d::Constant(-.99)}, in2_W{Vector6d::Constant(.99)},
       out1_W{Vector6d::Constant(-1.01)}, out2_W{Vector6d::Constant(1.01)};
 
-  const double kTol = 1e-11;
-  EXPECT_TRUE(V.PointInSet(in1_W, kTol));
-  EXPECT_TRUE(V.PointInSet(in2_W, kTol));
-  EXPECT_FALSE(V.PointInSet(out1_W, kTol));
-  EXPECT_FALSE(V.PointInSet(out2_W, kTol));
+  EXPECT_TRUE(V.PointInSet(in1_W));
+  EXPECT_TRUE(V.PointInSet(in2_W));
+  EXPECT_FALSE(V.PointInSet(out1_W));
+  EXPECT_FALSE(V.PointInSet(out2_W));
 }
 
 GTEST_TEST(VPolytopeTest, FromHUnitBoxTest) {
@@ -350,12 +416,11 @@ GTEST_TEST(VPolytopeTest, FromHUnitBoxTest) {
   Vector6d out3_W;
   out3_W << .99, 1.01, .99, 1.01, .99, 1.01;
 
-  const double kTol = 1e-9;
-  EXPECT_TRUE(V.PointInSet(in1_W, kTol));
-  EXPECT_TRUE(V.PointInSet(in2_W, kTol));
-  EXPECT_FALSE(V.PointInSet(out1_W, kTol));
-  EXPECT_FALSE(V.PointInSet(out2_W, kTol));
-  EXPECT_FALSE(V.PointInSet(out3_W, kTol));
+  EXPECT_TRUE(V.PointInSet(in1_W));
+  EXPECT_TRUE(V.PointInSet(in2_W));
+  EXPECT_FALSE(V.PointInSet(out1_W));
+  EXPECT_FALSE(V.PointInSet(out2_W));
+  EXPECT_FALSE(V.PointInSet(out3_W));
 }
 
 GTEST_TEST(VPolytopeTest, From2DHPolytopeTest) {
@@ -536,9 +601,8 @@ GTEST_TEST(VPolytopeTest, ConstructorFromHPolyhedronQHullProblems) {
   EXPECT_FALSE(vpoly1.PointInSet(Eigen::Vector3d(0, 0, 1)));
   EXPECT_FALSE(vpoly1.PointInSet(Eigen::Vector3d(0, 0, -1)));
 
-  // Due to poor numerics, a surprisingly loose tolerance is needed for
-  // PointInSet queries with VPolytope. This bug is tracked in Github issue
-  // #17197.
+  // These VPolytopes are not full-dimensional, and their vertices are only
+  // computed to within the solver tolerance, so PointInSet needs a tolerance.
   const double vpolyTol = 1e-8;
 
   // One-dimensional case (line segment).
@@ -792,7 +856,7 @@ GTEST_TEST(VPolytopeTest, GetMinimalRepresentationTest) {
     EXPECT_EQ(vpoly.vertices().cols(), 4);
     EXPECT_NEAR(vpoly.CalcVolume(), l * l, tol);
     ASSERT_TRUE(vpoly.MaybeGetFeasiblePoint().has_value());
-    EXPECT_TRUE(vpoly.PointInSet(vpoly.MaybeGetFeasiblePoint().value(), tol));
+    EXPECT_TRUE(vpoly.PointInSet(vpoly.MaybeGetFeasiblePoint().value()));
     // Calculate the length of the path that visits all the vertices
     // sequentially.
     // If the vertices are in clockwise/counter-clockwise order,
@@ -830,7 +894,7 @@ GTEST_TEST(VPolytopeTest, GetMinimalRepresentationTest) {
     EXPECT_EQ(vpoly.vertices().cols(), 8);
     EXPECT_NEAR(vpoly.CalcVolume(), l * l * l, tol);
     ASSERT_TRUE(vpoly.MaybeGetFeasiblePoint().has_value());
-    EXPECT_TRUE(vpoly.PointInSet(vpoly.MaybeGetFeasiblePoint().value(), tol));
+    EXPECT_TRUE(vpoly.PointInSet(vpoly.MaybeGetFeasiblePoint().value()));
 
     // Test PointInSet with points nearby the six faces.
     const double d = 10 * tol;
