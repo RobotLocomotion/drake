@@ -78,6 +78,14 @@ enumerate_filegroup(
     data = [":header_and_footer_images"],
 )
 
+genrule(
+    name = "generate_versions_yml",
+    srcs = ["//:.bazelversion"],
+    outs = ["_data/versions.yml"],
+    # Create a file that looks like "bazel: X.Y.Z\n".
+    cmd = "echo -n 'bazel: ' > $@ && cat $(execpath //:.bazelversion) >> $@",
+)
+
 filegroup(
     name = "pages_input",
     srcs = [
@@ -89,6 +97,7 @@ filegroup(
         "images/jenkins_bot_reviewable_comment.png",
         "index.md",
         "sample_vimrc",
+        ":_data/versions.yml",
     ] + glob([
         "_includes/*.html",
         "_includes/*.md",
