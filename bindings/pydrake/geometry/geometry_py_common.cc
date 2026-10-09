@@ -204,10 +204,27 @@ void DefineGeometryProperties(py::module_ m) {
             "GetProperty",
             [](const Class& self, const std::string& group_name,
                 const std::string& name) {
-              py::object abstract =
-                  py::cast(self.GetPropertyAbstract(group_name, name),
-                      py_rvp::reference);
-              return abstract.attr("get_value")();
+	      fmt::print("get {}.{} from {}\n", group_name, name, fmt::ptr(&self));
+	      fmt::print("to string {}\n", self.to_string());
+              auto& cpp_abstract = self.GetPropertyAbstract(group_name, name);
+	      std::string cpp_type = cpp_abstract.GetNiceTypeName();
+	      fmt::print("nice type name {}\n", cpp_type);
+	      std::string py_type;
+	      py::object result;
+	      int count{0};
+	      do {
+		py::object abstract = py::cast(cpp_abstract, py_rvp::reference);
+		fmt::print("py abstract type {}\n",
+			   py::cast<std::string>(getattr(abstract.type(),
+							 "__name__")));
+		result = abstract.attr("get_value")();
+		py_type = py::cast<std::string>(getattr(result.type(),
+							"__name__"));
+		fmt::print("result type {}\n", py_type);
+	      } while (count ++ < 1000 &&
+		       cpp_type == "double" &&
+		       py_type != "float");
+	      return result;
             },
             py::arg("group_name"), py::arg("name"), cls_doc.GetProperty.doc)
         .def(
