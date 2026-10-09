@@ -18,45 +18,42 @@ namespace test {
 TEST_F(UnboundedLinearProgramTest0, TestNlopt) {
   prog_->SetInitialGuessForAllVariables(Eigen::Vector2d::Zero());
   NloptSolver solver;
-  if (solver.available()) {
-    MathematicalProgramResult result;
-    solver.Solve(*prog_, {}, {}, &result);
-    EXPECT_FALSE(result.is_success());
-    EXPECT_EQ(result.get_optimal_cost(),
-              -std::numeric_limits<double>::infinity());
+  MathematicalProgramResult result;
+  solver.Solve(*prog_, {}, {}, &result);
+  EXPECT_FALSE(result.is_success());
+  EXPECT_EQ(result.get_optimal_cost(),
+            -std::numeric_limits<double>::infinity());
 
-    const int NLOPT_MAXEVAL_REACHED = 5;
-    SolverOptions solver_options1;
-    solver_options1.SetOption(solver.solver_id(), NloptSolver::MaxEvalName(),
-                              1);
-    solver.Solve(*prog_, {}, solver_options1, &result);
-    EXPECT_EQ(result.get_solver_details<NloptSolver>().status,
-              NLOPT_MAXEVAL_REACHED);
+  const int NLOPT_MAXEVAL_REACHED = 5;
+  SolverOptions solver_options1;
+  solver_options1.SetOption(solver.solver_id(), NloptSolver::MaxEvalName(), 1);
+  solver.Solve(*prog_, {}, solver_options1, &result);
+  EXPECT_EQ(result.get_solver_details<NloptSolver>().status,
+            NLOPT_MAXEVAL_REACHED);
 
-    const int NLOPT_MAXTIME_REACHED = 6;
-    SolverOptions solver_options2;
-    solver_options2.SetOption(solver.solver_id(), NloptSolver::MaxTimeName(),
-                              1e-10);
-    solver.Solve(*prog_, {}, solver_options2, &result);
-    EXPECT_EQ(result.get_solver_details<NloptSolver>().status,
-              NLOPT_MAXTIME_REACHED);
+  const int NLOPT_MAXTIME_REACHED = 6;
+  SolverOptions solver_options2;
+  solver_options2.SetOption(solver.solver_id(), NloptSolver::MaxTimeName(),
+                            1e-10);
+  solver.Solve(*prog_, {}, solver_options2, &result);
+  EXPECT_EQ(result.get_solver_details<NloptSolver>().status,
+            NLOPT_MAXTIME_REACHED);
 
-    // The cost is unbounded below, so any finite stopval is reached.
-    const int NLOPT_STOPVAL_REACHED = 2;
-    SolverOptions solver_options3;
-    solver_options3.SetOption(solver.solver_id(), NloptSolver::StopValName(),
-                              -100.0);
-    solver.Solve(*prog_, {}, solver_options3, &result);
-    EXPECT_EQ(result.get_solver_details<NloptSolver>().status,
-              NLOPT_STOPVAL_REACHED);
-    EXPECT_LE(result.get_optimal_cost(), -100.0);
-    // The point NLopt stopped at is feasible here, so the feasibility
-    // re-check leaves the result as a success.
-    EXPECT_TRUE(
-        prog_->CheckSatisfied(prog_->GetAllConstraints(), result.get_x_val()));
-    EXPECT_TRUE(result.is_success());
-    EXPECT_EQ(result.get_solution_result(), SolutionResult::kSolutionFound);
-  }
+  // The cost is unbounded below, so any finite stopval is reached.
+  const int NLOPT_STOPVAL_REACHED = 2;
+  SolverOptions solver_options3;
+  solver_options3.SetOption(solver.solver_id(), NloptSolver::StopValName(),
+                            -100.0);
+  solver.Solve(*prog_, {}, solver_options3, &result);
+  EXPECT_EQ(result.get_solver_details<NloptSolver>().status,
+            NLOPT_STOPVAL_REACHED);
+  EXPECT_LE(result.get_optimal_cost(), -100.0);
+  // The point NLopt stopped at is feasible here, so the feasibility
+  // re-check leaves the result as a success.
+  EXPECT_TRUE(
+      prog_->CheckSatisfied(prog_->GetAllConstraints(), result.get_x_val()));
+  EXPECT_TRUE(result.is_success());
+  EXPECT_EQ(result.get_solution_result(), SolutionResult::kSolutionFound);
 }
 
 // Regression test for issue #24960: a constraint row with vacuous bounds
@@ -73,11 +70,9 @@ GTEST_TEST(NloptSolverTest, VacuousConstraintRow) {
   prog.AddLinearConstraint(A, lb, ub, x);
   prog.SetInitialGuess(x, Eigen::Vector2d::Zero());
   NloptSolver solver;
-  if (solver.available()) {
-    const auto result = solver.Solve(prog);
-    EXPECT_TRUE(result.is_success());
-    EXPECT_NEAR(result.GetSolution(x)(0) + result.GetSolution(x)(1), 1.0, 1e-6);
-  }
+  const auto result = solver.Solve(prog);
+  EXPECT_TRUE(result.is_success());
+  EXPECT_NEAR(result.GetSolution(x)(0) + result.GetSolution(x)(1), 1.0, 1e-6);
 }
 
 // Constraint x >= 1 whose gradient is NaN for 0.4 < x < 0.6.
@@ -118,31 +113,23 @@ GTEST_TEST(NloptSolverTest, NanSolutionIsNotSuccess) {
   prog.AddQuadraticCost(pow(x(0) - 2.0, 2));
   prog.AddConstraint(std::make_shared<NanGradientConstraint>(), x);
   NloptSolver solver;
-  if (solver.available()) {
-    SolverOptions options;
-    options.SetOption(solver.id(), NloptSolver::AlgorithmName(),
-                      "LD_AUGLAG_EQ");
-    // Keeps the test fast; NLopt still stops on XTOL_REACHED at NaN.
-    options.SetOption(solver.id(), NloptSolver::MaxEvalName(), 10);
-    const auto result = solver.Solve(prog, Vector1d(0.5), options);
-    EXPECT_FALSE(result.is_success());
-    EXPECT_EQ(result.get_solution_result(),
-              SolutionResult::kSolverSpecificError);
-  }
+  SolverOptions options;
+  options.SetOption(solver.id(), NloptSolver::AlgorithmName(), "LD_AUGLAG_EQ");
+  // Keeps the test fast; NLopt still stops on XTOL_REACHED at NaN.
+  options.SetOption(solver.id(), NloptSolver::MaxEvalName(), 10);
+  const auto result = solver.Solve(prog, Vector1d(0.5), options);
+  EXPECT_FALSE(result.is_success());
+  EXPECT_EQ(result.get_solution_result(), SolutionResult::kSolverSpecificError);
 }
 
 GTEST_TEST(QPtest, TestUnitBallExample) {
   NloptSolver solver;
-  if (solver.available()) {
-    TestQPonUnitBallExample(solver);
-  }
+  TestQPonUnitBallExample(solver);
 }
 
 GTEST_TEST(NloptSolverTest, TestNonconvexQP) {
   NloptSolver solver;
-  if (solver.available()) {
-    TestNonconvexQP(solver, false);
-  }
+  TestNonconvexQP(solver, false);
 }
 
 GTEST_TEST(NloptSolverTest, SetAlgorithm) {
@@ -173,101 +160,91 @@ const Eigen::Vector2d kLocalOptimizerInitialGuess(0.5, 0.8);
 // must take over as the reason NLopt stops.
 TEST_F(QuadraticEqualityConstrainedProgram1, FTolerances) {
   NloptSolver solver;
-  if (solver.available()) {
-    const int NLOPT_FTOL_REACHED = 3;
-    const int NLOPT_XTOL_REACHED = 4;
-    const auto baseline = solver.Solve(*prog_, kLocalOptimizerInitialGuess, {});
-    ASSERT_TRUE(baseline.is_success());
-    EXPECT_EQ(baseline.get_solver_details<NloptSolver>().status,
-              NLOPT_XTOL_REACHED);
+  const int NLOPT_FTOL_REACHED = 3;
+  const int NLOPT_XTOL_REACHED = 4;
+  const auto baseline = solver.Solve(*prog_, kLocalOptimizerInitialGuess, {});
+  ASSERT_TRUE(baseline.is_success());
+  EXPECT_EQ(baseline.get_solver_details<NloptSolver>().status,
+            NLOPT_XTOL_REACHED);
 
-    SolverOptions ftol_rel_options;
-    ftol_rel_options.SetOption(solver.id(),
-                               NloptSolver::FRelativeToleranceName(), 1e3);
-    const auto ftol_rel_result =
-        solver.Solve(*prog_, kLocalOptimizerInitialGuess, ftol_rel_options);
-    EXPECT_EQ(ftol_rel_result.get_solver_details<NloptSolver>().status,
-              NLOPT_FTOL_REACHED);
+  SolverOptions ftol_rel_options;
+  ftol_rel_options.SetOption(solver.id(), NloptSolver::FRelativeToleranceName(),
+                             1e3);
+  const auto ftol_rel_result =
+      solver.Solve(*prog_, kLocalOptimizerInitialGuess, ftol_rel_options);
+  EXPECT_EQ(ftol_rel_result.get_solver_details<NloptSolver>().status,
+            NLOPT_FTOL_REACHED);
 
-    SolverOptions ftol_abs_options;
-    ftol_abs_options.SetOption(solver.id(),
-                               NloptSolver::FAbsoluteToleranceName(), 1e3);
-    const auto ftol_abs_result =
-        solver.Solve(*prog_, kLocalOptimizerInitialGuess, ftol_abs_options);
-    EXPECT_EQ(ftol_abs_result.get_solver_details<NloptSolver>().status,
-              NLOPT_FTOL_REACHED);
-  }
+  SolverOptions ftol_abs_options;
+  ftol_abs_options.SetOption(solver.id(), NloptSolver::FAbsoluteToleranceName(),
+                             1e3);
+  const auto ftol_abs_result =
+      solver.Solve(*prog_, kLocalOptimizerInitialGuess, ftol_abs_options);
+  EXPECT_EQ(ftol_abs_result.get_solver_details<NloptSolver>().status,
+            NLOPT_FTOL_REACHED);
 }
 
 TEST_F(QuadraticEqualityConstrainedProgram1, LocalOptimizerDefaults) {
   NloptSolver solver;
-  if (solver.available()) {
-    // With no local optimizer named, NLopt defaults it to LD_MMA with the
-    // outer x tolerances and no evaluation cap, so naming LD_MMA explicitly
-    // must change nothing.
-    SolverOptions implicit_options;
-    implicit_options.SetOption(solver.id(), NloptSolver::AlgorithmName(),
-                               "LD_AUGLAG_EQ");
-    const auto implicit_result =
-        solver.Solve(*prog_, kLocalOptimizerInitialGuess, implicit_options);
+  // With no local optimizer named, NLopt defaults it to LD_MMA with the
+  // outer x tolerances and no evaluation cap, so naming LD_MMA explicitly
+  // must change nothing.
+  SolverOptions implicit_options;
+  implicit_options.SetOption(solver.id(), NloptSolver::AlgorithmName(),
+                             "LD_AUGLAG_EQ");
+  const auto implicit_result =
+      solver.Solve(*prog_, kLocalOptimizerInitialGuess, implicit_options);
 
-    SolverOptions explicit_options = implicit_options;
-    explicit_options.SetOption(
-        solver.id(), NloptSolver::LocalOptimizerAlgorithmName(), "LD_MMA");
-    const auto explicit_result =
-        solver.Solve(*prog_, kLocalOptimizerInitialGuess, explicit_options);
+  SolverOptions explicit_options = implicit_options;
+  explicit_options.SetOption(
+      solver.id(), NloptSolver::LocalOptimizerAlgorithmName(), "LD_MMA");
+  const auto explicit_result =
+      solver.Solve(*prog_, kLocalOptimizerInitialGuess, explicit_options);
 
-    EXPECT_EQ(implicit_result.get_solution_result(),
-              explicit_result.get_solution_result());
-    EXPECT_TRUE(CompareMatrices(implicit_result.GetSolution(x_),
-                                explicit_result.GetSolution(x_), 1e-12));
-  }
+  EXPECT_EQ(implicit_result.get_solution_result(),
+            explicit_result.get_solution_result());
+  EXPECT_TRUE(CompareMatrices(implicit_result.GetSolution(x_),
+                              explicit_result.GetSolution(x_), 1e-12));
 }
 
 TEST_F(QuadraticEqualityConstrainedProgram1, LocalOptimizerMaxEval) {
   NloptSolver solver;
-  if (solver.available()) {
-    SolverOptions options;
-    options.SetOption(solver.id(), NloptSolver::AlgorithmName(),
-                      "LD_AUGLAG_EQ");
-    options.SetOption(solver.id(), NloptSolver::LocalOptimizerAlgorithmName(),
-                      "LD_MMA");
-    options.SetOption(solver.id(), NloptSolver::MaxEvalName(), 50);
-    const auto uncapped =
-        solver.Solve(*prog_, kLocalOptimizerInitialGuess, options);
+  SolverOptions options;
+  options.SetOption(solver.id(), NloptSolver::AlgorithmName(), "LD_AUGLAG_EQ");
+  options.SetOption(solver.id(), NloptSolver::LocalOptimizerAlgorithmName(),
+                    "LD_MMA");
+  options.SetOption(solver.id(), NloptSolver::MaxEvalName(), 50);
+  const auto uncapped =
+      solver.Solve(*prog_, kLocalOptimizerInitialGuess, options);
 
-    // Truncating each subproblem to a single evaluation changes the iterates.
-    options.SetOption(solver.id(), NloptSolver::LocalOptimizerMaxEvalName(), 1);
-    const auto capped =
-        solver.Solve(*prog_, kLocalOptimizerInitialGuess, options);
+  // Truncating each subproblem to a single evaluation changes the iterates.
+  options.SetOption(solver.id(), NloptSolver::LocalOptimizerMaxEvalName(), 1);
+  const auto capped =
+      solver.Solve(*prog_, kLocalOptimizerInitialGuess, options);
 
-    EXPECT_FALSE(CompareMatrices(uncapped.GetSolution(x_),
-                                 capped.GetSolution(x_), 1e-12));
-  }
+  EXPECT_FALSE(
+      CompareMatrices(uncapped.GetSolution(x_), capped.GetSolution(x_), 1e-12));
 }
 
 TEST_F(QuadraticEqualityConstrainedProgram1, LocalOptimizerFTolerance) {
   NloptSolver solver;
-  if (solver.available()) {
-    SolverOptions options;
-    options.SetOption(solver.id(), NloptSolver::AlgorithmName(),
-                      "LD_AUGLAG_EQ");
-    options.SetOption(solver.id(), NloptSolver::LocalOptimizerAlgorithmName(),
-                      "LD_MMA");
-    options.SetOption(solver.id(), NloptSolver::MaxEvalName(), 50);
-    const auto uncapped =
-        solver.Solve(*prog_, kLocalOptimizerInitialGuess, options);
+  SolverOptions options;
+  options.SetOption(solver.id(), NloptSolver::AlgorithmName(), "LD_AUGLAG_EQ");
+  options.SetOption(solver.id(), NloptSolver::LocalOptimizerAlgorithmName(),
+                    "LD_MMA");
+  options.SetOption(solver.id(), NloptSolver::MaxEvalName(), 50);
+  const auto uncapped =
+      solver.Solve(*prog_, kLocalOptimizerInitialGuess, options);
 
-    // A wide enough f tolerance stops each subproblem almost immediately, so
-    // the outer algorithm follows a different path and lands elsewhere.
-    options.SetOption(solver.id(),
-                      NloptSolver::LocalOptimizerFAbsoluteToleranceName(), 1e3);
-    const auto capped =
-        solver.Solve(*prog_, kLocalOptimizerInitialGuess, options);
+  // A wide enough f tolerance stops each subproblem almost immediately, so
+  // the outer algorithm follows a different path and lands elsewhere.
+  options.SetOption(solver.id(),
+                    NloptSolver::LocalOptimizerFAbsoluteToleranceName(), 1e3);
+  const auto capped =
+      solver.Solve(*prog_, kLocalOptimizerInitialGuess, options);
 
-    EXPECT_FALSE(CompareMatrices(uncapped.GetSolution(x_),
-                                 capped.GetSolution(x_), 1e-12));
-  }
+  EXPECT_FALSE(
+      CompareMatrices(uncapped.GetSolution(x_), capped.GetSolution(x_), 1e-12));
 }
 
 TEST_F(QuadraticEqualityConstrainedProgram1, LocalOptimizerAlgorithm) {
@@ -284,47 +261,40 @@ TEST_F(QuadraticEqualityConstrainedProgram1, LocalOptimizerAlgorithm) {
 
 TEST_F(QuadraticEqualityConstrainedProgram1, LocalOptimizerUnknownAlgorithm) {
   NloptSolver solver;
-  if (solver.available()) {
-    SolverOptions options;
-    options.SetOption(solver.id(), NloptSolver::AlgorithmName(),
-                      "LD_AUGLAG_EQ");
-    options.SetOption(solver.id(), NloptSolver::LocalOptimizerAlgorithmName(),
-                      "FOO_BAR");
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        solver.Solve(*prog_, kLocalOptimizerInitialGuess, options),
-        ".*Unknown.*algorithm.*");
-  }
+  SolverOptions options;
+  options.SetOption(solver.id(), NloptSolver::AlgorithmName(), "LD_AUGLAG_EQ");
+  options.SetOption(solver.id(), NloptSolver::LocalOptimizerAlgorithmName(),
+                    "FOO_BAR");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      solver.Solve(*prog_, kLocalOptimizerInitialGuess, options),
+      ".*Unknown.*algorithm.*");
 }
 
 TEST_F(QuadraticEqualityConstrainedProgram1, LocalOptimizerUnused) {
   NloptSolver solver;
-  if (solver.available()) {
-    // The default LD_SLSQP has no local optimizer, so the options are ignored.
-    const auto plain = solver.Solve(*prog_, kLocalOptimizerInitialGuess, {});
+  // The default LD_SLSQP has no local optimizer, so the options are ignored.
+  const auto plain = solver.Solve(*prog_, kLocalOptimizerInitialGuess, {});
 
-    SolverOptions options;
-    options.SetOption(solver.id(), NloptSolver::LocalOptimizerAlgorithmName(),
-                      "LD_SLSQP");
-    options.SetOption(solver.id(), NloptSolver::LocalOptimizerMaxEvalName(), 3);
-    options.SetOption(solver.id(),
-                      NloptSolver::LocalOptimizerFRelativeToleranceName(), 1e3);
-    options.SetOption(solver.id(),
-                      NloptSolver::LocalOptimizerFAbsoluteToleranceName(), 1e3);
-    const auto unused =
-        solver.Solve(*prog_, kLocalOptimizerInitialGuess, options);
+  SolverOptions options;
+  options.SetOption(solver.id(), NloptSolver::LocalOptimizerAlgorithmName(),
+                    "LD_SLSQP");
+  options.SetOption(solver.id(), NloptSolver::LocalOptimizerMaxEvalName(), 3);
+  options.SetOption(solver.id(),
+                    NloptSolver::LocalOptimizerFRelativeToleranceName(), 1e3);
+  options.SetOption(solver.id(),
+                    NloptSolver::LocalOptimizerFAbsoluteToleranceName(), 1e3);
+  const auto unused =
+      solver.Solve(*prog_, kLocalOptimizerInitialGuess, options);
 
-    ASSERT_TRUE(unused.is_success());
-    EXPECT_TRUE(
-        CompareMatrices(plain.GetSolution(x_), unused.GetSolution(x_), 1e-12));
-  }
+  ASSERT_TRUE(unused.is_success());
+  EXPECT_TRUE(
+      CompareMatrices(plain.GetSolution(x_), unused.GetSolution(x_), 1e-12));
 }
 
 TEST_F(QuadraticEqualityConstrainedProgram1, Test) {
   NloptSolver solver;
-  if (solver.is_available()) {
-    CheckSolution(solver, Eigen::Vector2d(0.5, 0.8), std::nullopt, 1E-4,
-                  false /* check dual */);
-  }
+  CheckSolution(solver, Eigen::Vector2d(0.5, 0.8), std::nullopt, 1E-4,
+                false /* check dual */);
 }
 
 GTEST_TEST(NloptSolverTest, TestL2NormCost) {

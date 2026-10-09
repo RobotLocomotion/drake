@@ -37,7 +37,7 @@ GTEST_TEST(LinearProgramTest, TestGeneralLP) {
   prog.AddLinearCost(x(0) + 2 * x(1));
   prog.AddLinearConstraint(x(0) + x(1) == 2);
   ClarabelSolver solver;
-  if (solver.available()) {
+  {
     auto result = solver.Solve(prog, {}, {});
     EXPECT_EQ(result.get_solution_result(), SolutionResult::kDualInfeasible);
   }
@@ -49,7 +49,7 @@ GTEST_TEST(LinearProgramTest, TestGeneralLP) {
   // the problem should still be unbounded.
   prog.AddBoundingBoxConstraint(-std::numeric_limits<double>::infinity(), 1,
                                 x(1));
-  if (solver.available()) {
+  {
     auto result = solver.Solve(prog, {}, {});
     EXPECT_EQ(result.get_solution_result(), SolutionResult::kDualInfeasible);
   }
@@ -62,7 +62,7 @@ GTEST_TEST(LinearProgramTest, TestGeneralLP) {
   // the problem should be feasible. The optimal cost is -1, with x = (5, -3)
   prog.AddBoundingBoxConstraint(-std::numeric_limits<double>::infinity(), 5,
                                 x(0));
-  if (solver.available()) {
+  {
     auto result = solver.Solve(prog, {}, {});
     EXPECT_TRUE(result.is_success());
     EXPECT_NEAR(result.get_optimal_cost(), -1, kTol);
@@ -81,7 +81,7 @@ GTEST_TEST(LinearProgramTest, TestGeneralLP) {
   prog.AddLinearCost(2 * x(0) - 3 * x(1) + 5);
   prog.AddBoundingBoxConstraint(
       2, 6 /* this upper bound = 6 is intentionally redundant.*/, x(0));
-  if (solver.available()) {
+  {
     auto result = solver.Solve(prog, {}, {});
     EXPECT_TRUE(result.is_success());
     EXPECT_NEAR(result.get_optimal_cost(), 11, kTol);
@@ -104,11 +104,9 @@ GTEST_TEST(LinearProgramTest, TestInfeasibleEqualityOnlyLP) {
   prog.AddLinearEqualityConstraint(x(0) + x(1) == 1 && 2 * x(0) + x(1) == 2);
   prog.AddLinearEqualityConstraint(x(0) - 2 * x(1) == 3);
   ClarabelSolver clarabel_solver;
-  if (clarabel_solver.available()) {
-    auto result = clarabel_solver.Solve(prog, {}, {});
-    EXPECT_EQ(result.get_solution_result(),
-              SolutionResult::kInfeasibleConstraints);
-  }
+  auto result = clarabel_solver.Solve(prog, {}, {});
+  EXPECT_EQ(result.get_solution_result(),
+            SolutionResult::kInfeasibleConstraints);
 }
 
 GTEST_TEST(LinearProgramTest, TestAllLPConstraintTypes) {
@@ -143,13 +141,11 @@ GTEST_TEST(LinearProgramTest, TestAllLPConstraintTypes) {
   prog.AddBoundingBoxConstraint(1, 9, x(2));
 
   ClarabelSolver clarabel_solver;
-  if (clarabel_solver.available()) {
-    auto result = clarabel_solver.Solve(prog, {}, {});
-    EXPECT_TRUE(result.is_success());
-    EXPECT_NEAR(result.get_optimal_cost(), 8, kTol);
-    EXPECT_TRUE(CompareMatrices(result.GetSolution(x), Eigen::Vector3d(1, 1, 1),
-                                kTol, MatrixCompareType::absolute));
-  }
+  auto result = clarabel_solver.Solve(prog, {}, {});
+  EXPECT_TRUE(result.is_success());
+  EXPECT_NEAR(result.get_optimal_cost(), 8, kTol);
+  EXPECT_TRUE(CompareMatrices(result.GetSolution(x), Eigen::Vector3d(1, 1, 1),
+                              kTol, MatrixCompareType::absolute));
 }
 
 TEST_P(LinearProgramTest, TestLP) {
@@ -165,76 +161,56 @@ INSTANTIATE_TEST_SUITE_P(
 
 TEST_F(InfeasibleLinearProgramTest0, TestInfeasible) {
   ClarabelSolver solver;
-  if (solver.available()) {
-    auto result = solver.Solve(*prog_, {}, {});
-    EXPECT_EQ(result.get_solution_result(),
-              SolutionResult::kInfeasibleConstraints);
-    EXPECT_EQ(result.get_optimal_cost(),
-              MathematicalProgram::kGlobalInfeasibleCost);
-  }
+  auto result = solver.Solve(*prog_, {}, {});
+  EXPECT_EQ(result.get_solution_result(),
+            SolutionResult::kInfeasibleConstraints);
+  EXPECT_EQ(result.get_optimal_cost(),
+            MathematicalProgram::kGlobalInfeasibleCost);
 }
 
 TEST_F(UnboundedLinearProgramTest0, TestUnbounded) {
   ClarabelSolver solver;
-  if (solver.available()) {
-    auto result = solver.Solve(*prog_, {}, {});
-    EXPECT_EQ(result.get_solution_result(), SolutionResult::kDualInfeasible);
-    EXPECT_EQ(result.get_optimal_cost(), MathematicalProgram::kUnboundedCost);
-    // Make sure that we have written Clarabel's variable value into `result`.
-    EXPECT_TRUE(result.GetSolution(prog_->decision_variables())
-                    .array()
-                    .isFinite()
-                    .all());
-  }
+  auto result = solver.Solve(*prog_, {}, {});
+  EXPECT_EQ(result.get_solution_result(), SolutionResult::kDualInfeasible);
+  EXPECT_EQ(result.get_optimal_cost(), MathematicalProgram::kUnboundedCost);
+  // Make sure that we have written Clarabel's variable value into `result`.
+  EXPECT_TRUE(
+      result.GetSolution(prog_->decision_variables()).array().isFinite().all());
 }
 
 TEST_F(DuplicatedVariableLinearProgramTest1, Test) {
   ClarabelSolver solver;
-  if (solver.is_available()) {
-    CheckSolution(solver, std::nullopt, kTol);
-  }
+  CheckSolution(solver, std::nullopt, kTol);
 }
 
 GTEST_TEST(TestLPDualSolution1, Test) {
   ClarabelSolver solver;
-  if (solver.is_available()) {
-    TestLPDualSolution1(solver, kTol);
-  }
+  TestLPDualSolution1(solver, kTol);
 }
 
 GTEST_TEST(TestLPDualSolution2, Test) {
   ClarabelSolver solver;
-  if (solver.available()) {
-    TestLPDualSolution2(solver, kTol);
-  }
+  TestLPDualSolution2(solver, kTol);
 }
 
 GTEST_TEST(TestLPDualSolution3, Test) {
   ClarabelSolver solver;
-  if (solver.available()) {
-    TestLPDualSolution3(solver, kTol);
-  }
+  TestLPDualSolution3(solver, kTol);
 }
 
 GTEST_TEST(TestLPDualSolution4, Test) {
   ClarabelSolver solver;
-  if (solver.available()) {
-    TestLPDualSolution4(solver, kTol);
-  }
+  TestLPDualSolution4(solver, kTol);
 }
 
 GTEST_TEST(TestLPDualSolution5, Test) {
   ClarabelSolver solver;
-  if (solver.available()) {
-    TestLPDualSolution5(solver, kTol);
-  }
+  TestLPDualSolution5(solver, kTol);
 }
 
 TEST_P(QuadraticProgramTest, TestQP) {
   ClarabelSolver solver;
-  if (solver.available()) {
-    prob()->RunProblem(&solver);
-  }
+  prob()->RunProblem(&solver);
 }
 
 INSTANTIATE_TEST_SUITE_P(
@@ -245,30 +221,22 @@ INSTANTIATE_TEST_SUITE_P(
 
 GTEST_TEST(QPtest, TestUnitBallExample) {
   ClarabelSolver solver;
-  if (solver.available()) {
-    TestQPonUnitBallExample(solver);
-  }
+  TestQPonUnitBallExample(solver);
 }
 
 GTEST_TEST(QPtest, TestQuadraticCostVariableOrder) {
   ClarabelSolver solver;
-  if (solver.available()) {
-    TestQuadraticCostVariableOrder(solver);
-  }
+  TestQuadraticCostVariableOrder(solver);
 }
 
 GTEST_TEST(TestDuplicatedVariableQuadraticProgram, Test) {
   ClarabelSolver solver;
-  if (solver.available()) {
-    TestDuplicatedVariableQuadraticProgram(solver, 1E-5);
-  }
+  TestDuplicatedVariableQuadraticProgram(solver, 1E-5);
 }
 
 TEST_P(TestEllipsoidsSeparation, TestSOCP) {
   ClarabelSolver clarabel_solver;
-  if (clarabel_solver.available()) {
-    SolveAndCheckSolution(clarabel_solver, {}, kTol);
-  }
+  SolveAndCheckSolution(clarabel_solver, {}, kTol);
 }
 
 INSTANTIATE_TEST_SUITE_P(
@@ -277,9 +245,7 @@ INSTANTIATE_TEST_SUITE_P(
 
 TEST_P(TestQPasSOCP, TestSOCP) {
   ClarabelSolver clarabel_solver;
-  if (clarabel_solver.available()) {
-    SolveAndCheckSolution(clarabel_solver, kTol);
-  }
+  SolveAndCheckSolution(clarabel_solver, kTol);
 }
 
 INSTANTIATE_TEST_SUITE_P(ClarabelTest, TestQPasSOCP,
@@ -287,9 +253,7 @@ INSTANTIATE_TEST_SUITE_P(ClarabelTest, TestQPasSOCP,
 
 TEST_P(TestFindSpringEquilibrium, TestSOCP) {
   ClarabelSolver clarabel_solver;
-  if (clarabel_solver.available()) {
-    SolveAndCheckSolution(clarabel_solver, {}, 3E-4);
-  }
+  SolveAndCheckSolution(clarabel_solver, {}, 3E-4);
 }
 
 INSTANTIATE_TEST_SUITE_P(
@@ -299,21 +263,17 @@ INSTANTIATE_TEST_SUITE_P(
 GTEST_TEST(TestSOCP, MaximizeGeometricMeanTrivialProblem1) {
   MaximizeGeometricMeanTrivialProblem1 prob;
   ClarabelSolver solver;
-  if (solver.available()) {
-    const auto result = solver.Solve(prob.prog(), {}, {});
-    // Practically I observe Clarabel requires looser tolerance for this test. I
-    // don't know why.
-    prob.CheckSolution(result, 3 * kTol);
-  }
+  const auto result = solver.Solve(prob.prog(), {}, {});
+  // Practically I observe Clarabel requires looser tolerance for this test. I
+  // don't know why.
+  prob.CheckSolution(result, 3 * kTol);
 }
 
 GTEST_TEST(TestSOCP, MaximizeGeometricMeanTrivialProblem2) {
   MaximizeGeometricMeanTrivialProblem2 prob;
   ClarabelSolver solver;
-  if (solver.available()) {
-    const auto result = solver.Solve(prob.prog(), {}, {});
-    prob.CheckSolution(result, kTol);
-  }
+  const auto result = solver.Solve(prob.prog(), {}, {});
+  prob.CheckSolution(result, kTol);
 }
 
 GTEST_TEST(TestSOCP, SmallestEllipsoidCoveringProblem) {
@@ -368,205 +328,153 @@ GTEST_TEST(TestL2NormCost, ShortestDistanceFromPlaneToTwoPoints) {
 
 GTEST_TEST(TestSemidefiniteProgram, TrivialSDP) {
   ClarabelSolver solver;
-  if (solver.available()) {
-    TestTrivialSDP(solver, kTol);
-  }
+  TestTrivialSDP(solver, kTol);
 }
 
 GTEST_TEST(TestSemidefiniteProgram, CommonLyapunov) {
   ClarabelSolver solver;
-  if (solver.available()) {
-    FindCommonLyapunov(solver, {}, kTol);
-  }
+  FindCommonLyapunov(solver, {}, kTol);
 }
 
 GTEST_TEST(TestSemidefiniteProgram, OuterEllipsoid) {
   ClarabelSolver solver;
-  if (solver.available()) {
-    FindOuterEllipsoid(solver, {}, kTol);
-  }
+  FindOuterEllipsoid(solver, {}, kTol);
 }
 
 GTEST_TEST(TestSemidefiniteProgram, EigenvalueProblem) {
   ClarabelSolver solver;
-  if (solver.available()) {
-    SolveEigenvalueProblem(solver, {}, kTol, /*check_dual=*/true);
-  }
+  SolveEigenvalueProblem(solver, {}, kTol, /*check_dual=*/true);
 }
 
 GTEST_TEST(TestSemidefiniteProgram, SolveSDPwithQuadraticCosts) {
   ClarabelSolver solver;
-  if (solver.available()) {
-    SolveSDPwithQuadraticCosts(solver, kTol);
-  }
+  SolveSDPwithQuadraticCosts(solver, kTol);
 }
 
 GTEST_TEST(TestSemidefiniteProgram, TestSDPDualSolution1) {
   ClarabelSolver solver;
-  if (solver.available()) {
-    TestSDPDualSolution1(solver, kTol, /*complemantarity_tol=*/1E-5);
-  }
+  TestSDPDualSolution1(solver, kTol, /*complemantarity_tol=*/1E-5);
 }
 
 GTEST_TEST(TestSemidefiniteProgram, SolveSDPwithSecondOrderConeExample1) {
   ClarabelSolver solver;
-  if (solver.available()) {
-    SolveSDPwithSecondOrderConeExample1(solver, kTol);
-  }
+  SolveSDPwithSecondOrderConeExample1(solver, kTol);
 }
 
 GTEST_TEST(TestSemidefiniteProgram, SolveSDPwithSecondOrderConeExample2) {
   ClarabelSolver solver;
-  if (solver.available()) {
-    SolveSDPwithSecondOrderConeExample2(solver, kTol);
-  }
+  SolveSDPwithSecondOrderConeExample2(solver, kTol);
 }
 
 GTEST_TEST(TestSemidefiniteProgram, SolveSDPwithOverlappingVariables) {
   ClarabelSolver solver;
-  if (solver.available()) {
-    SolveSDPwithOverlappingVariables(solver, kTol);
-  }
+  SolveSDPwithOverlappingVariables(solver, kTol);
 }
 
 GTEST_TEST(TestSemidefiniteProgram, TestTrivial1x1SDP) {
   ClarabelSolver solver;
-  if (solver.available()) {
-    TestTrivial1x1SDP(solver, 1E-5, /*check_dual=*/true, /*dual_tol=*/1E-5);
-  }
+  TestTrivial1x1SDP(solver, 1E-5, /*check_dual=*/true, /*dual_tol=*/1E-5);
 }
 
 GTEST_TEST(TestSemidefiniteProgram, TestTrivial2x2SDP) {
   ClarabelSolver solver;
-  if (solver.available()) {
-    TestTrivial2x2SDP(solver, 1E-5, /*check_dual=*/true, /*dual_tol=*/1E-5);
-  }
+  TestTrivial2x2SDP(solver, 1E-5, /*check_dual=*/true, /*dual_tol=*/1E-5);
 }
 
 GTEST_TEST(TestSemidefiniteProgram, Test1x1with3x3SDP) {
   ClarabelSolver solver;
-  if (solver.available()) {
-    Test1x1with3x3SDP(solver, 1E-4, /*check_dual=*/true, /*dual_tol=*/1E-4);
-  }
+  Test1x1with3x3SDP(solver, 1E-4, /*check_dual=*/true, /*dual_tol=*/1E-4);
 }
 
 GTEST_TEST(TestSemidefiniteProgram, Test2x2with3x3SDP) {
   ClarabelSolver solver;
-  if (solver.available()) {
-    Test2x2with3x3SDP(solver, 1E-3, /*check_dual=*/true, /*dual_tol*/ 1E-2);
-  }
+  Test2x2with3x3SDP(solver, 1E-3, /*check_dual=*/true, /*dual_tol*/ 1E-2);
 }
 
 GTEST_TEST(TestSemidefiniteProgram, TestTrivial1x1LMI) {
   ClarabelSolver solver;
-  if (solver.available()) {
-    TestTrivial1x1LMI(solver, 1E-5, /*check_dual=*/true, /*dual_tol=*/1E-7);
-  }
+  TestTrivial1x1LMI(solver, 1E-5, /*check_dual=*/true, /*dual_tol=*/1E-7);
 }
 
 GTEST_TEST(TestSemidefiniteProgram, Test2X2LMI) {
   ClarabelSolver solver;
-  if (solver.available()) {
-    Test2x2LMI(solver, 1E-7, /*check_dual=*/true, /*dual_tol=*/1E-7);
-  }
+  Test2x2LMI(solver, 1E-7, /*check_dual=*/true, /*dual_tol=*/1E-7);
 }
 
 GTEST_TEST(TestSemidefiniteProgram, TestHankel) {
   ClarabelSolver solver;
-  if (solver.available()) {
-    TestHankel(solver, 1E-5, /*check_dual=*/true, /*dual_tol=*/1E-5);
-  }
+  TestHankel(solver, 1E-5, /*check_dual=*/true, /*dual_tol=*/1E-5);
 }
 
 GTEST_TEST(TestExponentialConeProgram, ExponentialConeTrivialExample) {
   ClarabelSolver solver;
-  if (solver.available()) {
-    // Currently we don't support retrieving dual solution for exponential cone
-    // constraints from Clarabel yet.
-    ExponentialConeTrivialExample(solver, 2E-4, false);
-  }
+  // Currently we don't support retrieving dual solution for exponential cone
+  // constraints from Clarabel yet.
+  ExponentialConeTrivialExample(solver, 2E-4, false);
 }
 
 GTEST_TEST(TestExponentialConeProgram, MinimizeKLDivengence) {
   ClarabelSolver clarabel_solver;
-  if (clarabel_solver.available()) {
-    MinimizeKLDivergence(clarabel_solver, 1E-4);
-  }
+  MinimizeKLDivergence(clarabel_solver, 1E-4);
 }
 
 GTEST_TEST(TestExponentialConeProgram, MinimalEllipsoidConveringPoints) {
   ClarabelSolver clarabel_solver;
-  if (clarabel_solver.available()) {
-    MinimalEllipsoidCoveringPoints(clarabel_solver, 1E-4);
-  }
+  MinimalEllipsoidCoveringPoints(clarabel_solver, 1E-4);
 }
 
 GTEST_TEST(TestExponentialConeProgram, MatrixLogDeterminantLower) {
   ClarabelSolver solver;
-  if (solver.available()) {
-    MatrixLogDeterminantLower(solver, kTol);
-  }
+  MatrixLogDeterminantLower(solver, kTol);
 }
 
 GTEST_TEST(TestSos, UnivariateQuarticSos) {
   UnivariateQuarticSos dut;
   ClarabelSolver solver;
-  if (solver.available()) {
-    const auto result = solver.Solve(dut.prog());
-    dut.CheckResult(result, kTol);
-  }
+  const auto result = solver.Solve(dut.prog());
+  dut.CheckResult(result, kTol);
 }
 
 GTEST_TEST(TestSos, BivariateQuarticSos) {
   BivariateQuarticSos dut;
   ClarabelSolver solver;
-  if (solver.available()) {
-    const auto result = solver.Solve(dut.prog());
-    dut.CheckResult(result, kTol);
-  }
+  const auto result = solver.Solve(dut.prog());
+  dut.CheckResult(result, kTol);
 }
 
 GTEST_TEST(TestSos, SimpleSos1) {
   SimpleSos1 dut;
   ClarabelSolver solver;
-  if (solver.available()) {
-    const auto result = solver.Solve(dut.prog());
-    dut.CheckResult(result, kTol);
-  }
+  const auto result = solver.Solve(dut.prog());
+  dut.CheckResult(result, kTol);
 }
 
 GTEST_TEST(TestSos, MotzkinPolynomial) {
   MotzkinPolynomial dut;
   ClarabelSolver solver;
-  if (solver.is_available()) {
-    const auto result = solver.Solve(dut.prog());
-    dut.CheckResult(result, kTol);
-  }
+  const auto result = solver.Solve(dut.prog());
+  dut.CheckResult(result, kTol);
 }
 
 GTEST_TEST(TestSos, UnivariateNonnegative1) {
   UnivariateNonnegative1 dut;
   ClarabelSolver solver;
-  if (solver.is_available()) {
-    const auto result = solver.Solve(dut.prog());
-    dut.CheckResult(result, kTol);
-  }
+  const auto result = solver.Solve(dut.prog());
+  dut.CheckResult(result, kTol);
 }
 
 GTEST_TEST(TestOptions, SetMaxIter) {
   SimpleSos1 dut;
   ClarabelSolver solver;
-  if (solver.available()) {
-    SolverOptions solver_options;
-    auto result = solver.Solve(dut.prog(), std::nullopt, solver_options);
-    EXPECT_TRUE(result.is_success());
-    ASSERT_GT(result.get_solver_details<ClarabelSolver>().iterations, 1);
-    // Now change the max iteration to 1.
-    solver_options.SetOption(solver.id(), "max_iter", 1);
-    result = solver.Solve(dut.prog(), std::nullopt, solver_options);
-    EXPECT_FALSE(result.is_success());
-    EXPECT_EQ(result.get_solution_result(), SolutionResult::kIterationLimit);
-  }
+  SolverOptions solver_options;
+  auto result = solver.Solve(dut.prog(), std::nullopt, solver_options);
+  EXPECT_TRUE(result.is_success());
+  ASSERT_GT(result.get_solver_details<ClarabelSolver>().iterations, 1);
+  // Now change the max iteration to 1.
+  solver_options.SetOption(solver.id(), "max_iter", 1);
+  result = solver.Solve(dut.prog(), std::nullopt, solver_options);
+  EXPECT_FALSE(result.is_success());
+  EXPECT_EQ(result.get_solution_result(), SolutionResult::kIterationLimit);
 }
 
 GTEST_TEST(TestOptions, MaxThreads) {
@@ -575,12 +483,10 @@ GTEST_TEST(TestOptions, MaxThreads) {
   SolverOptions solver_options;
   solver_options.SetOption(CommonSolverOption::kMaxThreads, kMaxThreadsValue);
   ClarabelSolver solver;
-  if (solver.available()) {
-    auto result = solver.Solve(dut.prog(), std::nullopt, solver_options);
-    EXPECT_TRUE(result.is_success());
-    // We can't really check that the threads setting was obeyed -- it doesn't
-    // even appear in the logs for eyeball inspection.
-  }
+  auto result = solver.Solve(dut.prog(), std::nullopt, solver_options);
+  EXPECT_TRUE(result.is_success());
+  // We can't really check that the threads setting was obeyed -- it doesn't
+  // even appear in the logs for eyeball inspection.
 }
 
 GTEST_TEST(TestOptions, StandaloneReproduction) {
@@ -595,28 +501,26 @@ GTEST_TEST(TestOptions, StandaloneReproduction) {
   prog.AddPositiveSemidefiniteConstraint(Y);
 
   ClarabelSolver solver;
-  if (solver.available()) {
-    SolverOptions solver_options;
-    const std::string repro_file_name = temp_directory() + "/reproduction.py";
-    solver_options.SetOption(
-        CommonSolverOption::kStandaloneReproductionFileName, repro_file_name);
-    solver.Solve(prog, std::nullopt, solver_options);
+  SolverOptions solver_options;
+  const std::string repro_file_name = temp_directory() + "/reproduction.py";
+  solver_options.SetOption(CommonSolverOption::kStandaloneReproductionFileName,
+                           repro_file_name);
+  solver.Solve(prog, std::nullopt, solver_options);
 
-    // Read in the reproduction file.
-    std::ifstream input_stream(repro_file_name);
-    ASSERT_TRUE(input_stream.is_open());
-    std::stringstream buffer;
-    buffer << input_stream.rdbuf();
-    std::string repro_str = buffer.str();
+  // Read in the reproduction file.
+  std::ifstream input_stream(repro_file_name);
+  ASSERT_TRUE(input_stream.is_open());
+  std::stringstream buffer;
+  buffer << input_stream.rdbuf();
+  std::string repro_str = buffer.str();
 
-    EXPECT_THAT(repro_str, HasSubstr("import clarabel"));
-    EXPECT_THAT(repro_str, HasSubstr("ZeroConeT"));
-    EXPECT_THAT(repro_str, HasSubstr("NonnegativeConeT"));
-    EXPECT_THAT(repro_str, HasSubstr("SecondOrderConeT"));
-    EXPECT_THAT(repro_str, HasSubstr("PSDTriangleConeT"));
-    EXPECT_THAT(repro_str, HasSubstr("ExponentialConeT"));
-    EXPECT_THAT(repro_str, HasSubstr("solve"));
-  }
+  EXPECT_THAT(repro_str, HasSubstr("import clarabel"));
+  EXPECT_THAT(repro_str, HasSubstr("ZeroConeT"));
+  EXPECT_THAT(repro_str, HasSubstr("NonnegativeConeT"));
+  EXPECT_THAT(repro_str, HasSubstr("SecondOrderConeT"));
+  EXPECT_THAT(repro_str, HasSubstr("PSDTriangleConeT"));
+  EXPECT_THAT(repro_str, HasSubstr("ExponentialConeT"));
+  EXPECT_THAT(repro_str, HasSubstr("solve"));
 }
 
 // Ensure that when we have no linear constraints, we do not generate programs
@@ -631,40 +535,36 @@ GTEST_TEST(TestOptions, EmptyCones) {
   prog.AddPositiveSemidefiniteConstraint(Y);
 
   ClarabelSolver solver;
-  if (solver.available()) {
-    SolverOptions solver_options;
-    const std::string repro_file_name = temp_directory() + "/reproduction.py";
-    solver_options.SetOption(
-        CommonSolverOption::kStandaloneReproductionFileName, repro_file_name);
-    solver.Solve(prog, std::nullopt, solver_options);
+  SolverOptions solver_options;
+  const std::string repro_file_name = temp_directory() + "/reproduction.py";
+  solver_options.SetOption(CommonSolverOption::kStandaloneReproductionFileName,
+                           repro_file_name);
+  solver.Solve(prog, std::nullopt, solver_options);
 
-    // Read in the reproduction file.
-    std::ifstream input_stream(repro_file_name);
-    ASSERT_TRUE(input_stream.is_open());
-    std::stringstream buffer;
-    buffer << input_stream.rdbuf();
-    std::string repro_str = buffer.str();
+  // Read in the reproduction file.
+  std::ifstream input_stream(repro_file_name);
+  ASSERT_TRUE(input_stream.is_open());
+  std::stringstream buffer;
+  buffer << input_stream.rdbuf();
+  std::string repro_str = buffer.str();
 
-    EXPECT_THAT(repro_str, HasSubstr("import clarabel"));
-    EXPECT_THAT(repro_str, Not(HasSubstr("ZeroConeT")));
-    EXPECT_THAT(repro_str, Not(HasSubstr("NonnegativeConeT")));
-    EXPECT_THAT(repro_str, HasSubstr("SecondOrderConeT"));
-    EXPECT_THAT(repro_str, HasSubstr("PSDTriangleConeT"));
-    EXPECT_THAT(repro_str, HasSubstr("ExponentialConeT"));
-    EXPECT_THAT(repro_str, HasSubstr("solve"));
-  }
+  EXPECT_THAT(repro_str, HasSubstr("import clarabel"));
+  EXPECT_THAT(repro_str, Not(HasSubstr("ZeroConeT")));
+  EXPECT_THAT(repro_str, Not(HasSubstr("NonnegativeConeT")));
+  EXPECT_THAT(repro_str, HasSubstr("SecondOrderConeT"));
+  EXPECT_THAT(repro_str, HasSubstr("PSDTriangleConeT"));
+  EXPECT_THAT(repro_str, HasSubstr("ExponentialConeT"));
+  EXPECT_THAT(repro_str, HasSubstr("solve"));
 }
 
 GTEST_TEST(TestOptions, unrecognized) {
   SimpleSos1 dut;
   ClarabelSolver solver;
-  if (solver.available()) {
-    SolverOptions solver_options;
-    solver_options.SetOption(solver.id(), "bad_unrecognized", 1);
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        solver.Solve(dut.prog(), std::nullopt, solver_options),
-        ".*not recognized.*bad_unrecognized.*");
-  }
+  SolverOptions solver_options;
+  solver_options.SetOption(solver.id(), "bad_unrecognized", 1);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      solver.Solve(dut.prog(), std::nullopt, solver_options),
+      ".*not recognized.*bad_unrecognized.*");
 }
 
 GTEST_TEST(TestZeroStepSize, ZeroStepSize) {
@@ -682,15 +582,12 @@ GTEST_TEST(TestZeroStepSize, ZeroStepSize) {
   SolverOptions options;
   options.SetOption(solver.id(), "max_step_fraction", 1e-10);
   options.SetOption(CommonSolverOption::kPrintToConsole, true);
-  if (solver.available()) {
-    auto result = solver.Solve(prog, std::nullopt, options);
-    // The program has cost unbounded above and so the dual is infeasible, but
-    // the step size fraction forces the solver to make insufficient progress.
-    EXPECT_EQ(result.get_solution_result(),
-              SolutionResult::kSolverSpecificError);
-    EXPECT_EQ(result.get_solver_details<ClarabelSolver>().status,
-              "InsufficientProgress");
-  }
+  auto result = solver.Solve(prog, std::nullopt, options);
+  // The program has cost unbounded above and so the dual is infeasible, but
+  // the step size fraction forces the solver to make insufficient progress.
+  EXPECT_EQ(result.get_solution_result(), SolutionResult::kSolverSpecificError);
+  EXPECT_EQ(result.get_solver_details<ClarabelSolver>().status,
+            "InsufficientProgress");
 }
 
 }  // namespace test
