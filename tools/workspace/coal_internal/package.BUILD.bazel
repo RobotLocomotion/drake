@@ -1,0 +1,193 @@
+# -*- bazel -*-
+
+load("@drake//tools/install:install.bzl", "install")
+load("@drake//tools/workspace:generate_file.bzl", "generate_file")
+load("@drake//tools/workspace:vendor_cxx.bzl", "cc_library_vendored")
+
+licenses(["notice"])  # BSD-3-Clause
+
+package(
+    default_visibility = ["//visibility:public"],
+)
+
+# Coal's collision core needs only Eigen. Everything that would drag in another
+# third-party library lives in a handful of directories, all excluded below:
+#
+#   assimp                    src/mesh_loader/, include/coal/mesh_loader/
+#   octomap                   src/octree.cpp, include/coal/octree.h,
+#                             include/coal/internal/traversal_node_octree.h
+#   Boost.Serialization, et al.  src/serialization/,
+#                             include/coal/serialization/
+#
+# Two remaining uses of Boost in the core -- boost::math's `pi` and boost::span
+# -- are replaced with their C++20 standard library equivalents by
+# patches/upstream/no_boost.patch, which also makes the vendored
+# include/coal/third_party/boost/ backfill (excluded below) unnecessary. The
+# result needs no Boost at all: a scan of the dependency files for all 71
+# translation units finds zero Boost headers.
+#
+# The three other patches adapt Coal to Drake's compiler settings and vendoring
+# tool; see each patch file for the rationale.
+#
+# The include/hpp/ tree is a back-compatibility alias for Coal's former name
+# (hpp-fcl). Drake does not use it, and its headers include
+# coal/serialization/*, so it is excluded wholesale.
+
+# Coal's CMake build generates these four headers using jrl-cmakemodules, which
+# Coal consumes as a git submodule and so is absent from the source archive.
+# Drake does not run Coal's CMake, so we provide stand-ins. The macro spellings
+# here match the jrl-cmakemodules templates of the same names; the
+# configuration they encode is a static build with hidden visibility (which is
+# what cc_library_vendored gives us) and no profiler.
+
+generate_file(
+    name = "include/coal/config.hh",
+    content = r"""
+#ifndef COAL_CONFIG_HH
+#define COAL_CONFIG_HH
+// Drake does not know (or need) Coal's version number; upstream obtains it
+// from git tags, which the source archive does not carry.
+#define COAL_VERSION_UNKNOWN_TAG 0
+#define COAL_VERSION "0.0.0"
+#define COAL_MAJOR_VERSION 0
+#define COAL_MINOR_VERSION 0
+#define COAL_PATCH_VERSION 0
+#define COAL_VERSION_AT_LEAST(major, minor, patch) 0
+#define COAL_VERSION_AT_MOST(major, minor, patch) 1
+// Symbol visibility is imposed by Drake's vendoring rules, not by Coal.
+#define COAL_DLLIMPORT
+#define COAL_DLLEXPORT
+#define COAL_DLLLOCAL
+#define COAL_DLLAPI
+#define COAL_LOCAL
+#define COAL_EXPLICIT_INSTANTIATION_DECLARATION extern template
+#endif  // COAL_CONFIG_HH
+""",
+    visibility = ["//visibility:private"],
+)
+
+generate_file(
+    name = "include/coal/deprecated.hh",
+    content = r"""
+#ifndef COAL_DEPRECATED_HH
+#define COAL_DEPRECATED_HH
+#define COAL_DEPRECATED [[deprecated]]
+#define COAL_DEPRECATED_MESSAGE(message) [[deprecated(#message)]]
+#define COAL_PRAGMA(X) _Pragma(#X)
+#define COAL_DEPRECATED_HEADER(MSG) COAL_PRAGMA(GCC warning MSG)
+#endif  // COAL_DEPRECATED_HH
+""",
+    visibility = ["//visibility:private"],
+)
+
+generate_file(
+    name = "include/coal/warning.hh",
+    content = r"""
+#ifndef COAL_WARNING_HH
+#define COAL_WARNING_HH
+#define COAL_WARN_STRINGISE_IMPL(x) #x
+#define COAL_WARN_STRINGISE(x) COAL_WARN_STRINGISE_IMPL(x)
+#define COAL_WARN(exp) ("WARNING: " exp)
+#endif  // COAL_WARNING_HH
+""",
+    visibility = ["//visibility:private"],
+)
+
+generate_file(
+    name = "include/coal/tracy.hh",
+    content = r"""
+#ifndef COAL_TRACY_HH
+#define COAL_TRACY_HH
+// Drake does not build Coal against the Tracy profiler.
+#define COAL_TRACY_ZONE_SCOPED_N(x)
+#define COAL_TRACY_ZONE_SCOPED
+#define COAL_TRACY_ZONE_NAMED_N(x, y, z)
+#define COAL_TRACY_ZONE_NAMED(x, y)
+#define COAL_TRACY_SET_THREAD_NAME(x)
+#endif  // COAL_TRACY_HH
+""",
+    visibility = ["//visibility:private"],
+)
+
+_GENERATED_HDRS = [
+    "include/coal/config.hh",
+    "include/coal/deprecated.hh",
+    "include/coal/warning.hh",
+    "include/coal/tracy.hh",
+]
+
+_HDRS = glob(
+    include = [
+        "include/coal/**/*.h",
+        "include/coal/**/*.hh",
+        "include/coal/**/*.hxx",
+    ],
+    allow_empty = False,
+    exclude = [
+        # Requires octomap.
+        "include/coal/octree.h",
+        "include/coal/internal/traversal_node_octree.h",
+        # Requires assimp.
+        "include/coal/mesh_loader/**",
+        # Dead code upstream: it includes a narrowphase header that Coal no
+        # longer ships, so it cannot compile at all.
+        "include/coal/broadphase/broadphase_continuous_collision_manager.h",
+        "include/coal/broadphase/broadphase_continuous_collision_manager-inl.h",  # noqa
+        # Requires Boost.Serialization, Boost.Filesystem, et al.
+        "include/coal/serialization/**",
+        # A backfill of boost::span for systems whose Boost predates 1.78. It
+        # is not self-contained (it includes the real <boost/assert.hpp>), and
+        # no_boost.patch moots it by using std::span.
+        "include/coal/third_party/**",
+    ],
+) + _GENERATED_HDRS
+
+# Coal's private headers, which its *.cpp files reach via paths relative to
+# either the including file or the `include` directory (e.g., the spelling
+# `#include <../src/collision_node.h>`). Preserving upstream's include/ vs src/
+# layout under one vendored root, below, is what keeps those spellings working.
+_PRIVATE_HDRS = glob(
+    include = ["src/**/*.h"],
+    allow_empty = False,
+)
+
+_SRCS = glob(
+    include = ["src/**/*.cpp"],
+    allow_empty = False,
+    exclude = [
+        "src/mesh_loader/**",
+        "src/serialization/**",
+        "src/octree.cpp",
+    ],
+) + _PRIVATE_HDRS
+
+cc_library_vendored(
+    name = "coal",
+    srcs = _SRCS,
+    srcs_vendored = [
+        x.replace("src/", "drake_vendor/src/")
+        for x in _SRCS
+    ],
+    hdrs = _HDRS,
+    hdrs_vendored = [
+        x.replace("include/", "drake_vendor/include/")
+        for x in _HDRS
+    ],
+    copts = [
+        "-fvisibility=hidden",
+        "-w",
+    ],
+    includes = ["drake_vendor/include"],
+    isystem = True,
+    linkstatic = True,
+    deps = [
+        "@eigen",
+    ],
+)
+
+install(
+    name = "install",
+    docs = ["LICENSE"],
+)
+
+exports_files(["drake_repository_metadata.json"])

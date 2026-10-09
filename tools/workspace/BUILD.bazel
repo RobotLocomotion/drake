@@ -18,6 +18,7 @@ filegroup(
         "@clang_cindex_python3_internal//:drake_repository_metadata.json",
         "@clarabel_cpp_internal//:drake_repository_metadata.json",
         "@clp_internal//:drake_repository_metadata.json",
+        "@coal_internal//:drake_repository_metadata.json",
         "@coinutils_internal//:drake_repository_metadata.json",
         "@common_robotics_utilities_internal//:drake_repository_metadata.json",
         "@cpplint_internal//:drake_repository_metadata.json",
@@ -127,6 +128,7 @@ drake_py_binary(
         # These should all be of the form "@foo_internal//:__subpackages__".
         "@clarabel_cpp_internal//:__subpackages__",
         "@clp_internal//:__subpackages__",
+        "@coal_internal//:__subpackages__",
         "@coinutils_internal//:__subpackages__",
         "@fcl_internal//:__subpackages__",
         "@gz_math_internal//:__subpackages__",
@@ -178,6 +180,7 @@ drake_py_binary(
 _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "ccd_internal",
     "clp_internal",
+    "coal_internal",
     "coinutils_internal",
     "common_robotics_utilities_internal",
     "curl_internal",
