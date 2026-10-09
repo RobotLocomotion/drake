@@ -1,6 +1,8 @@
 #pragma once
 
+#include <memory>
 #include <span>
+#include <vector>
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
@@ -34,8 +36,9 @@ struct ResizeParams {
   std::span<const int>
       limit_sizes;  // Number of velocities for each limit constraint.
   std::span<const int>
-      patch_sizes;  // Number of contact pairs for each patch constraint, of
-                    // size equal to the number of patches.
+      patch_sizes;    // Number of contact pairs for each patch constraint, of
+                      // size equal to the number of patches.
+  int num_islands{};  // Number of islands (independent convex subproblems).
 };
 
 /* Data for the ICF problem minᵥ ℓ(v; q₀, v₀, δt).
@@ -139,6 +142,13 @@ class IcfData {
   after v changes. */
   void set_v(const VectorX<T>& v);
 
+  /* Returns a mutable reference to v, for in-place segment updates by the
+  solver (e.g., when each island updates only its own clique segments during a
+  per-island solve). Unlike set_v(), this does not reset dependent quantities,
+  so the caller is responsible for keeping derived data consistent with v.
+  Intended for value writes only, not resizing. */
+  VectorX<T>& mutable_v() { return v_; }
+
   /* Returns the pool of rigid body spatial velocities, V_WB. Size is
   num_bodies().
 
@@ -160,6 +170,20 @@ class IcfData {
   /* Returns the total cost ℓ(v) = 0.5 vᵀA v - rᵀv + ℓᶜ(v). */
   const T& cost() const { return cost_; }
   void set_cost(const T& cost) { cost_ = cost; }
+
+  /* Returns the number of islands this data is sized for. */
+  int num_islands() const { return ssize(island_cost_); }
+
+  /* Returns the cost ℓᵢ(v) of island i. The island costs sum to the total cost
+  ℓ(v) = Σᵢ ℓᵢ(v); each is computed independently during a per-island solve. */
+  const T& island_cost(int island) const {
+    DRAKE_ASSERT(0 <= island && island < num_islands());
+    return island_cost_[island];
+  }
+  void set_island_cost(int island, const T& cost) {
+    DRAKE_ASSERT(0 <= island && island < num_islands());
+    island_cost_[island] = cost;
+  }
 
   /* Returns the total gradient ∇ℓ(v). Size is num_velocities(). */
   const VectorX<T>& gradient() const { return gradient_; }
@@ -225,6 +249,13 @@ class IcfData {
   IcfModel to write on the scratch as needed. */
   Scratch& scratch() const { return scratch_; }
 
+  /* Returns the mutable scratch space dedicated to island `island`. Per-island
+  scratch lets islands be solved concurrently without sharing scratch memory. */
+  Scratch& scratch(int island) const {
+    DRAKE_ASSERT(0 <= island && island < num_islands());
+    return *island_scratch_[island];
+  }
+
  private:
   VectorX<T> v_;                // Generalized velocities v
   EigenPool<Vector6<T>> V_WB_;  // Rigid body spatial velocities V_WB
@@ -232,6 +263,9 @@ class IcfData {
   T momentum_cost_{0};          // 0.5 vᵀAv - rᵀv
   T cost_{0};                   // Total cost ℓ(v) = 0.5 vᵀA v - rᵀv + ℓᶜ(v)
   VectorX<T> gradient_;         // Total cost gradient ∇ℓ(v)
+
+  // Per-island cost slots, ℓᵢ(v).
+  std::vector<T> island_cost_;
 
   // Type-specific constraint pools.
   BallConstraintsDataPool<T> ball_constraints_data_;
@@ -243,6 +277,12 @@ class IcfData {
   WeldConstraintsDataPool<T> weld_constraints_data_;
 
   mutable Scratch scratch_;
+
+  // Per-island scratch, indexed by island. Each island writes only its own
+  // scratch, so islands may be solved concurrently. Held by pointer because
+  // Scratch is neither copyable nor movable (its constraint-data pools are
+  // not).
+  mutable std::vector<std::unique_ptr<Scratch>> island_scratch_;
 };
 
 }  // namespace internal

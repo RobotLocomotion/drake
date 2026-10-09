@@ -1,6 +1,8 @@
 #include "drake/multibody/contact_solvers/icf/icf_data.h"
 
+#include <iterator>
 #include <limits>
+#include <memory>
 
 namespace drake {
 namespace multibody {
@@ -54,6 +56,18 @@ void IcfData<T>::Resize(const ResizeParams& params) {
   patch_constraints_data_.Resize(params.patch_sizes);
   weld_constraints_data_.Resize(params.num_welds);
   scratch_.Resize(params);
+
+  // Per-island storage. Grow-only: keep prior capacity (and any prior scratch
+  // allocations) and only extend when the island count grows.
+  DRAKE_DEMAND(params.num_islands > 0 || params.num_velocities == 0);
+  island_cost_.resize(params.num_islands);
+  island_scratch_.reserve(params.num_islands);
+  while (std::ssize(island_scratch_) < params.num_islands) {
+    island_scratch_.push_back(std::make_unique<Scratch>());
+  }
+  for (int i = 0; i < params.num_islands; ++i) {
+    island_scratch_[i]->Resize(params);
+  }
 }
 
 template <typename T>
