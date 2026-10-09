@@ -620,7 +620,7 @@ def _do_upgrade(
                 old_attachments=data["attachments"],
             )
 
-        if data["post_upgrade_script"] is not None:
+        if data.get("post_upgrade_script", ""):
             modified_paths = _do_upgrade_scripted(
                 local_drake_checkout=local_drake_checkout,
                 workspace_root=workspace_root,
