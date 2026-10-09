@@ -1,0 +1,100 @@
+# -*- bazel -*-
+
+load("@drake//tools/install:install.bzl", "install")
+load("@drake//tools/skylark:cc.bzl", "cc_library")
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "cc_linkonly_library",
+)
+
+licenses(["notice"])  # Apache-2.0
+
+package(default_visibility = ["//visibility:private"])
+
+# Drake uses only MuJoCo's native convex collision detection (GJK + EPA with
+# multi-point contact recovery via contact-polygon clipping), which lives in
+# src/engine/engine_collision_gjk.c and is nearly self-contained: it needs
+# only the small vector-math helpers in engine_util_blas.c and the warning
+# hooks in engine_util_errmem.c. In particular, it does not touch mjModel or
+# mjData; callers supply support functions and mesh polygon tables through
+# the mjCCDObj struct (declared in engine_collision_convex.h, which we export
+# as a header but do not compile).
+
+# The public mujoco/*.h headers plus the private engine headers needed to
+# declare the mjc_ccd() entry point and the mjCCDObj struct.
+cc_library(
+    name = "hdrs",
+    hdrs = [
+        "include/mujoco/mjdata.h",
+        "include/mujoco/mjexport.h",
+        "include/mujoco/mjmacro.h",
+        "include/mujoco/mjmodel.h",
+        "include/mujoco/mjtype.h",
+        "src/engine/engine_collision_convex.h",
+        "src/engine/engine_collision_gjk.h",
+        "src/engine/engine_util_blas.h",
+        "src/engine/engine_util_errmem.h",
+    ],
+    # MJ_STATIC neutralizes the MJAPI dllexport/visibility attributes; we
+    # link the object code statically into Drake.
+    defines = ["MJ_STATIC"],
+    includes = [
+        "include",
+        "src",
+    ],
+    isystem = True,
+    deps = [
+        "@ccd_internal//:ccd",
+    ],
+)
+
+# Compile the collision code (using both the exported headers and the private
+# headers it includes).
+cc_library(
+    name = "compiled",
+    srcs = [
+        "src/engine/engine_callback.h",
+        "src/engine/engine_collision_gjk.c",
+        "src/engine/engine_crossplatform.h",
+        "src/engine/engine_macro.h",
+        "src/engine/engine_util_blas.c",
+        "src/engine/engine_util_blas_avx.h",
+        "src/engine/engine_util_errmem.c",
+    ],
+    copts = [
+        "-Wno-all",
+        "-fvisibility=hidden",
+    ],
+    includes = [
+        "include",
+        "src",
+    ],
+    isystem = True,
+    linkstatic = True,
+    deps = [":hdrs"],
+)
+
+# Strip the private headers out; we just want the object code.
+cc_linkonly_library(
+    name = "archive",
+    deps = [":compiled"],
+)
+
+# Combine the public headers with the object code.
+cc_library(
+    name = "mujoco_ccd",
+    linkstatic = True,
+    visibility = ["//visibility:public"],
+    deps = [
+        ":archive",
+        ":hdrs",
+    ],
+)
+
+install(
+    name = "install",
+    docs = ["LICENSE"],
+    visibility = ["//visibility:public"],
+)
+
+exports_files(["drake_repository_metadata.json"])
