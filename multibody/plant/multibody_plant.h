@@ -3558,7 +3558,9 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// Finalize(); all other free bodies get theirs from user-defined joints. The
   /// APIs below depend on that distinction. Those with "FreeBody" in their
   /// names work on all free bodies. Those with "FloatingBaseBody" only work on
-  /// floating base bodies.
+  /// floating base bodies. If welded bodies are fused (see
+  /// SetFuseWeldedLinks()), only the body that the 6-dof joint actually moves
+  /// is a free body; the bodies welded to it are not.
   ///
   /// To implement a floating base body at %Finalize(), %MultibodyPlant
   /// automatically adds a floating joint between that body's frame and the

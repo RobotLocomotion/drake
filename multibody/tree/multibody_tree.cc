@@ -844,6 +844,19 @@ const Mobilizer<T>& MultibodyTree<T>::GetFreeBodyMobilizerOrThrow(
   if (!mobilizer.has_six_dofs()) {
     throw std::logic_error("Body '" + body.name() + "' is not a free body.");
   }
+  // If welded links were fused onto this free mobod, only its active link is
+  // a free body. The mobilizer's pose and spatial velocity are those of the
+  // active link; the other links are welded to it.
+  const LinkOrdinal active_link_ordinal =
+      forest().mobods(link.mobod_index()).active_link_ordinal();
+  if (link.ordinal() != active_link_ordinal) {
+    const Link<T>& active_link =
+        get_link(forest().links(active_link_ordinal).index());
+    throw std::logic_error(
+        fmt::format("Body '{}' is not a free body; it is welded to free body "
+                    "'{}'.",
+                    body.name(), active_link.name()));
+  }
   return mobilizer;
 }
 
@@ -1710,6 +1723,7 @@ void MultibodyTree<T>::CalcJointDamping(const systems::Context<T>& context,
   DRAKE_THROW_UNLESS(ssize(*joint_damping) == num_velocities());
 
   for (const Joint<T>* joint : joints_.elements()) {
+    if (joint->num_velocities() == 0) continue;  // No damping on a weld!
     joint_damping->segment(joint->velocity_start(), joint->num_velocities()) =
         joint->GetDampingVector(context);
   }
@@ -1763,7 +1777,7 @@ void MultibodyTree<T>::CalcFrameBodyPoses(
     // connecting a parent link P and child link C. Usually Lᵢ=P and Lₒ=C but
     // the joint may be reversed such that Lᵢ=C and Lₒ=P.
     for (const LinkOrdinal& link_ordinal : mobod.follower_link_ordinals()) {
-      if (got_X_BL[link_ordinal]) continue;  // Already calculated.
+      if (got_X_BL[link_ordinal]) continue;  // Already done.
       const LinkJointGraph::Link& link_Lo = graph().links(link_ordinal);
 
       // Search for the weld joint connecting Lₒ to an inboard link Lᵢ.
@@ -1780,7 +1794,7 @@ void MultibodyTree<T>::CalcFrameBodyPoses(
             graph_joint.other_link_index(link_Lo.index());
         const LinkJointGraph::Link& link_Li =
             graph().link_by_index(link_Li_index);
-        if (!got_X_BL[link_Li.ordinal()]) continue;  // Lᵢ not yet processed.
+        if (!got_X_BL[link_Li.ordinal()]) continue;  // Wrong joint.
 
         // Found the weld joint connecting inboard Lᵢ (X_BLᵢ known) to
         // outboard Lₒ. Retrieve X_BLᵢ for use below in calculating X_BLₒ.
@@ -2499,13 +2513,26 @@ RotationMatrix<T> MultibodyTree<T>::CalcRelativeRotationMatrix(
   // Shortcut: Efficiently return identity matrix if frame_F == frame_G.
   if (frame_F.index() == frame_G.index()) return RotationMatrix<T>::Identity();
 
+  // Frames F and G are fixed to mobods A and B, resp. Those mobods' frames may
+  // differ from the frames of the links L and M that F and G are attached to,
+  // if L or M is a follower link on a mobod with fused links. So we must use
+  // R_AF and R_BG here, not R_LF and R_MG.
+  const Link<T>& link_L = frame_F.link();
+  const Link<T>& link_M = frame_G.link();
+
+  // Find each Frame's orientation in its Mobod's frame (F in A, G in B).
+  const FrameBodyPoseCache<T>& frame_body_pose_cache =
+      EvalFrameBodyPoses(context);
+  const RotationMatrix<T>& R_AF =
+      frame_F.get_X_BF(frame_body_pose_cache).rotation();  // B==A
+  const RotationMatrix<T>& R_BG =
+      frame_G.get_X_BF(frame_body_pose_cache).rotation();  // F==G
+
+  // Find each Mobod's orientation in World.
   const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
-  const RigidBody<T>& A = frame_F.body();
-  const RigidBody<T>& B = frame_G.body();
-  const RotationMatrix<T>& R_WA = pc.get_R_WB(A.mobod_index());
-  const RotationMatrix<T>& R_WB = pc.get_R_WB(B.mobod_index());
-  const RotationMatrix<T> R_AF = frame_F.CalcRotationMatrixInBodyFrame(context);
-  const RotationMatrix<T> R_BG = frame_G.CalcRotationMatrixInBodyFrame(context);
+  const RotationMatrix<T>& R_WA = pc.get_R_WB(link_L.mobod_index());  // B==A
+  const RotationMatrix<T>& R_WB = pc.get_R_WB(link_M.mobod_index());
+
   const RotationMatrix<T> R_WF = R_WA * R_AF;
   const RotationMatrix<T> R_WG = R_WB * R_BG;
   return R_WF.InvertAndCompose(R_WG);  // R_FG = R_FW * R_WG;
@@ -4309,6 +4336,7 @@ void MultibodyTree<T>::CalcArticulatedBodyAccelerations(
   const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
   const std::vector<Vector6<T>>& H_PB_W_cache =
       EvalAcrossNodeJacobianWrtVExpressedInWorld(context);
+  const VelocityKinematicsCache<T>& vc = EvalVelocityKinematics(context);
   const std::vector<SpatialAcceleration<T>>& Ab_WB_cache =
       EvalSpatialAccelerationBiasCache(context);
 
@@ -4324,7 +4352,7 @@ void MultibodyTree<T>::CalcArticulatedBodyAccelerations(
           node.GetJacobianFromArray(H_PB_W_cache);
 
       node.CalcArticulatedBodyAccelerations_BaseToTip(
-          context, pc, abic, aba_force_cache, H_PB_W, Ab_WB, ac);
+          context, pc, abic, aba_force_cache, H_PB_W, vc, Ab_WB, ac);
     }
   }
 }
