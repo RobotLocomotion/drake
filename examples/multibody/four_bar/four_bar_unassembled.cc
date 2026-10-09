@@ -1,10 +1,16 @@
 /* @file
 A four bar linkage demo demonstrating MultibodyPlant's automatic modeling of
-closed kinematic loops. The linkage is defined as an unassembled loop of four
-revolute joints, assembled using an existing solver, and then simulated. For
-pedagogical purposes, the example also visualizes the shadow link and weld
-constraint that Drake creates to model the loop. Refer to README.md for more
-details and comparisons with the other four-bar examples. */
+closed kinematic loops, applied to an unassembled model parsed from an SDFormat
+file. This is four_bar_auto.cc with the linkage and its geometry described in
+four_bar_unassembled.sdf rather than built through the C++ API. The model file
+uses Drake's <drake:parent_frame> and <drake:child_frame> joint extensions to
+give each joint two independent frames; without them, a model parsed from a
+file is always assembled. The linkage is assembled using an existing solver,
+and then simulated. For pedagogical purposes, the example also visualizes the
+shadow link and weld constraint that Drake creates to model the loop; a shadow
+does not exist until the model is finalized, so it cannot be drawn by the model
+file. Refer to README.md for more details and comparisons with the other
+four-bar examples. */
 #include <algorithm>
 #include <chrono>
 #include <cmath>
@@ -25,9 +31,8 @@ details and comparisons with the other four-bar examples. */
 #include "drake/geometry/shape_specification.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/rotation_matrix.h"
-#include "drake/multibody/tree/fixed_offset_frame.h"
+#include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/tree/revolute_joint.h"
-#include "drake/multibody/tree/spatial_inertia.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/analysis/simulator_gflags.h"
 #include "drake/systems/analysis/simulator_print_stats.h"
@@ -51,13 +56,12 @@ using math::RigidTransformd;
 using math::RotationMatrixd;
 using multibody::AddMultibodyPlantSceneGraph;
 using multibody::BodyIndex;
-using multibody::FixedOffsetFrame;
 using multibody::Frame;
 using multibody::Joint;
 using multibody::Link;
 using multibody::MultibodyPlant;
+using multibody::Parser;
 using multibody::RevoluteJoint;
-using multibody::SpatialInertia;
 using systems::Context;
 using systems::DiagramBuilder;
 using systems::EventStatus;
@@ -98,7 +102,7 @@ constexpr double kAssembledTolerance = 1.0e-3;  // meters
 /* Owns the shared state of this example. Run() comes first and is implemented
 in line so that you can begin with the example's story; implementation details
 follow it. */
-class FourBarAutoDemo final {
+class FourBarUnassembledDemo final {
  public:
   int Run() {
     // Build the MultibodyPlant and SceneGraph.
@@ -107,11 +111,10 @@ class FourBarAutoDemo final {
     four_bar_ = &four_bar;
     scene_graph_ = &scene_graph;
 
-    // Construct the closed-topology mechanism, unassembled.
-    BuildFourBarLinkage();
-
-    // This geometry is cosmetic only, and must be added before Finalize().
-    AddFourBarIllustration();
+    // Load the closed-topology mechanism, unassembled, along with the geometry
+    // that illustrates it. See four_bar_unassembled.sdf.
+    Parser(&builder_).AddModelsFromUrl(
+        "package://drake/examples/multibody/four_bar/four_bar_unassembled.sdf");
 
     // We are done defining the model. Opt in to automatic modeling of closed
     // topologies (otherwise Finalize() would throw). Splitting a link,
@@ -138,7 +141,7 @@ class FourBarAutoDemo final {
                                                    FLAGS_applied_torque);
 
     // We set no initial conditions. Every joint angle defaults to zero, which
-    // is the unassembled configuration shown in the model description below.
+    // is the unassembled configuration shown in the model file.
     simulator_->Initialize();
     const double initial_error = CalcLoopClosureError(plant_context());
     if (!(initial_error > kAssembledTolerance)) {
@@ -191,17 +194,13 @@ class FourBarAutoDemo final {
     std::vector<AssemblyStep> path;
   };
 
-  // Model construction and assembly.
-  void BuildFourBarLinkage();
-  const Frame<double>& AddFrame(const Link<double>& link,
-                                const std::string& name, const Vector3d& p_LF);
+  // Assembly.
   const Context<double>& plant_context() const;
   Context<double>& mutable_plant_context();
   double CalcLoopClosureError(const Context<double>& context) const;
   AssemblyResult Assemble(double driver_angle);
 
   // Presentation.
-  void AddFourBarIllustration();
   void ReportAndIllustrateModeledLoops();
   void ShowAndWait(const std::string& message, const std::string& next);
   void ReplayAssembly(const std::vector<AssemblyStep>& path, double duration);
@@ -216,19 +215,6 @@ class FourBarAutoDemo final {
                                                         double radius);
   static std::pair<RigidTransformd, Cylinder> MakeFrameAxis(
       const RigidTransformd& X_LF, int axis, double radius_scale = 1.0);
-  void DrawBar(const Link<double>& link, const Vector3d& p_LStart,
-               double length, const Vector3d& direction, const Vector4d& color);
-  void DrawPivot(const Link<double>& link, const Vector3d& p_LP,
-                 const std::string& name, double radius, const Vector4d& color);
-  void DrawFrame(const Frame<double>& frame, const Vector4d& color,
-                 const std::string& name, double radius_scale = 1.0);
-  void DrawParentPin(const Frame<double>& parent_frame, const Vector4d& color,
-                     const std::string& name);
-  void DrawChildPin(const Frame<double>& child_frame, const Vector4d& color,
-                    const std::string& name);
-  void DrawJoint(const Frame<double>& parent_frame,
-                 const Vector4d& parent_color, const Frame<double>& child_frame,
-                 const Vector4d& child_color, const std::string& name);
   void DrawShadowLink(const Link<double>& shadow);
 
   DiagramBuilder<double> builder_;
@@ -238,122 +224,11 @@ class FourBarAutoDemo final {
   std::unique_ptr<Simulator<double>> simulator_;
 };
 
-/* The three moving links (driver, coupler, rocker) plus World and four revolute
-joints are laid out below as they are defined, unassembled and conveniently
-lined up with the World frame axes. "*" marks the connection points, each of
-which is a frame on a link. The frame names start with a capital letter
-matching the link to which they are fixed and a lower case letter for the
-connected link, except that Do and Ro are monogram names for the driver and
-rocker link frame origins.
-
-The coupler's link frame Co sits at the middle of the bar rather than at either
-connection point, so both of its connections, Cd and Cr, are offset frames. Co
-is where the loop-closing weld constraint ends up. All these frames are aligned
-with World as drawn.
-
-                                                      * Rc
-                                                      |
-                                                      |
-                     coupler C                        |
-     Cd *-------------------------- Co ------------------------* Cr
-                            4.8m 1kg                  |
-        * Dc                                          |
-        |                                    rocker R | 2m
-        |                                             | 2kg
-    1m  | driver D                                    |
-    1kg |                                             |      Wz
-        |                                             |      |  Wy
-        * Do                                       Ro *      | /
-                                                             +----- Wx
-        *====================== Wo ===================*
-       Wd         2m         World W         2m       Wr
-
-In parent-child order, the joints connect Wd-Do, Wr-Ro, Dc-Cd and Cr-Rc.
-Link mass centers are at their midpoints. Lengths and masses are shown;
-inertias are those of thin rods (mass * length² / 12). All four revolute
-joints have their axes in the -y direction (towards you), so the mechanism
-moves in the World x-z plane and swings under Drake's usual -z gravity.
-
-This configuration does not satisfy loop closure. Drake automatically adds a
-shadow link to break the loop and retargets one joint to it, making a tree. It
-then adds a weld constraint between the shadow and its primary link. The
-initial configuration does not satisfy that weld, so the linkage must be
-assembled before it can be simulated. */
-
-constexpr double kGroundLength = 4.0;   // Wd to Wr.
-constexpr double kDriverLength = 1.0;   // Do to Dc.
-constexpr double kCouplerLength = 4.8;  // Cd to Cr, with Co at the middle.
-constexpr double kRockerLength = 2.0;   // Ro to Rc.
-constexpr double kDriverMass = 1.0;     // kg
-constexpr double kCouplerMass = 1.0;    // kg
-constexpr double kRockerMass = 2.0;     // kg
-
-/* Adds a frame named `name`, fixed to `link` at `p_LF` and aligned with the
-link frame, and returns it. */
-const Frame<double>& FourBarAutoDemo::AddFrame(const Link<double>& link,
-                                               const std::string& name,
-                                               const Vector3d& p_LF) {
-  return four_bar_->AddFrame(std::make_unique<FixedOffsetFrame<double>>(
-      name, link, RigidTransformd(p_LF)));
-}
-
-/* Adds the links, frames, and joints shown above. Nothing here says anything
-about a spanning tree: the four joints simply form a loop, and MultibodyPlant
-decides how to model it. */
-void FourBarAutoDemo::BuildFourBarLinkage() {
-  // The ground "link" of the linkage is World itself; Wd and Wr are the frames
-  // where the linkage attaches to it.
-  const Link<double>& world = four_bar_->world_body();
-  const Frame<double>& Wd =
-      AddFrame(world, "Wd", Vector3d(-0.5 * kGroundLength, 0, 0));
-  const Frame<double>& Wr =
-      AddFrame(world, "Wr", Vector3d(0.5 * kGroundLength, 0, 0));
-
-  // The driver, a thin rod from its link frame Do along +z to Dc.
-  const Link<double>& driver = four_bar_->AddRigidBody(
-      "driver", SpatialInertia<double>::ThinRodWithMassAboutEnd(
-                    kDriverMass, kDriverLength, Vector3d::UnitZ()));
-  const Frame<double>& Do = driver.body_frame();
-  const Frame<double>& Dc =
-      AddFrame(driver, "Dc", Vector3d(0, 0, kDriverLength));
-
-  // The coupler runs along x from Cd to Cr, with its link frame Co at the
-  // middle. Its inertia is therefore that of a rod about its center of mass.
-  const Link<double>& coupler = four_bar_->AddRigidBody(
-      "coupler", SpatialInertia<double>::ThinRodWithMass(
-                     kCouplerMass, kCouplerLength, Vector3d::UnitX()));
-  const Frame<double>& Cd =
-      AddFrame(coupler, "Cd", Vector3d(-0.5 * kCouplerLength, 0, 0));
-  const Frame<double>& Cr =
-      AddFrame(coupler, "Cr", Vector3d(0.5 * kCouplerLength, 0, 0));
-
-  // The rocker, a thin rod from its link frame Ro along +z to Rc.
-  const Link<double>& rocker = four_bar_->AddRigidBody(
-      "rocker", SpatialInertia<double>::ThinRodWithMassAboutEnd(
-                    kRockerMass, kRockerLength, Vector3d::UnitZ()));
-  const Frame<double>& Ro = rocker.body_frame();
-  const Frame<double>& Rc =
-      AddFrame(rocker, "Rc", Vector3d(0, 0, kRockerLength));
-
-  // The four revolute joints connect the frame pairs shown above, with q = 0
-  // when each pair is coincident. Only the first joint is actuated.
-  const Vector3d axis = -Vector3d::UnitY();  // Out of the page, towards you.
-  const RevoluteJoint<double>& world_driver = four_bar_->AddJoint(
-      std::make_unique<RevoluteJoint<double>>("world_driver", Wd, Do, axis));
-  four_bar_->AddJoint(
-      std::make_unique<RevoluteJoint<double>>("world_rocker", Wr, Ro, axis));
-  four_bar_->AddJoint(
-      std::make_unique<RevoluteJoint<double>>("driver_coupler", Dc, Cd, axis));
-  four_bar_->AddJoint(
-      std::make_unique<RevoluteJoint<double>>("coupler_rocker", Cr, Rc, axis));
-  four_bar_->AddJointActuator("driver_torque", world_driver);
-}
-
-const Context<double>& FourBarAutoDemo::plant_context() const {
+const Context<double>& FourBarUnassembledDemo::plant_context() const {
   return four_bar_->GetMyContextFromRoot(simulator_->get_context());
 }
 
-Context<double>& FourBarAutoDemo::mutable_plant_context() {
+Context<double>& FourBarUnassembledDemo::mutable_plant_context() {
   return four_bar_->GetMyMutableContextFromRoot(
       &simulator_->get_mutable_context());
 }
@@ -361,7 +236,7 @@ Context<double>& FourBarAutoDemo::mutable_plant_context() {
 /* Returns the loop closure error, in meters. The two frames of the retargeted
 joint are no longer held together by that joint, and the distance between them
 is the loop closure error. */
-double FourBarAutoDemo::CalcLoopClosureError(
+double FourBarUnassembledDemo::CalcLoopClosureError(
     const Context<double>& context) const {
   const Joint<double>& loop_joint = four_bar_->GetJointByName("coupler_rocker");
   return four_bar_
@@ -376,7 +251,8 @@ solves the loop closure equations; the solver pulls the two halves of the split
 link together, and this function merely steps until they have arrived. On
 return, the linkage is assembled and at rest, the driver is released, and the
 simulator clock is reset to zero. */
-FourBarAutoDemo::AssemblyResult FourBarAutoDemo::Assemble(double driver_angle) {
+FourBarUnassembledDemo::AssemblyResult FourBarUnassembledDemo::Assemble(
+    double driver_angle) {
   Context<double>& context = mutable_plant_context();
   const RevoluteJoint<double>& driver_joint =
       four_bar_->GetJointByName<RevoluteJoint>("world_driver");
@@ -420,26 +296,25 @@ FourBarAutoDemo::AssemblyResult FourBarAutoDemo::Assemble(double driver_angle) {
 }
 
 // The rest of the file supports the pedagogical visualization. None of it is
-// needed merely to model a closed topology.
+// needed merely to model a closed topology. All the geometry other than the
+// shadow link's is in the model file; these values match it.
 
 constexpr double kBarWidth = 0.2;      // In the plane of motion.
 constexpr double kBarThickness = 0.1;  // Out of the plane of motion, i.e. y.
 constexpr double kPivotRadius = 0.02;  // The child end of a joint.
 constexpr double kFatPivotRadius = 2 * kPivotRadius;  // The parent end.
-constexpr double kParentPinAlpha = 0.5;  // See through it to the child's pin.
-constexpr double kPivotLength = 2 * kBarThickness;  // Pokes out either side.
-constexpr double kCouplerAlpha = 0.5;
+constexpr double kPivotLength = 2 * kBarThickness;    // Pokes out either side.
 constexpr double kShadowAlpha = 0.33;
 constexpr double kShadowScale = 0.75;
 constexpr double kPlaybackFps = 30.0;
 constexpr double kFrameAxisLength = 0.25;   // meters
 constexpr double kFrameAxisRadius = 0.006;  // meters
 
-Vector4d FourBarAutoDemo::WeldFrameColor() {
+Vector4d FourBarUnassembledDemo::WeldFrameColor() {
   return Vector4d(0.833, 0.333, 0, 1);  // A dark orange.
 }
 
-std::pair<RigidTransformd, Box> FourBarAutoDemo::MakeBar(
+std::pair<RigidTransformd, Box> FourBarUnassembledDemo::MakeBar(
     const Vector3d& p_LStart, double length, const Vector3d& direction,
     double transverse_scale) {
   const bool along_x = direction.x() != 0.0;
@@ -453,13 +328,13 @@ std::pair<RigidTransformd, Box> FourBarAutoDemo::MakeBar(
       Box(along_x ? long_side : width, thickness, along_x ? width : long_side)};
 }
 
-std::pair<RigidTransformd, Cylinder> FourBarAutoDemo::MakePivot(
+std::pair<RigidTransformd, Cylinder> FourBarUnassembledDemo::MakePivot(
     const Vector3d& p_LP, double radius) {
   return {RigidTransformd(RotationMatrixd::MakeXRotation(M_PI_2), p_LP),
           Cylinder(radius, kPivotLength)};
 }
 
-std::pair<RigidTransformd, Cylinder> FourBarAutoDemo::MakeFrameAxis(
+std::pair<RigidTransformd, Cylinder> FourBarUnassembledDemo::MakeFrameAxis(
     const RigidTransformd& X_LF, int axis, double radius_scale) {
   const RotationMatrixd R_FG =
       axis == 0   ? RotationMatrixd::MakeYRotation(M_PI_2)
@@ -470,103 +345,12 @@ std::pair<RigidTransformd, Cylinder> FourBarAutoDemo::MakeFrameAxis(
           Cylinder(radius_scale * kFrameAxisRadius, kFrameAxisLength)};
 }
 
-void FourBarAutoDemo::DrawBar(const Link<double>& link,
-                              const Vector3d& p_LStart, double length,
-                              const Vector3d& direction,
-                              const Vector4d& color) {
-  const auto [X_LB, bar] = MakeBar(p_LStart, length, direction);
-  four_bar_->RegisterVisualGeometry(link, X_LB, bar, link.name() + "_bar",
-                                    color);
-}
-
-void FourBarAutoDemo::DrawPivot(const Link<double>& link, const Vector3d& p_LP,
-                                const std::string& name, double radius,
-                                const Vector4d& color) {
-  const auto [X_LP, pivot] = MakePivot(p_LP, radius);
-  four_bar_->RegisterVisualGeometry(link, X_LP, pivot, name, color);
-}
-
-void FourBarAutoDemo::DrawFrame(const Frame<double>& frame,
-                                const Vector4d& color, const std::string& name,
-                                double radius_scale) {
-  const RigidTransformd X_LF = frame.GetFixedPoseInBodyFrame();
-  for (int axis = 0; axis < 3; ++axis) {
-    const auto [X_LG, arm] = MakeFrameAxis(X_LF, axis, radius_scale);
-    four_bar_->RegisterVisualGeometry(
-        frame.link(), X_LG, arm, fmt::format("{}_{}_axis", name, "xyz"[axis]),
-        color);
-  }
-}
-
-void FourBarAutoDemo::DrawParentPin(const Frame<double>& parent_frame,
-                                    const Vector4d& color,
-                                    const std::string& name) {
-  Vector4d translucent_color = color;
-  translucent_color[3] = kParentPinAlpha;
-  DrawPivot(parent_frame.link(),
-            parent_frame.GetFixedPoseInBodyFrame().translation(),
-            name + "_parent_pin", kFatPivotRadius, translucent_color);
-}
-
-void FourBarAutoDemo::DrawChildPin(const Frame<double>& child_frame,
-                                   const Vector4d& color,
-                                   const std::string& name) {
-  DrawPivot(child_frame.link(),
-            child_frame.GetFixedPoseInBodyFrame().translation(),
-            name + "_child_pin", kPivotRadius, color);
-}
-
-void FourBarAutoDemo::DrawJoint(const Frame<double>& parent_frame,
-                                const Vector4d& parent_color,
-                                const Frame<double>& child_frame,
-                                const Vector4d& child_color,
-                                const std::string& name) {
-  DrawParentPin(parent_frame, parent_color, name);
-  DrawChildPin(child_frame, child_color, name);
-}
-
-void FourBarAutoDemo::AddFourBarIllustration() {
-  const Vector4d green(0, 1, 0, 1), red(1, 0, 0, 1),
-      blue(0, 0, 1, kCouplerAlpha), yellow(1, 1, 0, 1);
-
-  const Link<double>& world = four_bar_->world_body();
-  const Link<double>& driver = four_bar_->GetBodyByName("driver");
-  const Link<double>& coupler = four_bar_->GetBodyByName("coupler");
-  const Link<double>& rocker = four_bar_->GetBodyByName("rocker");
-  const Frame<double>& Wd = four_bar_->GetFrameByName("Wd");
-  const Frame<double>& Wr = four_bar_->GetFrameByName("Wr");
-  const Frame<double>& Dc = four_bar_->GetFrameByName("Dc");
-  const Frame<double>& Cd = four_bar_->GetFrameByName("Cd");
-  const Frame<double>& Cr = four_bar_->GetFrameByName("Cr");
-  const Frame<double>& Rc = four_bar_->GetFrameByName("Rc");
-
-  DrawBar(world, Vector3d(-0.5 * kGroundLength, 0, 0), kGroundLength,
-          Vector3d::UnitX(), green);
-  DrawBar(driver, Vector3d::Zero(), kDriverLength, Vector3d::UnitZ(), red);
-  DrawBar(coupler, Vector3d(-0.5 * kCouplerLength, 0, 0), kCouplerLength,
-          Vector3d::UnitX(), blue);
-  DrawBar(rocker, Vector3d::Zero(), kRockerLength, Vector3d::UnitZ(), yellow);
-
-  // Every joint is drawn as a translucent parent pin around a child pin.
-  DrawJoint(Wd, green, driver.body_frame(), red, "world_driver");
-  DrawJoint(Wr, green, rocker.body_frame(), yellow, "world_rocker");
-  DrawJoint(Dc, red, Cd, blue, "driver_coupler");
-
-  // The coupler_rocker joint will move from the coupler to its shadow during
-  // Finalize(), so draw only its child end here. Its parent end is added to the
-  // shadow later.
-  DrawChildPin(Rc, yellow, "coupler_rocker");
-
-  // Orange marks the coupler frame and the matching frame on its shadow; blue
-  // marks the coupler's far end.
-  DrawFrame(coupler.body_frame(), WeldFrameColor(), "Co", 2.0);
-  DrawFrame(Cr, blue, "Cr");
-}
-
-/* Draws `shadow` as a faint, slightly slimmer copy of the coupler. A shadow
-does not exist until Finalize(), so its geometry must be registered directly
-with SceneGraph rather than through MultibodyPlant::RegisterVisualGeometry(). */
-void FourBarAutoDemo::DrawShadowLink(const Link<double>& shadow) {
+/* Draws `shadow` as a faint, slightly slimmer copy of the coupler, running
+between the coupler's Cd and Cr frames as the model file defines them. A shadow
+does not exist until Finalize(), so it cannot be drawn by the model file, and
+its geometry must be registered directly with SceneGraph rather than through
+MultibodyPlant::RegisterVisualGeometry(). */
+void FourBarUnassembledDemo::DrawShadowLink(const Link<double>& shadow) {
   const Vector4d pale_blue(0.6, 0.6, 1, kShadowAlpha);
   const SourceId source_id = four_bar_->get_source_id().value();
   const FrameId frame_id = four_bar_->GetBodyFrameIdOrThrow(shadow.index());
@@ -578,12 +362,15 @@ void FourBarAutoDemo::DrawShadowLink(const Link<double>& shadow) {
     scene_graph_->RegisterGeometry(source_id, frame_id, std::move(instance));
   };
 
-  const Vector3d p_CoCd(-0.5 * kCouplerLength, 0, 0);
+  const Vector3d p_CoCd =
+      four_bar_->GetFrameByName("Cd").GetFixedPoseInBodyFrame().translation();
+  const Vector3d p_CoCr =
+      four_bar_->GetFrameByName("Cr").GetFixedPoseInBodyFrame().translation();
+  const double coupler_length = (p_CoCr - p_CoCd).norm();
   const auto [X_LB, bar] =
-      MakeBar(p_CoCd, kCouplerLength, Vector3d::UnitX(), kShadowScale);
+      MakeBar(p_CoCd, coupler_length, Vector3d::UnitX(), kShadowScale);
   add_geometry(X_LB, bar, shadow.name() + "_bar", pale_blue);
-  const auto [X_LP, parent_pin] =
-      MakePivot(p_CoCd + kCouplerLength * Vector3d::UnitX(), kFatPivotRadius);
+  const auto [X_LP, parent_pin] = MakePivot(p_CoCr, kFatPivotRadius);
   add_geometry(X_LP, parent_pin, shadow.name() + "_parent_pin", pale_blue);
 
   // Draw the shadow's origin exactly like the coupler's Co frame, so that the
@@ -596,7 +383,7 @@ void FourBarAutoDemo::DrawShadowLink(const Link<double>& shadow) {
   }
 }
 
-void FourBarAutoDemo::ReportAndIllustrateModeledLoops() {
+void FourBarUnassembledDemo::ReportAndIllustrateModeledLoops() {
   // Each loop costs one shadow link and one weld constraint. The primary and
   // shadow share the original link's mass evenly.
   std::cout << fmt::format(
@@ -614,8 +401,8 @@ void FourBarAutoDemo::ReportAndIllustrateModeledLoops() {
 
 /* Shows the current configuration and, unless --nointeractive, waits for the
 user to press Enter before doing whatever `next` describes. */
-void FourBarAutoDemo::ShowAndWait(const std::string& message,
-                                  const std::string& next) {
+void FourBarUnassembledDemo::ShowAndWait(const std::string& message,
+                                         const std::string& next) {
   diagram_->ForcedPublish(simulator_->get_context());
   std::cout << fmt::format("\n{}\n", message);
   if (FLAGS_interactive) {
@@ -631,8 +418,8 @@ void FourBarAutoDemo::ShowAndWait(const std::string& message,
 wall time, then restores the assembled configuration. Frames are selected by
 remaining loop closure error, so playback does not depend on solver step size.
 */
-void FourBarAutoDemo::ReplayAssembly(const std::vector<AssemblyStep>& path,
-                                     double duration) {
+void FourBarUnassembledDemo::ReplayAssembly(
+    const std::vector<AssemblyStep>& path, double duration) {
   if (duration <= 0.0 || std::ssize(path) < 2) return;
 
   Context<double>& context = mutable_plant_context();
@@ -666,12 +453,12 @@ void FourBarAutoDemo::ReplayAssembly(const std::vector<AssemblyStep>& path,
 int main(int argc, char* argv[]) {
   gflags::SetUsageMessage(
       "A four bar linkage demo demonstrating MultibodyPlant's automatic "
-      "modeling of closed kinematic loops, with assembly. Open the indicated "
-      "URL to see the Meshcat visualization.");
+      "modeling of closed kinematic loops, with assembly, for an unassembled "
+      "model file. Open the indicated URL to see the Meshcat visualization.");
   // Changes the default realtime rate to 1X, so the visualization looks
   // realistic. Otherwise, it finishes too fast. Users can still change it on
   // command line, e.g., "--simulator_target_realtime_rate=0.5" to slow it down.
   FLAGS_simulator_target_realtime_rate = 1.0;
   gflags::ParseCommandLineFlags(&argc, &argv, true);
-  return drake::FourBarAutoDemo().Run();
+  return drake::FourBarUnassembledDemo().Run();
 }
