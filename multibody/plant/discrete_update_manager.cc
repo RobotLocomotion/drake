@@ -1,6 +1,7 @@
 #include "drake/multibody/plant/discrete_update_manager.h"
 
 #include <limits>
+#include <unordered_map>
 #include <utility>
 
 #include "drake/multibody/plant/contact_properties.h"
@@ -832,9 +833,40 @@ void DiscreteUpdateManager<T>::AppendDiscreteContactPairsForHydroelasticContact(
 
   // Scratch workspace variables.
   const int nv = plant().num_velocities();
-  Matrix3X<T> Jv_WAc_W(3, nv);
-  Matrix3X<T> Jv_WBc_W(3, nv);
-  Matrix3X<T> Jv_AcBc_W(3, nv);
+  Matrix3X<T> Jt_WAc_W(3, nv);
+  Matrix3X<T> Jt_WBc_W(3, nv);
+
+  // A contact Jacobian is needed at every contact face's centroid, but a
+  // body's spatial Jacobian is only nonzero in its tree's generalized
+  // velocities, and the velocity of a point C rigidly shifted from the body
+  // origin Bo follows from the spatial Jacobian at Bo:
+  //     Jt_WC = Jt_WBo + Jr_WBo × p_BoC_W  (column-wise cross product).
+  // So instead of computing a full-width translational Jacobian twice per
+  // face (an O(nv) tree walk each), we compute each body's spatial Jacobian
+  // at Bo once per call, and per face shift it to the centroid on just the
+  // relevant tree columns.
+  std::unordered_map<BodyIndex, Matrix6X<T>> J_V_WBo_cache;
+  auto body_jacobian = [&](const RigidBody<T>& body) -> const Matrix6X<T>& {
+    auto [it, inserted] = J_V_WBo_cache.try_emplace(body.index());
+    if (inserted) {
+      it->second.resize(6, nv);
+      internal_tree().CalcJacobianSpatialVelocity(
+          context, JacobianWrtVariable::kV, body.body_frame(),
+          Vector3<T>::Zero(), frame_W, frame_W, &it->second);
+    }
+    return it->second;
+  };
+  // Writes the translational Jacobian of point C (affixed to the given body)
+  // for the tree columns [col0, col0 + ncols) into
+  // `Jt_WC->leftCols(ncols)`.
+  auto shift_to_point = [](const Matrix6X<T>& J_WBo, const Vector3<T>& p_BoC_W,
+                           int col0, int ncols, Matrix3X<T>* Jt_WC) {
+    for (int j = 0; j < ncols; ++j) {
+      const auto Jr_col = J_WBo.template block<3, 1>(0, col0 + j);
+      const auto Jt_col = J_WBo.template block<3, 1>(3, col0 + j);
+      Jt_WC->col(j) = Jt_col + Jr_col.cross(p_BoC_W);
+    }
+  };
 
   const int num_surfaces = surfaces.size();
   for (int surface_index = 0; surface_index < num_surfaces; ++surface_index) {
@@ -943,16 +975,35 @@ void DiscreteUpdateManager<T>::AppendDiscreteContactPairsForHydroelasticContact(
         const Vector3<T>& p_WC = s.centroid(face);
 
         // Since v_AcBc_W = v_WBc - v_WAc the relative velocity Jacobian
-        // will be:
-        //   J_AcBc_W = Jv_WBc_W - Jv_WAc_W.
+        // (over the union of tree A's and tree B's generalized velocities;
+        // it is zero elsewhere) is:
+        //   J_AcBc_W = Jt_WBc_W - Jt_WAc_W.
         // That is the relative velocity at C is v_AcBc_W = J_AcBc_W * v.
-        internal_tree().CalcJacobianTranslationalVelocity(
-            context, JacobianWrtVariable::kV, body_A.body_frame(), frame_W,
-            p_WC, frame_W, frame_W, &Jv_WAc_W);
-        internal_tree().CalcJacobianTranslationalVelocity(
-            context, JacobianWrtVariable::kV, body_B.body_frame(), frame_W,
-            p_WC, frame_W, frame_W, &Jv_WBc_W);
-        Jv_AcBc_W = Jv_WBc_W - Jv_WAc_W;
+        // Each body's translational Jacobian at C is obtained by rigidly
+        // shifting its (cached) spatial Jacobian at the body origin; see
+        // body_jacobian above.
+        const RigidTransform<T>& X_WA_jac =
+            plant().EvalBodyPoseInWorld(context, body_A);
+        const RigidTransform<T>& X_WB_jac =
+            plant().EvalBodyPoseInWorld(context, body_B);
+        const Vector3<T> p_AoC_W = p_WC - X_WA_jac.translation();
+        const Vector3<T> p_BoC_W = p_WC - X_WB_jac.translation();
+        const bool same_tree = tree_A_index.is_valid() &&
+                               tree_B_index.is_valid() &&
+                               tree_A_index == tree_B_index;
+        int nv_A = 0, nv_B = 0;
+        if (treeA_has_dofs) {
+          const SpanningForest::Tree& tree_A = forest.trees(tree_A_index);
+          nv_A = tree_A.nv();
+          shift_to_point(body_jacobian(body_A), p_AoC_W, tree_A.v_start(), nv_A,
+                         &Jt_WAc_W);
+        }
+        if (treeB_has_dofs) {
+          const SpanningForest::Tree& tree_B = forest.trees(tree_B_index);
+          nv_B = tree_B.nv();
+          shift_to_point(body_jacobian(body_B), p_BoC_W, tree_B.v_start(), nv_B,
+                         &Jt_WBc_W);
+        }
 
         // Define a contact frame C at the contact point such that the
         // z-axis Cz equals nhat_AB_W. The tangent vectors are arbitrary,
@@ -971,7 +1022,17 @@ void DiscreteUpdateManager<T>::AppendDiscreteContactPairsForHydroelasticContact(
 
         // Contact velocity stored in the current context (previous time
         // step).
-        const Vector3<T> v_AcBc_W = Jv_AcBc_W * v;
+        Vector3<T> v_AcBc_W = Vector3<T>::Zero();
+        if (treeB_has_dofs) {
+          const SpanningForest::Tree& tree_B = forest.trees(tree_B_index);
+          v_AcBc_W +=
+              Jt_WBc_W.leftCols(nv_B) * v.segment(tree_B.v_start(), nv_B);
+        }
+        if (treeA_has_dofs) {
+          const SpanningForest::Tree& tree_A = forest.trees(tree_A_index);
+          v_AcBc_W -=
+              Jt_WAc_W.leftCols(nv_A) * v.segment(tree_A.v_start(), nv_A);
+        }
         const Vector3<T> v_AcBc_C = R_WC.transpose() * v_AcBc_W;
         const T vn0 = v_AcBc_C(2);
 
@@ -980,11 +1041,16 @@ void DiscreteUpdateManager<T>::AppendDiscreteContactPairsForHydroelasticContact(
             jacobian_blocks;
         jacobian_blocks.reserve(2);
 
-        // Tree A contribution to contact Jacobian Jv_W_AcBc_C.
+        // Tree A contribution to contact Jacobian Jv_W_AcBc_C. When both
+        // bodies belong to the same tree, this single block carries both
+        // contributions (Jt_WBc - Jt_WAc); otherwise B's Jacobian is zero on
+        // tree A's columns.
         if (treeA_has_dofs) {
-          const SpanningForest::Tree& tree_A = forest.trees(tree_A_index);
-          Matrix3X<T> J = R_WC.matrix().transpose() *
-                          Jv_AcBc_W.middleCols(tree_A.v_start(), tree_A.nv());
+          Matrix3X<T> J =
+              R_WC.matrix().transpose() *
+              (same_tree && treeB_has_dofs
+                   ? (Jt_WBc_W.leftCols(nv_A) - Jt_WAc_W.leftCols(nv_A)).eval()
+                   : (-Jt_WAc_W.leftCols(nv_A)).eval());
           jacobian_blocks.emplace_back(tree_A_index,
                                        MatrixBlock<T>(std::move(J)));
         }
@@ -992,10 +1058,8 @@ void DiscreteUpdateManager<T>::AppendDiscreteContactPairsForHydroelasticContact(
         // Tree B contribution to contact Jacobian Jv_W_AcBc_C.
         // This contribution must be added only if B is different from A.
         if ((treeB_has_dofs && !treeA_has_dofs) ||
-            (treeB_has_dofs && tree_B_index != tree_A_index)) {
-          const SpanningForest::Tree& tree_B = forest.trees(tree_B_index);
-          Matrix3X<T> J = R_WC.matrix().transpose() *
-                          Jv_AcBc_W.middleCols(tree_B.v_start(), tree_B.nv());
+            (treeB_has_dofs && !same_tree)) {
+          Matrix3X<T> J = R_WC.matrix().transpose() * Jt_WBc_W.leftCols(nv_B);
           jacobian_blocks.emplace_back(tree_B_index,
                                        MatrixBlock<T>(std::move(J)));
         }
