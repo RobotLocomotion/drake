@@ -36,42 +36,35 @@ INSTANTIATE_TEST_SUITE_P(
 
 TEST_F(UnboundedLinearProgramTest0, Test) {
   MosekSolver solver;
-  if (solver.available()) {
-    const MathematicalProgram& const_prog = *prog_;
-    MathematicalProgramResult result;
-    solver.Solve(const_prog, {}, {}, &result);
-    // Mosek can only detect dual infeasibility, not primal unboundedness.
-    EXPECT_FALSE(result.is_success());
-    EXPECT_EQ(result.get_solution_result(), SolutionResult::kDualInfeasible);
-    const MosekSolverDetails& mosek_solver_details =
-        result.get_solver_details<MosekSolver>();
-    EXPECT_EQ(mosek_solver_details.rescode, 0);
-    // This problem status is defined in
-    // https://docs.mosek.com/11.1/capi/constants.html#mosek.prosta
-    const int MSK_SOL_STA_DUAL_INFEAS_CER = 6;
-    EXPECT_EQ(mosek_solver_details.solution_status,
-              MSK_SOL_STA_DUAL_INFEAS_CER);
-    const auto x_sol = result.GetSolution(x_);
-    EXPECT_FALSE(std::isnan(x_sol(0)));
-    EXPECT_FALSE(std::isnan(x_sol(1)));
-  }
+  const MathematicalProgram& const_prog = *prog_;
+  MathematicalProgramResult result;
+  solver.Solve(const_prog, {}, {}, &result);
+  // Mosek can only detect dual infeasibility, not primal unboundedness.
+  EXPECT_FALSE(result.is_success());
+  EXPECT_EQ(result.get_solution_result(), SolutionResult::kDualInfeasible);
+  const MosekSolverDetails& mosek_solver_details =
+      result.get_solver_details<MosekSolver>();
+  EXPECT_EQ(mosek_solver_details.rescode, 0);
+  // This problem status is defined in
+  // https://docs.mosek.com/11.1/capi/constants.html#mosek.prosta
+  const int MSK_SOL_STA_DUAL_INFEAS_CER = 6;
+  EXPECT_EQ(mosek_solver_details.solution_status, MSK_SOL_STA_DUAL_INFEAS_CER);
+  const auto x_sol = result.GetSolution(x_);
+  EXPECT_FALSE(std::isnan(x_sol(0)));
+  EXPECT_FALSE(std::isnan(x_sol(1)));
 }
 
 TEST_F(UnboundedLinearProgramTest1, Test) {
   MosekSolver solver;
-  if (solver.available()) {
-    MathematicalProgramResult result;
-    solver.Solve(*prog_, {}, {}, &result);
-    // Mosek can only detect dual infeasibility, not primal unboundedness.
-    EXPECT_EQ(result.get_solution_result(), SolutionResult::kDualInfeasible);
-  }
+  MathematicalProgramResult result;
+  solver.Solve(*prog_, {}, {}, &result);
+  // Mosek can only detect dual infeasibility, not primal unboundedness.
+  EXPECT_EQ(result.get_solution_result(), SolutionResult::kDualInfeasible);
 }
 
 TEST_F(DuplicatedVariableLinearProgramTest1, Test) {
   MosekSolver solver;
-  if (solver.available()) {
-    CheckSolution(solver);
-  }
+  CheckSolution(solver);
 }
 
 TEST_P(QuadraticProgramTest, TestQP) {
@@ -87,23 +80,17 @@ INSTANTIATE_TEST_SUITE_P(
 
 GTEST_TEST(QPtest, TestUnitBallExample) {
   MosekSolver solver;
-  if (solver.available()) {
-    TestQPonUnitBallExample(solver);
-  }
+  TestQPonUnitBallExample(solver);
 }
 
 GTEST_TEST(QPtest, TestQuadraticCostVariableOrder) {
   MosekSolver solver;
-  if (solver.available()) {
-    TestQuadraticCostVariableOrder(solver);
-  }
+  TestQuadraticCostVariableOrder(solver);
 }
 
 TEST_P(TestEllipsoidsSeparation, TestSOCP) {
   MosekSolver mosek_solver;
-  if (mosek_solver.available()) {
-    SolveAndCheckSolution(mosek_solver);
-  }
+  SolveAndCheckSolution(mosek_solver);
 }
 
 INSTANTIATE_TEST_SUITE_P(
@@ -112,16 +99,12 @@ INSTANTIATE_TEST_SUITE_P(
 
 GTEST_TEST(TestDuplicatedVariableQuadraticProgram, Test) {
   MosekSolver solver;
-  if (solver.available()) {
-    TestDuplicatedVariableQuadraticProgram(solver);
-  }
+  TestDuplicatedVariableQuadraticProgram(solver);
 }
 
 TEST_P(TestQPasSOCP, TestSOCP) {
   MosekSolver mosek_solver;
-  if (mosek_solver.available()) {
-    SolveAndCheckSolution(mosek_solver);
-  }
+  SolveAndCheckSolution(mosek_solver);
 }
 
 INSTANTIATE_TEST_SUITE_P(MosekTest, TestQPasSOCP,
@@ -129,9 +112,7 @@ INSTANTIATE_TEST_SUITE_P(MosekTest, TestQPasSOCP,
 
 TEST_P(TestFindSpringEquilibrium, TestSOCP) {
   MosekSolver mosek_solver;
-  if (mosek_solver.available()) {
-    SolveAndCheckSolution(mosek_solver);
-  }
+  SolveAndCheckSolution(mosek_solver);
 }
 
 INSTANTIATE_TEST_SUITE_P(
@@ -141,19 +122,15 @@ INSTANTIATE_TEST_SUITE_P(
 GTEST_TEST(TestSOCP, MaximizeGeometricMeanTrivialProblem1) {
   MaximizeGeometricMeanTrivialProblem1 prob;
   MosekSolver solver;
-  if (solver.available()) {
-    const auto result = solver.Solve(prob.prog(), {}, {});
-    prob.CheckSolution(result, 1E-7);
-  }
+  const auto result = solver.Solve(prob.prog(), {}, {});
+  prob.CheckSolution(result, 1E-7);
 }
 
 GTEST_TEST(TestSOCP, MaximizeGeometricMeanTrivialProblem2) {
   MaximizeGeometricMeanTrivialProblem2 prob;
   MosekSolver solver;
-  if (solver.available()) {
-    const auto result = solver.Solve(prob.prog(), {}, {});
-    prob.CheckSolution(result, 1E-7);
-  }
+  const auto result = solver.Solve(prob.prog(), {}, {});
+  prob.CheckSolution(result, 1E-7);
 }
 
 GTEST_TEST(TestSOCP, SmallestEllipsoidCoveringProblem) {
@@ -198,79 +175,57 @@ GTEST_TEST(TestL2NormCost, ShortestDistanceFromPlaneToTwoPoints) {
 
 GTEST_TEST(TestSemidefiniteProgram, TrivialSDP) {
   MosekSolver mosek_solver;
-  if (mosek_solver.available()) {
-    TestTrivialSDP(mosek_solver, 1E-8);
-  }
+  TestTrivialSDP(mosek_solver, 1E-8);
 }
 
 GTEST_TEST(TestSemidefiniteProgram, CommonLyapunov) {
   MosekSolver mosek_solver;
-  if (mosek_solver.available()) {
-    FindCommonLyapunov(mosek_solver, {}, 1E-8);
-  }
+  FindCommonLyapunov(mosek_solver, {}, 1E-8);
 }
 
 GTEST_TEST(TestSemidefiniteProgram, OuterEllipsoid) {
   MosekSolver mosek_solver;
-  if (mosek_solver.available()) {
-    FindOuterEllipsoid(mosek_solver, {}, 1E-6);
-  }
+  FindOuterEllipsoid(mosek_solver, {}, 1E-6);
 }
 
 GTEST_TEST(TestSemidefiniteProgram, EigenvalueProblem) {
   MosekSolver mosek_solver;
-  if (mosek_solver.available()) {
-    SolveEigenvalueProblem(mosek_solver, {}, 1E-7, /*check_dual=*/true);
-  }
+  SolveEigenvalueProblem(mosek_solver, {}, 1E-7, /*check_dual=*/true);
 }
 
 GTEST_TEST(TestSemidefiniteProgram, SolveSDPwithSecondOrderConeExample1) {
   MosekSolver mosek_solver;
-  if (mosek_solver.available()) {
-    SolveSDPwithSecondOrderConeExample1(mosek_solver, 1E-7);
-  }
+  SolveSDPwithSecondOrderConeExample1(mosek_solver, 1E-7);
 }
 
 GTEST_TEST(TestSemidefiniteProgram, SolveSDPwithSecondOrderConeExample2) {
   MosekSolver mosek_solver;
-  if (mosek_solver.available()) {
-    SolveSDPwithSecondOrderConeExample2(mosek_solver, 1E-7);
-  }
+  SolveSDPwithSecondOrderConeExample2(mosek_solver, 1E-7);
 }
 
 GTEST_TEST(TestSemidefiniteProgram, SolveSDPwithOverlappingVariables) {
   MosekSolver mosek_solver;
-  if (mosek_solver.available()) {
-    SolveSDPwithOverlappingVariables(mosek_solver, 1E-7);
-  }
+  SolveSDPwithOverlappingVariables(mosek_solver, 1E-7);
 }
 
 GTEST_TEST(TestExponentialConeProgram, ExponentialConeTrivialExample) {
   MosekSolver solver;
-  if (solver.available()) {
-    ExponentialConeTrivialExample(solver, 1E-5, true);
-  }
+  ExponentialConeTrivialExample(solver, 1E-5, true);
 }
 
 GTEST_TEST(TestExponentialConeProgram, MinimizeKLDivengence) {
   MosekSolver solver;
-  if (solver.available()) {
-    MinimizeKLDivergence(solver, 2E-5);
-  }
+  MinimizeKLDivergence(solver, 2E-5);
 }
 
 GTEST_TEST(TestExponentialConeProgram, MinimalEllipsoidConveringPoints) {
   MosekSolver solver;
-  if (solver.available()) {
-    MinimalEllipsoidCoveringPoints(solver, 1E-6);
-  }
+  MinimalEllipsoidCoveringPoints(solver, 1E-6);
 }
 
 GTEST_TEST(TestExponentialConeProgram, MatrixLogDeterminantLower) {
   MosekSolver mosek_solver;
-  if (mosek_solver.available()) {
-    MatrixLogDeterminantLower(mosek_solver, 1E-6);
-  }
+  MatrixLogDeterminantLower(mosek_solver, 1E-6);
 }
 
 GTEST_TEST(MosekTest, TestLogging) {
@@ -454,46 +409,36 @@ GTEST_TEST(MosekSolver, TestInitialGuess) {
 GTEST_TEST(MosekTest, UnivariateQuarticSos) {
   UnivariateQuarticSos dut;
   MosekSolver solver;
-  if (solver.available()) {
-    const auto result = solver.Solve(dut.prog());
-    dut.CheckResult(result, 1E-10);
-  }
+  const auto result = solver.Solve(dut.prog());
+  dut.CheckResult(result, 1E-10);
 }
 
 GTEST_TEST(MosekTest, BivariateQuarticSos) {
   BivariateQuarticSos dut;
   MosekSolver solver;
-  if (solver.available()) {
-    const auto result = solver.Solve(dut.prog());
-    dut.CheckResult(result, 1E-10);
-  }
+  const auto result = solver.Solve(dut.prog());
+  dut.CheckResult(result, 1E-10);
 }
 
 GTEST_TEST(MosekTest, SimpleSos1) {
   SimpleSos1 dut;
   MosekSolver solver;
-  if (solver.available()) {
-    const auto result = solver.Solve(dut.prog());
-    dut.CheckResult(result, 1E-8);
-  }
+  const auto result = solver.Solve(dut.prog());
+  dut.CheckResult(result, 1E-8);
 }
 
 GTEST_TEST(MosekTest, MotzkinPolynomial) {
   MotzkinPolynomial dut;
   MosekSolver solver;
-  if (solver.available()) {
-    const auto result = solver.Solve(dut.prog());
-    dut.CheckResult(result, 1E-8);
-  }
+  const auto result = solver.Solve(dut.prog());
+  dut.CheckResult(result, 1E-8);
 }
 
 GTEST_TEST(MosekTest, UnivariateNonnegative1) {
   UnivariateNonnegative1 dut;
   MosekSolver solver;
-  if (solver.available()) {
-    const auto result = solver.Solve(dut.prog());
-    dut.CheckResult(result, 1E-9);
-  }
+  const auto result = solver.Solve(dut.prog());
+  dut.CheckResult(result, 1E-9);
 }
 
 GTEST_TEST(MosekTest, MinimalDistanceFromSphereProblem) {
@@ -511,105 +456,77 @@ GTEST_TEST(MosekTest, MinimalDistanceFromSphereProblem) {
                                              Eigen::Vector3d(-1, -1, 0), 1,
                                              with_linear_cost);
     MosekSolver solver;
-    if (solver.available()) {
-      const double tol = 1E-4;
-      dut1.SolveAndCheckSolution(solver, tol);
-      dut2.SolveAndCheckSolution(solver, tol);
-      dut3.SolveAndCheckSolution(solver, tol);
-      dut4.SolveAndCheckSolution(solver, tol);
-    }
+    const double tol = 1E-4;
+    dut1.SolveAndCheckSolution(solver, tol);
+    dut2.SolveAndCheckSolution(solver, tol);
+    dut3.SolveAndCheckSolution(solver, tol);
+    dut4.SolveAndCheckSolution(solver, tol);
   }
 }
 
 GTEST_TEST(MosekTest, SolveSDPwithQuadraticCosts) {
   MosekSolver solver;
-  if (solver.available()) {
-    SolveSDPwithQuadraticCosts(solver, 1E-8);
-  }
+  SolveSDPwithQuadraticCosts(solver, 1E-8);
 }
 
 GTEST_TEST(MosekTest, TestTrivial1x1SDP) {
   MosekSolver solver;
-  if (solver.available()) {
-    TestTrivial1x1SDP(solver, 1E-8, /*check_dual=*/true, /*dual_tol=*/1E-8);
-  }
+  TestTrivial1x1SDP(solver, 1E-8, /*check_dual=*/true, /*dual_tol=*/1E-8);
 }
 
 GTEST_TEST(MosekTest, TestTrivial2x2SDP) {
   MosekSolver solver;
-  if (solver.available()) {
-    TestTrivial2x2SDP(solver, 1E-5, /*check_dual=*/true, /*dual_tol=*/1E-8);
-  }
+  TestTrivial2x2SDP(solver, 1E-5, /*check_dual=*/true, /*dual_tol=*/1E-8);
 }
 
 GTEST_TEST(MosekTest, Test1x1with3x3SDP) {
   MosekSolver solver;
-  if (solver.available()) {
-    Test1x1with3x3SDP(solver, 1E-4, /*check_dual=*/true, /*dual_tol=*/1E-7);
-  }
+  Test1x1with3x3SDP(solver, 1E-4, /*check_dual=*/true, /*dual_tol=*/1E-7);
 }
 
 GTEST_TEST(MosekTest, Test2x2with3x3SDP) {
   MosekSolver solver;
-  if (solver.available()) {
-    Test2x2with3x3SDP(solver, 1E-3, /*check_dual=*/true, /*dual_tol=*/1E-3);
-  }
+  Test2x2with3x3SDP(solver, 1E-3, /*check_dual=*/true, /*dual_tol=*/1E-3);
 }
 
 GTEST_TEST(MosekTest, TestTrivial1x1LMI) {
   MosekSolver solver;
-  if (solver.available()) {
-    TestTrivial1x1LMI(solver, 1E-7, /*check_dual=*/true, /*dual_tol=*/1E-7);
-  }
+  TestTrivial1x1LMI(solver, 1E-7, /*check_dual=*/true, /*dual_tol=*/1E-7);
 }
 
 GTEST_TEST(MosekTest, Test2X2LMI) {
   MosekSolver solver;
-  if (solver.available()) {
-    Test2x2LMI(solver, 1E-7, /*check_dual=*/true, /*dual_tol=*/1E-7);
-  }
+  Test2x2LMI(solver, 1E-7, /*check_dual=*/true, /*dual_tol=*/1E-7);
 }
 
 GTEST_TEST(MosekTest, TestHankel) {
   MosekSolver solver;
-  if (solver.available()) {
-    TestHankel(solver, 1E-5, true, 1E-6);
-  }
+  TestHankel(solver, 1E-5, true, 1E-6);
 }
 
 GTEST_TEST(MosekTest, LPDualSolution1) {
   MosekSolver solver;
-  if (solver.available()) {
-    TestLPDualSolution1(solver, 1E-8);
-  }
+  TestLPDualSolution1(solver, 1E-8);
 }
 
 GTEST_TEST(MosekTest, LPDualSolution2) {
   MosekSolver solver;
-  if (solver.available()) {
-    TestLPDualSolution2(solver, 1E-8);
-  }
+  TestLPDualSolution2(solver, 1E-8);
 }
 
 GTEST_TEST(MosekTest, LPDualSolution2Scaled) {
   MosekSolver solver;
-  if (solver.available()) {
-    TestLPDualSolution2Scaled(solver, 1E-8);
-  }
+  TestLPDualSolution2Scaled(solver, 1E-8);
 }
 
 GTEST_TEST(MosekTest, LPDualSolution3) {
   MosekSolver solver;
-  if (solver.available()) {
-    TestLPDualSolution3(solver, 1E-8);
-  }
+  TestLPDualSolution3(solver, 1E-8);
 }
 
 GTEST_TEST(MosekTest, LPDualSolution4) {
   MosekSolver solver;
-  if (solver.available()) {
-    TestLPDualSolution4(solver, 1E-8);
-  }
+  TestLPDualSolution4(solver, 1E-8);
 }
 
 GTEST_TEST(MosekTest, LPDualSolution5) {
@@ -619,89 +536,67 @@ GTEST_TEST(MosekTest, LPDualSolution5) {
 
 GTEST_TEST(MosekTest, QPDualSolution1) {
   MosekSolver solver;
-  if (solver.available()) {
-    SolverOptions solver_options;
-    // The default tolerance is 1E-8, and one entry of the optimal solution is
-    // 0. This means the error on the primal and dual solution is in the order
-    // of 1E-4, that is too large.
-    solver_options.SetOption(solver.id(), "MSK_DPAR_INTPNT_QO_TOL_REL_GAP",
-                             1e-12);
-    TestQPDualSolution1(solver, solver_options, 6E-6);
-  }
+  SolverOptions solver_options;
+  // The default tolerance is 1E-8, and one entry of the optimal solution is
+  // 0. This means the error on the primal and dual solution is in the order
+  // of 1E-4, that is too large.
+  solver_options.SetOption(solver.id(), "MSK_DPAR_INTPNT_QO_TOL_REL_GAP",
+                           1e-12);
+  TestQPDualSolution1(solver, solver_options, 6E-6);
 }
 
 GTEST_TEST(MosekTest, QPDualSolution2) {
   MosekSolver solver;
-  if (solver.available()) {
-    TestQPDualSolution2(solver);
-  }
+  TestQPDualSolution2(solver);
 }
 
 GTEST_TEST(MosekTest, QPDualSolution3) {
   MosekSolver solver;
-  if (solver.available()) {
-    TestQPDualSolution3(solver, 1E-6, 3E-4);
-  }
+  TestQPDualSolution3(solver, 1E-6, 3E-4);
 }
 
 GTEST_TEST(MosekTest, EqualityConstrainedQPDualSolution1) {
   MosekSolver solver;
-  if (solver.available()) {
-    TestEqualityConstrainedQPDualSolution1(solver);
-  }
+  TestEqualityConstrainedQPDualSolution1(solver);
 }
 
 GTEST_TEST(MosekTest, EqualityConstrainedQPDualSolution2) {
   MosekSolver solver;
-  if (solver.available()) {
-    TestEqualityConstrainedQPDualSolution2(solver);
-  }
+  TestEqualityConstrainedQPDualSolution2(solver);
 }
 
 GTEST_TEST(MosekSolver, SocpDualSolution1) {
   MosekSolver solver;
-  if (solver.available()) {
-    SolverOptions solver_options{};
-    TestSocpDualSolution1(solver, solver_options, 1E-7);
-  }
+  SolverOptions solver_options{};
+  TestSocpDualSolution1(solver, solver_options, 1E-7);
 }
 
 GTEST_TEST(MosekSolver, SocpDualSolution2) {
   MosekSolver solver;
-  if (solver.available()) {
-    SolverOptions solver_options{};
-    TestSocpDualSolution2(solver, solver_options, 1E-6);
-  }
+  SolverOptions solver_options{};
+  TestSocpDualSolution2(solver, solver_options, 1E-6);
 }
 
 GTEST_TEST(MosekTest, SDPDualSolution1) {
   MosekSolver solver;
-  if (solver.available()) {
-    TestSDPDualSolution1(solver, 1E-4);
-  }
+  TestSDPDualSolution1(solver, 1E-4);
 }
 
 GTEST_TEST(MosekTest, TestEllipsoid1) {
   // Test quadratically constrained program.
   MosekSolver solver;
-  if (solver.available()) {
-    TestEllipsoid1(solver, std::nullopt, 1E-6);
-  }
+  TestEllipsoid1(solver, std::nullopt, 1E-6);
 }
 
 GTEST_TEST(MosekTest, TestEllipsoid2) {
   // Test quadratically constrained program.
   MosekSolver solver;
-  if (solver.available()) {
-    TestEllipsoid2(solver, std::nullopt, 1E-5);
-  }
+  TestEllipsoid2(solver, std::nullopt, 1E-5);
 }
 
 GTEST_TEST(MosekTest, TestNonconvexQP) {
   MosekSolver solver;
-  if (solver.available()) {
-    TestNonconvexQP(solver, true);
-  }
+  TestNonconvexQP(solver, true);
 }
 
 template <typename C>
@@ -720,21 +615,19 @@ GTEST_TEST(MosekTest, InfeasibleLinearProgramTest) {
   auto constraint2 = prog.AddBoundingBoxConstraint(0, 1, x);
   prog.AddLinearCost(x(0) + 2 * x(1));
   MosekSolver solver;
-  if (solver.available()) {
-    const auto result = solver.Solve(prog);
-    ASSERT_FALSE(result.is_success());
-    EXPECT_EQ(result.get_optimal_cost(),
-              MathematicalProgram::kGlobalInfeasibleCost);
-    // Check that the primal solutions are not NAN.
-    for (int i = 0; i < x.rows(); ++i) {
-      EXPECT_FALSE(std::isnan(result.GetSolution(x(i))));
-    }
-    // Check that the dual solutions are not NAN.
-    CheckDualSolutionNotNan(result, constraint1);
-    CheckDualSolutionNotNan(result, constraint2);
-    // Check that the optimal cost is not NAN.
-    EXPECT_FALSE(std::isnan(result.get_optimal_cost()));
+  const auto result = solver.Solve(prog);
+  ASSERT_FALSE(result.is_success());
+  EXPECT_EQ(result.get_optimal_cost(),
+            MathematicalProgram::kGlobalInfeasibleCost);
+  // Check that the primal solutions are not NAN.
+  for (int i = 0; i < x.rows(); ++i) {
+    EXPECT_FALSE(std::isnan(result.GetSolution(x(i))));
   }
+  // Check that the dual solutions are not NAN.
+  CheckDualSolutionNotNan(result, constraint1);
+  CheckDualSolutionNotNan(result, constraint2);
+  // Check that the optimal cost is not NAN.
+  EXPECT_FALSE(std::isnan(result.get_optimal_cost()));
 }
 
 GTEST_TEST(MosekTest, InfeasibleSemidefiniteProgramTest) {
@@ -746,25 +639,23 @@ GTEST_TEST(MosekTest, InfeasibleSemidefiniteProgramTest) {
       prog.AddLinearConstraint(X(0, 0) + X(1, 1) + X(2, 2) <= -1);
   prog.AddLinearCost(X(1, 2));
   MosekSolver solver;
-  if (solver.available()) {
-    const auto result = solver.Solve(prog);
-    ASSERT_FALSE(result.is_success());
-    EXPECT_EQ(result.get_optimal_cost(),
-              MathematicalProgram::kGlobalInfeasibleCost);
-    // Check that the primal solutions are not NAN.
-    const auto X_sol = result.GetSolution(X);
-    for (int i = 0; i < X.rows(); ++i) {
-      for (int j = 0; j < X.cols(); ++j) {
-        EXPECT_FALSE(std::isnan(X_sol(i, j)));
-      }
+  const auto result = solver.Solve(prog);
+  ASSERT_FALSE(result.is_success());
+  EXPECT_EQ(result.get_optimal_cost(),
+            MathematicalProgram::kGlobalInfeasibleCost);
+  // Check that the primal solutions are not NAN.
+  const auto X_sol = result.GetSolution(X);
+  for (int i = 0; i < X.rows(); ++i) {
+    for (int j = 0; j < X.cols(); ++j) {
+      EXPECT_FALSE(std::isnan(X_sol(i, j)));
     }
-    // Check that the dual solutions are not NAN.
-    CheckDualSolutionNotNan(result, constraint1);
-    CheckDualSolutionNotNan(result, constraint2);
-
-    // Check that the optimal cost is not NAN.
-    EXPECT_FALSE(std::isnan(result.get_optimal_cost()));
   }
+  // Check that the dual solutions are not NAN.
+  CheckDualSolutionNotNan(result, constraint1);
+  CheckDualSolutionNotNan(result, constraint2);
+
+  // Check that the optimal cost is not NAN.
+  EXPECT_FALSE(std::isnan(result.get_optimal_cost()));
 }
 
 GTEST_TEST(MosekTest, LPNoBasisSelection) {
@@ -781,13 +672,11 @@ GTEST_TEST(MosekTest, LPNoBasisSelection) {
   SolverOptions solver_options;
   solver_options.SetOption(MosekSolver::id(), "MSK_IPAR_INTPNT_BASIS", 0);
   MosekSolver solver;
-  if (solver.available()) {
-    auto result = solver.Solve(prog, std::nullopt, solver_options);
-    EXPECT_TRUE(result.is_success());
-    const auto x_sol = result.GetSolution(x);
-    const double tol = 1E-6;
-    EXPECT_TRUE(CompareMatrices(x_sol, Eigen::Vector2d(0, 1), tol));
-  }
+  auto result = solver.Solve(prog, std::nullopt, solver_options);
+  EXPECT_TRUE(result.is_success());
+  const auto x_sol = result.GetSolution(x);
+  const double tol = 1E-6;
+  EXPECT_TRUE(CompareMatrices(x_sol, Eigen::Vector2d(0, 1), tol));
 }
 }  // namespace test
 }  // namespace solvers

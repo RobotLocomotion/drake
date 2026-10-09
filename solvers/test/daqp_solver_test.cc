@@ -35,75 +35,55 @@ INSTANTIATE_TEST_SUITE_P(
 
 GTEST_TEST(DaqpSolverTest, UnitBallExample) {
   DaqpSolver solver;
-  if (solver.available()) {
-    TestQPonUnitBallExample(solver);
-  }
+  TestQPonUnitBallExample(solver);
 }
 
 GTEST_TEST(DaqpSolverTest, QuadraticCostVariableOrder) {
   DaqpSolver solver;
-  if (solver.available()) {
-    TestQuadraticCostVariableOrder(solver, kTol);
-  }
+  TestQuadraticCostVariableOrder(solver, kTol);
 }
 
 GTEST_TEST(DaqpSolverTest, DuplicatedVariable) {
   DaqpSolver solver;
-  if (solver.available()) {
-    TestDuplicatedVariableQuadraticProgram(solver, kTol);
-  }
+  TestDuplicatedVariableQuadraticProgram(solver, kTol);
 }
 
 GTEST_TEST(DaqpSolverTest, EqualityConstrainedQP1) {
   DaqpSolver solver;
-  if (solver.available()) {
-    TestEqualityConstrainedQP1(solver, kTol);
-  }
+  TestEqualityConstrainedQP1(solver, kTol);
 }
 
 GTEST_TEST(DaqpSolverTest, DualSolution1) {
   DaqpSolver solver;
-  if (solver.available()) {
-    // The expected dual in this example is rounded to 6 digits.
-    TestQPDualSolution1(solver);
-  }
+  // The expected dual in this example is rounded to 6 digits.
+  TestQPDualSolution1(solver);
 }
 
 GTEST_TEST(DaqpSolverTest, DualSolution2) {
   DaqpSolver solver;
-  if (solver.available()) {
-    TestQPDualSolution2(solver);
-  }
+  TestQPDualSolution2(solver);
 }
 
 GTEST_TEST(DaqpSolverTest, DualSolution3) {
   DaqpSolver solver;
-  if (solver.available()) {
-    // The sensitivity check uses a finite difference whose truncation error
-    // (2.00001e-5 here) is just above the default tolerance.
-    TestQPDualSolution3(solver, kTol, 3e-5);
-  }
+  // The sensitivity check uses a finite difference whose truncation error
+  // (2.00001e-5 here) is just above the default tolerance.
+  TestQPDualSolution3(solver, kTol, 3e-5);
 }
 
 GTEST_TEST(DaqpSolverTest, EqualityConstrainedQPDualSolution1) {
   DaqpSolver solver;
-  if (solver.available()) {
-    TestEqualityConstrainedQPDualSolution1(solver);
-  }
+  TestEqualityConstrainedQPDualSolution1(solver);
 }
 
 GTEST_TEST(DaqpSolverTest, EqualityConstrainedQPDualSolution2) {
   DaqpSolver solver;
-  if (solver.available()) {
-    TestEqualityConstrainedQPDualSolution2(solver);
-  }
+  TestEqualityConstrainedQPDualSolution2(solver);
 }
 
 GTEST_TEST(DaqpSolverTest, NonconvexQP) {
   DaqpSolver solver;
-  if (solver.available()) {
-    TestNonconvexQP(solver, true);
-  }
+  TestNonconvexQP(solver, true);
 }
 
 GTEST_TEST(DaqpSolverTest, UnconstrainedQP) {
@@ -114,17 +94,15 @@ GTEST_TEST(DaqpSolverTest, UnconstrainedQP) {
   prog.AddQuadraticCost((x(1) + x(2) - 2) * (x(1) + x(2) - 2));
   prog.AddLinearCost(4 * x(0) + 5);
   DaqpSolver solver;
-  if (solver.available()) {
-    const auto result = solver.Solve(prog);
-    ASSERT_TRUE(result.is_success());
-    EXPECT_NEAR(result.GetSolution(x(0)), -2, kTol);
-    EXPECT_NEAR(result.GetSolution(x(1)) + result.GetSolution(x(2)), 2, kTol);
-    EXPECT_NEAR(result.get_optimal_cost(), 1, kTol);
-    // Only the (inactive) variable bounds have multipliers.
-    EXPECT_TRUE(
-        CompareMatrices(result.get_solver_details<DaqpSolver>().multipliers,
-                        Eigen::Vector3d::Zero()));
-  }
+  const auto result = solver.Solve(prog);
+  ASSERT_TRUE(result.is_success());
+  EXPECT_NEAR(result.GetSolution(x(0)), -2, kTol);
+  EXPECT_NEAR(result.GetSolution(x(1)) + result.GetSolution(x(2)), 2, kTol);
+  EXPECT_NEAR(result.get_optimal_cost(), 1, kTol);
+  // Only the (inactive) variable bounds have multipliers.
+  EXPECT_TRUE(
+      CompareMatrices(result.get_solver_details<DaqpSolver>().multipliers,
+                      Eigen::Vector3d::Zero()));
 }
 
 GTEST_TEST(DaqpSolverTest, DifferentialIkCollisionConstraint) {
@@ -138,23 +116,21 @@ GTEST_TEST(DaqpSolverTest, DifferentialIkCollisionConstraint) {
       Eigen::RowVector2d(1, 0), Vector1d(-4),
       Vector1d(std::numeric_limits<double>::infinity()), v);
   DaqpSolver solver;
-  if (solver.available()) {
-    const auto result = solver.Solve(prog);
-    ASSERT_TRUE(result.is_success());
-    EXPECT_TRUE(
-        CompareMatrices(result.GetSolution(v), Eigen::Vector2d(-4, 0.5), kTol));
-    EXPECT_NEAR(result.GetDualSolution(collision)(0), 8, kTol);
-    // |v|² + 16 v₀ - v₁ at v = (-4, 0.5).
-    EXPECT_NEAR(result.get_optimal_cost(), -48.25, kTol);
-    const DaqpSolverDetails& details = result.get_solver_details<DaqpSolver>();
-    EXPECT_EQ(details.exitflag, 1);
-    EXPECT_GE(details.iterations, 1);
-    EXPECT_GE(details.setup_time, 0);
-    EXPECT_GE(details.solve_time, 0);
-    // DAQP's own multipliers are negative at an active lower bound.
-    EXPECT_TRUE(
-        CompareMatrices(details.multipliers, Eigen::Vector3d(0, 0, -8), kTol));
-  }
+  const auto result = solver.Solve(prog);
+  ASSERT_TRUE(result.is_success());
+  EXPECT_TRUE(
+      CompareMatrices(result.GetSolution(v), Eigen::Vector2d(-4, 0.5), kTol));
+  EXPECT_NEAR(result.GetDualSolution(collision)(0), 8, kTol);
+  // |v|² + 16 v₀ - v₁ at v = (-4, 0.5).
+  EXPECT_NEAR(result.get_optimal_cost(), -48.25, kTol);
+  const DaqpSolverDetails& details = result.get_solver_details<DaqpSolver>();
+  EXPECT_EQ(details.exitflag, 1);
+  EXPECT_GE(details.iterations, 1);
+  EXPECT_GE(details.setup_time, 0);
+  EXPECT_GE(details.solve_time, 0);
+  // DAQP's own multipliers are negative at an active lower bound.
+  EXPECT_TRUE(
+      CompareMatrices(details.multipliers, Eigen::Vector3d(0, 0, -8), kTol));
 }
 
 GTEST_TEST(DaqpSolverTest, OverlappingBoundingBoxes) {
@@ -165,13 +141,11 @@ GTEST_TEST(DaqpSolverTest, OverlappingBoundingBoxes) {
   const auto loose = prog.AddBoundingBoxConstraint(0.5, 3, x);
   const auto tight = prog.AddBoundingBoxConstraint(1, 2, x);
   DaqpSolver solver;
-  if (solver.available()) {
-    const auto result = solver.Solve(prog);
-    ASSERT_TRUE(result.is_success());
-    EXPECT_NEAR(result.GetSolution(x(0)), 1, kTol);
-    EXPECT_NEAR(result.GetDualSolution(tight)(0), 2, kTol);
-    EXPECT_NEAR(result.GetDualSolution(loose)(0), 0, kTol);
-  }
+  const auto result = solver.Solve(prog);
+  ASSERT_TRUE(result.is_success());
+  EXPECT_NEAR(result.GetSolution(x(0)), 1, kTol);
+  EXPECT_NEAR(result.GetDualSolution(tight)(0), 2, kTol);
+  EXPECT_NEAR(result.GetDualSolution(loose)(0), 0, kTol);
 }
 
 GTEST_TEST(DaqpSolverTest, BoundingBoxDuplicatedVariable) {
@@ -184,16 +158,14 @@ GTEST_TEST(DaqpSolverTest, BoundingBoxDuplicatedVariable) {
       Eigen::Vector3d(1, 2, 3), Eigen::Vector3d(6, 5, 4),
       Vector3<symbolic::Variable>(x(0), x(1), x(0)));
   DaqpSolver solver;
-  if (solver.available()) {
-    const auto result = solver.Solve(prog);
-    ASSERT_TRUE(result.is_success());
-    EXPECT_TRUE(
-        CompareMatrices(result.GetSolution(x), Eigen::Vector2d(3, 2), kTol));
-    // The gradient of the cost is 2x = (6, 4). The active lower bound on x(0)
-    // is the third row; the looser first row gets zero.
-    EXPECT_TRUE(CompareMatrices(result.GetDualSolution(bb_con),
-                                Eigen::Vector3d(0, 4, 6), kTol));
-  }
+  const auto result = solver.Solve(prog);
+  ASSERT_TRUE(result.is_success());
+  EXPECT_TRUE(
+      CompareMatrices(result.GetSolution(x), Eigen::Vector2d(3, 2), kTol));
+  // The gradient of the cost is 2x = (6, 4). The active lower bound on x(0)
+  // is the third row; the looser first row gets zero.
+  EXPECT_TRUE(CompareMatrices(result.GetDualSolution(bb_con),
+                              Eigen::Vector3d(0, 4, 6), kTol));
 }
 
 GTEST_TEST(DaqpSolverTest, EqualityBoundingBox) {
@@ -204,14 +176,12 @@ GTEST_TEST(DaqpSolverTest, EqualityBoundingBox) {
   const auto fixed = prog.AddBoundingBoxConstraint(1, 1, x(0));
   prog.AddLinearConstraint(x(0) + x(1) >= 3);
   DaqpSolver solver;
-  if (solver.available()) {
-    const auto result = solver.Solve(prog);
-    ASSERT_TRUE(result.is_success());
-    EXPECT_TRUE(
-        CompareMatrices(result.GetSolution(x), Eigen::Vector2d(1, 2), kTol));
-    // L = x₀² + x₁² - λ(x₀ + x₁ - 3) - μ(x₀ - 1): λ = 4, μ = 2 - 4 = -2.
-    EXPECT_NEAR(result.GetDualSolution(fixed)(0), -2, kTol);
-  }
+  const auto result = solver.Solve(prog);
+  ASSERT_TRUE(result.is_success());
+  EXPECT_TRUE(
+      CompareMatrices(result.GetSolution(x), Eigen::Vector2d(1, 2), kTol));
+  // L = x₀² + x₁² - λ(x₀ + x₁ - 3) - μ(x₀ - 1): λ = 4, μ = 2 - 4 = -2.
+  EXPECT_NEAR(result.GetDualSolution(fixed)(0), -2, kTol);
 }
 
 GTEST_TEST(DaqpSolverTest, Infeasible) {
@@ -222,14 +192,12 @@ GTEST_TEST(DaqpSolverTest, Infeasible) {
   prog.AddLinearConstraint(x(0) >= 1);
   prog.AddLinearConstraint(x(1) >= 2);
   DaqpSolver solver;
-  if (solver.available()) {
-    const auto result = solver.Solve(prog);
-    EXPECT_EQ(result.get_solution_result(),
-              SolutionResult::kInfeasibleConstraints);
-    EXPECT_EQ(result.get_optimal_cost(),
-              MathematicalProgram::kGlobalInfeasibleCost);
-    EXPECT_EQ(result.get_solver_details<DaqpSolver>().multipliers.size(), 0);
-  }
+  const auto result = solver.Solve(prog);
+  EXPECT_EQ(result.get_solution_result(),
+            SolutionResult::kInfeasibleConstraints);
+  EXPECT_EQ(result.get_optimal_cost(),
+            MathematicalProgram::kGlobalInfeasibleCost);
+  EXPECT_EQ(result.get_solver_details<DaqpSolver>().multipliers.size(), 0);
 }
 
 GTEST_TEST(DaqpSolverTest, InfeasibleBounds) {
@@ -239,11 +207,9 @@ GTEST_TEST(DaqpSolverTest, InfeasibleBounds) {
   prog.AddBoundingBoxConstraint(2, 3, x);
   prog.AddBoundingBoxConstraint(-1, 1, x);
   DaqpSolver solver;
-  if (solver.available()) {
-    const auto result = solver.Solve(prog);
-    EXPECT_EQ(result.get_solution_result(),
-              SolutionResult::kInfeasibleConstraints);
-  }
+  const auto result = solver.Solve(prog);
+  EXPECT_EQ(result.get_solution_result(),
+            SolutionResult::kInfeasibleConstraints);
 }
 
 GTEST_TEST(DaqpSolverTest, Unbounded) {
@@ -254,11 +220,9 @@ GTEST_TEST(DaqpSolverTest, Unbounded) {
   prog.AddQuadraticCost(x(0) * x(0) + x(1));
   prog.SetSolverOption(DaqpSolver::id(), "iter_limit", 100);
   DaqpSolver solver;
-  if (solver.available()) {
-    const auto result = solver.Solve(prog);
-    EXPECT_FALSE(result.is_success());
-    EXPECT_EQ(result.get_solution_result(), SolutionResult::kIterationLimit);
-  }
+  const auto result = solver.Solve(prog);
+  EXPECT_FALSE(result.is_success());
+  EXPECT_EQ(result.get_solution_result(), SolutionResult::kIterationLimit);
 }
 
 GTEST_TEST(DaqpSolverTest, SemidefiniteLeastSquaresCost) {
@@ -267,11 +231,9 @@ GTEST_TEST(DaqpSolverTest, SemidefiniteLeastSquaresCost) {
   prog.AddQuadraticCost((x(0) + x(1) - 1) * (x(0) + x(1) - 1));
   prog.AddBoundingBoxConstraint(0, 2, x);
   DaqpSolver solver;
-  if (solver.available()) {
-    const auto result = solver.Solve(prog);
-    ASSERT_TRUE(result.is_success());
-    EXPECT_NEAR(result.GetSolution(x(0)) + result.GetSolution(x(1)), 1, 1e-6);
-  }
+  const auto result = solver.Solve(prog);
+  ASSERT_TRUE(result.is_success());
+  EXPECT_NEAR(result.GetSolution(x(0)) + result.GetSolution(x(1)), 1, 1e-6);
 }
 
 // Minimizes |x - (1, 1, 1)|² subject to x ≤ 0, which needs one active-set
@@ -287,47 +249,43 @@ GTEST_TEST(DaqpSolverTest, SolverOptions) {
   MathematicalProgram prog;
   AddThreeActiveBoundsProgram(&prog);
   DaqpSolver solver;
-  if (solver.available()) {
-    const auto result = solver.Solve(prog);
-    ASSERT_TRUE(result.is_success());
-    const int iterations = result.get_solver_details<DaqpSolver>().iterations;
-    ASSERT_GE(iterations, 2);
+  const auto result = solver.Solve(prog);
+  ASSERT_TRUE(result.is_success());
+  const int iterations = result.get_solver_details<DaqpSolver>().iterations;
+  ASSERT_GE(iterations, 2);
 
-    SolverOptions options;
-    options.SetOption(DaqpSolver::id(), "iter_limit", iterations - 1);
-    const auto limited = solver.Solve(prog, std::nullopt, options);
-    EXPECT_EQ(limited.get_solution_result(), SolutionResult::kIterationLimit);
-    EXPECT_EQ(limited.get_solver_details<DaqpSolver>().exitflag, -4);
+  SolverOptions options;
+  options.SetOption(DaqpSolver::id(), "iter_limit", iterations - 1);
+  const auto limited = solver.Solve(prog, std::nullopt, options);
+  EXPECT_EQ(limited.get_solution_result(), SolutionResult::kIterationLimit);
+  EXPECT_EQ(limited.get_solver_details<DaqpSolver>().exitflag, -4);
 
-    // Floating-point options are accepted.
-    SolverOptions tolerances;
-    tolerances.SetOption(DaqpSolver::id(), "primal_tol", 1e-10);
-    tolerances.SetOption(DaqpSolver::id(), "dual_tol", 1e-10);
-    EXPECT_TRUE(solver.Solve(prog, std::nullopt, tolerances).is_success());
+  // Floating-point options are accepted.
+  SolverOptions tolerances;
+  tolerances.SetOption(DaqpSolver::id(), "primal_tol", 1e-10);
+  tolerances.SetOption(DaqpSolver::id(), "dual_tol", 1e-10);
+  EXPECT_TRUE(solver.Solve(prog, std::nullopt, tolerances).is_success());
 
-    // Common options have no effect, and don't throw.
-    SolverOptions common;
-    common.SetOption(CommonSolverOption::kPrintToConsole, 1);
-    common.SetOption(CommonSolverOption::kMaxThreads, 1);
-    EXPECT_TRUE(solver.Solve(prog, std::nullopt, common).is_success());
+  // Common options have no effect, and don't throw.
+  SolverOptions common;
+  common.SetOption(CommonSolverOption::kPrintToConsole, 1);
+  common.SetOption(CommonSolverOption::kMaxThreads, 1);
+  EXPECT_TRUE(solver.Solve(prog, std::nullopt, common).is_success());
 
-    // Options set on the program are used too.
-    prog.SetSolverOption(DaqpSolver::id(), "iter_limit", iterations - 1);
-    EXPECT_EQ(solver.Solve(prog).get_solution_result(),
-              SolutionResult::kIterationLimit);
-  }
+  // Options set on the program are used too.
+  prog.SetSolverOption(DaqpSolver::id(), "iter_limit", iterations - 1);
+  EXPECT_EQ(solver.Solve(prog).get_solution_result(),
+            SolutionResult::kIterationLimit);
 }
 
 GTEST_TEST(DaqpSolverTest, UnknownOption) {
   MathematicalProgram prog;
   AddThreeActiveBoundsProgram(&prog);
   DaqpSolver solver;
-  if (solver.available()) {
-    SolverOptions options;
-    options.SetOption(DaqpSolver::id(), "max_iter", 10);
-    DRAKE_EXPECT_THROWS_MESSAGE(solver.Solve(prog, std::nullopt, options),
-                                ".*not recognized.*max_iter.*");
-  }
+  SolverOptions options;
+  options.SetOption(DaqpSolver::id(), "max_iter", 10);
+  DRAKE_EXPECT_THROWS_MESSAGE(solver.Solve(prog, std::nullopt, options),
+                              ".*not recognized.*max_iter.*");
 }
 
 GTEST_TEST(DaqpSolverTest, DetailsAreResetBetweenSolves) {
@@ -339,15 +297,13 @@ GTEST_TEST(DaqpSolverTest, DetailsAreResetBetweenSolves) {
   infeasible.AddLinearConstraint(x(0) >= 1);
   infeasible.AddLinearConstraint(x(0) <= 0);
   DaqpSolver solver;
-  if (solver.available()) {
-    MathematicalProgramResult result;
-    solver.Solve(feasible, std::nullopt, std::nullopt, &result);
-    ASSERT_TRUE(result.is_success());
-    EXPECT_EQ(result.get_solver_details<DaqpSolver>().multipliers.size(), 3);
-    solver.Solve(infeasible, std::nullopt, std::nullopt, &result);
-    EXPECT_FALSE(result.is_success());
-    EXPECT_EQ(result.get_solver_details<DaqpSolver>().multipliers.size(), 0);
-  }
+  MathematicalProgramResult result;
+  solver.Solve(feasible, std::nullopt, std::nullopt, &result);
+  ASSERT_TRUE(result.is_success());
+  EXPECT_EQ(result.get_solver_details<DaqpSolver>().multipliers.size(), 3);
+  solver.Solve(infeasible, std::nullopt, std::nullopt, &result);
+  EXPECT_FALSE(result.is_success());
+  EXPECT_EQ(result.get_solver_details<DaqpSolver>().multipliers.size(), 0);
 }
 
 GTEST_TEST(DaqpSolverTest, VariableScalingIsIgnored) {
@@ -357,12 +313,10 @@ GTEST_TEST(DaqpSolverTest, VariableScalingIsIgnored) {
   prog.AddQuadraticCost((x(0) + 1) * (x(0) + 1) + (x(1) + 1) * (x(1) + 1));
   prog.SetVariableScaling(x(0), 100);
   DaqpSolver solver;
-  if (solver.available()) {
-    const auto result = solver.Solve(prog);
-    ASSERT_TRUE(result.is_success());
-    EXPECT_TRUE(CompareMatrices(result.GetSolution(x),
-                                Eigen::Vector2d(-0.5, -1.5), kTol));
-  }
+  const auto result = solver.Solve(prog);
+  ASSERT_TRUE(result.is_success());
+  EXPECT_TRUE(CompareMatrices(result.GetSolution(x),
+                              Eigen::Vector2d(-0.5, -1.5), kTol));
 }
 
 GTEST_TEST(DaqpSolverTest, ProgramAttributesGood) {

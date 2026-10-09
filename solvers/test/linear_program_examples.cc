@@ -488,19 +488,17 @@ DuplicatedVariableLinearProgramTest1::DuplicatedVariableLinearProgramTest1()
 void DuplicatedVariableLinearProgramTest1::CheckSolution(
     const SolverInterface& solver,
     const std::optional<SolverOptions>& solver_options, double tol) const {
-  if (solver.available()) {
-    MathematicalProgramResult result;
-    solver.Solve(*prog_, std::nullopt, solver_options, &result);
-    EXPECT_TRUE(result.is_success());
-    const Eigen::Vector3d x_sol = result.GetSolution(x_);
-    EXPECT_NEAR(result.get_optimal_cost(),
-                x_sol(0) + 3 * x_sol(1) + 4 * x_sol(2) + 3, tol);
-    EXPECT_LE(x_sol(0) + 2 * x_sol(1) + x_sol(2), 3 + tol);
-    EXPECT_NEAR(x_sol(0) + 2 * x_sol(2), 1, tol);
-    EXPECT_GE(2 * x_sol(0) + x_sol(1), 1 - tol);
-    EXPECT_LE(2 * x_sol(0) + x_sol(1), 3 + tol);
-    EXPECT_GE(x_sol(0) + 2 * x_sol(1) + 3 * x_sol(2), -tol);
-  }
+  MathematicalProgramResult result;
+  solver.Solve(*prog_, std::nullopt, solver_options, &result);
+  EXPECT_TRUE(result.is_success());
+  const Eigen::Vector3d x_sol = result.GetSolution(x_);
+  EXPECT_NEAR(result.get_optimal_cost(),
+              x_sol(0) + 3 * x_sol(1) + 4 * x_sol(2) + 3, tol);
+  EXPECT_LE(x_sol(0) + 2 * x_sol(1) + x_sol(2), 3 + tol);
+  EXPECT_NEAR(x_sol(0) + 2 * x_sol(2), 1, tol);
+  EXPECT_GE(2 * x_sol(0) + x_sol(1), 1 - tol);
+  EXPECT_LE(2 * x_sol(0) + x_sol(1), 3 + tol);
+  EXPECT_GE(x_sol(0) + 2 * x_sol(1) + 3 * x_sol(2), -tol);
 }
 
 void TestLPDualSolution1(const SolverInterface& solver, double tol) {
@@ -519,29 +517,27 @@ void TestLPDualSolution1(const SolverInterface& solver, double tol) {
   ub << 3, kInf, 4, kInf, 5;
   auto constraint = prog.AddLinearConstraint(A, lb, ub, x);
   auto cost = prog.AddLinearCost(2 * x[0] + 3 * x[1]);
-  if (solver.available()) {
-    MathematicalProgramResult result1;
-    solver.Solve(prog, {}, {}, &result1);
-    EXPECT_TRUE(result1.is_success());
-    Eigen::Matrix<double, 5, 1> dual_solution_expected;
-    // This dual solution is computed by first finding the active constraint at
-    // the optimal solution, denoted as Aeq * x = beq, then the dual solution
-    // equals to cᵀAeq⁻¹.
-    dual_solution_expected << 0, 0.8, -0.2, 0, 0;
-    EXPECT_TRUE(CompareMatrices(result1.GetDualSolution(constraint),
-                                dual_solution_expected, tol));
+  MathematicalProgramResult result1;
+  solver.Solve(prog, {}, {}, &result1);
+  EXPECT_TRUE(result1.is_success());
+  Eigen::Matrix<double, 5, 1> dual_solution_expected;
+  // This dual solution is computed by first finding the active constraint at
+  // the optimal solution, denoted as Aeq * x = beq, then the dual solution
+  // equals to cᵀAeq⁻¹.
+  dual_solution_expected << 0, 0.8, -0.2, 0, 0;
+  EXPECT_TRUE(CompareMatrices(result1.GetDualSolution(constraint),
+                              dual_solution_expected, tol));
 
-    cost.evaluator()->UpdateCoefficients(Eigen::Vector2d(-3, -4));
-    MathematicalProgramResult result2;
-    solver.Solve(prog, {}, {}, &result2);
-    EXPECT_TRUE(result2.is_success());
-    Eigen::Matrix2d Aeq;
-    Aeq.row(0) = A.row(0);
-    Aeq.row(1) = A.row(4);
-    dual_solution_expected << -1.5, 0, 0, 0, -0.5;
-    EXPECT_TRUE(CompareMatrices(result2.GetDualSolution(constraint),
-                                dual_solution_expected, tol));
-  }
+  cost.evaluator()->UpdateCoefficients(Eigen::Vector2d(-3, -4));
+  MathematicalProgramResult result2;
+  solver.Solve(prog, {}, {}, &result2);
+  EXPECT_TRUE(result2.is_success());
+  Eigen::Matrix2d Aeq;
+  Aeq.row(0) = A.row(0);
+  Aeq.row(1) = A.row(4);
+  dual_solution_expected << -1.5, 0, 0, 0, -0.5;
+  EXPECT_TRUE(CompareMatrices(result2.GetDualSolution(constraint),
+                              dual_solution_expected, tol));
 }
 
 void TestLPDualSolution2(const SolverInterface& solver, double tol) {
@@ -550,13 +546,11 @@ void TestLPDualSolution2(const SolverInterface& solver, double tol) {
   auto constraint = prog.AddBoundingBoxConstraint(Eigen::Vector2d(-1, 2),
                                                   Eigen::Vector2d(3, 5), x);
   prog.AddLinearCost(x[0] - x[1]);
-  if (solver.available()) {
-    MathematicalProgramResult result;
-    solver.Solve(prog, {}, {}, &result);
-    EXPECT_TRUE(result.is_success());
-    EXPECT_TRUE(CompareMatrices(result.GetDualSolution(constraint),
-                                Eigen::Vector2d(1, -1), tol));
-  }
+  MathematicalProgramResult result;
+  solver.Solve(prog, {}, {}, &result);
+  EXPECT_TRUE(result.is_success());
+  EXPECT_TRUE(CompareMatrices(result.GetDualSolution(constraint),
+                              Eigen::Vector2d(1, -1), tol));
 }
 
 void TestLPDualSolution2Scaled(const SolverInterface& solver, double tol) {
@@ -567,13 +561,11 @@ void TestLPDualSolution2Scaled(const SolverInterface& solver, double tol) {
   prog.AddLinearCost(x[0] - x[1]);
   prog.SetVariableScaling(x[0], 10);
   prog.SetVariableScaling(x[1], 0.1);
-  if (solver.available()) {
-    MathematicalProgramResult result;
-    solver.Solve(prog, {}, {}, &result);
-    EXPECT_TRUE(result.is_success());
-    EXPECT_TRUE(CompareMatrices(result.GetDualSolution(constraint),
-                                Eigen::Vector2d(1, -1), tol));
-  }
+  MathematicalProgramResult result;
+  solver.Solve(prog, {}, {}, &result);
+  EXPECT_TRUE(result.is_success());
+  EXPECT_TRUE(CompareMatrices(result.GetDualSolution(constraint),
+                              Eigen::Vector2d(1, -1), tol));
 }
 
 void TestLPDualSolution3(const SolverInterface& solver, double tol) {
@@ -583,21 +575,19 @@ void TestLPDualSolution3(const SolverInterface& solver, double tol) {
   auto constraint2 = prog.AddBoundingBoxConstraint(-1, 2, x[1]);
   auto constraint3 = prog.AddBoundingBoxConstraint(-1, 3, x[0]);
   prog.AddLinearCost(-x[0] + x[1]);
-  if (solver.available()) {
-    MathematicalProgramResult result;
-    solver.Solve(prog, {}, {}, &result);
-    EXPECT_TRUE(result.is_success());
-    // The optimal solution is (1, -1).
-    // constraint1 has an upper bound x(0) <= 1 being active.
-    EXPECT_TRUE(CompareMatrices(result.GetDualSolution(constraint1),
-                                Eigen::Vector2d(-1, 0), tol));
-    // constraint2 has a lower bound x(1) >= -1 being active.
-    EXPECT_TRUE(
-        CompareMatrices(result.GetDualSolution(constraint2), Vector1d(1), tol));
-    // constraint 3 is not active.
-    EXPECT_TRUE(CompareMatrices(result.GetDualSolution(constraint3),
-                                Vector1d::Zero(), tol));
-  }
+  MathematicalProgramResult result;
+  solver.Solve(prog, {}, {}, &result);
+  EXPECT_TRUE(result.is_success());
+  // The optimal solution is (1, -1).
+  // constraint1 has an upper bound x(0) <= 1 being active.
+  EXPECT_TRUE(CompareMatrices(result.GetDualSolution(constraint1),
+                              Eigen::Vector2d(-1, 0), tol));
+  // constraint2 has a lower bound x(1) >= -1 being active.
+  EXPECT_TRUE(
+      CompareMatrices(result.GetDualSolution(constraint2), Vector1d(1), tol));
+  // constraint 3 is not active.
+  EXPECT_TRUE(CompareMatrices(result.GetDualSolution(constraint3),
+                              Vector1d::Zero(), tol));
 }
 
 void TestLPDualSolution4(const SolverInterface& solver, double tol) {
@@ -611,15 +601,13 @@ void TestLPDualSolution4(const SolverInterface& solver, double tol) {
   auto constraint2 = prog.AddLinearEqualityConstraint(A2, Eigen::Vector2d(2, 5),
                                                       x.segment<2>(1));
   prog.AddLinearCost(x(0) + 5 * x(1) - 7 * x(2) + 3 * x(3));
-  if (solver.available()) {
-    MathematicalProgramResult result;
-    solver.Solve(prog, std::nullopt, std::nullopt, &result);
-    ASSERT_TRUE(result.is_success());
-    const Eigen::VectorXd dual1 = result.GetDualSolution(constraint1);
-    EXPECT_TRUE(CompareMatrices(dual1, Vector1d(1), tol));
-    const Eigen::VectorXd dual2 = result.GetDualSolution(constraint2);
-    EXPECT_TRUE(CompareMatrices(dual2, Vector2d(-1, -2), tol));
-  }
+  MathematicalProgramResult result;
+  solver.Solve(prog, std::nullopt, std::nullopt, &result);
+  ASSERT_TRUE(result.is_success());
+  const Eigen::VectorXd dual1 = result.GetDualSolution(constraint1);
+  EXPECT_TRUE(CompareMatrices(dual1, Vector1d(1), tol));
+  const Eigen::VectorXd dual2 = result.GetDualSolution(constraint2);
+  EXPECT_TRUE(CompareMatrices(dual2, Vector2d(-1, -2), tol));
 }
 
 void TestLPDualSolution5(const SolverInterface& solver, double tol) {
@@ -640,24 +628,22 @@ void TestLPDualSolution5(const SolverInterface& solver, double tol) {
       Eigen::Vector2d(-1, -2), Eigen::Vector2d(-1, 1), x.head<2>());
   prog.AddLinearCost(x(0) + 2 * x(1) + 3 * x(2));
   MathematicalProgramResult result;
-  if (solver.available()) {
-    solver.Solve(prog, std::nullopt, std::nullopt, &result);
-    EXPECT_TRUE(result.is_success());
-    EXPECT_TRUE(
-        CompareMatrices(result.GetSolution(x), Eigen::Vector3d(-1, 1, 2), tol));
-    const Eigen::Vector2d bbcon1_dual_sol = result.GetDualSolution(bbcon1);
-    const Eigen::Vector2d bbcon2_dual_sol = result.GetDualSolution(bbcon2);
-    // The dual solution is the coefficient of the variable in the cost.
-    EXPECT_NEAR(bbcon1_dual_sol(1), 3, tol);
-    EXPECT_NEAR(bbcon2_dual_sol(0), 1, tol);
-    // The dual solution for the constraint x(1) >= 1 is bbcon1_dual_sol(0), the
-    // dual solution for the constraint x(1) <= 1 is bbcon2_dual_sol(1). 1 <=
-    // x(1) <= 1 is equivalent to x(1) = 1. We know the dual solution for x(1) =
-    // 1 is 2. The dual solution for x(1) >= 1 and x(1) <= 1 is not unique, but
-    // it will have the invariance that the sum of their dual solution is
-    // equivalent to the dual solution of x(1) = 1, which is 2.
-    EXPECT_NEAR(bbcon1_dual_sol(0) + bbcon2_dual_sol(1), 2, tol);
-  }
+  solver.Solve(prog, std::nullopt, std::nullopt, &result);
+  EXPECT_TRUE(result.is_success());
+  EXPECT_TRUE(
+      CompareMatrices(result.GetSolution(x), Eigen::Vector3d(-1, 1, 2), tol));
+  const Eigen::Vector2d bbcon1_dual_sol = result.GetDualSolution(bbcon1);
+  const Eigen::Vector2d bbcon2_dual_sol = result.GetDualSolution(bbcon2);
+  // The dual solution is the coefficient of the variable in the cost.
+  EXPECT_NEAR(bbcon1_dual_sol(1), 3, tol);
+  EXPECT_NEAR(bbcon2_dual_sol(0), 1, tol);
+  // The dual solution for the constraint x(1) >= 1 is bbcon1_dual_sol(0), the
+  // dual solution for the constraint x(1) <= 1 is bbcon2_dual_sol(1). 1 <=
+  // x(1) <= 1 is equivalent to x(1) = 1. We know the dual solution for x(1) =
+  // 1 is 2. The dual solution for x(1) >= 1 and x(1) <= 1 is not unique, but
+  // it will have the invariance that the sum of their dual solution is
+  // equivalent to the dual solution of x(1) = 1, which is 2.
+  EXPECT_NEAR(bbcon1_dual_sol(0) + bbcon2_dual_sol(1), 2, tol);
 }
 
 void TestLPPoorScaling1(const SolverInterface& solver, bool expect_success,
@@ -679,17 +665,15 @@ void TestLPPoorScaling1(const SolverInterface& solver, bool expect_success,
   prog.AddLinearConstraint(z + vertices.row(1).dot(alpha) >= pt(1));
   prog.AddBoundingBoxConstraint(0, 1, alpha);
   prog.AddLinearCost(z);
-  if (solver.available()) {
-    MathematicalProgramResult result;
-    solver.Solve(prog, std::nullopt, options, &result);
-    const auto alpha_sol = result.GetSolution(alpha);
-    ASSERT_TRUE(result.is_success());
-    if (expect_success) {
-      EXPECT_TRUE(CompareMatrices(vertices * alpha_sol, pt, tol));
-      EXPECT_NEAR(result.GetSolution(z), 0, tol);
-    } else {
-      EXPECT_GT(result.GetSolution(z), tol);
-    }
+  MathematicalProgramResult result;
+  solver.Solve(prog, std::nullopt, options, &result);
+  const auto alpha_sol = result.GetSolution(alpha);
+  ASSERT_TRUE(result.is_success());
+  if (expect_success) {
+    EXPECT_TRUE(CompareMatrices(vertices * alpha_sol, pt, tol));
+    EXPECT_NEAR(result.GetSolution(z), 0, tol);
+  } else {
+    EXPECT_GT(result.GetSolution(z), tol);
   }
 }
 
@@ -717,16 +701,14 @@ void TestLPPoorScaling2(const SolverInterface& solver, bool expect_success,
   }
   prog.AddBoundingBoxConstraint(0, kInf, r);
   prog.AddLinearCost(-r);
-  if (solver.available()) {
-    MathematicalProgramResult result;
-    solver.Solve(prog, std::nullopt, options, &result);
-    ASSERT_TRUE(result.is_success());
-    const Eigen::Vector3d x_expected(0.2282, 0, 0.3323);
-    if (expect_success) {
-      EXPECT_TRUE(CompareMatrices(result.GetSolution(x), x_expected, tol));
-    } else {
-      EXPECT_GT((result.GetSolution(x) - x_expected).norm(), tol);
-    }
+  MathematicalProgramResult result;
+  solver.Solve(prog, std::nullopt, options, &result);
+  ASSERT_TRUE(result.is_success());
+  const Eigen::Vector3d x_expected(0.2282, 0, 0.3323);
+  if (expect_success) {
+    EXPECT_TRUE(CompareMatrices(result.GetSolution(x), x_expected, tol));
+  } else {
+    EXPECT_GT((result.GetSolution(x) - x_expected).norm(), tol);
   }
 }
 }  // namespace test

@@ -53,17 +53,15 @@ INSTANTIATE_TEST_SUITE_P(
 TEST_F(InfeasibleLinearProgramTest0, TestSnopt) {
   prog_->SetInitialGuessForAllVariables(Eigen::Vector2d(1, 2));
   SnoptSolver solver;
-  if (solver.available() && solver.enabled()) {
-    auto result = solver.Solve(*prog_, {}, {});
-    EXPECT_EQ(result.get_solution_result(),
-              SolutionResult::kInfeasibleConstraints);
-  }
+  auto result = solver.Solve(*prog_, {}, {});
+  EXPECT_EQ(result.get_solution_result(),
+            SolutionResult::kInfeasibleConstraints);
 }
 
 TEST_F(UnboundedLinearProgramTest0, TestSnopt) {
   prog_->SetInitialGuessForAllVariables(Eigen::Vector2d::Zero());
   SnoptSolver solver;
-  if (solver.available() && !solver.is_bounded_lp_broken()) {
+  if (!solver.is_bounded_lp_broken()) {
     auto result = solver.Solve(*prog_, {}, {});
     EXPECT_EQ(result.get_solution_result(), SolutionResult::kUnbounded);
     EXPECT_EQ(result.get_optimal_cost(),
@@ -73,9 +71,7 @@ TEST_F(UnboundedLinearProgramTest0, TestSnopt) {
 
 TEST_F(DuplicatedVariableLinearProgramTest1, Test) {
   SnoptSolver solver;
-  if (solver.available() && solver.enabled()) {
-    CheckSolution(solver);
-  }
+  CheckSolution(solver);
 }
 
 TEST_P(QuadraticProgramTest, TestQP) {
@@ -91,16 +87,12 @@ INSTANTIATE_TEST_SUITE_P(
 
 GTEST_TEST(QPtest, TestUnitBallExample) {
   SnoptSolver solver;
-  if (solver.available() && solver.enabled()) {
-    TestQPonUnitBallExample(solver);
-  }
+  TestQPonUnitBallExample(solver);
 }
 
 GTEST_TEST(QPtest, TestQuadraticCostVariableOrder) {
   SnoptSolver solver;
-  if (solver.available()) {
-    TestQuadraticCostVariableOrder(solver);
-  }
+  TestQuadraticCostVariableOrder(solver);
 }
 
 GTEST_TEST(SnoptTest, NameTest) {
@@ -458,14 +450,11 @@ GTEST_TEST(SnoptTest, AutoDiffOnlyCost) {
   prog.AddCost(std::make_shared<AutoDiffOnlyCost>(), x);
 
   SnoptSolver solver;
-  if (solver.available() && solver.enabled()) {
-    auto result = solver.Solve(prog, {}, {});
-    EXPECT_TRUE(result.is_success());
-    const double tol = 1E-6;
-    EXPECT_NEAR(result.get_optimal_cost(), 2, tol);
-    EXPECT_TRUE(
-        CompareMatrices(result.GetSolution(x), drake::Vector1d(1), tol));
-  }
+  auto result = solver.Solve(prog, {}, {});
+  EXPECT_TRUE(result.is_success());
+  const double tol = 1E-6;
+  EXPECT_NEAR(result.get_optimal_cost(), 2, tol);
+  EXPECT_TRUE(CompareMatrices(result.GetSolution(x), drake::Vector1d(1), tol));
 }
 
 GTEST_TEST(SnoptTest, VariableScaling1) {
@@ -480,14 +469,12 @@ GTEST_TEST(SnoptTest, VariableScaling1) {
   prog.SetVariableScaling(x(1), 0.0001);
 
   SnoptSolver solver;
-  if (solver.available() && solver.enabled()) {
-    auto result = solver.Solve(prog, {}, {});
-    EXPECT_TRUE(result.is_success());
-    const double tol = 1E-6;
-    EXPECT_NEAR(result.get_optimal_cost(), -1000000000000.0001, tol);
-    EXPECT_TRUE(CompareMatrices(result.GetSolution(x),
-                                Eigen::Vector2d(-1000000000000, -0.0001), tol));
-  }
+  auto result = solver.Solve(prog, {}, {});
+  EXPECT_TRUE(result.is_success());
+  const double tol = 1E-6;
+  EXPECT_NEAR(result.get_optimal_cost(), -1000000000000.0001, tol);
+  EXPECT_TRUE(CompareMatrices(result.GetSolution(x),
+                              Eigen::Vector2d(-1000000000000, -0.0001), tol));
 }
 
 GTEST_TEST(SnoptTest, VariableScaling2) {
@@ -507,14 +494,12 @@ GTEST_TEST(SnoptTest, VariableScaling2) {
   prog.SetVariableScaling(x(0), s);
 
   SnoptSolver solver;
-  if (solver.available() && solver.enabled()) {
-    auto result = solver.Solve(prog, Eigen::Vector2d(1 * s, -1), {});
-    EXPECT_TRUE(result.is_success());
-    const double tol = 1E-6;
-    EXPECT_NEAR(result.get_optimal_cost(), 5, tol);
-    EXPECT_TRUE(CompareMatrices(result.GetSolution(x),
-                                Eigen::Vector2d(-3 * s, -4), tol));
-  }
+  auto result = solver.Solve(prog, Eigen::Vector2d(1 * s, -1), {});
+  EXPECT_TRUE(result.is_success());
+  const double tol = 1E-6;
+  EXPECT_NEAR(result.get_optimal_cost(), 5, tol);
+  EXPECT_TRUE(
+      CompareMatrices(result.GetSolution(x), Eigen::Vector2d(-3 * s, -4), tol));
 }
 
 GTEST_TEST(SnoptSolverTest, QPDualSolution1) {
@@ -601,9 +586,7 @@ GTEST_TEST(SnoptSolverTest, BadStringParameter) {
 
 GTEST_TEST(SnoptSolverTest, TestNonconvexQP) {
   SnoptSolver solver;
-  if (solver.available() && solver.enabled()) {
-    TestNonconvexQP(solver, false);
-  }
+  TestNonconvexQP(solver, false);
 }
 
 GTEST_TEST(SnoptSolverTest, TestL2NormCost) {
@@ -613,9 +596,7 @@ GTEST_TEST(SnoptSolverTest, TestL2NormCost) {
 
 TEST_P(TestEllipsoidsSeparation, TestSOCP) {
   SnoptSolver snopt_solver;
-  if (snopt_solver.available()) {
-    SolveAndCheckSolution(snopt_solver, {}, 1.E-8);
-  }
+  SolveAndCheckSolution(snopt_solver, {}, 1.E-8);
 }
 
 INSTANTIATE_TEST_SUITE_P(
@@ -624,9 +605,7 @@ INSTANTIATE_TEST_SUITE_P(
 
 TEST_P(TestQPasSOCP, TestSOCP) {
   SnoptSolver snopt_solver;
-  if (snopt_solver.available() && snopt_solver.enabled()) {
-    SolveAndCheckSolution(snopt_solver);
-  }
+  SolveAndCheckSolution(snopt_solver);
 }
 
 INSTANTIATE_TEST_SUITE_P(SnoptTest, TestQPasSOCP,
@@ -634,9 +613,7 @@ INSTANTIATE_TEST_SUITE_P(SnoptTest, TestQPasSOCP,
 
 TEST_P(TestFindSpringEquilibrium, TestSOCP) {
   SnoptSolver snopt_solver;
-  if (snopt_solver.available() && snopt_solver.enabled()) {
-    SolveAndCheckSolution(snopt_solver, {}, 2E-3);
-  }
+  SolveAndCheckSolution(snopt_solver, {}, 2E-3);
 }
 
 INSTANTIATE_TEST_SUITE_P(
@@ -646,10 +623,8 @@ INSTANTIATE_TEST_SUITE_P(
 GTEST_TEST(TestSOCP, MaximizeGeometricMeanTrivialProblem1) {
   MaximizeGeometricMeanTrivialProblem1 prob;
   SnoptSolver solver;
-  if (solver.available() && solver.enabled()) {
-    const auto result = solver.Solve(prob.prog(), {}, {});
-    prob.CheckSolution(result, 4E-6);
-  }
+  const auto result = solver.Solve(prob.prog(), {}, {});
+  prob.CheckSolution(result, 4E-6);
 }
 
 class ThrowCost final : public Cost {
@@ -682,17 +657,13 @@ GTEST_TEST(SnoptTest, TestCostExceptionHandling) {
   const auto x = prog.NewContinuousVariables<1>();
   prog.AddCost(std::make_shared<ThrowCost>(), x);
   SnoptSolver solver;
-  if (solver.available() && solver.enabled()) {
-    DRAKE_EXPECT_THROWS_MESSAGE(solver.Solve(prog),
-                                "Exception.*SNOPT.*ThrowCost.*");
-  }
+  DRAKE_EXPECT_THROWS_MESSAGE(solver.Solve(prog),
+                              "Exception.*SNOPT.*ThrowCost.*");
 }
 
 TEST_F(QuadraticEqualityConstrainedProgram1, test) {
   SnoptSolver solver;
-  if (solver.available() && solver.enabled()) {
-    CheckSolution(solver, Eigen::Vector2d(0.5, 0.8), std::nullopt, 1E-6);
-  }
+  CheckSolution(solver, Eigen::Vector2d(0.5, 0.8), std::nullopt, 1E-6);
 }
 
 class SnoptSolverEnabledTest : public ::testing::Test {

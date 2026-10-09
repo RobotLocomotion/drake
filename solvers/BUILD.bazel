@@ -1355,6 +1355,8 @@ drake_cc_library(
 
 drake_cc_googletest(
     name = "sdpa_free_format_test",
+    opt_in_condition = "//tools/workspace/csdp_internal:enabled",
+    build_when_skipped = False,
     deps = [
         ":csdp_solver_internal",
         ":csdp_test_examples",
@@ -1448,6 +1450,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "daqp_solver_test",
+    opt_in_condition = "//tools/workspace/daqp_internal:enabled",
     deps = [
         ":choose_best_solver",
         ":daqp_solver",
@@ -1476,6 +1479,7 @@ drake_cc_googletest(
         ":clarabel_solver_disabled",
         ":clp_solver_disabled",
         ":csdp_solver_disabled",
+        ":daqp_solver_disabled",
         ":gurobi_solver_disabled",
         ":ipopt_solver_disabled",
         ":mosek_solver_disabled",
