@@ -131,42 +131,6 @@ python -m build --wheel
 
 if [[ "$(uname)" == "Darwin" ]]; then
     delocate-wheel -w wheelhouse -v dist/drake*.whl
-
-    # Remove libmosek from wheels.
-    if [[ -n "${MOSEK_ENABLED}" ]]; then
-        for w in wheelhouse/drake*.whl; do
-            mkdir fixup-wheel
-            wheel unpack --dest fixup-wheel "$w"
-
-            rm fixup-wheel/drake-*/pydrake/lib/libmosek*
-            rm fixup-wheel/drake-*/pydrake/lib/libtbb*
-            rm fixup-wheel/drake-*/pydrake/doc/mosek/mosek-eula.pdf
-            rm fixup-wheel/drake-*/pydrake/doc/mosek/LICENSE.third_party
-
-            change_lpath \
-                --old='@loader_path/libtbb' \
-                --old='@loader_path/libmosek' \
-                --new='@loader_path/../../mosek/libtbb' \
-                --new='@loader_path/../../mosek/libmosek' \
-                fixup-wheel/drake-*/pydrake/lib/*.so
-            change_lpath \
-                --old='@loader_path/lib/libtbb' \
-                --old='@loader_path/lib/libmosek' \
-                --new='@loader_path/../mosek/libtbb' \
-                --new='@loader_path/../mosek/libmosek' \
-                fixup-wheel/drake-*/pydrake/*.so
-            change_lpath \
-                --old='@loader_path/../lib/libtbb' \
-                --old='@loader_path/../lib/libmosek' \
-                --new='@loader_path/../../mosek/libtbb' \
-                --new='@loader_path/../../mosek/libmosek' \
-                fixup-wheel/drake-*/pydrake/*/*.so
-
-            rm "$w"
-            wheel pack --dest wheelhouse fixup-wheel/drake-*/
-            rm -rf fixup-wheel
-        done
-    fi
 else
     GLIBC_VERSION=$(ldd --version | sed -n '1{s/.* //;s/[.]/_/p}')
 
