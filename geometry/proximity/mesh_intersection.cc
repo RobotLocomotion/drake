@@ -46,9 +46,9 @@ namespace internal {
 //  tetrahedrons.
 
 // TODO(DamrongGuoy): Handle the case that the line is parallel to the plane.
-template <typename T>
+template <typename T, typename HalfSpaceType>
 Vector3<T> CalcIntersection(const Vector3<T>& p_FA, const Vector3<T>& p_FB,
-                            const PosedHalfSpace<T>& H_F) {
+                            const HalfSpaceType& H_F) {
   const T a = H_F.CalcSignedDistance(p_FA);
   const T b = H_F.CalcSignedDistance(p_FB);
   DRAKE_DEMAND(a != b);
@@ -73,9 +73,9 @@ Vector3<T> CalcIntersection(const Vector3<T>& p_FA, const Vector3<T>& p_FB,
   //      = 0 when a != b.
 }
 
-template <typename T>
+template <typename T, typename HalfSpaceType>
 void ClipPolygonByHalfSpace(const std::vector<Vector3<T>>& input_vertices_F,
-                            const PosedHalfSpace<T>& H_F,
+                            const HalfSpaceType& H_F,
                             std::vector<Vector3<T>>* output_vertices_F) {
   DRAKE_ASSERT(output_vertices_F != nullptr);
   // Note: this is the inner loop of a modified Sutherland-Hodgman algorithm for
@@ -174,6 +174,36 @@ SurfaceVolumeIntersector<MeshBuilder, TetBvType,
                          TriBvType>::~SurfaceVolumeIntersector() = default;
 
 template <typename MeshBuilder, typename TetBvType, typename TriBvType>
+void SurfaceVolumeIntersector<MeshBuilder, TetBvType, TriBvType>::
+    CalcTetFacePlanes(int element, const VolumeMesh<double>& volume_M,
+                      std::array<TetFacePlane, 4>* faces) {
+  // Get the positions, in M's frame, of the four vertices of the tetrahedral
+  // `element` of volume_M.
+  Vector3<double> p_MVs[4];
+  for (int i = 0; i < 4; ++i) {
+    int v = volume_M.element(element).vertex(i);
+    p_MVs[i] = volume_M.vertex(v);
+  }
+  // This table encodes the four triangular faces of the tetrahedron in such
+  // a way that each right-handed face normal points outward from the
+  // tetrahedron, which is suitable for setting up the half space. See the
+  // documentation in ClipTriangleByTetrahedron() for details.
+  const int kFaces[4][3] = {{1, 2, 3}, {0, 3, 2}, {0, 1, 3}, {0, 2, 1}};
+  for (int f = 0; f < 4; ++f) {
+    const Vector3<double>& p_MA = p_MVs[kFaces[f][0]];
+    const Vector3<double>& p_MB = p_MVs[kFaces[f][1]];
+    const Vector3<double>& p_MC = p_MVs[kFaces[f][2]];
+    // We'll allow the PosedHalfSpace to normalize our vector; harvesting its
+    // unit normal keeps the arithmetic identical to constructing the half
+    // space at every use site.
+    const Vector3<double> normal_M = (p_MB - p_MA).cross(p_MC - p_MA);
+    const PosedHalfSpace<double> half_space_M(normal_M, p_MA);
+    (*faces)[f].nhat = half_space_M.normal();
+    (*faces)[f].d = half_space_M.normal().dot(p_MA);
+  }
+}
+
+template <typename MeshBuilder, typename TetBvType, typename TriBvType>
 const std::vector<Vector3<
     typename SurfaceVolumeIntersector<MeshBuilder, TetBvType, TriBvType>::T>>&
 SurfaceVolumeIntersector<MeshBuilder, TetBvType, TriBvType>::
@@ -181,28 +211,8 @@ SurfaceVolumeIntersector<MeshBuilder, TetBvType, TriBvType>::
                               int face,
                               const TriangleSurfaceMesh<double>& surface_N,
                               const math::RigidTransform<T>& X_MN) {
-  // Although polygon_M starts out pointing to polygon_[0] that is not an
-  // invariant in this function.
-  std::vector<Vector3<T>>* polygon_M = &(polygon_[0]);
-  // Initialize output polygon in M's frame from the triangular `face` of
-  // surface_N.
-  polygon_M->clear();
-  for (int i = 0; i < 3; ++i) {
-    const int v = surface_N.element(face).vertex(i);
-    const Vector3<T>& p_NV = surface_N.vertex(v).cast<T>();
-    polygon_M->push_back(X_MN * p_NV);
-  }
-  // Get the positions, in M's frame, of the four vertices of the tetrahedral
-  // `element` of volume_M. Because we are doing this in the M frame, we can
-  // leave the volume mesh's quantities as double-valued -- T-values will arise
-  // as we do transformed computations below.
-  Vector3<double> p_MVs[4];
-  for (int i = 0; i < 4; ++i) {
-    int v = volume_M.element(element).vertex(i);
-    p_MVs[i] = volume_M.vertex(v);
-  }
-  // Sets up the four half spaces associated with the four triangular faces of
-  // the tetrahedron. Assume the tetrahedron has the fourth vertex seeing the
+  // The four half spaces associated with the four triangular faces of the
+  // tetrahedron. Assume the tetrahedron has the fourth vertex seeing the
   // first three vertices in CCW order; for example, a tetrahedron of (Zero(),
   // UnitX(), UnitY(), UnitZ()) (see the picture below) has this orientation.
   //
@@ -218,24 +228,88 @@ SurfaceVolumeIntersector<MeshBuilder, TetBvType, TriBvType>::
   //   /
   // +X
   //
-  // This table encodes the four triangular faces of the tetrahedron in such
-  // a way that each right-handed face normal points outward from the
-  // tetrahedron, which is suitable for setting up the half space. Refer to
-  // the above picture.
-  const int faces[4][3] = {{1, 2, 3}, {0, 3, 2}, {0, 1, 3}, {0, 2, 1}};
+  // The half spaces depend only on the tetrahedron (whose mesh is immutable
+  // and expressed in frame M), so they are computed once per tetrahedron --
+  // cached across the many candidate triangles paired with this tetrahedron
+  // when the cache has been primed -- rather than once per (tet, tri) pair.
+  std::array<TetFacePlane, 4> local_faces;
+  const std::array<TetFacePlane, 4>* faces = nullptr;
+  if (element < std::ssize(tet_cache_)) {
+    TetCacheEntry& entry = tet_cache_[element];
+    if (!(entry.flags & TetCacheEntry::kFacesValid)) {
+      CalcTetFacePlanes(element, volume_M, &entry.faces);
+      entry.flags |= TetCacheEntry::kFacesValid;
+    }
+    faces = &entry.faces;
+  } else {
+    CalcTetFacePlanes(element, volume_M, &local_faces);
+    faces = &local_faces;
+  }
+
+  // We know that each contact polygon has at most 7 vertices: each surface
+  // triangle is clipped by four half-spaces of the four triangular faces of
+  // a tetrahedron. The scratch buffers are reserved here (rather than at
+  // construction) so that intersectors that never clip -- the common case
+  // for broadphase candidates -- never allocate.
+  if (polygon_[0].capacity() < 7) {
+    polygon_[0].reserve(7);
+    polygon_[1].reserve(7);
+  }
+  // Although polygon_M starts out pointing to polygon_[0] that is not an
+  // invariant in this function.
+  std::vector<Vector3<T>>* polygon_M = &(polygon_[0]);
+  polygon_M->clear();
+  // Initialize output polygon in M's frame from the triangular `face` of
+  // surface_N. Within one query the same triangle is typically paired with
+  // multiple tetrahedra, so the transformed vertex positions (and a bounding
+  // sphere) are cached when the cache has been primed by
+  // SampleVolumeFieldOnSurface().
+  if (face < std::ssize(tri_cache_)) {
+    TriCacheEntry& tri_entry = tri_cache_[face];
+    if (!tri_cache_valid_[face]) {
+      for (int i = 0; i < 3; ++i) {
+        const int v = surface_N.element(face).vertex(i);
+        tri_entry.p_MVs[i] = X_MN * Vector3<T>(surface_N.vertex(v).cast<T>());
+      }
+      const Vector3<double> p0 = convert_to_double(tri_entry.p_MVs[0]);
+      const Vector3<double> p1 = convert_to_double(tri_entry.p_MVs[1]);
+      const Vector3<double> p2 = convert_to_double(tri_entry.p_MVs[2]);
+      tri_entry.centroid_M = (p0 + p1 + p2) / 3.0;
+      using std::sqrt;
+      tri_entry.radius =
+          sqrt(std::max({(p0 - tri_entry.centroid_M).squaredNorm(),
+                         (p1 - tri_entry.centroid_M).squaredNorm(),
+                         (p2 - tri_entry.centroid_M).squaredNorm()}));
+      tri_cache_valid_[face] = 1;
+    }
+    // Bounding-sphere rejection: if the triangle's bounding sphere lies
+    // strictly outside any tetrahedron face's half space, the intersection is
+    // empty. This costs at most four dot products, versus running the full
+    // Sutherland-Hodgman clipping below; the (numerous) candidate pairs whose
+    // bounding volumes overlap but whose elements do not touch are rejected
+    // here.
+    for (const TetFacePlane& half_space_M : *faces) {
+      if (half_space_M.CalcSignedDistance(tri_entry.centroid_M) >
+          tri_entry.radius) {
+        return *polygon_M;  // Empty.
+      }
+    }
+    polygon_M->insert(polygon_M->end(), tri_entry.p_MVs.begin(),
+                      tri_entry.p_MVs.end());
+  } else {
+    for (int i = 0; i < 3; ++i) {
+      const int v = surface_N.element(face).vertex(i);
+      const Vector3<T>& p_NV = surface_N.vertex(v).cast<T>();
+      polygon_M->push_back(X_MN * p_NV);
+    }
+  }
   // Although this assertion appears trivially true, its presence is protection
   // for the subsequent code, which heavily relies on it being true, from any
   // changes that may be applied to the previous code.
   DRAKE_ASSERT(polygon_M == &(polygon_[0]));
   std::vector<Vector3<T>>* in_M = polygon_M;
   std::vector<Vector3<T>>* out_M = &(polygon_[1]);
-  for (auto& face_vertex : faces) {
-    const Vector3<T>& p_MA = p_MVs[face_vertex[0]].cast<T>();
-    const Vector3<T>& p_MB = p_MVs[face_vertex[1]].cast<T>();
-    const Vector3<T>& p_MC = p_MVs[face_vertex[2]].cast<T>();
-    // We'll allow the PosedHalfSpace to normalize our vector.
-    const Vector3<T> normal_M = (p_MB - p_MA).cross(p_MC - p_MA);
-    PosedHalfSpace<T> half_space_M(normal_M, p_MA);
+  for (const TetFacePlane& half_space_M : *faces) {
     // Intersects the output polygon by the half space of each face of the
     // tetrahedron.
     ClipPolygonByHalfSpace(*in_M, half_space_M, out_M);
@@ -296,8 +370,6 @@ void SurfaceVolumeIntersector<MeshBuilder, TetBvType, TriBvType>::
         const Bvh<TriBvType, TriangleSurfaceMesh<double>>& bvh_N,
         const math::RigidTransform<T>& X_MN,
         const bool filter_face_normal_along_field_gradient) {
-  // Builds the intersection mesh represented in M's frame.
-  MeshBuilder builder_M;
   const math::RigidTransform<double>& X_MN_d = convert_to_double(X_MN);
 
   std::vector<std::pair<int, int>> candidate_tet_tri_pairs;
@@ -307,6 +379,21 @@ void SurfaceVolumeIntersector<MeshBuilder, TetBvType, TriBvType>::
                   candidate_tet_tri_pairs.emplace_back(tet_index, tri_index);
                   return BvttCallbackResult::Continue;
                 });
+
+  // In the common case where the bounding volumes prove the meshes disjoint,
+  // return before making any allocation (this function runs for every
+  // broadphase candidate pair whose coarse bounding boxes overlap; most such
+  // pairs are not actually in contact).
+  if (candidate_tet_tri_pairs.empty()) return;
+
+  // Builds the intersection mesh represented in M's frame.
+  MeshBuilder builder_M;
+
+  // Prime the per-tetrahedron and per-triangle caches; entries are computed
+  // lazily as candidate pairs touch them.
+  tet_cache_.assign(volume_field_M.mesh().num_elements(), TetCacheEntry{});
+  tri_cache_.resize(surface_N.num_triangles());
+  tri_cache_valid_.assign(surface_N.num_triangles(), 0);
 
   for (const auto& [tet_index, tri_index] : candidate_tet_tri_pairs) {
     CalcContactPolygon(volume_field_M, surface_N, X_MN, X_MN_d, &builder_M,
@@ -330,8 +417,21 @@ void SurfaceVolumeIntersector<MeshBuilder, TetBvType, TriBvType>::
   const VolumeMesh<double>& vol_mesh_M = volume_field_M.mesh();
 
   if (filter_face_normal_along_field_gradient) {
-    if (!this->IsFaceNormalAlongPressureGradient(
-            volume_field_M, surface_N, X_MN_d, tet_index, tri_index)) {
+    if (tet_index < std::ssize(tet_cache_)) {
+      // The normalized field gradient depends only on the tetrahedron; cache
+      // it across the candidate triangles paired with this tetrahedron.
+      TetCacheEntry& entry = tet_cache_[tet_index];
+      if (!(entry.flags & TetCacheEntry::kGradValid)) {
+        entry.grad_nhat =
+            volume_field_M.EvaluateGradient(tet_index).normalized();
+        entry.flags |= TetCacheEntry::kGradValid;
+      }
+      if (!IsFaceNormalInNormalDirection(entry.grad_nhat, surface_N, tri_index,
+                                         X_MN_d.rotation())) {
+        return;
+      }
+    } else if (!this->IsFaceNormalAlongPressureGradient(
+                   volume_field_M, surface_N, X_MN_d, tet_index, tri_index)) {
       return;
     }
   }
@@ -452,7 +552,8 @@ template class SurfaceVolumeIntersector<PolyMeshBuilder<AutoDiffXd>, Obb>;
 template class SurfaceVolumeIntersector<PolyMeshBuilder<double>, Obb, Aabb>;
 
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    (&CalcIntersection<T>, &ClipPolygonByHalfSpace<T>,
+    (&CalcIntersection<T, PosedHalfSpace<T>>,
+     &ClipPolygonByHalfSpace<T, PosedHalfSpace<T>>,
      &RemoveNearlyDuplicateVertices<T>,
      &ComputeContactSurfaceFromCompliantVolumeRigidSurface<T>));
 

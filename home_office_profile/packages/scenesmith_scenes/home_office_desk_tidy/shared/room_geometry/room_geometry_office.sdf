@@ -1,0 +1,172 @@
+<?xml version='1.0' encoding='utf-8'?>
+<sdf xmlns:drake="drake.mit.edu" version="1.7">
+  <model name="room_geometry">
+    <link name="room_geometry_body_link">
+      <collision name="north_wall_collision_0">
+        <geometry>
+          <box>
+            <size>0.52433367483089 0.05 2.7</size>
+          </box>
+        </geometry>
+        <pose>-2.137833162584555 1.875 1.35 0 0 0</pose>
+        <drake:proximity_properties>
+          <drake:compliant_hydroelastic />
+          <drake:hydroelastic_modulus>1e8</drake:hydroelastic_modulus>
+          <drake:mu_dynamic>0.5</drake:mu_dynamic>
+          <drake:mu_static>0.5</drake:mu_static>
+          <drake:hunt_crossley_dissipation>20</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="north_wall_collision_1">
+        <geometry>
+          <box>
+            <size>2.67566632516911 0.05 2.7</size>
+          </box>
+        </geometry>
+        <pose>1.062166837415445 1.875 1.35 0 0 0</pose>
+        <drake:proximity_properties>
+          <drake:compliant_hydroelastic />
+          <drake:hydroelastic_modulus>1e8</drake:hydroelastic_modulus>
+          <drake:mu_dynamic>0.5</drake:mu_dynamic>
+          <drake:mu_static>0.5</drake:mu_static>
+          <drake:hunt_crossley_dissipation>20</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="window_1_collision">
+        <geometry>
+          <box>
+            <size>1.6 0.05 1.2</size>
+          </box>
+        </geometry>
+        <pose>-1.1006663251691098 1.875 1.5 0 0 0</pose>
+        <drake:proximity_properties>
+          <drake:compliant_hydroelastic />
+          <drake:hydroelastic_modulus>1e8</drake:hydroelastic_modulus>
+          <drake:mu_dynamic>0.5</drake:mu_dynamic>
+          <drake:mu_static>0.5</drake:mu_static>
+          <drake:hunt_crossley_dissipation>20</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="south_wall_collision_0">
+        <geometry>
+          <box>
+            <size>3.0451553266209537 0.05 2.7</size>
+          </box>
+        </geometry>
+        <pose>-0.8774223366895231 -1.875 1.35 0 0 0</pose>
+        <drake:proximity_properties>
+          <drake:compliant_hydroelastic />
+          <drake:hydroelastic_modulus>1e8</drake:hydroelastic_modulus>
+          <drake:mu_dynamic>0.5</drake:mu_dynamic>
+          <drake:mu_static>0.5</drake:mu_static>
+          <drake:hunt_crossley_dissipation>20</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="south_wall_collision_1">
+        <geometry>
+          <box>
+            <size>0.3548446733790458 0.05 2.7</size>
+          </box>
+        </geometry>
+        <pose>2.2225776633104766 -1.875 1.35 0 0 0</pose>
+        <drake:proximity_properties>
+          <drake:compliant_hydroelastic />
+          <drake:hydroelastic_modulus>1e8</drake:hydroelastic_modulus>
+          <drake:mu_dynamic>0.5</drake:mu_dynamic>
+          <drake:mu_static>0.5</drake:mu_static>
+          <drake:hunt_crossley_dissipation>20</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="window_3_collision">
+        <geometry>
+          <box>
+            <size>1.4 0.05 1.2</size>
+          </box>
+        </geometry>
+        <pose>1.320155326620954 -1.875 1.5 0 0 0</pose>
+        <drake:proximity_properties>
+          <drake:compliant_hydroelastic />
+          <drake:hydroelastic_modulus>1e8</drake:hydroelastic_modulus>
+          <drake:mu_dynamic>0.5</drake:mu_dynamic>
+          <drake:mu_static>0.5</drake:mu_static>
+          <drake:hunt_crossley_dissipation>20</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="east_wall_collision_0">
+        <geometry>
+          <box>
+            <size>0.05 1.1482967799721457 2.7</size>
+          </box>
+        </geometry>
+        <pose>2.375 -1.325851610013927 1.35 0 0 0</pose>
+        <drake:proximity_properties>
+          <drake:compliant_hydroelastic />
+          <drake:hydroelastic_modulus>1e8</drake:hydroelastic_modulus>
+          <drake:mu_dynamic>0.5</drake:mu_dynamic>
+          <drake:mu_static>0.5</drake:mu_static>
+          <drake:hunt_crossley_dissipation>20</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="east_wall_collision_1">
+        <geometry>
+          <box>
+            <size>0.05 1.451703220027854 2.7</size>
+          </box>
+        </geometry>
+        <pose>2.375 1.174148389986073 1.35 0 0 0</pose>
+        <drake:proximity_properties>
+          <drake:compliant_hydroelastic />
+          <drake:hydroelastic_modulus>1e8</drake:hydroelastic_modulus>
+          <drake:mu_dynamic>0.5</drake:mu_dynamic>
+          <drake:mu_static>0.5</drake:mu_static>
+          <drake:hunt_crossley_dissipation>20</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="window_2_collision">
+        <geometry>
+          <box>
+            <size>0.05 1.2 1.2</size>
+          </box>
+        </geometry>
+        <pose>2.375 -0.15170322002785408 1.5 0 0 0</pose>
+        <drake:proximity_properties>
+          <drake:compliant_hydroelastic />
+          <drake:hydroelastic_modulus>1e8</drake:hydroelastic_modulus>
+          <drake:mu_dynamic>0.5</drake:mu_dynamic>
+          <drake:mu_static>0.5</drake:mu_static>
+          <drake:hunt_crossley_dissipation>20</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="west_wall_collision_0">
+        <geometry>
+          <box>
+            <size>0.05 0.373880203640549 2.7</size>
+          </box>
+        </geometry>
+        <pose>-2.375 -1.7130598981797254 1.35 0 0 0</pose>
+        <drake:proximity_properties>
+          <drake:compliant_hydroelastic />
+          <drake:hydroelastic_modulus>1e8</drake:hydroelastic_modulus>
+          <drake:mu_dynamic>0.5</drake:mu_dynamic>
+          <drake:mu_static>0.5</drake:mu_static>
+          <drake:hunt_crossley_dissipation>20</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="west_wall_collision_1">
+        <geometry>
+          <box>
+            <size>0.05 2.526119796359451 2.7</size>
+          </box>
+        </geometry>
+        <pose>-2.375 0.6369401018202745 1.35 0 0 0</pose>
+        <drake:proximity_properties>
+          <drake:compliant_hydroelastic />
+          <drake:hydroelastic_modulus>1e8</drake:hydroelastic_modulus>
+          <drake:mu_dynamic>0.5</drake:mu_dynamic>
+          <drake:mu_static>0.5</drake:mu_static>
+          <drake:hunt_crossley_dissipation>20</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      </link>
+  </model>
+</sdf>

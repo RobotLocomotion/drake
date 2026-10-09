@@ -1,0 +1,35 @@
+<?xml version='1.0' encoding='utf-8'?>
+<sdf xmlns:drake="drake.mit.edu" version="1.7">
+  <model name="hardcover_photography_book">
+    <link name="base_link">
+      <inertial>
+        <mass>1.700000</mass>
+        <pose>-2.1819e-05 0.0006967534 0.010646945 0 0 0</pose>
+        <inertia>
+          <ixx>1.786123e-03</ixx>
+          <iyy>3.573962e-03</iyy>
+          <izz>5.234368e-03</izz>
+          <ixy>4.731518e-06</ixy>
+          <ixz>-2.331210e-06</ixz>
+          <iyz>-9.084413e-08</iyz>
+        </inertia>
+      </inertial>
+      <collision name="body">
+        <pose>-3.7907965e-06 -1.0383532e-05 0.010566927 -1.279326 1.569688 1.8617707</pose>
+        <geometry>
+          <box>
+            <size>0.02126416 0.11140677 0.16003895</size>
+          </box>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:compliant_hydroelastic />
+          <drake:hydroelastic_modulus>14618559.653</drake:hydroelastic_modulus>
+          <drake:mesh_resolution_hint>0.01063208</drake:mesh_resolution_hint>
+          <drake:mu_dynamic>0.32</drake:mu_dynamic>
+          <drake:mu_static>0.32</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+    </link>
+  </model>
+</sdf>
