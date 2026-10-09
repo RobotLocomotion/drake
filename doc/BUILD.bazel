@@ -134,6 +134,12 @@ drake_py_binary(
         "//doc/styleguide:build",
         "//doc/tutorials:build",
     ],
+    env = {
+        # The pydrake and tutorials build tools are wrapped with a transition,
+        # so we must provide their executables' runfiles paths.
+        "DRAKE_DOC_PYDRAKE_BUILD": "$(rlocationpath //doc/pydrake:build)",
+        "DRAKE_DOC_TUTORIALS_BUILD": "$(rlocationpath //doc/tutorials:build)",
+    },
     deps = [
         ":defs",
         "@rules_python//python/runfiles",
