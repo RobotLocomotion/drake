@@ -75,8 +75,12 @@ class VPolytope final : public ConvexSet {
   VPolytope GetMinimalRepresentation(double tol = 1e-9) const;
 
   /** Returns true if the point is within `tol` of the set under the L∞-norm.
-  Note: This requires the solution of a linear program; the achievable tolerance
-  may be dependent on your specific solver and solver parameters.
+  Note: This requires the solution of a linear program; for `tol` > 0, the
+  achievable tolerance may be dependent on your specific solver and solver
+  parameters. For `tol` = 0, this returns true only if membership can be proven
+  despite solver error and floating-point roundoff. That succeeds for vertices
+  and for points in the interior of a full-dimensional VPolytope, but not for
+  other points on the boundary, nor for points very close to it.
   @see ConvexSet::set_solver */
   using ConvexSet::PointInSet;
 
