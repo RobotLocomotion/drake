@@ -21,7 +21,7 @@ void DefinePlanningCommonSampledIrisOptions(py::module_ m) {
   // CommonSampledIrisOptions
   const auto& cls_doc = doc.CommonSampledIrisOptions;
   class_<CommonSampledIrisOptions> common_sampled_iris_options(
-      m, "CommonSampledIrisOptions", cls_doc.doc);
+      m, "CommonSampledIrisOptions", py::dynamic_attr(), cls_doc.doc);
   common_sampled_iris_options  // BR
       .def(py::init<>())
       .def_rw("num_particles", &CommonSampledIrisOptions::num_particles,

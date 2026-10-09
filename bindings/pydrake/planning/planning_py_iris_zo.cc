@@ -1,4 +1,5 @@
 #include "drake/bindings/generated_docstrings/planning_iris.h"
+#include "drake/bindings/pydrake/common/ref_cycle_pybind.h"
 #include "drake/bindings/pydrake/common/wrap_pybind.h"
 #include "drake/bindings/pydrake/planning/planning_py.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
@@ -16,10 +17,31 @@ void DefinePlanningIrisZo(py::module_ m) {
 
   // IrisZoOptions
   const auto& cls_doc = doc.IrisZoOptions;
-  class_<IrisZoOptions> iris_zo_options(m, "IrisZoOptions", cls_doc.doc);
+  class_<IrisZoOptions> iris_zo_options(
+      m, "IrisZoOptions", py::dynamic_attr(), cls_doc.doc);
   iris_zo_options  // BR
       .def(py::init<>())
-      .def_rw("sampled_iris_options", &IrisZoOptions::sampled_iris_options,
+      .def_prop_rw("sampled_iris_options",
+#ifdef PYDRAKE_USE_PYBIND11
+          py::cpp_function(
+              [](IrisZoOptions& self) -> CommonSampledIrisOptions& {
+                return self.sampled_iris_options;
+              },
+              py_rvp::reference_internal, internal::ref_cycle<0, 1>()),
+          py::cpp_function(
+              [](IrisZoOptions& self, const CommonSampledIrisOptions& value) {
+                self.sampled_iris_options = value;
+              }),
+#else   // PYDRAKE_USE_NANOBIND
+          [](IrisZoOptions& self) -> CommonSampledIrisOptions& {
+            return self.sampled_iris_options;
+          },
+          [](IrisZoOptions& self, const CommonSampledIrisOptions& value) {
+            self.sampled_iris_options = value;
+          },
+          py::for_getter(py_rvp::reference_internal),
+          py::for_getter(internal::ref_cycle<0, 1>()),
+#endif  // PYDRAKE_USE_PYBIND11
           cls_doc.sampled_iris_options.doc)
       .def_rw("bisection_steps", &IrisZoOptions::bisection_steps,
           cls_doc.bisection_steps.doc)
