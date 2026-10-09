@@ -132,6 +132,21 @@ class LegacyOptionalStructNoDefault:
 
 
 @dc.dataclass
+class LegacyGenericStruct:
+    # Here we write out typing.List and typing.Dict (dispreferred), instead of
+    # `list` and `dict`.
+    optional_list: typing.Optional[typing.List[float]] = None  # noqa: UP006, UP045
+    optional_map: typing.Optional[typing.Dict[str, float]] = None  # noqa: UP006, UP045
+    nested_list: typing.List[typing.List[float]] = dc.field(  # noqa: UP006
+        default_factory=list
+    )
+    nested_map: typing.Dict[str, typing.List[float]] = dc.field(  # noqa: UP006
+        default_factory=dict
+    )
+    __eq__ = _dataclass_eq
+
+
+@dc.dataclass
 class NumpyStruct:
     # TODO(jwnimmer-tri) We should use the numpy.typing module here to
     # constrain the shape and/or dtype.
@@ -633,6 +648,28 @@ class TestYamlTypedRead(unittest.TestCase, metaclass=ValueParameterizedTest):
 
     # TODO(jwnimmer-tri) Add test cases similar to StdMapDirectly and
     # StdMapDirectlyWithDefaults from the C++ YAML test suite.
+
+    @run_with_multiple_values(_all_typed_read_options())
+    def test_read_legacy_generics(self, *, options):
+        """Optional and nested typing.List[T] and typing.Dict[K, V] schemas
+        must not be called like constructors; list() and dict() are used.
+        """
+        data = dedent("""
+        optional_list: [1.0, 2.0]
+        optional_map: {a: 3.0}
+        nested_list: [[1.0], [2.0, 3.0]]
+        nested_map: {b: [4.0]}
+        """)
+        x = yaml_load_typed(schema=LegacyGenericStruct, data=data, **options)
+        self.assertEqual(
+            x,
+            LegacyGenericStruct(
+                optional_list=[1.0, 2.0],
+                optional_map=dict(a=3.0),
+                nested_list=[[1.0], [2.0, 3.0]],
+                nested_map=dict(b=[4.0]),
+            ),
+        )
 
     @run_with_multiple_values(_all_typed_read_options())
     def test_read_optional(self, *, options):
