@@ -934,6 +934,32 @@ RobotClearance CollisionChecker::CalcContextRobotClearance(
   return result;
 }
 
+std::vector<RobotClearance> CollisionChecker::CalcRobotClearances(
+    const std::vector<Eigen::VectorXd>& configs,
+    const double influence_distance, const Parallelism parallelize) const {
+  // Validate even if `configs` is empty.
+  DRAKE_THROW_UNLESS(influence_distance >= 0.0);
+  DRAKE_THROW_UNLESS(std::isfinite(influence_distance));
+
+  std::vector<RobotClearance> clearances(
+      configs.size(), RobotClearance(plant().num_positions()));
+
+  const int number_of_threads = GetNumberOfThreads(parallelize);
+  drake::log()->debug("CalcRobotClearances uses {} thread(s)",
+                      number_of_threads);
+
+  const auto config_work = [&](const int thread_num, const int64_t index) {
+    clearances.at(index) =
+        CalcRobotClearance(configs.at(index), influence_distance, thread_num);
+  };
+
+  StaticParallelForIndexLoop(DegreeOfParallelism(number_of_threads), 0,
+                             configs.size(), config_work,
+                             ParallelForBackend::BEST_AVAILABLE);
+
+  return clearances;
+}
+
 int CollisionChecker::MaxNumDistances(
     const std::optional<int> context_number) const {
   return MaxContextNumDistances(model_context(context_number));

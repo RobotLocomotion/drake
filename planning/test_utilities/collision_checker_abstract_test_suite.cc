@@ -5,6 +5,7 @@
 #include <common_robotics_utilities/print.hpp>
 
 #include "drake/common/nice_type_name.h"
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/text_logging.h"
 #include "drake/geometry/shape_specification.h"
 #include "drake/planning/collision_avoidance.h"
@@ -258,7 +259,8 @@ TEST_P(CollisionCheckerAbstractTestSuite, ForceSerializeDiscreteQueries) {
 }
 
 // Tests "distance" clearance and collision avoidance methods. Provided
-// `parallelism` controls parallelism of calls to `CalcRobotClearance` only.
+// `parallelism` controls parallelism of calls to `CalcRobotClearance` and
+// `CalcRobotClearances` only.
 // TODO(calderpg-tri) Improve so that parallelism is exercised on all queries.
 void CollisionCheckerAbstractTestSuite::TestDistanceQueries(
     const CollisionCheckerTestParams& params, const Parallelism parallelism) {
@@ -270,6 +272,36 @@ void CollisionCheckerAbstractTestSuite::TestDistanceQueries(
 #endif
   for (int thread = 0; thread < parallelism.num_threads(); ++thread) {
     EXPECT_NO_THROW(checker.CalcRobotClearance(qs_.q1, 0.0));
+  }
+
+  // With zero influence distance, only the colliding configs report distances.
+  const std::vector<RobotClearance> zero_influence =
+      checker.CalcRobotClearances(qs_.configs, 0.0, parallelism);
+  ASSERT_EQ(zero_influence.size(), qs_.configs.size());
+  EXPECT_EQ(zero_influence[0].size(), 0);
+  EXPECT_EQ(zero_influence[1].size(), 0);
+  EXPECT_GT(zero_influence[2].size(), 0);
+  EXPECT_GT(zero_influence[3].size(), 0);
+
+  // The batched clearances exactly match the per-config clearances.
+  for (const double influence_distance : {0.0, 1e6}) {
+    const std::vector<RobotClearance> batched = checker.CalcRobotClearances(
+        qs_.configs, influence_distance, parallelism);
+    ASSERT_EQ(batched.size(), qs_.configs.size());
+    for (int i = 0; i < ssize(qs_.configs); ++i) {
+      SCOPED_TRACE(fmt::format("influence_distance = {}, i = {}",
+                               influence_distance, i));
+      const RobotClearance expected =
+          checker.CalcRobotClearance(qs_.configs[i], influence_distance);
+      ASSERT_EQ(batched[i].size(), expected.size());
+      EXPECT_EQ(batched[i].robot_indices(), expected.robot_indices());
+      EXPECT_EQ(batched[i].other_indices(), expected.other_indices());
+      EXPECT_EQ(batched[i].collision_types(), expected.collision_types());
+      EXPECT_TRUE(
+          CompareMatrices(batched[i].distances(), expected.distances()));
+      EXPECT_TRUE(
+          CompareMatrices(batched[i].jacobians(), expected.jacobians()));
+    }
   }
 
   // Test collision gradient:

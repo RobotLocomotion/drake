@@ -458,6 +458,18 @@ class TestCollisionChecker(unittest.TestCase):
             model_context=ccc, q=q, influence_distance=10
         )
         self.assertIsInstance(clearance, mut.RobotClearance)
+        clearances = dut.CalcRobotClearances(
+            configs=[q] * 4, influence_distance=10, parallelize=True
+        )
+        self.assertEqual(len(clearances), 4)
+        self.assertIsInstance(clearances[0], mut.RobotClearance)
+        np.testing.assert_array_equal(
+            clearances[0].distances(), clearance.distances()
+        )
+        np.testing.assert_array_equal(
+            clearances[0].jacobians(), clearance.jacobians()
+        )
+        dut.CalcRobotClearances([q], 10)  # Omit the defaulted arg.
 
         dut.MaxNumDistances()
         dut.MaxNumDistances(context_number=1)
