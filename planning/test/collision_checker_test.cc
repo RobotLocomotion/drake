@@ -1719,6 +1719,9 @@ class ParameterizedEdgeCheckTest
 //
 // Also, the checker tracks work done across threads and can report if work has
 // been done in more than one thread.
+//
+// For CalcRobotClearances(), the robot clearance reports a single distance,
+// q[0], so each configuration's clearance is recognizable.
 class MockEdgeChecker : public UnimplementedCollisionChecker {
  public:
   explicit MockEdgeChecker(CollisionCheckerParams params)
@@ -1802,6 +1805,21 @@ class MockEdgeChecker : public UnimplementedCollisionChecker {
     const double s = q(2);
     const bool free = s <= q(0) || q(1) < s;
     return free;
+  }
+
+  RobotClearance DoCalcContextRobotClearance(
+      const CollisionCheckerContext& model_context, double) const override {
+    // As above, make this expensive enough to use multiple OpenMP threads.
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    const int thread_index =
+        common_robotics_utilities::openmp_helpers::GetContextOmpThreadNum();
+    thread_signals_[thread_index] = 1;
+    const auto q = plant().GetPositions(model_context.plant_context());
+    RobotClearance clearance(plant().num_positions());
+    clearance.Append(BodyIndex(1), BodyIndex(0),
+                     RobotCollisionType::kEnvironmentCollision, q(0),
+                     q.transpose());
+    return clearance;
   }
 
   // We just want this to *not* throw.
@@ -2160,6 +2178,72 @@ GTEST_TEST(EdgeCheckTest, CheckMultipleEdgesFree) {
     EXPECT_THROW(
         dut.CheckEdgesCollisionFree({{q_start, q2}, {nan, q2}}, parallel),
         std::exception);
+  }
+}
+
+// The test for CalcRobotClearances() (plural) relies on the RobotClearance test
+// of CalcRobotClearance() (singular) for individual configurations. For this
+// function, we only need to test:
+//
+//   1. Do *all* the configurations get evaluated with the expected result?
+//   2. Does the `parallelize` parameter have the documented effect?
+//
+GTEST_TEST(CollisionCheckerTest, CalcMultipleRobotClearances) {
+  const double step_size = 0.05;
+  auto calc_dist = MockEdgeChecker::MakeEdgeDistance(step_size);
+
+  const int q_size = MockEdgeChecker::kQSize;
+
+  const VectorXd nan =
+      VectorXd::Constant(q_size, std::numeric_limits<double>::quiet_NaN());
+
+  // MockEdgeChecker reports q[0] as the only distance.
+  const vector<VectorXd> configs{VectorXd::Constant(q_size, 0.25),
+                                 VectorXd::Constant(q_size, 0.5),
+                                 VectorXd::Constant(q_size, 0.75)};
+
+  for (const bool parallel : {false, true}) {
+    if (parallel & !kHasOpenmp) {
+      // We don't have OpenMP in all test configurations.
+      continue;
+    }
+    auto dut = MakeEdgeChecker<MockEdgeChecker>(calc_dist, step_size, nullptr,
+                                                true /* welded */, q_size + 1);
+    ASSERT_EQ(dut.plant().num_positions(), q_size);
+
+    // Reality check; if we've requested parallel evaluation we need to confirm
+    // it'll happen; otherwise we're simply testing the serial implementation
+    // again.
+    if (parallel) {
+      ASSERT_TRUE(dut.CanEvaluateInParallel());
+    }
+
+    const vector<RobotClearance> results =
+        dut.CalcRobotClearances(configs, 0.5, parallel);
+
+    // Confirm behavior (1). Results for every configuration.
+    ASSERT_EQ(results.size(), configs.size());
+    for (int i = 0; i < ssize(configs); ++i) {
+      ASSERT_EQ(results[i].size(), 1);
+      EXPECT_EQ(results[i].distances()(0), configs[i](0));
+      EXPECT_TRUE(
+          CompareMatrices(results[i].jacobians(), configs[i].transpose()));
+    }
+    // Confirm behavior (2). Parallel when asked, serial when not.
+    if (parallel) {
+      EXPECT_GT(dut.thread_count(), 1);
+    } else {
+      EXPECT_EQ(dut.thread_count(), 1);
+    }
+    EXPECT_TRUE(dut.CalcRobotClearances({}, 0.5, parallel).empty());
+    // We make sure there is one valid configuration first so we know we catch
+    // the invalid configuration, even if it isn't first.
+    // We're only testing against NaN as an indication that the upstream is
+    // validating at all.
+    EXPECT_THROW(dut.CalcRobotClearances({configs[0], nan}, 0.5, parallel),
+                 std::exception);
+    // The influence distance is validated even with no configurations.
+    EXPECT_THROW(dut.CalcRobotClearances({}, -1, parallel), std::exception);
   }
 }
 

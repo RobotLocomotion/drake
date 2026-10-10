@@ -269,6 +269,11 @@ void DefinePlanningCollisionChecker(py::module_ m) {
             py::arg("model_context"), py::arg("q"),
             py::arg("influence_distance"),
             cls_doc.CalcContextRobotClearance.doc)
+        .def("CalcRobotClearances", &Class::CalcRobotClearances,
+            py::arg("configs"), py::arg("influence_distance"),
+            py::arg("parallelize") = true,
+            py::call_guard<py::gil_scoped_release>(),
+            cls_doc.CalcRobotClearances.doc)
         .def("MaxNumDistances", &Class::MaxNumDistances,
             py::arg("context_number") = std::nullopt,
             cls_doc.MaxNumDistances.doc)
