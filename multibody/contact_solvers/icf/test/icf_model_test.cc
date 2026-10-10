@@ -364,7 +364,9 @@ constraints. */
 GTEST_TEST(IcfModel, CalcGradients) {
   IcfModel<AutoDiffXd> model;
   MakeUnconstrainedModel(&model);
+  AddBallConstraints(&model);
   AddCouplerConstraint(&model);
+  AddDistanceConstraints(&model);
   AddGainConstraints(&model);
   AddLimitConstraints(&model);
   AddPatchConstraints(&model);
@@ -375,7 +377,7 @@ GTEST_TEST(IcfModel, CalcGradients) {
   IcfData<AutoDiffXd> data;
   model.ResizeData(&data);
   EXPECT_EQ(data.num_velocities(), nv);
-  EXPECT_EQ(model.num_constraints(), 10);
+  EXPECT_EQ(model.num_constraints(), 14);
 
   VectorXd v_values = VectorXd::LinSpaced(nv, -10.0, 10.0);
   VectorX<AutoDiffXd> v(nv);
@@ -394,7 +396,9 @@ GTEST_TEST(IcfModel, CalcGradients) {
 GTEST_TEST(IcfModel, CalcDenseHessian) {
   IcfModel<AutoDiffXd> model;
   MakeUnconstrainedModel(&model, true /* single cliques */);
+  AddBallConstraints(&model);
   AddCouplerConstraint(&model);
+  AddDistanceConstraints(&model);
   AddGainConstraints(&model);
   AddLimitConstraints(&model);
   AddPatchConstraints(&model);
@@ -418,7 +422,8 @@ GTEST_TEST(IcfModel, CalcDenseHessian) {
   auto hessian = model.MakeHessian(data);
   MatrixXd hessian_value = math::ExtractValue(hessian->MakeDenseMatrix());
 
-  EXPECT_TRUE(CompareMatrices(hessian_value, gradient_derivatives, 8 * kEpsilon,
+  constexpr double kTolerance = 14 * kEpsilon;
+  EXPECT_TRUE(CompareMatrices(hessian_value, gradient_derivatives, kTolerance,
                               MatrixCompareType::relative));
 
   // Now we'll only update the values.
@@ -430,7 +435,7 @@ GTEST_TEST(IcfModel, CalcDenseHessian) {
   gradient_derivatives = math::ExtractGradient(data.gradient());
   hessian_value = math::ExtractValue(hessian->MakeDenseMatrix());
 
-  EXPECT_TRUE(CompareMatrices(hessian_value, gradient_derivatives, 8 * kEpsilon,
+  EXPECT_TRUE(CompareMatrices(hessian_value, gradient_derivatives, kTolerance,
                               MatrixCompareType::relative));
 }
 
@@ -439,7 +444,9 @@ break out the cliques. */
 GTEST_TEST(IcfModel, SingleVsMultipleCliques) {
   IcfModel<double> model_single;
   MakeUnconstrainedModel(&model_single, true);
+  AddBallConstraints(&model_single);
   AddCouplerConstraint(&model_single);
+  AddDistanceConstraints(&model_single);
   AddGainConstraints(&model_single);
   AddLimitConstraints(&model_single);
   AddPatchConstraints(&model_single);
@@ -450,7 +457,9 @@ GTEST_TEST(IcfModel, SingleVsMultipleCliques) {
 
   IcfModel<double> model_multiple;
   MakeUnconstrainedModel(&model_multiple, false);
+  AddBallConstraints(&model_multiple);
   AddCouplerConstraint(&model_multiple);
+  AddDistanceConstraints(&model_multiple);
   AddGainConstraints(&model_multiple);
   AddLimitConstraints(&model_multiple);
   AddPatchConstraints(&model_multiple);
@@ -503,7 +512,9 @@ GTEST_TEST(IcfModel, SingleVsMultipleCliques) {
 GTEST_TEST(IcfModel, CalcCostAlongLine) {
   IcfModel<AutoDiffXd> model;
   MakeUnconstrainedModel(&model);
+  AddBallConstraints(&model);
   AddCouplerConstraint(&model);
+  AddDistanceConstraints(&model);
   AddGainConstraints(&model);
   AddLimitConstraints(&model);
   AddPatchConstraints(&model);
@@ -511,7 +522,7 @@ GTEST_TEST(IcfModel, CalcCostAlongLine) {
   model.SetSparsityPattern();
   EXPECT_EQ(model.num_cliques(), 3);
   EXPECT_EQ(model.num_velocities(), 18);
-  EXPECT_EQ(model.num_constraints(), 10);
+  EXPECT_EQ(model.num_constraints(), 14);
 
   // Allocate data, and additional scratch.
   IcfData<AutoDiffXd> data, scratch;
@@ -567,7 +578,9 @@ model from scratch. */
 GTEST_TEST(IcfModel, UpdateTimeStep) {
   IcfModel<double> model_original;
   MakeUnconstrainedModel(&model_original, false, 0.02);
+  AddBallConstraints(&model_original);
   AddCouplerConstraint(&model_original);
+  AddDistanceConstraints(&model_original);
   AddGainConstraints(&model_original);
   AddLimitConstraints(&model_original);
   AddPatchConstraints(&model_original);
@@ -576,14 +589,16 @@ GTEST_TEST(IcfModel, UpdateTimeStep) {
   EXPECT_EQ(model_original.num_cliques(), 3);
   EXPECT_EQ(model_original.num_velocities(), 18);
   EXPECT_EQ(model_original.time_step(), 0.02);
-  EXPECT_EQ(model_original.num_constraints(), 10);
+  EXPECT_EQ(model_original.num_constraints(), 14);
 
   const double new_time_step = 0.003;
 
   // Create a second model from scratch with the new time step.
   IcfModel<double> model_new;
   MakeUnconstrainedModel(&model_new, false, new_time_step);
+  AddBallConstraints(&model_new);
   AddCouplerConstraint(&model_new);
+  AddDistanceConstraints(&model_new);
   AddGainConstraints(&model_new);
   AddLimitConstraints(&model_new);
   AddPatchConstraints(&model_new);
@@ -592,7 +607,7 @@ GTEST_TEST(IcfModel, UpdateTimeStep) {
   EXPECT_EQ(model_new.num_cliques(), 3);
   EXPECT_EQ(model_new.num_velocities(), 18);
   EXPECT_EQ(model_new.time_step(), new_time_step);
-  EXPECT_EQ(model_new.num_constraints(), 10);
+  EXPECT_EQ(model_new.num_constraints(), 14);
 
   // Now update the time step of the original model.
   EXPECT_NE(model_original.time_step(), new_time_step);
