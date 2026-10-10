@@ -8875,6 +8875,18 @@ R"""(The key name for the maximum runtime of the local (inner) optimizer.
 By default there is no maximum runtime. A nonpositive value will be
 interpreted as no maximum runtime.)""";
         } LocalOptimizerMaxTimeName;
+        // Symbol: drake::solvers::NloptSolver::LocalOptimizerParamPrefix
+        struct /* LocalOptimizerParamPrefix */ {
+          // Source: drake/solvers/nlopt_solver.h
+          const char* doc =
+R"""(The key-name prefix for NLopt's algorithm-specific parameters of the
+local (inner) optimizer. The option ``LocalOptimizerParamPrefix() +
+"<name>"`` sets the parameter ``<name>`` on the local optimizer,
+before it is handed to the outer optimizer. Values and names are
+handled as for ParamPrefix(). Unlike the other LocalOptimizer...
+options, it is an error to set one of these without also setting
+LocalOptimizerAlgorithmName().)""";
+        } LocalOptimizerParamPrefix;
         // Symbol: drake::solvers::NloptSolver::LocalOptimizerXAbsoluteToleranceName
         struct /* LocalOptimizerXAbsoluteToleranceName */ {
           // Source: drake/solvers/nlopt_solver.h
@@ -8908,6 +8920,24 @@ runtime.)""";
           // Source: drake/solvers/nlopt_solver.h
           const char* doc = R"""()""";
         } ctor;
+        // Symbol: drake::solvers::NloptSolver::ParamPrefix
+        struct /* ParamPrefix */ {
+          // Source: drake/solvers/nlopt_solver.h
+          const char* doc =
+R"""(The key-name prefix for NLopt's algorithm-specific parameters, which
+NLopt sets through nlopt_set_param() rather than through a dedicated
+function. The option ``ParamPrefix() + "<name>"`` sets the parameter
+``<name>`` on the (outer) optimizer. For example, LD_MMA and LD_CCSAQ
+read ``dual_algorithm``, `dual_ftol_rel`, ``dual_ftol_abs``,
+`dual_xtol_rel`, ``dual_xtol_abs``, `dual_maxeval`, ``inner_maxeval``,
+`rho_init` and ``verbosity``; see the NLopt documentation of each
+algorithm (https://nlopt.readthedocs.io/en/latest/NLopt_Algorithms/)
+for the parameters it reads. NLopt stores every parameter as a double,
+so the value must be double- or int-valued (an int is converted to
+double, and NLopt converts it back for integer-valued parameters such
+as ``dual_maxeval``). NLopt does not check parameter names, so a name
+that the chosen algorithm does not read is silently ignored.)""";
+        } ParamPrefix;
         // Symbol: drake::solvers::NloptSolver::ProgramAttributesSatisfied
         struct /* ProgramAttributesSatisfied */ {
           // Source: drake/solvers/nlopt_solver.h
