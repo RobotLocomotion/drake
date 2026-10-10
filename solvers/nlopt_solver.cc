@@ -15,6 +15,7 @@
 #include "drake/common/autodiff.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/never_destroyed.h"
+#include "drake/common/string_map.h"
 #include "drake/common/text_logging.h"
 #include "drake/common/unused.h"
 #include "drake/math/autodiff.h"
@@ -393,6 +394,10 @@ struct KnownOptions {
   double local_optimizer_ftol_abs{0.0};
   int local_optimizer_max_eval{0};
   double local_optimizer_max_time{0.0};
+  // Passed to nlopt_set_param, keyed by the name with its prefix removed.
+  // ParseOptions fills these, not Serialize.
+  string_map<double> params;
+  string_map<double> local_optimizer_params;
 };
 
 void Serialize(internal::SpecificOptions* archive,
@@ -437,9 +442,42 @@ void Serialize(internal::SpecificOptions* archive,
                                &options.local_optimizer_max_time));
 }
 
+string_map<double> PopParams(internal::SpecificOptions* options,
+                             const std::string& prefix) {
+  string_map<double> result;
+  for (const auto& [key, boxed_value] : options->PopAllWithPrefix(prefix)) {
+    double value{};
+    if (std::holds_alternative<double>(boxed_value)) {
+      value = std::get<double>(boxed_value);
+    } else if (std::holds_alternative<int>(boxed_value)) {
+      value = std::get<int>(boxed_value);
+    } else {
+      throw std::logic_error(fmt::format(
+          "{}: Expected a floating-point or integer value for option {}={}",
+          NloptSolver::id().name(), key,
+          internal::OptionValueToString(boxed_value)));
+    }
+    result.emplace(key.substr(prefix.size()), value);
+  }
+  return result;
+}
+
 KnownOptions ParseOptions(internal::SpecificOptions* options) {
   KnownOptions result;
+  result.params = PopParams(options, NloptSolver::ParamPrefix());
+  result.local_optimizer_params =
+      PopParams(options, NloptSolver::LocalOptimizerParamPrefix());
   options->CopyToSerializableStruct(&result);
+  if (!result.local_optimizer_params.empty() &&
+      result.local_optimizer_algorithm.empty()) {
+    std::vector<std::string> names;
+    for (const auto& [name, _] : result.local_optimizer_params) {
+      names.push_back(NloptSolver::LocalOptimizerParamPrefix() + name);
+    }
+    throw std::logic_error(fmt::format(
+        "{}: the option(s) {} require {} to be set", NloptSolver::id().name(),
+        fmt::join(names, ", "), NloptSolver::LocalOptimizerAlgorithmName()));
+  }
   return result;
 }
 
@@ -537,6 +575,9 @@ void NloptSolver::DoSolve2(const MathematicalProgram& prog,
   opt.set_maxeval(parsed_options.max_eval);
   opt.set_maxtime(parsed_options.max_time);
   opt.set_stopval(parsed_options.stopval);
+  for (const auto& [name, value] : parsed_options.params) {
+    opt.set_param(name.c_str(), value);
+  }
 
   // Algorithms such as the augmented Lagrangian family delegate each
   // subproblem to a "local" optimizer. When the user has not named one, we
@@ -554,6 +595,9 @@ void NloptSolver::DoSolve2(const MathematicalProgram& prog,
     local_opt.set_ftol_abs(parsed_options.local_optimizer_ftol_abs);
     local_opt.set_maxeval(parsed_options.local_optimizer_max_eval);
     local_opt.set_maxtime(parsed_options.local_optimizer_max_time);
+    for (const auto& [name, value] : parsed_options.local_optimizer_params) {
+      local_opt.set_param(name.c_str(), value);
+    }
     // Deliberately no local_opt.set_stopval() here, and deliberately no
     // option for one. Both families that consult a local optimizer reset its
     // stopval just before running it, from the outer stopval: see

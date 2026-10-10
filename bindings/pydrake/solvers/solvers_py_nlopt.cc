@@ -59,7 +59,12 @@ void DefineSolversNlopt(py::module_ m) {
           doc.NloptSolver.LocalOptimizerMaxEvalName.doc)
       .def_static("LocalOptimizerMaxTimeName",
           &NloptSolver::LocalOptimizerMaxTimeName,
-          doc.NloptSolver.LocalOptimizerMaxTimeName.doc);
+          doc.NloptSolver.LocalOptimizerMaxTimeName.doc)
+      .def_static("ParamPrefix", &NloptSolver::ParamPrefix,
+          doc.NloptSolver.ParamPrefix.doc)
+      .def_static("LocalOptimizerParamPrefix",
+          &NloptSolver::LocalOptimizerParamPrefix,
+          doc.NloptSolver.LocalOptimizerParamPrefix.doc);
 
   class_<NloptSolverDetails>(
       m, "NloptSolverDetails", doc.NloptSolverDetails.doc)

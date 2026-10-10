@@ -14,6 +14,8 @@ namespace solvers {
 namespace internal {
 namespace {
 
+using testing::ElementsAre;
+using testing::IsEmpty;
 using testing::UnorderedElementsAre;
 
 const SolverId& GetSolverId() {
@@ -81,6 +83,60 @@ GTEST_TEST(SpecificOptionsTest, RespellThenPopWrongType) {
   // The solver back-end is not allowed to mismatch its own types.
   DRAKE_EXPECT_THROWS_MESSAGE(dut.Pop<int>("some_default"),
                               ".*respelled.*wrong type.*");
+}
+
+GTEST_TEST(SpecificOptionsTest, PopAllWithPrefix) {
+  using OptionValue = SolverOptions::OptionValue;
+  const SolverId& solver_id = GetSolverId();
+  SolverOptions solver_options;
+  solver_options.SetOption(solver_id, "pre:double", 1.5);
+  solver_options.SetOption(solver_id, "pre:int", 2);
+  solver_options.SetOption(solver_id, "pre:string", "hello");
+  solver_options.SetOption(solver_id, "pre:to_pop", 0.5);
+  solver_options.SetOption(solver_id, "other", 3);
+  SpecificOptions dut(&solver_id, &solver_options);
+
+  // Already-popped options are not returned.
+  EXPECT_EQ(dut.Pop<double>("pre:to_pop"), 0.5);
+
+  // Popping by prefix retrieves every type, keyed by the full name.
+  EXPECT_THAT(dut.PopAllWithPrefix("pre:"),
+              ElementsAre(std::pair{"pre:double", OptionValue{1.5}},
+                          std::pair{"pre:int", OptionValue{2}},
+                          std::pair{"pre:string", OptionValue{"hello"}}));
+
+  // They are gone now.
+  EXPECT_THAT(dut.PopAllWithPrefix("pre:"), IsEmpty());
+  string_map<int> values_int;
+  dut.CopyToCallbacks(
+      nullptr,
+      [&values_int](const std::string& key, int value) {
+        values_int.emplace(key, value);
+      },
+      nullptr);
+  EXPECT_THAT(values_int, UnorderedElementsAre(std::pair{"other", 3}));
+}
+
+GTEST_TEST(SpecificOptionsTest, RespellThenPopAllWithPrefix) {
+  using OptionValue = SolverOptions::OptionValue;
+  const SolverId& solver_id = GetSolverId();
+  SolverOptions solver_options;
+  solver_options.SetOption(solver_id, "pre:direct", 1.5);
+  SpecificOptions dut(&solver_id, &solver_options);
+
+  dut.Respell([](const CommonSolverOptionValues& common,
+                 string_unordered_map<SolverOptions::OptionValue>* respelled) {
+    ASSERT_TRUE(respelled != nullptr);
+    respelled->emplace("pre:direct", 0.0);
+    respelled->emplace("pre:respelled", 2);
+    respelled->emplace("other", 3);
+  });
+
+  // A direct option shadows a respelled one of the same name.
+  EXPECT_THAT(dut.PopAllWithPrefix("pre:"),
+              ElementsAre(std::pair{"pre:direct", OptionValue{1.5}},
+                          std::pair{"pre:respelled", OptionValue{2}}));
+  EXPECT_THAT(dut.PopAllWithPrefix("pre:"), IsEmpty());
 }
 
 GTEST_TEST(SpecificOptionsTest, CopyToCallbacksIntPromotesToDouble) {
