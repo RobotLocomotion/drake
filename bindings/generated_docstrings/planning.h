@@ -412,6 +412,36 @@ Raises:
 See also:
     ccb_implicit_contexts "Implicit Context Parallelism".)""";
         } CalcRobotClearance;
+        // Symbol: drake::planning::CollisionChecker::CalcRobotClearances
+        struct /* CalcRobotClearances */ {
+          // Source: drake/planning/collision_checker.h
+          const char* doc =
+R"""(Calculates the robot clearance (see CalcRobotClearance()) for each of
+a vector of configurations, evaluating in parallel when supported and
+enabled by ``parallelize``. See collision_checker_parallel_edge
+"function-level parallelism" for guidance on proper usage.
+
+Parameter ``configs``:
+    Configurations to evaluate.
+
+Parameter ``influence_distance``:
+    Only potential collisions whose distance is less than this are
+    reported.
+
+Parameter ``parallelize``:
+    How much should clearance calculations be parallelized?
+
+Returns:
+    std∷vector<RobotClearance>, one for each configuration in
+    ``configs``. The iᵗʰ entry is the result of
+    ``CalcRobotClearance(configs[i], influence_distance)``.
+
+Raises:
+    if ``influence_distance`` is negative or non-finite.
+
+Raises:
+    if ``configs`` contains non-finite values.)""";
+        } CalcRobotClearances;
         // Symbol: drake::planning::CollisionChecker::CanEvaluateInParallel
         struct /* CanEvaluateInParallel */ {
           // Source: drake/planning/collision_checker.h

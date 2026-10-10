@@ -1112,6 +1112,25 @@ class CollisionChecker {
       CollisionCheckerContext* model_context, const Eigen::VectorXd& q,
       double influence_distance) const;
 
+  /** Calculates the robot clearance (see CalcRobotClearance()) for each of a
+   vector of configurations, evaluating in parallel when supported and enabled
+   by `parallelize`.
+   See @ref collision_checker_parallel_edge "function-level parallelism" for
+   guidance on proper usage.
+   @param configs            Configurations to evaluate.
+   @param influence_distance Only potential collisions whose distance is less
+                             than this are reported.
+   @param parallelize        How much should clearance calculations be
+                             parallelized?
+   @returns std::vector<RobotClearance>, one for each configuration in
+   `configs`. The iᵗʰ entry is the result of
+   `CalcRobotClearance(configs[i], influence_distance)`.
+   @throws if `influence_distance` is negative or non-finite.
+   @throws if `configs` contains non-finite values. */
+  std::vector<RobotClearance> CalcRobotClearances(
+      const std::vector<Eigen::VectorXd>& configs, double influence_distance,
+      Parallelism parallelize = Parallelism::Max()) const;
+
   // TODO(calderpg-tri) Improve MaxNumDistances to use the prototype context
   // instead, and deprecate context-specific forms.
   /** Returns an upper bound on the number of distances returned by

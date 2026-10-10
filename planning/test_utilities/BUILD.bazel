@@ -33,6 +33,7 @@ drake_cc_library(
     ],
     deps = [
         "//common:nice_type_name",
+        "//common/test_utilities:eigen_matrix_compare",
         "//multibody/parsing",
         "//planning:collision_avoidance",
         "//planning:collision_checker",
