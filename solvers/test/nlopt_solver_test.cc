@@ -2,6 +2,7 @@
 
 #include <limits>
 #include <memory>
+#include <string>
 
 #include <gtest/gtest.h>
 
@@ -326,20 +327,30 @@ GTEST_TEST(NloptSolverTest, Param) {
   EXPECT_EQ(with_param.get_solution_result(), SolutionResult::kInvalidInput);
 }
 
+// An integer dual_maxeval reaches LD_MMA's dual subproblem; a single
+// evaluation there leaves the linear constraint violated.
 GTEST_TEST(NloptSolverTest, ParamIntToDouble) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<2>();
-  prog.AddLinearConstraint(x(0) >= 1);
+  // Not a bounding box, so that MMA has a dual subproblem.
+  prog.AddLinearConstraint(x(0) + x(1) >= 1);
   prog.AddQuadraticCost(Eigen::Matrix2d::Identity(), Eigen::Vector2d::Zero(),
                         x);
+  const Eigen::Vector2d initial_guess(2.0, 2.0);
+  const std::string dual_maxeval = NloptSolver::ParamPrefix() + "dual_maxeval";
   NloptSolver solver;
   SolverOptions options;
-  options.SetOption(solver.id(), NloptSolver::ParamPrefix() + "dual_maxeval",
-                    1000);
-  MathematicalProgramResult result;
-  EXPECT_NO_THROW(
-      solver.Solve(prog, Eigen::Vector2d(2.0, 2.0), options, &result));
-  EXPECT_TRUE(result.is_success());
+  options.SetOption(solver.id(), NloptSolver::AlgorithmName(), "LD_MMA");
+
+  options.SetOption(solver.id(), dual_maxeval, 1000);
+  const auto large = solver.Solve(prog, initial_guess, options);
+  EXPECT_TRUE(large.is_success());
+  EXPECT_TRUE(
+      CompareMatrices(large.GetSolution(x), Eigen::Vector2d(0.5, 0.5), 1e-6));
+
+  options.SetOption(solver.id(), dual_maxeval, 1);
+  const auto small = solver.Solve(prog, initial_guess, options);
+  EXPECT_FALSE(small.is_success());
 }
 
 GTEST_TEST(NloptSolverTest, ParamErrors) {
