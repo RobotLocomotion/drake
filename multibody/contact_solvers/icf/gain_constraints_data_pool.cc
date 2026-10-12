@@ -12,6 +12,7 @@ GainConstraintsDataPool<T>::~GainConstraintsDataPool() = default;
 template <typename T>
 void GainConstraintsDataPool<T>::Resize(std::span<const int> constraint_size) {
   const int num_elements = ssize(constraint_size);
+  cost_pool_.resize(num_elements);
   gamma_pool_.Resize(num_elements, constraint_size);
   G_pool_.Resize(num_elements, constraint_size);
 }

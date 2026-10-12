@@ -2,7 +2,6 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
-#include "drake/multibody/contact_solvers/icf/abstract_constraints_pool.h"
 #include "drake/multibody/contact_solvers/icf/eigen_pool.h"
 #include "drake/multibody/contact_solvers/icf/holonomic_constraints_data_pool.h"
 #include "drake/multibody/contact_solvers/icf/holonomic_constraints_pool.h"
@@ -101,7 +100,8 @@ class WeldConstraintsPool
   EigenPool<Vector3<T>> p_BQ_W_;    // Position of Q in B, expressed in W.
   EigenPool<Vector3<T>> p_PoQo_W_;  // Relative translation, expressed in W.
 };
-static_assert(IsAbstractConstraintsPool<WeldConstraintsPool>);
+static_assert(
+    IsHolonomicConstraintsPool<WeldConstraintsPool, WeldConstraintsDataPool>);
 
 }  // namespace internal
 }  // namespace icf
