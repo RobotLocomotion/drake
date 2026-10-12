@@ -133,9 +133,9 @@ void BodyNodeImpl<T, ConcreteMobilizer>::CalcPositionKinematicsCache_BaseToTip(
       const LinkOrdinal follower_ordinal = followers[i];
       const math::RigidTransform<T>& X_BL =
           frame_body_pose_cache.get_X_BL(follower_ordinal);
-      const Vector3<T> p_BoLo_W = R_WB * X_BL.translation();
+      const Vector3<T> p_BoLo_W = R_WB * X_BL.translation();  // 15 flops
       pc->Set_p_BoLo_W(follower_ordinal, p_BoLo_W);
-      pc->SetX_WL(follower_ordinal,
+      pc->SetX_WL(follower_ordinal,  // 18 flops
                   math::RigidTransform<T>(R_WB * X_BL.rotation(),
                                           X_WB.translation() + p_BoLo_W));
     }
@@ -335,7 +335,7 @@ void BodyNodeImpl<T, ConcreteMobilizer>::CalcVelocityKinematicsCache_BaseToTip(
   for (size_t i = 1; i < followers.size(); ++i) {
     const LinkOrdinal link_ordinal = followers[i];
     const Vector3<T>& p_BoLo_W = pc.get_p_BoLo_W(link_ordinal);
-    vc->SetV_WL(link_ordinal, V_WB.Shift(p_BoLo_W));
+    vc->SetV_WL(link_ordinal, V_WB.Shift(p_BoLo_W));  // 12 flops
   }
 }
 
