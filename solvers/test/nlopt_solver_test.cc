@@ -22,32 +22,38 @@ TEST_F(UnboundedLinearProgramTest0, TestNlopt) {
   MathematicalProgramResult result;
   solver.Solve(*prog_, {}, {}, &result);
   EXPECT_FALSE(result.is_success());
+  EXPECT_EQ(result.get_solution_result(), SolutionResult::kUnbounded);
+  const int kNloptRoundoffLimited = -4;
+  EXPECT_EQ(result.get_solver_details<NloptSolver>().status,
+            kNloptRoundoffLimited);
   EXPECT_EQ(result.get_optimal_cost(),
             -std::numeric_limits<double>::infinity());
 
-  const int NLOPT_MAXEVAL_REACHED = 5;
+  const int kNloptMaxEvalReached = 5;
   SolverOptions solver_options1;
   solver_options1.SetOption(solver.solver_id(), NloptSolver::MaxEvalName(), 1);
   solver.Solve(*prog_, {}, solver_options1, &result);
   EXPECT_EQ(result.get_solver_details<NloptSolver>().status,
-            NLOPT_MAXEVAL_REACHED);
+            kNloptMaxEvalReached);
+  EXPECT_EQ(result.get_solution_result(), SolutionResult::kIterationLimit);
+  EXPECT_TRUE(result.get_x_val().allFinite());
 
-  const int NLOPT_MAXTIME_REACHED = 6;
+  const int kNloptMaxTimeReached = 6;
   SolverOptions solver_options2;
   solver_options2.SetOption(solver.solver_id(), NloptSolver::MaxTimeName(),
                             1e-10);
   solver.Solve(*prog_, {}, solver_options2, &result);
   EXPECT_EQ(result.get_solver_details<NloptSolver>().status,
-            NLOPT_MAXTIME_REACHED);
+            kNloptMaxTimeReached);
 
   // The cost is unbounded below, so any finite stopval is reached.
-  const int NLOPT_STOPVAL_REACHED = 2;
+  const int kNloptStopValReached = 2;
   SolverOptions solver_options3;
   solver_options3.SetOption(solver.solver_id(), NloptSolver::StopValName(),
                             -100.0);
   solver.Solve(*prog_, {}, solver_options3, &result);
   EXPECT_EQ(result.get_solver_details<NloptSolver>().status,
-            NLOPT_STOPVAL_REACHED);
+            kNloptStopValReached);
   EXPECT_LE(result.get_optimal_cost(), -100.0);
   // The point NLopt stopped at is feasible here, so the feasibility
   // re-check leaves the result as a success.
@@ -123,6 +129,116 @@ GTEST_TEST(NloptSolverTest, NanSolutionIsNotSuccess) {
   EXPECT_EQ(result.get_solution_result(), SolutionResult::kSolverSpecificError);
 }
 
+// On a negative return code, the result still carries NLopt's status and the
+// point it returned.
+GTEST_TEST(NloptSolverTest, RoundoffLimitedKeepsPoint) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>();
+  prog.AddQuadraticCost(pow(x(0) - 1, 2) + pow(x(1) - 2, 2));
+  // A repeated equality constraint is rank deficient; the default LD_SLSQP
+  // stops on it with NLOPT_ROUNDOFF_LIMITED.
+  prog.AddLinearEqualityConstraint(x(0) + x(1) == 1);
+  prog.AddLinearEqualityConstraint(x(0) + x(1) == 1);
+  NloptSolver solver;
+  const auto result = solver.Solve(prog, Eigen::Vector2d(0.3, 0.4));
+  const int kNloptRoundoffLimited = -4;
+  EXPECT_FALSE(result.is_success());
+  EXPECT_EQ(result.get_solution_result(), SolutionResult::kSolverSpecificError);
+  EXPECT_EQ(result.get_solver_details<NloptSolver>().status,
+            kNloptRoundoffLimited);
+  EXPECT_EQ(result.get_x_val().size(), 2);
+  EXPECT_TRUE(result.get_x_val().allFinite());
+}
+
+// NLopt rejects these arguments before optimizing, so there is no point.
+// This also covers OUT_OF_MEMORY, which is handled the same way but is
+// impractical to trigger.
+GTEST_TEST(NloptSolverTest, InvalidArgsHasNoPoint) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>();
+  prog.AddQuadraticCost(x.cast<symbolic::Expression>().dot(x));
+  NloptSolver solver;
+  SolverOptions options;
+  // A global algorithm requires finite bounds on every variable.
+  options.SetOption(solver.id(), NloptSolver::AlgorithmName(), "GN_DIRECT");
+  const auto result = solver.Solve(prog, Eigen::Vector2d(0.3, 0.4), options);
+  const int kNloptInvalidArgs = -2;
+  EXPECT_FALSE(result.is_success());
+  EXPECT_EQ(result.get_solution_result(), SolutionResult::kInvalidInput);
+  EXPECT_EQ(result.get_solver_details<NloptSolver>().status, kNloptInvalidArgs);
+  EXPECT_TRUE(result.get_x_val().array().isNaN().all());
+}
+
+class ThrowCost final : public Cost {
+ public:
+  ThrowCost() : Cost(1, "ThrowCost") {}
+
+ private:
+  void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
+              Eigen::VectorXd* y) const final {
+    EvalGeneric();
+  }
+
+  void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
+              AutoDiffVecXd* y) const final {
+    EvalGeneric();
+  }
+
+  void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
+              VectorX<symbolic::Expression>* y) const final {
+    EvalGeneric();
+  }
+
+  void EvalGeneric() const {
+    throw std::runtime_error("ThrowCost::EvalGeneric");
+  }
+};
+
+class ThrowConstraint final : public Constraint {
+ public:
+  ThrowConstraint()
+      : Constraint(1, 1, Vector1d(0.0), Vector1d(1.0), "ThrowConstraint") {}
+
+ private:
+  void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
+              Eigen::VectorXd* y) const final {
+    EvalGeneric();
+  }
+
+  void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
+              AutoDiffVecXd* y) const final {
+    EvalGeneric();
+  }
+
+  void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
+              VectorX<symbolic::Expression>* y) const final {
+    EvalGeneric();
+  }
+
+  void EvalGeneric() const {
+    throw std::runtime_error("ThrowConstraint::EvalGeneric");
+  }
+};
+
+GTEST_TEST(NloptSolverTest, TestCostExceptionHandling) {
+  MathematicalProgram prog;
+  const auto x = prog.NewContinuousVariables<1>();
+  prog.AddCost(std::make_shared<ThrowCost>(), x);
+  NloptSolver solver;
+  DRAKE_EXPECT_THROWS_MESSAGE(solver.Solve(prog),
+                              "Exception.*NLopt.*ThrowCost.*");
+}
+
+GTEST_TEST(NloptSolverTest, TestConstraintExceptionHandling) {
+  MathematicalProgram prog;
+  const auto x = prog.NewContinuousVariables<1>();
+  prog.AddQuadraticCost(x(0) * x(0));
+  prog.AddConstraint(std::make_shared<ThrowConstraint>(), x);
+  NloptSolver solver;
+  DRAKE_EXPECT_THROWS_MESSAGE(solver.Solve(prog),
+                              "Exception.*NLopt.*ThrowConstraint.*");
+}
+
 GTEST_TEST(QPtest, TestUnitBallExample) {
   NloptSolver solver;
   TestQPonUnitBallExample(solver);
@@ -161,12 +277,12 @@ const Eigen::Vector2d kLocalOptimizerInitialGuess(0.5, 0.8);
 // must take over as the reason NLopt stops.
 TEST_F(QuadraticEqualityConstrainedProgram1, FTolerances) {
   NloptSolver solver;
-  const int NLOPT_FTOL_REACHED = 3;
-  const int NLOPT_XTOL_REACHED = 4;
+  const int kNloptFtolReached = 3;
+  const int kNloptXtolReached = 4;
   const auto baseline = solver.Solve(*prog_, kLocalOptimizerInitialGuess, {});
   ASSERT_TRUE(baseline.is_success());
   EXPECT_EQ(baseline.get_solver_details<NloptSolver>().status,
-            NLOPT_XTOL_REACHED);
+            kNloptXtolReached);
 
   SolverOptions ftol_rel_options;
   ftol_rel_options.SetOption(solver.id(), NloptSolver::FRelativeToleranceName(),
@@ -174,7 +290,7 @@ TEST_F(QuadraticEqualityConstrainedProgram1, FTolerances) {
   const auto ftol_rel_result =
       solver.Solve(*prog_, kLocalOptimizerInitialGuess, ftol_rel_options);
   EXPECT_EQ(ftol_rel_result.get_solver_details<NloptSolver>().status,
-            NLOPT_FTOL_REACHED);
+            kNloptFtolReached);
 
   SolverOptions ftol_abs_options;
   ftol_abs_options.SetOption(solver.id(), NloptSolver::FAbsoluteToleranceName(),
@@ -182,7 +298,7 @@ TEST_F(QuadraticEqualityConstrainedProgram1, FTolerances) {
   const auto ftol_abs_result =
       solver.Solve(*prog_, kLocalOptimizerInitialGuess, ftol_abs_options);
   EXPECT_EQ(ftol_abs_result.get_solver_details<NloptSolver>().status,
-            NLOPT_FTOL_REACHED);
+            kNloptFtolReached);
 }
 
 TEST_F(QuadraticEqualityConstrainedProgram1, LocalOptimizerDefaults) {
