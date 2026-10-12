@@ -20,6 +20,7 @@ drake_cc_package_library(
         ":icf_builder",
         ":icf_data",
         ":icf_external_systems_linearizer",
+        ":icf_hessian",
         ":icf_linear_feedback_gains",
         ":icf_model",
         ":icf_partition",
@@ -101,8 +102,8 @@ drake_cc_library(
     srcs = ["icf_partition.cc"],
     hdrs = ["icf_partition.h"],
     deps = [
+        ":icf_hessian",
         "//common:essential",
-        "//multibody/contact_solvers:block_sparse_lower_triangular_or_symmetric_matrix",  # noqa
     ],
 )
 
@@ -155,6 +156,14 @@ drake_cc_library(
         ":icf_linear_feedback_gains",
         "//common:essential",
         "//multibody/plant",
+    ],
+)
+
+drake_cc_library(
+    name = "icf_hessian",
+    hdrs = ["icf_hessian.h"],
+    deps = [
+        "//multibody/contact_solvers:block_sparse_lower_triangular_or_symmetric_matrix",  # noqa
     ],
 )
 
@@ -217,13 +226,13 @@ drake_cc_library(
     deps = [
         ":eigen_pool",
         ":icf_data",
+        ":icf_hessian",
         ":icf_search_direction_data",
         ":reduced_mapping",
         "//common:default_scalars",
         "//common:essential",
         "//math:geometric_transform",
         "//math:vector3_util",
-        "//multibody/contact_solvers:block_sparse_lower_triangular_or_symmetric_matrix",  # noqa
         "//multibody/plant:slicing_and_indexing",
     ],
 )

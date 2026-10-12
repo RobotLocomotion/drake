@@ -25,6 +25,7 @@
 // #include "drake/multibody/contact_solvers/icf/icf_builder.h"
 // #include "drake/multibody/contact_solvers/icf/icf_data.h"
 // #include "drake/multibody/contact_solvers/icf/icf_external_systems_linearizer.h"
+// #include "drake/multibody/contact_solvers/icf/icf_hessian.h"
 // #include "drake/multibody/contact_solvers/icf/icf_linear_feedback_gains.h"
 // #include "drake/multibody/contact_solvers/icf/icf_model.h"
 // #include "drake/multibody/contact_solvers/icf/icf_partition.h"

@@ -15,7 +15,6 @@ namespace contact_solvers {
 namespace icf {
 namespace internal {
 
-using contact_solvers::internal::BlockSparseSymmetricMatrix;
 using math::VectorToSkewSymmetric;
 
 // Computes the soft norm ‖x‖ₛ = sqrt(xᵀx + ε²) - ε.
@@ -414,9 +413,8 @@ void PatchConstraintsPool<T>::AccumulateGradient(const IcfData<T>& data,
 }
 
 template <typename T>
-void PatchConstraintsPool<T>::AccumulateHessian(
-    const IcfData<T>& data,
-    BlockSparseSymmetricMatrix<MatrixX<T>>* hessian) const {
+void PatchConstraintsPool<T>::AccumulateHessian(const IcfData<T>& data,
+                                                IcfHessian<T>* hessian) const {
   DRAKE_ASSERT(hessian != nullptr);
 
   const PatchConstraintsDataPool<T>& patch_data = data.patch_constraints_data();
