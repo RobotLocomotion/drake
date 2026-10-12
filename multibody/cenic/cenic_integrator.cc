@@ -188,6 +188,9 @@ template <typename T>
 void CenicIntegrator<T>::SetSolverParameters(
     const IcfSolverParameters& parameters) {
   solver_.SetParameters(parameters);
+  if (builder_ != nullptr) {
+    builder_->SetSolverParameters(parameters);
+  }
 }
 
 template <typename T>
@@ -255,6 +258,7 @@ void CenicIntegrator<T>::DoInitialize() {
   // Create the ICF builder, which will manage the construction of the convex
   // ICF optimization problem.
   builder_ = std::make_unique<IcfBuilder<T>>(&plant());
+  builder_->SetSolverParameters(get_solver_parameters());
 
   // Allocate scratch variables.
   // #created_for_root_system: This call takes the integrator's system, which
@@ -443,11 +447,11 @@ void CenicIntegrator<T>::ComputeNextContinuousState(
   if constexpr (std::is_same_v<T, double>) {
     if (model.is_reducible()) {
       model.ReduceInto(&reduced_model_, &mapping_);
+      reduced_model_.SetSparsityPattern();
       reduced_model_.ResizeData(&data_);
       const std::vector<int>& indices =
           mapping_.velocity_subsequence.inverse_permutation();
       data_.set_v(v_guess(indices));
-      reduced_model_.SetSparsityPattern();
       solved = solver_.SolveWithGuess(reduced_model_, tolerance, &data_);
       if (solved) {
         data_.set_v(ExpandRows(data_.v(), model.num_velocities(), indices));

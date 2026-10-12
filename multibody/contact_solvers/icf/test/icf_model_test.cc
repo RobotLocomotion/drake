@@ -2,6 +2,7 @@
 
 #include <limits>
 #include <memory>
+#include <utility>
 #include <vector>
 
 #include <fmt/format.h>
@@ -178,8 +179,14 @@ GTEST_TEST(IcfModel, ReducedDataAndHessian) {
   MakeUnconstrainedModel(&model);
   model.SetSparsityPattern();
   model.ResizeData(&data);
-  model.CalcData(VectorX<double>::Zero(model.num_velocities()), &data);
-  hessian = model.MakeHessian(data);
+  auto v = VectorX<double>::Zero(model.num_velocities());
+  model.CalcAllData(v, &data);
+  std::vector<IcfHessian<double>> island_hessians;
+  for (int i = 0; i < model.partition().num_islands(); ++i) {
+    island_hessians.emplace_back(*model.MakeHessian(i, data));
+  }
+  hessian = CombineSubHessians(model.sparsity_pattern(), model.partition(),
+                               island_hessians);
 
   // The Hessian made by the reduced model should be the same as the
   // unlocked-dofs slice of the Hessian made by the full model.
@@ -188,20 +195,26 @@ GTEST_TEST(IcfModel, ReducedDataAndHessian) {
     ReducedMapping mapping;
     VectorX<double> reduced_v;
     IcfData<double> reduced_data;
-    std::unique_ptr<IcfHessian<double>> reduced_hessian;
 
     MakeModelReducible(&model, locked_dofs);
     model.ReduceInto(&reduced_model, &mapping);
     reduced_v = VectorX<double>::Zero(reduced_model.num_velocities());
-    reduced_model.ResizeData(&reduced_data);
-    reduced_model.CalcData(reduced_v, &reduced_data);
     reduced_model.SetSparsityPattern();
-    reduced_hessian = reduced_model.MakeHessian(reduced_data);
+    reduced_model.ResizeData(&reduced_data);
+    reduced_data.set_v(reduced_v);
+    reduced_model.CalcAllData(reduced_v, &reduced_data);
+    std::vector<IcfHessian<double>> reduced_island_hessians;
+    for (int i = 0; i < reduced_model.partition().num_islands(); ++i) {
+      reduced_island_hessians.emplace_back(*reduced_model.MakeHessian(i, data));
+    }
+    const MatrixXd reduced_hessian =
+        CombineSubHessians(reduced_model.sparsity_pattern(),
+                           reduced_model.partition(), reduced_island_hessians)
+            ->MakeDenseMatrix();
     auto sliced_hessian =
         SelectRowsCols(hessian->MakeDenseMatrix(),
                        mapping.velocity_subsequence.inverse_permutation());
-    EXPECT_TRUE(
-        CompareMatrices(sliced_hessian, reduced_hessian->MakeDenseMatrix()));
+    EXPECT_TRUE(CompareMatrices(sliced_hessian, reduced_hessian));
   };
 
   // Reduce by none; essentially, just copy.
@@ -382,9 +395,9 @@ GTEST_TEST(IcfModel, CalcGradients) {
   VectorX<AutoDiffXd> v(nv);
   math::InitializeAutoDiff(v_values, &v);
 
-  model.CalcData(v, &data);
+  model.CalcAllData(v, &data);
 
-  const VectorXd cost_derivatives = data.cost().derivatives();
+  const VectorXd cost_derivatives = data.ComputeCost().derivatives();
   const VectorXd gradient_value = math::ExtractValue(data.gradient());
 
   EXPECT_TRUE(CompareMatrices(gradient_value, cost_derivatives, 100 * kEpsilon,
@@ -415,10 +428,11 @@ GTEST_TEST(IcfModel, CalcDenseHessian) {
   VectorX<AutoDiffXd> v(nv);
   math::InitializeAutoDiff(v_values, &v);
 
-  model.CalcData(v, &data);
+  model.CalcAllData(v, &data);
   MatrixXd gradient_derivatives = math::ExtractGradient(data.gradient());
 
-  auto hessian = model.MakeHessian(data);
+  ASSERT_EQ(model.partition().num_islands(), 1);
+  auto hessian = model.MakeHessian(0, data);
   MatrixXd hessian_value = math::ExtractValue(hessian->MakeDenseMatrix());
 
   // This tolerance is set to the lowest change-detector value that doesn't
@@ -430,8 +444,9 @@ GTEST_TEST(IcfModel, CalcDenseHessian) {
   // Now we'll only update the values.
   v_values = VectorXd::LinSpaced(nv, -3.0, 7.0);
   math::InitializeAutoDiff(v_values, &v);
-  model.CalcData(v, &data);
-  model.UpdateHessian(data, hessian.get());
+  model.CalcAllData(v, &data);
+  ASSERT_EQ(model.partition().num_islands(), 1);
+  model.UpdateHessian(0, data, hessian.get());
 
   gradient_derivatives = math::ExtractGradient(data.gradient());
   hessian_value = math::ExtractValue(hessian->MakeDenseMatrix());
@@ -478,12 +493,14 @@ GTEST_TEST(IcfModel, SingleVsMultipleCliques) {
   // Compute data.
   const int nv = model_single.num_velocities();
   const VectorXd v = VectorXd::LinSpaced(nv, -10, 10.0);
-  model_single.CalcData(v, &data_single);
-  model_multiple.CalcData(v, &data_multiple);
+  model_single.CalcAllData(v, &data_single);
+  model_multiple.CalcAllData(v, &data_multiple);
 
   // Compute Hessians.
-  auto hessian_single = model_single.MakeHessian(data_single);
-  auto hessian_multiple = model_multiple.MakeHessian(data_multiple);
+  ASSERT_EQ(model_single.partition().num_islands(), 1);
+  auto hessian_single = model_single.MakeHessian(0, data_single);
+  ASSERT_EQ(model_multiple.partition().num_islands(), 1);
+  auto hessian_multiple = model_multiple.MakeHessian(0, data_multiple);
   MatrixXd H_single = hessian_single->MakeDenseMatrix();
   MatrixXd H_multiple = hessian_multiple->MakeDenseMatrix();
 
@@ -502,7 +519,8 @@ GTEST_TEST(IcfModel, SingleVsMultipleCliques) {
   // We use 100 * kEpsilon because cross-clique weld constraints accumulate
   // slightly different round-off when the same problem is decomposed into one
   // vs. three cliques.
-  EXPECT_NEAR(data_single.cost(), data_multiple.cost(), 100 * kEpsilon);
+  EXPECT_NEAR(data_single.ComputeCost(), data_multiple.ComputeCost(),
+              100 * kEpsilon);
   EXPECT_TRUE(CompareMatrices(data_single.gradient(), data_multiple.gradient(),
                               100 * kEpsilon, MatrixCompareType::relative));
   EXPECT_TRUE(CompareMatrices(H_single, H_multiple, 100 * kEpsilon,
@@ -533,13 +551,14 @@ GTEST_TEST(IcfModel, CalcCostAlongLine) {
   // Compute data.
   const int nv = model.num_velocities();
   const VectorX<AutoDiffXd> v = VectorXd::LinSpaced(nv, 0.05, 0.01);
-  model.CalcData(v, &data);
+  model.CalcAllData(v, &data);
 
   // Allocate search direction.
   const VectorX<AutoDiffXd> w = VectorX<AutoDiffXd>::LinSpaced(
       nv, 0.1, -0.2);  // Arbitrary search direction.
+  ASSERT_EQ(model.partition().num_islands(), 1);
   IcfSearchDirectionData<AutoDiffXd> search_data;
-  model.CalcSearchDirectionData(data, w, &search_data);
+  model.CalcSearchDirectionData(data, w, 0, &search_data);
 
   // Try-out a set of arbitrary values.
   for (double alpha_value : {-0.45, 0., 0.15, 0.34, 0.93, 1.32}) {
@@ -547,10 +566,10 @@ GTEST_TEST(IcfModel, CalcCostAlongLine) {
         alpha_value, VectorXd::Ones(1) /* This is the independent variable */};
 
     const VectorX<AutoDiffXd> v_alpha = v + alpha * w;
-    model.CalcData(v_alpha, &scratch);
-    const double cost_expected = scratch.cost().value();
-    const double momentum_cost_expected = scratch.momentum_cost().value();
-    const double dcost_expected = scratch.cost().derivatives()[0];
+    model.CalcAllData(v_alpha, &scratch);
+    const double cost_expected = scratch.ComputeCost().value();
+    const double momentum_cost_expected = scratch.ComputeMomentumCost().value();
+    const double dcost_expected = scratch.ComputeCost().derivatives()[0];
     const VectorXd w_times_H = math::ExtractGradient(scratch.gradient());
     const double d2cost_expected = w_times_H.dot(math::ExtractValue(w));
 
@@ -565,7 +584,7 @@ GTEST_TEST(IcfModel, CalcCostAlongLine) {
 
     AutoDiffXd dcost, d2cost;
     const AutoDiffXd cost =
-        model.CalcCostAlongLine(alpha, data, search_data, &dcost, &d2cost);
+        model.CalcCostAlongLine(alpha, data, 0, search_data, &dcost, &d2cost);
     EXPECT_NEAR(cost.value(), cost_expected, 8 * kEpsilon * abs(cost_expected));
     EXPECT_NEAR(dcost.value(), dcost_expected,
                 8 * kEpsilon * abs(dcost_expected));
@@ -623,17 +642,20 @@ GTEST_TEST(IcfModel, UpdateTimeStep) {
   // Compute data for an arbitrary velocity.
   const int nv = model_original.num_velocities();
   const VectorXd v = VectorXd::LinSpaced(nv, -10, 10.0);
-  model_original.CalcData(v, &data_original);
-  model_new.CalcData(v, &data_new);
+  model_original.CalcAllData(v, &data_original);
+  model_new.CalcAllData(v, &data_new);
 
   // Cost and gradient should be the same.
-  EXPECT_NEAR(data_original.cost(), data_new.cost(), 8 * kEpsilon);
+  EXPECT_NEAR(data_original.ComputeCost(), data_new.ComputeCost(),
+              8 * kEpsilon);
   EXPECT_TRUE(CompareMatrices(data_original.gradient(), data_new.gradient(),
                               8 * kEpsilon, MatrixCompareType::relative));
 
   // Hessians should be the same.
-  auto hessian_original = model_original.MakeHessian(data_original);
-  auto hessian_new = model_new.MakeHessian(data_new);
+  ASSERT_EQ(model_original.partition().num_islands(), 1);
+  auto hessian_original = model_original.MakeHessian(0, data_original);
+  ASSERT_EQ(model_new.partition().num_islands(), 1);
+  auto hessian_new = model_new.MakeHessian(0, data_new);
   MatrixXd H_original = hessian_original->MakeDenseMatrix();
   MatrixXd H_new = hessian_new->MakeDenseMatrix();
   EXPECT_TRUE(CompareMatrices(H_original, H_new, 8 * kEpsilon,
@@ -648,6 +670,21 @@ GTEST_TEST(IcfModel, ParamsAccessors) {
   const IcfParameters<double>* params1 = &model.params();
   std::unique_ptr<IcfParameters<double>> params2 = model.ReleaseParameters();
   EXPECT_EQ(params1, params2.get());
+}
+
+/* Verifies that use_islands setting is propagated. */
+GTEST_TEST(IcfModel, UseIslands) {
+  IcfModel<double> model;
+  MakeUnconstrainedModel(&model);
+
+  for (bool use_islands : {false, true}) {
+    auto params = model.ReleaseParameters();
+    params->time_step = 0.01;
+    params->use_islands = use_islands;
+    model.ResetParameters(std::move(params));
+    model.SetSparsityPattern();
+    EXPECT_EQ(model.partition().num_islands(), use_islands ? 3 : 1);
+  }
 }
 
 }  // namespace

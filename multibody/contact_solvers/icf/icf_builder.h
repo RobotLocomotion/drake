@@ -10,6 +10,7 @@
 #include "drake/geometry/query_results/penetration_as_point_pair.h"
 #include "drake/multibody/contact_solvers/icf/icf_linear_feedback_gains.h"
 #include "drake/multibody/contact_solvers/icf/icf_model.h"
+#include "drake/multibody/contact_solvers/icf/icf_solver_parameters.h"
 #include "drake/multibody/plant/multibody_plant.h"
 
 namespace drake {
@@ -65,6 +66,11 @@ class IcfBuilder {
   void UpdateFeedbackGains(const IcfLinearFeedbackGains<T>* actuation_feedback,
                            const IcfLinearFeedbackGains<T>* external_feedback,
                            IcfModel<T>* model) const;
+
+  /* Sets solver parameters. */
+  void SetSolverParameters(const IcfSolverParameters& solver_parameters) {
+    solver_parameters_ = solver_parameters;
+  }
 
  private:
   /* Scratch workspace data to build the model. */
@@ -164,14 +170,6 @@ class IcfBuilder {
                                    bool has_external_forces,
                                    IcfModel<T>* model) const;
 
-  /* Maps a tree index to a clique index. Cliques are trees with nv > 0. If a
-  tree has nv == 0, its clique index is -1. */
-  int tree_to_clique(int tree_index) const {
-    DRAKE_ASSERT(tree_index >= 0 &&
-                 tree_index < ssize(plant_facts_.tree_to_clique));
-    return plant_facts_.tree_to_clique[tree_index];
-  }
-
   /* Update the GeometryDetails cache, only if it is stale as determined by
   checking geometry versions .*/
   void RefreshGeometryDetails(
@@ -183,8 +181,9 @@ class IcfBuilder {
   struct PlantFacts {
     explicit PlantFacts(const MultibodyPlant<T>& plant);
 
-    std::vector<int> tree_to_clique;        // cliques are trees with nv > 0.
+    std::vector<int> velocity_to_clique;    // clique of each velocity DOF.
     std::vector<int> clique_sizes;          // nv for each clique.
+    std::vector<int> clique_start;          // prefix-summed clique v starts.
     std::vector<int> body_jacobian_cols;    // cols of J_WB for each body.
     std::vector<int> body_to_clique;        // clique index for each body.
     std::vector<int> body_is_floating;      // 1 if body is floating, else 0.
@@ -194,6 +193,10 @@ class IcfBuilder {
     std::vector<int> clique_to_limit_constraint;  // clique idx --> limit idx.
   };
   const PlantFacts plant_facts_{plant_};
+
+  // Solver parameters, for use in guiding the building of models. Updated by
+  // SetSolverParameters, and used by UpdateModel.
+  IcfSolverParameters solver_parameters_;
 
   // Cache of geometry properties, invalidated by changes of geometry version.
   struct GeometryDetails {
