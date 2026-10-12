@@ -119,11 +119,19 @@ drake_cc_googletest(
     ],
 )
 
+filegroup(
+    name = "yaml_io_test_input",
+    testonly = True,
+    srcs = [
+        "test/yaml_io_test_input_1.yaml",
+        "test/yaml_io_test_input_2.yaml",
+    ],
+)
+
 drake_cc_googletest(
     name = "yaml_io_test",
     data = [
-        "test/yaml_io_test_input_1.yaml",
-        "test/yaml_io_test_input_2.yaml",
+        ":yaml_io_test_input",
     ],
     deps = [
         ":example_structs",

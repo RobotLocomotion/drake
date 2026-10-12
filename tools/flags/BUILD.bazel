@@ -299,6 +299,11 @@ bool_flag(
 )
 
 bool_flag(
+    name = "with_daqp",
+    build_setting_default = True,
+)
+
+bool_flag(
     name = "with_ipopt",
     build_setting_default = True,
 )

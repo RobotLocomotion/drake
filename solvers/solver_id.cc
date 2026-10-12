@@ -36,6 +36,10 @@ bool operator!=(const SolverId& a, const SolverId& b) {
   return a.id_ != b.id_;
 }
 
+bool operator<(const SolverId& a, const SolverId& b) {
+  return a.id_ < b.id_;
+}
+
 std::string to_string(const SolverId& self) {
   // N.B. The ID is _not_ exposed to callers.
   return self.name();

@@ -19,22 +19,27 @@ namespace symbolic {
 
 /** Represents a set of variables.
  *
- * This class is based on std::set<Variable>. The intent is to add things that
- * we need including set-union (Variables::insert, operator+, operator+=),
- * set-minus (Variables::erase, operator-, operator-=), and subset/superset
- * checking functions (Variables::IsSubsetOf, Variables::IsSupersetOf,
- * Variables::IsStrictSubsetOf, Variables::IsStrictSupersetOf).
+ * This class is based on std::set<Variable, Variable::CompareLess>. The intent
+ * is to add things that we need including set-union (Variables::insert,
+ * operator+, operator+=), set-minus (Variables::erase, operator-, operator-=),
+ * and subset/superset checking functions (Variables::IsSubsetOf,
+ * Variables::IsSupersetOf, Variables::IsStrictSubsetOf,
+ * Variables::IsStrictSupersetOf).
  */
 class Variables {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Variables);
 
-  typedef typename std::set<Variable>::size_type size_type;
-  typedef typename std::set<Variable>::iterator iterator;
-  typedef typename std::set<Variable>::const_iterator const_iterator;
-  typedef typename std::set<Variable>::reverse_iterator reverse_iterator;
-  typedef typename std::set<Variable>::const_reverse_iterator
-      const_reverse_iterator;
+  typedef
+      typename std::set<Variable, Variable::CompareLess>::size_type size_type;
+  typedef typename std::set<Variable, Variable::CompareLess>::iterator iterator;
+  typedef typename std::set<Variable, Variable::CompareLess>::const_iterator
+      const_iterator;
+  typedef typename std::set<Variable, Variable::CompareLess>::reverse_iterator
+      reverse_iterator;
+  typedef
+      typename std::set<Variable, Variable::CompareLess>::const_reverse_iterator
+          const_reverse_iterator;
 
   /** Default constructor. */
   Variables() = default;
@@ -138,10 +143,10 @@ class Variables {
   friend Variables intersect(const Variables& vars1, const Variables& vars2);
 
  private:
-  /* Constructs from std::set<Variable>. */
-  explicit Variables(std::set<Variable> vars);
+  /* Constructs from std::set<Variable, Variable::CompareLess>. */
+  explicit Variables(std::set<Variable, Variable::CompareLess> vars);
 
-  std::set<Variable> vars_;
+  std::set<Variable, Variable::CompareLess> vars_;
 };
 
 /** Updates @p var1 with the result of set-union(@p var1, @p var2). */

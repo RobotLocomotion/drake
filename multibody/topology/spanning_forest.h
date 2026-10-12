@@ -412,7 +412,10 @@ class SpanningForest {
   /* Returns the index of the Tree to which this Link's Mobod belongs. If this
   is the ordinal of a Link that was split due to a loop, the returned index is
   for the Tree to which the Primary (original) Link's Mobod belongs. An invalid
-  tree index is returned if the Link's Mobod is World. O(1), very fast.
+  tree index is returned if the Link's Mobod is World. That is always the case
+  for World itself, but if welded Links are being fused it is also the case for
+  every Link that is welded (directly or indirectly) to World, since those
+  Links follow the World Mobod. O(1), very fast.
   @pre link_ordinal is in range [0, num_links) */
   inline TreeIndex link_to_tree_index(LinkOrdinal link_ordinal) const;
 

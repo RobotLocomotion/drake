@@ -21,7 +21,7 @@ GTEST_TEST(QPtest, TestUnconstrainedQP) {
   prog.AddQuadraticCost(x(0) * x(0));
 
   OsqpSolver solver;
-  if (solver.available()) {
+  {
     auto result = solver.Solve(prog, {}, {});
     EXPECT_TRUE(result.is_success());
     const double tol = 1e-4;
@@ -32,7 +32,7 @@ GTEST_TEST(QPtest, TestUnconstrainedQP) {
 
   // Add additional quadratic costs
   prog.AddQuadraticCost((x(1) + x(2) - 2) * (x(1) + x(2) - 2));
-  if (solver.available()) {
+  {
     auto result = solver.Solve(prog, {}, {});
     EXPECT_TRUE(result.is_success());
     const double tol = 1e-4;
@@ -45,7 +45,7 @@ GTEST_TEST(QPtest, TestUnconstrainedQP) {
   // Add linear costs.
   prog.AddLinearCost(4 * x(0) + 5);
   // Now the cost is (x₀ + 2)² + (x₁ + x₂-2)² + 1
-  if (solver.available()) {
+  {
     auto result = solver.Solve(prog, {}, {});
     EXPECT_TRUE(result.is_success());
     const double tol = 1e-4;
@@ -69,9 +69,7 @@ INSTANTIATE_TEST_SUITE_P(
 
 GTEST_TEST(QPtest, TestUnitBallExample) {
   OsqpSolver solver;
-  if (solver.available()) {
-    TestQPonUnitBallExample(solver);
-  }
+  TestQPonUnitBallExample(solver);
 }
 
 GTEST_TEST(QPtest, TestUnbounded) {
@@ -82,7 +80,7 @@ GTEST_TEST(QPtest, TestUnbounded) {
 
   OsqpSolver solver;
   // The program is unbounded.
-  if (solver.available()) {
+  {
     auto result = solver.Solve(prog, {}, {});
     EXPECT_EQ(result.get_solution_result(), SolutionResult::kDualInfeasible);
     EXPECT_TRUE(result.GetSolution(x).array().isFinite().all());
@@ -92,7 +90,7 @@ GTEST_TEST(QPtest, TestUnbounded) {
   // Add a constraint
   prog.AddLinearConstraint(x(0) + 2 * x(2) == 2);
   prog.AddLinearConstraint(x(0) >= 0);
-  if (solver.available()) {
+  {
     auto result = solver.Solve(prog, {}, {});
     EXPECT_EQ(result.get_solution_result(), SolutionResult::kDualInfeasible);
   }
@@ -109,45 +107,39 @@ GTEST_TEST(QPtest, TestInfeasible) {
 
   OsqpSolver solver;
   // The program is infeasible.
-  if (solver.available()) {
-    auto result = solver.Solve(prog, {}, {});
-    EXPECT_EQ(result.get_solution_result(),
-              SolutionResult::kInfeasibleConstraints);
-    EXPECT_EQ(result.get_optimal_cost(),
-              MathematicalProgram::kGlobalInfeasibleCost);
+  auto result = solver.Solve(prog, {}, {});
+  EXPECT_EQ(result.get_solution_result(),
+            SolutionResult::kInfeasibleConstraints);
+  EXPECT_EQ(result.get_optimal_cost(),
+            MathematicalProgram::kGlobalInfeasibleCost);
 
-    EXPECT_EQ(result.get_solver_details<OsqpSolver>().y.rows(), 3);
-    // Primal solution is not NAN or inf.
-    EXPECT_TRUE(result.GetSolution(x).array().isFinite().all());
-    // Dual solution is not NAN or inf.
-    EXPECT_TRUE(
-        result.get_solver_details<OsqpSolver>().y.array().isFinite().all());
-    EXPECT_TRUE(result.GetDualSolution(constraint0).array().isFinite().all());
-    EXPECT_TRUE(result.GetDualSolution(constraint1).array().isFinite().all());
-    EXPECT_TRUE(result.GetDualSolution(constraint2).array().isFinite().all());
-    // In OSQP's default upstream settings, time-based adaptive rho is enabled
-    // by default (i.e., adaptive_rho_interval=0). However, in our OsqpSolver
-    // wrapper, we've changed the default to be non-zero so that solver results
-    // are deterministic. The following check proves that our custom default is
-    // effective: with time-based adaptive rho there would be one rho_update,
-    // but with our custom default value there will be no updates (since the
-    // iteration count never reaches the scheduled iteration step of an update).
-    EXPECT_EQ(result.get_solver_details<OsqpSolver>().rho_updates, 0);
-  }
+  EXPECT_EQ(result.get_solver_details<OsqpSolver>().y.rows(), 3);
+  // Primal solution is not NAN or inf.
+  EXPECT_TRUE(result.GetSolution(x).array().isFinite().all());
+  // Dual solution is not NAN or inf.
+  EXPECT_TRUE(
+      result.get_solver_details<OsqpSolver>().y.array().isFinite().all());
+  EXPECT_TRUE(result.GetDualSolution(constraint0).array().isFinite().all());
+  EXPECT_TRUE(result.GetDualSolution(constraint1).array().isFinite().all());
+  EXPECT_TRUE(result.GetDualSolution(constraint2).array().isFinite().all());
+  // In OSQP's default upstream settings, time-based adaptive rho is enabled
+  // by default (i.e., adaptive_rho_interval=0). However, in our OsqpSolver
+  // wrapper, we've changed the default to be non-zero so that solver results
+  // are deterministic. The following check proves that our custom default is
+  // effective: with time-based adaptive rho there would be one rho_update,
+  // but with our custom default value there will be no updates (since the
+  // iteration count never reaches the scheduled iteration step of an update).
+  EXPECT_EQ(result.get_solver_details<OsqpSolver>().rho_updates, 0);
 }
 
 GTEST_TEST(QPtest, TestQuadraticCostVariableOrder) {
   OsqpSolver solver;
-  if (solver.available()) {
-    TestQuadraticCostVariableOrder(solver);
-  }
+  TestQuadraticCostVariableOrder(solver);
 }
 
 GTEST_TEST(OsqpSolverTest, DuplicatedVariable) {
   OsqpSolver solver;
-  if (solver.available()) {
-    TestDuplicatedVariableQuadraticProgram(solver, 1e-4);
-  }
+  TestDuplicatedVariableQuadraticProgram(solver, 1e-4);
 }
 
 GTEST_TEST(OsqpSolverTest, DualSolution1) {
@@ -301,10 +293,6 @@ GTEST_TEST(OsqpSolverTest, ComplicatedExampleForAdaptiveRhoTiming) {
   prog.Add2NormSquaredCost(task_cost_proj * task_cost_A,
                            task_cost_proj * task_cost_b, vd_star);
 
-  if (!OsqpSolver::is_available()) {
-    return;
-  }
-
   // Run one solve to get a specific answer.
   auto run_one_solve = [&prog, &u_star]() {
     const OsqpSolver dut;
@@ -329,29 +317,26 @@ GTEST_TEST(OsqpSolverTest, SolverOptionsTest) {
 
   MathematicalProgramResult result;
   OsqpSolver osqp_solver;
-  if (osqp_solver.available()) {
-    osqp_solver.Solve(prog, {}, {}, &result);
-    const int OSQP_SOLVED = 1;
-    EXPECT_EQ(result.get_solver_details<OsqpSolver>().status_val, OSQP_SOLVED);
-    // OSQP is not very accurate, use a loose tolerance.
-    EXPECT_TRUE(CompareMatrices(result.get_solver_details<OsqpSolver>().y,
-                                Eigen::Vector3d(0, 0, -0.0619621), 1e-4));
+  osqp_solver.Solve(prog, {}, {}, &result);
+  const int OSQP_SOLVED = 1;
+  EXPECT_EQ(result.get_solver_details<OsqpSolver>().status_val, OSQP_SOLVED);
+  // OSQP is not very accurate, use a loose tolerance.
+  EXPECT_TRUE(CompareMatrices(result.get_solver_details<OsqpSolver>().y,
+                              Eigen::Vector3d(0, 0, -0.0619621), 1e-4));
 
-    // Now only allow half the iterations in the OSQP solver. The solver should
-    // not be able to solve the problem accurately.
-    const int half_iterations =
-        result.get_solver_details<OsqpSolver>().iter / 2;
-    SolverOptions solver_options;
-    solver_options.SetOption(osqp_solver.solver_id(), "max_iter",
-                             half_iterations);
-    osqp_solver.Solve(prog, {}, solver_options, &result);
-    EXPECT_NE(result.get_solver_details<OsqpSolver>().status_val, OSQP_SOLVED);
+  // Now only allow half the iterations in the OSQP solver. The solver should
+  // not be able to solve the problem accurately.
+  const int half_iterations = result.get_solver_details<OsqpSolver>().iter / 2;
+  SolverOptions solver_options;
+  solver_options.SetOption(osqp_solver.solver_id(), "max_iter",
+                           half_iterations);
+  osqp_solver.Solve(prog, {}, solver_options, &result);
+  EXPECT_NE(result.get_solver_details<OsqpSolver>().status_val, OSQP_SOLVED);
 
-    // Now set the options in prog.
-    prog.SetSolverOption(osqp_solver.solver_id(), "max_iter", half_iterations);
-    osqp_solver.Solve(prog, {}, {}, &result);
-    EXPECT_NE(result.get_solver_details<OsqpSolver>().status_val, OSQP_SOLVED);
-  }
+  // Now set the options in prog.
+  prog.SetSolverOption(osqp_solver.solver_id(), "max_iter", half_iterations);
+  osqp_solver.Solve(prog, {}, {}, &result);
+  EXPECT_NE(result.get_solver_details<OsqpSolver>().status_val, OSQP_SOLVED);
 }
 
 GTEST_TEST(OsqpSolverTest, WarmStartPrimalOnly) {
@@ -361,23 +346,20 @@ GTEST_TEST(OsqpSolverTest, WarmStartPrimalOnly) {
 
   MathematicalProgramResult result;
   OsqpSolver osqp_solver;
-  if (osqp_solver.available()) {
-    // Solve with no prior solution; should be same as above test case.
-    osqp_solver.Solve(prog, {}, {}, &result);
-    const int OSQP_SOLVED = 1;
-    EXPECT_EQ(result.get_solver_details<OsqpSolver>().status_val, OSQP_SOLVED);
+  // Solve with no prior solution; should be same as above test case.
+  osqp_solver.Solve(prog, {}, {}, &result);
+  const int OSQP_SOLVED = 1;
+  EXPECT_EQ(result.get_solver_details<OsqpSolver>().status_val, OSQP_SOLVED);
 
-    // Solve with primal-only warm-start, restricting the iterations as above,
-    // but showing that we now have a solution.
-    const int half_iterations =
-        result.get_solver_details<OsqpSolver>().iter / 2;
-    SolverOptions solver_options;
-    solver_options.SetOption(osqp_solver.solver_id(), "max_iter",
-                             half_iterations);
-    const Eigen::VectorXd x_sol = result.get_x_val();
-    osqp_solver.Solve(prog, x_sol, solver_options, &result);
-    EXPECT_EQ(result.get_solver_details<OsqpSolver>().status_val, OSQP_SOLVED);
-  }
+  // Solve with primal-only warm-start, restricting the iterations as above,
+  // but showing that we now have a solution.
+  const int half_iterations = result.get_solver_details<OsqpSolver>().iter / 2;
+  SolverOptions solver_options;
+  solver_options.SetOption(osqp_solver.solver_id(), "max_iter",
+                           half_iterations);
+  const Eigen::VectorXd x_sol = result.get_x_val();
+  osqp_solver.Solve(prog, x_sol, solver_options, &result);
+  EXPECT_EQ(result.get_solver_details<OsqpSolver>().status_val, OSQP_SOLVED);
 }
 
 /* Tests the solver's processing of the verbosity options. With multiple ways
@@ -399,28 +381,26 @@ GTEST_TEST(OsqpSolverTest, SolverOptionsVerbosity) {
 
   OsqpSolver osqp_solver;
 
-  if (osqp_solver.is_available()) {
-    // Setting common options.
-    for (int print_to_console : {0, 1}) {
+  // Setting common options.
+  for (int print_to_console : {0, 1}) {
+    SolverOptions options;
+    options.SetOption(CommonSolverOption::kPrintToConsole, print_to_console);
+    osqp_solver.Solve(prog, {}, options);
+  }
+  // Setting solver options.
+  for (int print_to_console : {0, 1}) {
+    SolverOptions options;
+    options.SetOption(OsqpSolver::id(), "verbose", print_to_console);
+    osqp_solver.Solve(prog, {}, options);
+  }
+  // Setting both.
+  for (int common_print_to_console : {0, 1}) {
+    for (int solver_print_to_console : {0, 1}) {
       SolverOptions options;
-      options.SetOption(CommonSolverOption::kPrintToConsole, print_to_console);
+      options.SetOption(CommonSolverOption::kPrintToConsole,
+                        common_print_to_console);
+      options.SetOption(OsqpSolver::id(), "verbose", solver_print_to_console);
       osqp_solver.Solve(prog, {}, options);
-    }
-    // Setting solver options.
-    for (int print_to_console : {0, 1}) {
-      SolverOptions options;
-      options.SetOption(OsqpSolver::id(), "verbose", print_to_console);
-      osqp_solver.Solve(prog, {}, options);
-    }
-    // Setting both.
-    for (int common_print_to_console : {0, 1}) {
-      for (int solver_print_to_console : {0, 1}) {
-        SolverOptions options;
-        options.SetOption(CommonSolverOption::kPrintToConsole,
-                          common_print_to_console);
-        options.SetOption(OsqpSolver::id(), "verbose", solver_print_to_console);
-        osqp_solver.Solve(prog, {}, options);
-      }
     }
   }
 }
@@ -438,42 +418,38 @@ GTEST_TEST(OsqpSolverTest, TimeLimitTest) {
 
   MathematicalProgramResult result;
   OsqpSolver osqp_solver;
-  if (osqp_solver.available()) {
-    osqp_solver.Solve(prog, {}, {}, &result);
-    // Status codes listed in
-    // https://osqp.org/docs/interfaces/status_values.html
-    const int OSQP_SOLVED = 1;
-    const int OSQP_TIME_LIMIT_REACHED = 8;
-    EXPECT_TRUE(result.is_success());
-    EXPECT_EQ(result.get_solution_result(), SolutionResult::kSolutionFound);
-    EXPECT_EQ(result.get_solver_details<OsqpSolver>().status_val, OSQP_SOLVED);
-    // OSQP is not very accurate, use a loose tolerance.
-    EXPECT_TRUE(CompareMatrices(result.GetSolution(x), -b, 1e-4));
+  osqp_solver.Solve(prog, {}, {}, &result);
+  // Status codes listed in
+  // https://osqp.org/docs/interfaces/status_values.html
+  const int OSQP_SOLVED = 1;
+  const int OSQP_TIME_LIMIT_REACHED = 8;
+  EXPECT_TRUE(result.is_success());
+  EXPECT_EQ(result.get_solution_result(), SolutionResult::kSolutionFound);
+  EXPECT_EQ(result.get_solver_details<OsqpSolver>().status_val, OSQP_SOLVED);
+  // OSQP is not very accurate, use a loose tolerance.
+  EXPECT_TRUE(CompareMatrices(result.GetSolution(x), -b, 1e-4));
 
-    // Now only allow one hundredth of the solve time in the OSQP solver. The
-    // solver should not be able to solve the problem in time.
-    const double original_solve_time =
-        result.get_solver_details<OsqpSolver>().solve_time;
-    ASSERT_GT(original_solve_time, 0.0);
-    const double one_hundredth_solve_time = original_solve_time / 100.0;
-    SolverOptions solver_options;
-    solver_options.SetOption(osqp_solver.solver_id(), "time_limit",
-                             one_hundredth_solve_time);
-    osqp_solver.Solve(prog, {}, solver_options, &result);
-    EXPECT_EQ(result.get_solution_result(),
-              SolutionResult::kSolverSpecificError);
-    EXPECT_EQ(result.get_solver_details<OsqpSolver>().status_val,
-              OSQP_TIME_LIMIT_REACHED);
+  // Now only allow one hundredth of the solve time in the OSQP solver. The
+  // solver should not be able to solve the problem in time.
+  const double original_solve_time =
+      result.get_solver_details<OsqpSolver>().solve_time;
+  ASSERT_GT(original_solve_time, 0.0);
+  const double one_hundredth_solve_time = original_solve_time / 100.0;
+  SolverOptions solver_options;
+  solver_options.SetOption(osqp_solver.solver_id(), "time_limit",
+                           one_hundredth_solve_time);
+  osqp_solver.Solve(prog, {}, solver_options, &result);
+  EXPECT_EQ(result.get_solution_result(), SolutionResult::kSolverSpecificError);
+  EXPECT_EQ(result.get_solver_details<OsqpSolver>().status_val,
+            OSQP_TIME_LIMIT_REACHED);
 
-    // Now set the options in prog.
-    prog.SetSolverOption(osqp_solver.solver_id(), "time_limit",
-                         one_hundredth_solve_time);
-    osqp_solver.Solve(prog, {}, {}, &result);
-    EXPECT_EQ(result.get_solution_result(),
-              SolutionResult::kSolverSpecificError);
-    EXPECT_EQ(result.get_solver_details<OsqpSolver>().status_val,
-              OSQP_TIME_LIMIT_REACHED);
-  }
+  // Now set the options in prog.
+  prog.SetSolverOption(osqp_solver.solver_id(), "time_limit",
+                       one_hundredth_solve_time);
+  osqp_solver.Solve(prog, {}, {}, &result);
+  EXPECT_EQ(result.get_solution_result(), SolutionResult::kSolverSpecificError);
+  EXPECT_EQ(result.get_solver_details<OsqpSolver>().status_val,
+            OSQP_TIME_LIMIT_REACHED);
 }
 
 GTEST_TEST(OsqpSolverTest, ProgramAttributesGood) {
@@ -505,9 +481,7 @@ GTEST_TEST(OsqpSolverTest, ProgramAttributesMisfit) {
 
 GTEST_TEST(OsqpSolverTest, TestNonconvexQP) {
   OsqpSolver solver;
-  if (solver.available()) {
-    TestNonconvexQP(solver, true);
-  }
+  TestNonconvexQP(solver, true);
 }
 
 GTEST_TEST(OsqpSolverTest, VariableScaling1) {
@@ -522,15 +496,13 @@ GTEST_TEST(OsqpSolverTest, VariableScaling1) {
   prog.SetVariableScaling(x(0), s);
 
   OsqpSolver solver;
-  if (solver.available()) {
-    auto result = solver.Solve(prog);
+  auto result = solver.Solve(prog);
 
-    EXPECT_TRUE(result.is_success());
-    const double tol = 1e-4;
-    EXPECT_NEAR(result.get_optimal_cost(), 0.5, tol);
-    EXPECT_TRUE(CompareMatrices(result.GetSolution(x),
-                                Eigen::Vector2d((-0.5) * s, -1.5), tol));
-  }
+  EXPECT_TRUE(result.is_success());
+  const double tol = 1e-4;
+  EXPECT_NEAR(result.get_optimal_cost(), 0.5, tol);
+  EXPECT_TRUE(CompareMatrices(result.GetSolution(x),
+                              Eigen::Vector2d((-0.5) * s, -1.5), tol));
 }
 
 GTEST_TEST(OsqpSolverTest, VariableScaling2) {
@@ -547,15 +519,13 @@ GTEST_TEST(OsqpSolverTest, VariableScaling2) {
   prog.SetVariableScaling(x(0), s);
 
   OsqpSolver solver;
-  if (solver.available()) {
-    auto result = solver.Solve(prog);
+  auto result = solver.Solve(prog);
 
-    EXPECT_TRUE(result.is_success());
-    const double tol = 1e-4;
-    EXPECT_NEAR(result.get_optimal_cost(), 2.25, tol);
-    EXPECT_TRUE(CompareMatrices(result.GetSolution(x),
-                                Eigen::Vector2d((0.5) * s, -1), tol));
-  }
+  EXPECT_TRUE(result.is_success());
+  const double tol = 1e-4;
+  EXPECT_NEAR(result.get_optimal_cost(), 2.25, tol);
+  EXPECT_TRUE(CompareMatrices(result.GetSolution(x),
+                              Eigen::Vector2d((0.5) * s, -1), tol));
 }
 
 }  // namespace test

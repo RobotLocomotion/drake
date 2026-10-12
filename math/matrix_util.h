@@ -17,17 +17,26 @@
 
 namespace drake {
 namespace math {
-/// Determines if a matrix is symmetric. If std::equal_to<>()(matrix(i, j),
-/// matrix(j, i)) is true for all i, j, then the matrix is symmetric.
+/// Determines if a matrix is symmetric. If matrix(i, j) == matrix(j, i) for
+/// all i, j, then the matrix is symmetric. For symbolic scalar types (whose
+/// operator== returns a Formula), uses structural equality instead (e.g.,
+/// symbolic::Expression::EqualTo).
 template <typename Derived>
 bool IsSymmetric(const Eigen::MatrixBase<Derived>& matrix) {
   using DerivedScalar = typename Derived::Scalar;
   if (matrix.rows() != matrix.cols()) {
     return false;
   }
+  auto equal_to = [](const DerivedScalar& a, const DerivedScalar& b) -> bool {
+    if constexpr (requires { typename DerivedScalar::CompareEqualTo; }) {
+      return typename DerivedScalar::CompareEqualTo{}(a, b);
+    } else {
+      return a == b;
+    }
+  };
   for (int i = 0; i < static_cast<int>(matrix.rows()); ++i) {
     for (int j = i + 1; j < static_cast<int>(matrix.cols()); ++j) {
-      if (!std::equal_to<DerivedScalar>()(matrix(i, j), matrix(j, i))) {
+      if (!equal_to(matrix(i, j), matrix(j, i))) {
         return false;
       }
     }

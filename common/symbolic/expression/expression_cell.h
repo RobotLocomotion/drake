@@ -232,8 +232,9 @@ class ExpressionAdd : public ExpressionCell {
  public:
   /* Constructs ExpressionAdd from @p constant_term and @p term_to_coeff_map.
    */
-  ExpressionAdd(double constant,
-                std::map<Expression, double> expr_to_coeff_map);
+  ExpressionAdd(
+      double constant,
+      std::map<Expression, double, Expression::CompareLess> expr_to_coeff_map);
   ~ExpressionAdd() override;
   void HashAppendDetail(DelegatingHasher*) const override;
   [[nodiscard]] Variables GetVariables() const override;
@@ -249,8 +250,8 @@ class ExpressionAdd : public ExpressionCell {
   /* Returns the constant. */
   [[nodiscard]] double get_constant() const { return constant_; }
   /* Returns map from an expression to its coefficient. */
-  [[nodiscard]] const std::map<Expression, double>& get_expr_to_coeff_map()
-      const {
+  [[nodiscard]] const std::map<Expression, double, Expression::CompareLess>&
+  get_expr_to_coeff_map() const {
     return expr_to_coeff_map_;
   }
 
@@ -259,7 +260,8 @@ class ExpressionAdd : public ExpressionCell {
                    const Expression& term) const;
 
   const double constant_{};
-  const std::map<Expression, double> expr_to_coeff_map_;
+  const std::map<Expression, double, Expression::CompareLess>
+      expr_to_coeff_map_;
 };
 
 /* Factory class to help build ExpressionAdd expressions. */
@@ -272,8 +274,9 @@ class ExpressionAddFactory {
 
   /* Constructs ExpressionAddFactory with @p constant and @p
    * expr_to_coeff_map. */
-  ExpressionAddFactory(double constant,
-                       std::map<Expression, double> expr_to_coeff_map);
+  ExpressionAddFactory(
+      double constant,
+      std::map<Expression, double, Expression::CompareLess> expr_to_coeff_map);
 
   /* Constructs ExpressionAddFactory from @p add. */
   explicit ExpressionAddFactory(const ExpressionAdd& add);
@@ -317,11 +320,12 @@ class ExpressionAddFactory {
   void AddTerm(double coeff, const Expression& term);
   /* Adds expr_to_coeff_map to this factory. It calls AddConstant and AddTerm
    * methods. */
-  void AddMap(const std::map<Expression, double>& expr_to_coeff_map);
+  void AddMap(const std::map<Expression, double, Expression::CompareLess>&
+                  expr_to_coeff_map);
 
   bool is_expanded_{true};
   double constant_{0.0};
-  std::map<Expression, double> expr_to_coeff_map_;
+  std::map<Expression, double, Expression::CompareLess> expr_to_coeff_map_;
 };
 
 /* Symbolic expression representing a multiplication of powers.
@@ -341,7 +345,8 @@ class ExpressionMul : public ExpressionCell {
  public:
   /* Constructs ExpressionMul from @p constant and @p base_to_exponent_map. */
   ExpressionMul(double constant,
-                std::map<Expression, Expression> base_to_exponent_map);
+                std::map<Expression, Expression, Expression::CompareLess>
+                    base_to_exponent_map);
   ~ExpressionMul() override;
   void HashAppendDetail(DelegatingHasher*) const override;
   [[nodiscard]] Variables GetVariables() const override;
@@ -357,7 +362,7 @@ class ExpressionMul : public ExpressionCell {
   /* Returns constant term. */
   [[nodiscard]] double get_constant() const { return constant_; }
   /* Returns map from a term to its coefficient. */
-  [[nodiscard]] const std::map<Expression, Expression>&
+  [[nodiscard]] const std::map<Expression, Expression, Expression::CompareLess>&
   get_base_to_exponent_map() const {
     return base_to_exponent_map_;
   }
@@ -367,7 +372,8 @@ class ExpressionMul : public ExpressionCell {
                    const Expression& exponent) const;
 
   double constant_{};
-  std::map<Expression, Expression> base_to_exponent_map_;
+  std::map<Expression, Expression, Expression::CompareLess>
+      base_to_exponent_map_;
 };
 
 /* Factory class to help build ExpressionMul expressions. */
@@ -382,12 +388,14 @@ class ExpressionMulFactory {
    * @p base_to_exponent_map. Note that this constructor runs in constant-time
    * because it moves the map into storage; it does not loop over the map. */
   ExpressionMulFactory(double constant,
-                       std::map<Expression, Expression> base_to_exponent_map);
+                       std::map<Expression, Expression, Expression::CompareLess>
+                           base_to_exponent_map);
 
   /* Constructs ExpressionMulFactory with a Monomial-like (Variable to integer
    * power) @p base_to_exponent_map. */
   explicit ExpressionMulFactory(
-      const std::map<Variable, int>& base_to_exponent_map);
+      const std::map<Variable, int, Variable::CompareLess>&
+          base_to_exponent_map);
 
   /* Constructs ExpressionMulFactory from @p mul. */
   explicit ExpressionMulFactory(const ExpressionMul& mul);
@@ -430,14 +438,16 @@ class ExpressionMulFactory {
   void AddTerm(const Expression& base, const Expression& exponent);
   /* Adds base_to_exponent_map to this factory. It calls AddConstant and AddTerm
    * methods. */
-  void AddMap(const std::map<Expression, Expression>& base_to_exponent_map);
+  void AddMap(const std::map<Expression, Expression, Expression::CompareLess>&
+                  base_to_exponent_map);
 
   /* Sets to represent a zero expression. */
   void SetZero();
 
   bool is_expanded_{true};
   double constant_{1.0};
-  std::map<Expression, Expression> base_to_exponent_map_;
+  std::map<Expression, Expression, Expression::CompareLess>
+      base_to_exponent_map_;
 };
 
 /* Symbolic expression representing division. */

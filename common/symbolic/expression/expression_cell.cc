@@ -73,7 +73,8 @@ bool IsLeafExpression(const Expression& e) {
 // polynomial-convertible or not. This function is used in the
 // constructor of ExpressionAdd.
 bool determine_polynomial(
-    const std::map<Expression, double>& term_to_coeff_map) {
+    const std::map<Expression, double, Expression::CompareLess>&
+        term_to_coeff_map) {
   return all_of(term_to_coeff_map.begin(), term_to_coeff_map.end(),
                 [](const pair<const Expression, double>& p) {
                   return p.first.is_polynomial();
@@ -84,7 +85,8 @@ bool determine_polynomial(
 // polynomial-convertible or not. This function is used in the
 // constructor of ExpressionMul.
 bool determine_polynomial(
-    const std::map<Expression, Expression>& base_to_exponent_map) {
+    const std::map<Expression, Expression, Expression::CompareLess>&
+        base_to_exponent_map) {
   return all_of(base_to_exponent_map.begin(), base_to_exponent_map.end(),
                 [](const pair<const Expression, Expression>& p) {
                   // For each base^exponent, it has to satisfy the following
@@ -128,7 +130,8 @@ Expression ExpandMultiplication(const Expression& e1, const Expression& e2) {
     //   (c0 + c1 * e_{1,1} + ... + c_n * e_{1, n}) * e2
     // = c0 * e2 + c1 * e_{1,1} * e2 + ... + c_n * e_{1,n} * e2
     const double c0{get_constant_in_addition(e1)};
-    const map<Expression, double>& m1{get_expr_to_coeff_map_in_addition(e1)};
+    const map<Expression, double, Expression::CompareLess>& m1{
+        get_expr_to_coeff_map_in_addition(e1)};
     ExpressionAddFactory fac;
     fac.AddExpression(ExpandMultiplication(c0, e2));
     for (const pair<const Expression, double>& p : m1) {
@@ -140,7 +143,8 @@ Expression ExpandMultiplication(const Expression& e1, const Expression& e2) {
     //   e1 * (c0 + c1 * e_{2,1} + ... + c_n * e_{2, n})
     // = e1 * c0 + e1 * c1 * e_{2,1} + ... + e1 * c_n * e_{2,n}
     const double c0{get_constant_in_addition(e2)};
-    const map<Expression, double>& m1{get_expr_to_coeff_map_in_addition(e2)};
+    const map<Expression, double, Expression::CompareLess>& m1{
+        get_expr_to_coeff_map_in_addition(e2)};
     ExpressionAddFactory fac;
     fac.AddExpression(ExpandMultiplication(e1, c0));
     for (const pair<const Expression, double>& p : m1) {
@@ -449,8 +453,9 @@ string ExpressionNaN::Display() const {
   return "NaN";
 }
 
-ExpressionAdd::ExpressionAdd(const double constant,
-                             map<Expression, double> expr_to_coeff_map)
+ExpressionAdd::ExpressionAdd(
+    const double constant,
+    map<Expression, double, Expression::CompareLess> expr_to_coeff_map)
     : ExpressionCell{ExpressionKind::Add,
                      determine_polynomial(expr_to_coeff_map), false},
       constant_(constant),
@@ -612,7 +617,8 @@ void ExpressionAdd::DisplayTerm(ostream& os, const bool print_plus,
 }
 
 ExpressionAddFactory::ExpressionAddFactory(
-    const double constant, map<Expression, double> expr_to_coeff_map)
+    const double constant,
+    map<Expression, double, Expression::CompareLess> expr_to_coeff_map)
     : is_expanded_(false),
       constant_{constant},
       expr_to_coeff_map_{std::move(expr_to_coeff_map)} {
@@ -728,14 +734,15 @@ void ExpressionAddFactory::AddTerm(const double coeff, const Expression& term) {
 }
 
 void ExpressionAddFactory::AddMap(
-    const map<Expression, double>& expr_to_coeff_map) {
+    const map<Expression, double, Expression::CompareLess>& expr_to_coeff_map) {
   for (const auto& p : expr_to_coeff_map) {
     AddTerm(p.second, p.first);
   }
 }
 
-ExpressionMul::ExpressionMul(const double constant,
-                             map<Expression, Expression> base_to_exponent_map)
+ExpressionMul::ExpressionMul(
+    const double constant,
+    map<Expression, Expression, Expression::CompareLess> base_to_exponent_map)
     : ExpressionCell{ExpressionKind::Mul,
                      determine_polynomial(base_to_exponent_map), false},
       constant_(constant),
@@ -941,13 +948,14 @@ void ExpressionMul::DisplayTerm(ostream& os, const bool print_mul,
 }
 
 ExpressionMulFactory::ExpressionMulFactory(
-    const double constant, map<Expression, Expression> base_to_exponent_map)
+    const double constant,
+    map<Expression, Expression, Expression::CompareLess> base_to_exponent_map)
     : is_expanded_{false},
       constant_{constant},
       base_to_exponent_map_{std::move(base_to_exponent_map)} {}
 
 ExpressionMulFactory::ExpressionMulFactory(
-    const map<Variable, int>& base_to_exponent_map)
+    const map<Variable, int, Variable::CompareLess>& base_to_exponent_map)
     : is_expanded_{true}, constant_{1.0} {
   for (const auto& [base, exponent] : base_to_exponent_map) {
     base_to_exponent_map_.emplace(base, exponent);
@@ -1080,7 +1088,8 @@ void ExpressionMulFactory::AddTerm(const Expression& base,
 }
 
 void ExpressionMulFactory::AddMap(
-    const map<Expression, Expression>& base_to_exponent_map) {
+    const map<Expression, Expression, Expression::CompareLess>&
+        base_to_exponent_map) {
   for (const auto& p : base_to_exponent_map) {
     AddTerm(p.first, p.second);
   }

@@ -12,6 +12,7 @@ package(
 
 exports_files([
     "CPPLINT.cfg",
+    "LICENSE.txt",
     ".bazelproject",
     ".clang-format",
     ".drake-find_resource-sentinel",

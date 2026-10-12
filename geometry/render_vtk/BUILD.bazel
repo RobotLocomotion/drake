@@ -256,7 +256,8 @@ drake_cc_googletest(
 )
 
 # The generated glTF file can be removed when we're no longer testing the glTF
-# parser patch (see :internal_vtk_gltf_parser_patch_test).
+# parser patch (see :internal_vtk_gltf_parser_patch_test). At the same time, we
+# should also remove the related `export_files(...)` in //geometry/render.
 
 genrule(
     name = "gltf_pyramid_no_color_texture",

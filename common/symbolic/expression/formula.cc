@@ -80,6 +80,14 @@ bool Formula::Less(const Formula& f) const {
   return ptr_->Less(*(f.ptr_));
 }
 
+bool operator<(const Formula& lhs, const Formula& rhs) {
+  return lhs.Less(rhs);
+}
+
+bool operator==(const Formula& lhs, const Formula& rhs) {
+  return lhs.EqualTo(rhs);
+}
+
 bool Formula::Evaluate(const Environment& env,
                        RandomGenerator* const random_generator) const {
   DRAKE_ASSERT(ptr_ != nullptr);

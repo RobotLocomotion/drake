@@ -83,7 +83,7 @@
  * <tr><td> <a href="https://github.com/coin-or/Clp">
  *    CLP</a></td>
  *    <td align="center">♦</td>
- *    <td></td>
+ *    <td align="center">♦</td>
  *    <td></td>
  *    <td></td>
  *    <td></td>
@@ -116,6 +116,14 @@
  *    OSQP</a></td>
  *    <td></td>
  *    <td align="center">△</td>
+ *    <td></td>
+ *    <td></td>
+ *    <td></td>
+ * </tr>
+ * <tr><td><a href="https://github.com/darnstrom/daqp">
+ *    DAQP</a></td>
+ *    <td></td>
+ *    <td align="center">§</td>
  *    <td></td>
  *    <td></td>
  *    <td></td>
@@ -165,6 +173,11 @@
  * △ These solvers are not accurate. They implement ADMM algorithm, which
  * converges quickly to a low-accuracy solution, and requires many iterations to
  * achieve high accuracy.
+ *
+ * § This dense active-set solver is fast and accurate on small QPs (up to a few
+ * hundred variables), but it does not exploit sparsity. Because of that,
+ * drake::solvers::Solve() will not choose DAQP when a sparse QP solver (e.g.,
+ * Clarabel) is available. To use DAQP, call DaqpSolver::Solve() explicitly.
  *
  * ▢ These solvers can solve the convex problems, but are not good at it. They
  * treat the convex problems as general nonlinear optimization problems.
