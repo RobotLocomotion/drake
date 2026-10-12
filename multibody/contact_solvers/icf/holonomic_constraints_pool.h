@@ -7,10 +7,10 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
-#include "drake/multibody/contact_solvers/block_sparse_lower_triangular_or_symmetric_matrix.h"
 #include "drake/multibody/contact_solvers/icf/eigen_pool.h"
 #include "drake/multibody/contact_solvers/icf/holonomic_constraints_data_pool.h"
 #include "drake/multibody/contact_solvers/icf/icf_data.h"
+#include "drake/multibody/contact_solvers/icf/icf_hessian.h"
 #include "drake/multibody/contact_solvers/icf/reduced_mapping.h"
 
 namespace drake {
@@ -147,10 +147,7 @@ class HolonomicConstraintsPool {
   const IcfModel<T>& model() const { return *model_; }
   int num_constraints() const { return ssize(body_pairs_); }
   void AccumulateGradient(const IcfData<T>& data, VectorX<T>* gradient) const;
-  void AccumulateHessian(
-      const IcfData<T>& data,
-      contact_solvers::internal::BlockSparseSymmetricMatrix<MatrixX<T>>*
-          hessian) const;
+  void AccumulateHessian(const IcfData<T>& data, IcfHessian<T>* hessian) const;
   void ReduceInto(const ReducedMapping& mapping, Derived* reduced_pool) const;
 
   /* Resizes the pool (generic data + the derived's geometry) to store the given

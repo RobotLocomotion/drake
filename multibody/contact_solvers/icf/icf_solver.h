@@ -1,12 +1,13 @@
 #pragma once
 
+#include <cstdint>
 #include <memory>
 #include <utility>
 #include <vector>
 
 #include "drake/multibody/contact_solvers/block_sparse_cholesky_solver.h"
-#include "drake/multibody/contact_solvers/block_sparse_lower_triangular_or_symmetric_matrix.h"
 #include "drake/multibody/contact_solvers/icf/icf_data.h"
+#include "drake/multibody/contact_solvers/icf/icf_hessian.h"
 #include "drake/multibody/contact_solvers/icf/icf_model.h"
 #include "drake/multibody/contact_solvers/icf/icf_search_direction_data.h"
 #include "drake/multibody/contact_solvers/icf/icf_solver_parameters.h"
@@ -183,9 +184,7 @@ class IcfSolver {
 
   // Stored Hessian and factorization objects. Allows for Hessian reuse between
   // iterations and between subsequent solves.
-  std::unique_ptr<
-      contact_solvers::internal::BlockSparseSymmetricMatrix<Eigen::MatrixXd>>
-      hessian_;
+  std::unique_ptr<IcfHessian<double>> hessian_;
   contact_solvers::internal::BlockSparseCholeskySolver<Eigen::MatrixXd>
       hessian_factorization_;
   Eigen::LDLT<Eigen::MatrixXd> dense_hessian_factorization_;

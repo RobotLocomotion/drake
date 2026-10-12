@@ -10,7 +10,6 @@ namespace contact_solvers {
 namespace icf {
 namespace internal {
 
-using contact_solvers::internal::BlockSparseSymmetricMatrix;
 using Eigen::VectorBlock;
 using math::internal::PartialPermutation;
 
@@ -86,9 +85,8 @@ void GainConstraintsPool<T>::AccumulateGradient(const IcfData<T>& data,
 }
 
 template <typename T>
-void GainConstraintsPool<T>::AccumulateHessian(
-    const IcfData<T>& data,
-    BlockSparseSymmetricMatrix<MatrixX<T>>* hessian) const {
+void GainConstraintsPool<T>::AccumulateHessian(const IcfData<T>& data,
+                                               IcfHessian<T>* hessian) const {
   DRAKE_ASSERT(hessian != nullptr);
 
   const GainConstraintsDataPool<T>& gain_data = data.gain_constraints_data();

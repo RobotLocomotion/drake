@@ -12,8 +12,8 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/limit_malloc.h"
 #include "drake/math/autodiff_gradient.h"
-#include "drake/multibody/contact_solvers/block_sparse_lower_triangular_or_symmetric_matrix.h"
 #include "drake/multibody/contact_solvers/icf/icf_data.h"
+#include "drake/multibody/contact_solvers/icf/icf_hessian.h"
 #include "drake/multibody/contact_solvers/icf/icf_model.h"
 #include "drake/multibody/contact_solvers/icf/icf_search_direction_data.h"
 #include "drake/multibody/contact_solvers/icf/test_utilities/icf_model_test_helpers.h"
@@ -306,8 +306,7 @@ GTEST_TEST(CouplerConstraintsPool, Reduce) {
 
     // Check Hessian contribution.
     reduced_model.SetSparsityPattern();
-    contact_solvers::internal::BlockSparseSymmetricMatrix<MatrixX<double>>
-        hessian(reduced_model.sparsity_pattern());
+    IcfHessian<double> hessian(reduced_model.sparsity_pattern());
     reduced_pool.AccumulateHessian(reduced_data, &hessian);
     if (hessian.HasBlock(reduced_clique, reduced_clique)) {
       const auto& block = hessian.diagonal_block(reduced_clique);
