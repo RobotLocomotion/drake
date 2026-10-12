@@ -1,5 +1,6 @@
 #include "drake/multibody/contact_solvers/icf/icf_data.h"
 
+#include <iterator>
 #include <limits>
 
 namespace drake {
@@ -10,8 +11,6 @@ namespace internal {
 
 template <typename T>
 void IcfData<T>::Scratch::Resize(const ResizeParams& params) {
-  Av_minus_r.Resize(1, params.num_velocities, 1);
-
   V_WB_alpha.Resize(params.num_bodies, 6, 1);
   U_AbB_W.Resize(ssize(params.patch_sizes), 6, 1);
   v_alpha.Resize(1, params.num_velocities, 1);
@@ -42,10 +41,13 @@ IcfData<T>::~IcfData() = default;
 
 template <typename T>
 void IcfData<T>::Resize(const ResizeParams& params) {
+  DRAKE_DEMAND(params.num_islands > 0 || params.num_velocities == 0);
   v_.resize(params.num_velocities);
   V_WB_.Resize(params.num_bodies, 6, 1);
   Av_.resize(params.num_velocities);
   gradient_.resize(params.num_velocities);
+  island_cost_.resize(params.num_islands);
+  island_momentum_cost_.resize(params.num_islands);
   ball_constraints_data_.Resize(params.num_ball_constraints);
   coupler_constraints_data_.Resize(params.num_couplers);
   distance_constraints_data_.Resize(params.num_distance_constraints);
@@ -59,11 +61,12 @@ void IcfData<T>::Resize(const ResizeParams& params) {
 template <typename T>
 void IcfData<T>::set_v(const VectorX<T>& v) {
 #ifdef DRAKE_ASSERT_IS_ARMED
+  static constexpr double kNAN = std::numeric_limits<T>::quiet_NaN();
   V_WB_.SetZero();
-  Av_.setConstant(std::numeric_limits<T>::quiet_NaN());
-  momentum_cost_ = std::numeric_limits<T>::quiet_NaN();
-  cost_ = std::numeric_limits<T>::quiet_NaN();
-  gradient_.setConstant(std::numeric_limits<T>::quiet_NaN());
+  Av_.setConstant(kNAN);
+  gradient_.setConstant(kNAN);
+  island_cost_.assign(num_islands(), kNAN);
+  island_momentum_cost_.assign(num_islands(), kNAN);
 #endif
   v_ = v;
 }

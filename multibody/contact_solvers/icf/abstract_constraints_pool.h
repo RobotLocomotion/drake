@@ -35,7 +35,8 @@ static_assert(IsAbstractConstraintsPool<MyConstraintsPool>);
 template <template <typename> typename Pool>
 concept IsAbstractConstraintsPool =
     requires(Pool<double> pool, const IcfData<double>& data,
-             VectorX<double>* gradient, IcfHessian<double>* hessian,
+             VectorX<double>* gradient, std::span<const int> constraints,
+             std::span<const int> clique_to_block, IcfHessian<double>* hessian,
              const ReducedMapping& mapping, Pool<double>* reduced_pool) {
       /* Returns a reference to the parent model. */
       { pool.model() } -> std::same_as<const IcfModel<double>&>;
@@ -43,12 +44,14 @@ concept IsAbstractConstraintsPool =
       /* Returns the total number of constraints stored in this pool. */
       { pool.num_constraints() } -> std::same_as<int>;
 
-      /* Adds the gradient contribution of this constraint, ∇ℓ(v) = −γ, to the
-      model-wide gradient. */
-      pool.AccumulateGradient(data, gradient);
+      /* Adds the gradient contribution of this constraint type, ∇ℓ(v) = −γ,
+      from only the listed constraints to the model-wide gradient. */
+      pool.AccumulateGradient(data, constraints, gradient);
 
-      /* Adds the contribution of this constraint to the model-wide Hessian. */
-      pool.AccumulateHessian(data, hessian);
+      /* Accumulates the Hessian for only the listed constraints into the
+      island's local sub-Hessian. `clique_to_block` maps a global clique index
+      to its block index in the island's sub-Hessian. */
+      pool.AccumulateHessian(data, constraints, clique_to_block, hessian);
 
       /* Makes a "reduced" constraints pool in `reduced_pool`, guided by the
       `mapping`.
@@ -69,6 +72,28 @@ concept IsAbstractConstraintsPool =
       @pre reduced_pool != nullptr.  */
       pool.ReduceInto(mapping, reduced_pool);
     };
+
+template <template <typename> typename Pool,
+          template <typename> typename DataPool>
+concept HasJointVelocityCalcData = requires(  // BR
+    Pool<double> pool, const VectorX<double>& v, DataPool<double>* data_pool,
+    std::span<const int> constraints) {
+  /* Computes problem data as a function of the generalized velocities `v` for
+  the full plant. Only updates problem data for the listed constraints, and
+  returns the sum of costs for the listed constraints. */
+  { pool.CalcData(v, constraints, data_pool) } -> std::same_as<double>;
+};
+
+template <template <typename> typename Pool,
+          template <typename> typename DataPool>
+concept HasSpatialVelocityCalcData = requires(  // BR
+    Pool<double> pool, const EigenPool<Vector6<double>>& V_WB,
+    DataPool<double>* data_pool, std::span<const int> constraints) {
+  /* Computes problem data as a function of the body spatial velocities V_WB
+  for the full IcfModel. Only updates problem data for the listed constraints,
+  and returns the sum of costs for the listed constraints. */
+  { pool.CalcData(V_WB, constraints, data_pool) } -> std::same_as<double>;
+};
 
 }  // namespace internal
 }  // namespace icf

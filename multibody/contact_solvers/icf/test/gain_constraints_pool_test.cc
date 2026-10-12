@@ -1,6 +1,8 @@
 #include "drake/multibody/contact_solvers/icf/gain_constraints_pool.h"
 
 #include <limits>
+#include <memory>
+#include <utility>
 #include <vector>
 
 #include <fmt/format.h>
@@ -26,73 +28,101 @@ namespace {
 
 constexpr double kEpsilon = std::numeric_limits<double>::epsilon();
 
+template <typename T>
+class GainConstraintsPoolBaseTest : public ::testing::Test {
+ protected:
+  explicit GainConstraintsPoolBaseTest(bool use_islands)
+      : use_islands_(use_islands) {}
+
+  void SetUp() override {
+    // Create a simple model with two cliques.
+
+    MakeUnconstrainedModel(&model_);
+    std::unique_ptr<IcfParameters<T>> params = model_.ReleaseParameters();
+    params->use_islands = use_islands_;
+    model_.ResetParameters(std::move(params));
+  }
+
+  IcfModel<T> model_;
+  bool use_islands_{};
+};
+
+template <typename T>
+class GainConstraintsPoolParamTest
+    : public GainConstraintsPoolBaseTest<T>,
+      public ::testing::WithParamInterface<bool> {
+ protected:
+  GainConstraintsPoolParamTest()
+      : GainConstraintsPoolBaseTest<T>(/* use_islands = */ GetParam()) {}
+};
+
+using GainConstraintsPoolParamTestD = GainConstraintsPoolParamTest<double>;
+using GainConstraintsPoolParamTestAd = GainConstraintsPoolParamTest<AutoDiffXd>;
+
 /* Checks that model.CalcData does not incur any heap allocations on a problem
 with gain constraints. */
-GTEST_TEST(GainConstraintsPool, LimitMallocOnCalcData) {
-  IcfModel<double> model;
-  MakeUnconstrainedModel(&model);
-  AddGainConstraints(&model);
-  EXPECT_EQ(model.num_constraints(), 2);
-  EXPECT_EQ(model.num_gain_constraints(), 2);
+TEST_P(GainConstraintsPoolParamTestD, LimitMallocOnCalcData) {
+  AddGainConstraints(&model_);
+  EXPECT_EQ(model_.num_constraints(), 2);
+  EXPECT_EQ(model_.num_gain_constraints(), 2);
 
   IcfData<double> data;
-  model.ResizeData(&data);
+  model_.SetSparsityPattern();
+  EXPECT_EQ(model_.partition().num_islands(), use_islands_ ? 3 : 1);
+  model_.ResizeData(&data);
   EXPECT_EQ(data.gain_constraints_data().num_constraints(), 2);
 
-  const int nv = model.num_velocities();
+  const int nv = model_.num_velocities();
   const VectorXd v = VectorXd::LinSpaced(nv, -10.0, 10.0);
 
   // Computing data should not cause any new allocations.
   {
     drake::test::LimitMalloc guard;
-    model.CalcData(v, &data);
+    model_.CalcAllData(v, &data);
   }
 }
 
 /* Checks that pool.ReduceInto does not incur any heap allocations on a
 problem with gain constraints. */
-GTEST_TEST(GainConstraintsPool, LimitMallocOnReduceInto) {
-  IcfModel<double> model;
-  MakeUnconstrainedModel(&model);
-  AddGainConstraints(&model);
+TEST_P(GainConstraintsPoolParamTestD, LimitMallocOnReduceInto) {
+  AddGainConstraints(&model_);
 
   IcfModel<double> reduced_model;
   ReducedMapping mapping;
 
   // Do a not-smaller reduction to allocate memory in the reduced model.
-  MakeModelReducible(&model, /* dofs_to_remove = */ {});
-  model.ReduceInto(&reduced_model, &mapping);
+  MakeModelReducible(&model_, /* dofs_to_remove = */ {});
+  model_.ReduceInto(&reduced_model, &mapping);
 
   // Given prior allocation of a big enough model, the couple constraint pool
   // reduction does not allocate.
   {
     // TODO(#23912): consider removing these allocations.
     drake::test::LimitMalloc guard({16});
-    model.gain_constraints_pool().ReduceInto(
+    model_.gain_constraints_pool().ReduceInto(
         mapping, &reduced_model.gain_constraints_pool());
   }
 }
 
 /* Verifies that gain constraints produce correct data. */
-GTEST_TEST(GainConstraintsPool, Data) {
-  IcfModel<AutoDiffXd> model;
-  MakeUnconstrainedModel(&model);
-  model.SetSparsityPattern();
-  EXPECT_EQ(model.num_cliques(), 3);
-  EXPECT_EQ(model.num_velocities(), 18);
-  EXPECT_EQ(model.num_constraints(), 0);
+TEST_P(GainConstraintsPoolParamTestAd, Data) {
+  model_.SetSparsityPattern();
+  EXPECT_EQ(model_.num_cliques(), 3);
+  EXPECT_EQ(model_.num_velocities(), 18);
+  EXPECT_EQ(model_.num_constraints(), 0);
 
   IcfData<AutoDiffXd> data;
-  model.ResizeData(&data);
-  EXPECT_EQ(data.num_velocities(), model.num_velocities());
+  model_.ResizeData(&data);
+  EXPECT_EQ(data.num_velocities(), model_.num_velocities());
   EXPECT_EQ(data.gain_constraints_data().num_constraints(), 0);
 
   // At this point there should be no gain constraints.
-  EXPECT_EQ(model.num_gain_constraints(), 0);
+  EXPECT_EQ(model_.num_gain_constraints(), 0);
 
   // Add gain constraints.
-  std::vector<VectorX<AutoDiffXd>> gains = AddGainConstraints(&model);
+  std::vector<VectorX<AutoDiffXd>> gains = AddGainConstraints(&model_);
   DRAKE_DEMAND(ssize(gains) == 6);
+  model_.SetSparsityPattern();
   const VectorX<AutoDiffXd>& K0 = gains[0];
   const VectorX<AutoDiffXd>& u0 = gains[1];
   const VectorX<AutoDiffXd>& e0 = gains[2];
@@ -100,18 +130,18 @@ GTEST_TEST(GainConstraintsPool, Data) {
   const VectorX<AutoDiffXd>& u2 = gains[4];
   const VectorX<AutoDiffXd>& e2 = gains[5];
 
-  EXPECT_EQ(model.num_gain_constraints(), 2);
-  EXPECT_EQ(model.num_constraints(), 2);
+  EXPECT_EQ(model_.num_gain_constraints(), 2);
+  EXPECT_EQ(model_.num_constraints(), 2);
 
   // Resize data to include gain constraints data.
-  model.ResizeData(&data);
+  model_.ResizeData(&data);
   EXPECT_EQ(data.gain_constraints_data().num_constraints(), 2);
 
-  const int nv = model.num_velocities();
+  const int nv = model_.num_velocities();
   VectorXd v_value = VectorXd::LinSpaced(nv, -10, 10.0);
   VectorX<AutoDiffXd> v(nv);
   math::InitializeAutoDiff(v_value, &v);
-  model.CalcData(v, &data);
+  model_.CalcAllData(v, &data);
 
   const GainConstraintsDataPool<AutoDiffXd>& gains_data =
       data.gain_constraints_data();
@@ -142,13 +172,13 @@ GTEST_TEST(GainConstraintsPool, Data) {
   // Apply the limits.
   tau0_expected = tau0_expected.cwiseMax(-e0_value).cwiseMin(e0_value);
   tau2_expected = tau2_expected.cwiseMax(-e2_value).cwiseMin(e2_value);
-  const VectorXd gamma0_expected = tau0_expected * model.time_step().value();
-  const VectorXd gamma2_expected = tau2_expected * model.time_step().value();
+  const VectorXd gamma0_expected = tau0_expected * model_.time_step().value();
+  const VectorXd gamma2_expected = tau2_expected * model_.time_step().value();
 
   const VectorX<AutoDiffXd> gamma0 = gains_data.gamma(0);
   const VectorX<AutoDiffXd> gamma2 = gains_data.gamma(1 /* constraint index */);
-  EXPECT_EQ(gamma0.size(), model.clique_size(0));
-  EXPECT_EQ(gamma2.size(), model.clique_size(2));
+  EXPECT_EQ(gamma0.size(), model_.clique_size(0));
+  EXPECT_EQ(gamma2.size(), model_.clique_size(2));
   const VectorXd gamma0_value = math::ExtractValue(gamma0);
   const VectorXd gamma2_value = math::ExtractValue(gamma2);
   EXPECT_TRUE(CompareMatrices(gamma0_value, gamma0_expected, kEpsilon,
@@ -157,7 +187,7 @@ GTEST_TEST(GainConstraintsPool, Data) {
                               MatrixCompareType::relative));
 
   // Gradient of the cost.
-  const VectorXd cost_gradient = gains_data.cost().derivatives();
+  const VectorXd cost_gradient = gains_data.ComputeCost().derivatives();
   const VectorXd minus_cost0_gradient = -cost_gradient.segment<6>(0);
   const VectorXd minus_cost2_gradient =
       -cost_gradient.segment<6>(12 /* first velocity index */);
@@ -167,7 +197,7 @@ GTEST_TEST(GainConstraintsPool, Data) {
                               MatrixCompareType::relative));
 
   // Verify accumulated total cost and gradients.
-  const VectorXd total_cost_derivatives = data.cost().derivatives();
+  const VectorXd total_cost_derivatives = data.ComputeCost().derivatives();
   const VectorXd total_gradient_value = math::ExtractValue(data.gradient());
 
   EXPECT_TRUE(CompareMatrices(total_gradient_value, total_cost_derivatives,
@@ -175,24 +205,23 @@ GTEST_TEST(GainConstraintsPool, Data) {
 }
 
 /* Verifies that reducing the gain constraint pool produces correct data. */
-GTEST_TEST(GainConstraintsPool, Reduce) {
-  IcfModel<double> model;
-  MakeUnconstrainedModel(&model);
-  AddGainConstraints(&model);
+TEST_P(GainConstraintsPoolParamTestD, Reduce) {
+  AddGainConstraints(&model_);
+  model_.SetSparsityPattern();
 
   IcfData<double> data;
-  model.ResizeData(&data);
-  const int nv = model.num_velocities();
+  model_.ResizeData(&data);
+  const int nv = model_.num_velocities();
   const VectorXd v = VectorXd::LinSpaced(nv, -10, 10.0);
-  model.CalcData(v, &data);
-  const auto& full_pool = model.gain_constraints_pool();
+  model_.CalcAllData(v, &data);
+  const auto& full_pool = model_.gain_constraints_pool();
 
   auto check_reduced = [&](const std::vector<int>& locked_dofs) {
     SCOPED_TRACE(fmt::format("locked_dofs [{}]", fmt::join(locked_dofs, ", ")));
     IcfModel<double> reduced_model;
     ReducedMapping mapping;
-    MakeModelReducible(&model, locked_dofs);
-    model.ReduceInto(&reduced_model, &mapping);
+    MakeModelReducible(&model_, locked_dofs);
+    model_.ReduceInto(&reduced_model, &mapping);
     const auto& reduced_pool = reduced_model.gain_constraints_pool();
     int reduced_constraint_cursor{0};
     for (int k = 0; k < full_pool.num_constraints(); ++k) {
@@ -248,10 +277,15 @@ GTEST_TEST(GainConstraintsPool, Reduce) {
   check_reduced(clique2_locked);
 
   // Lock everything.
-  std::vector<int> all_locked(model.num_velocities());
+  std::vector<int> all_locked(model_.num_velocities());
   std::iota(all_locked.begin(), all_locked.end(), 0);
   check_reduced(all_locked);
 }
+
+INSTANTIATE_TEST_SUITE_P(FlipIslandsD, GainConstraintsPoolParamTestD,
+                         ::testing::Bool());
+INSTANTIATE_TEST_SUITE_P(FlipIslandsAd, GainConstraintsPoolParamTestAd,
+                         ::testing::Bool());
 
 }  // namespace
 }  // namespace internal

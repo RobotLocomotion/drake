@@ -1,6 +1,8 @@
 #pragma once
 
+#include <numeric>
 #include <span>
+#include <vector>
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
@@ -34,8 +36,9 @@ struct ResizeParams {
   std::span<const int>
       limit_sizes;  // Number of velocities for each limit constraint.
   std::span<const int>
-      patch_sizes;  // Number of contact pairs for each patch constraint, of
-                    // size equal to the number of patches.
+      patch_sizes;    // Number of contact pairs for each patch constraint, of
+                      // size equal to the number of patches.
+  int num_islands{};  // Number of islands (independent convex subproblems).
 };
 
 /* Data for the ICF problem minᵥ ℓ(v; q₀, v₀, δt).
@@ -71,10 +74,6 @@ class IcfData {
   struct Scratch {
     /* Resizes the scratch space, allocating memory as needed. */
     void Resize(const ResizeParams& params);
-
-    // Scratch space for CalcMomentumTerms. Holds at most one vector of size
-    // IcfModel::num_velocities().
-    EigenPool<VectorX<T>> Av_minus_r;
 
     // Scratch space for CalcCostAlongLine.
     // Body spatial velocities at v + α⋅w. Holds at most IcfModel::num_bodies()
@@ -139,6 +138,13 @@ class IcfData {
   after v changes. */
   void set_v(const VectorX<T>& v);
 
+  /* Returns a mutable reference to v, for in-place segment updates by the
+  solver (e.g., when each island updates only its own clique segments during a
+  per-island solve). Unlike set_v(), this does not reset dependent quantities,
+  so the caller is responsible for keeping derived data consistent with v.
+  Intended for value writes only, not resizing. */
+  VectorX<T>& mutable_v() { return v_; }
+
   /* Returns the pool of rigid body spatial velocities, V_WB. Size is
   num_bodies().
 
@@ -153,13 +159,44 @@ class IcfData {
   const VectorX<T>& Av() const { return Av_; }
   VectorX<T>& mutable_Av() { return Av_; }
 
-  /* Returns the momentum cost 0.5 vᵀA v - rᵀv. */
-  const T& momentum_cost() const { return momentum_cost_; }
-  void set_momentum_cost(const T& cost) { momentum_cost_ = cost; }
+  /* Returns the total momentum cost 0.5 vᵀA v - rᵀv.
+  @pre all island_momentum_cost(i) for i in [0, num_islands()) are valid. */
+  T ComputeMomentumCost() const {
+    return std::reduce(island_momentum_cost_.begin(),
+                       island_momentum_cost_.end());
+  }
 
-  /* Returns the total cost ℓ(v) = 0.5 vᵀA v - rᵀv + ℓᶜ(v). */
-  const T& cost() const { return cost_; }
-  void set_cost(const T& cost) { cost_ = cost; }
+  /* Returns the total cost ℓ(v) = 0.5 vᵀA v - rᵀv + ℓᶜ(v).
+  @pre all island_cost(i) for i in [0, num_islands()) are valid. */
+  T ComputeCost() const {
+    return std::reduce(island_cost_.begin(), island_cost_.end());
+  }
+
+  /* Returns the number of islands this data is sized for. */
+  int num_islands() const { return ssize(island_cost_); }
+
+  /* Returns the momentum cost of `island`: the sum of (½vᵀAv - rᵀv) for each
+  clique in `island`. Each is computed independently during a per-island
+  solve. */
+  const T& island_momentum_cost(int island) const {
+    DRAKE_ASSERT(0 <= island && island < num_islands());
+    return island_momentum_cost_[island];
+  }
+  void set_island_momentum_cost(int island, const T& cost) {
+    DRAKE_ASSERT(0 <= island && island < num_islands());
+    island_momentum_cost_[island] = cost;
+  }
+
+  /* Returns the cost ℓᵢ(v) of island i. The island costs sum to the total cost
+  ℓ(v) = Σᵢ ℓᵢ(v); each is computed independently during a per-island solve. */
+  const T& island_cost(int island) const {
+    DRAKE_ASSERT(0 <= island && island < num_islands());
+    return island_cost_[island];
+  }
+  void set_island_cost(int island, const T& cost) {
+    DRAKE_ASSERT(0 <= island && island < num_islands());
+    island_cost_[island] = cost;
+  }
 
   /* Returns the total gradient ∇ℓ(v). Size is num_velocities(). */
   const VectorX<T>& gradient() const { return gradient_; }
@@ -222,16 +259,22 @@ class IcfData {
   }
 
   /* Returns a mutable scratch space for intermediate computations. We allow
-  IcfModel to write on the scratch as needed. */
+  IcfModel to write on the scratch as needed. The scratch is sized for the full
+  problem and shared by all islands, so islands must be evaluated one at a
+  time. */
   Scratch& scratch() const { return scratch_; }
 
  private:
   VectorX<T> v_;                // Generalized velocities v
   EigenPool<Vector6<T>> V_WB_;  // Rigid body spatial velocities V_WB
   VectorX<T> Av_;               // A⋅v
-  T momentum_cost_{0};          // 0.5 vᵀAv - rᵀv
-  T cost_{0};                   // Total cost ℓ(v) = 0.5 vᵀA v - rᵀv + ℓᶜ(v)
   VectorX<T> gradient_;         // Total cost gradient ∇ℓ(v)
+
+  // Per-island cost: island_momentum_cost_ + sum of participating constraint
+  // costs per island.
+  std::vector<T> island_cost_;
+  // Per-island momentum cost: 0.5 vᵀA v - rᵀv for each clique in island.
+  std::vector<T> island_momentum_cost_;
 
   // Type-specific constraint pools.
   BallConstraintsDataPool<T> ball_constraints_data_;

@@ -60,10 +60,19 @@ class LimitConstraintsPool {
   /* @see IsAbstractConstraintsPool. */
   const IcfModel<T>& model() const { return *model_; }
   int num_constraints() const { return clique_.size(); }
-  void AccumulateGradient(const IcfData<T>& data, VectorX<T>* gradient) const;
-  void AccumulateHessian(const IcfData<T>& data, IcfHessian<T>* hessian) const;
+  void AccumulateGradient(const IcfData<T>& data,
+                          std::span<const int> constraints,
+                          VectorX<T>* gradient) const;
+  void AccumulateHessian(const IcfData<T>& data,
+                         std::span<const int> constraints,
+                         std::span<const int> clique_to_block,
+                         IcfHessian<T>* hessian) const;
   void ReduceInto(const ReducedMapping& mapping,
                   LimitConstraintsPool<T>* reduced_pool) const;
+
+  /* @see HasJointVelocityCalcData. */
+  T CalcData(const VectorX<T>& v, std::span<const int> constraints,
+             LimitConstraintsDataPool<T>* limit_data) const;
 
   /* Returns the number of generalized velocities associated with the clique of
   each limit constraint. */
@@ -99,22 +108,20 @@ class LimitConstraintsPool {
   void Set(int index, int clique, int dof, const T& q0, const T& ql,
            const T& qu);
 
-  /* Computes problem data as a function of the generalized velocities `v` for
-  the full plant. */
-  void CalcData(const VectorX<T>& v,
-                LimitConstraintsDataPool<T>* limit_data) const;
-
   /* Computes the constraint cost ℓ̃(α) = ℓ(v + α⋅w) and its first and second
-  derivatives along the line defined by the search direction `w`.
+  derivatives along the line defined by the search direction `w` for only the
+  listed constraints.
 
   @param limit_data Constraint data computed at v + α⋅w.
   @param w The search direction.
+  @param constraints indices of constraints to operate on.
   @param Gw_scratch Scratch space for intermediate values for each clique.
   @param[out] dcost The first derivative dℓ̃ /dα on output.
   @param[out] d2cost The second derivative d²ℓ̃ /dα² on output. */
   void CalcCostAlongLine(const LimitConstraintsDataPool<T>& limit_data,
-                         const VectorX<T>& w, EigenPool<VectorX<T>>* Gw_scratch,
-                         T* dcost, T* d2cost) const;
+                         const VectorX<T>& w, std::span<const int> constraints,
+                         EigenPool<VectorX<T>>* Gw_scratch, T* dcost,
+                         T* d2cost) const;
 
   /* Testing only access. */
   const std::vector<int>& clique() const { return clique_; }
@@ -171,6 +178,8 @@ class LimitConstraintsPool {
   EigenPool<VectorX<T>> R_fragment_;
 };
 static_assert(IsAbstractConstraintsPool<LimitConstraintsPool>);
+static_assert(
+    HasJointVelocityCalcData<LimitConstraintsPool, LimitConstraintsDataPool>);
 
 }  // namespace internal
 }  // namespace icf

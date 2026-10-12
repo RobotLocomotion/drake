@@ -30,6 +30,7 @@ struct IcfSolverParameters {
     a->Visit(DRAKE_NVP(enable_hessian_reuse));
     a->Visit(DRAKE_NVP(hessian_reuse_target_iterations));
     a->Visit(DRAKE_NVP(use_dense_algebra));
+    a->Visit(DRAKE_NVP(use_islands));
     a->Visit(DRAKE_NVP(max_linesearch_iterations));
     a->Visit(DRAKE_NVP(linesearch_tolerance));
     a->Visit(DRAKE_NVP(alpha_max));
@@ -44,7 +45,9 @@ struct IcfSolverParameters {
     ‖D⋅∇ℓ‖ ≤ ε max(1, ‖D⋅r‖),
     η ‖D⁻¹⋅Δv‖ ≤ ε max(1, ‖D⋅r‖),
 
-  as detailed in Section VI.B of [Kurtz and Castro, 2025].
+  as detailed in Section VI.B of [Kurtz and Castro, 2025]. When the problem
+  splits into islands, the conditions (including the norms and r) are evaluated
+  for each island separately; see IcfSolver.
 
   This provides a lower bound on the actual tolerance used, which is specified
   explicitly when calling the solver. For instance, CENIC passes an adaptive
@@ -65,6 +68,11 @@ struct IcfSolverParameters {
   primarily useful for debugging and testing: sparse algebra is generally much
   faster. */
   bool use_dense_algebra{false};
+
+  /** Whether to decompose the problem into independent constraint islands
+  (connected components of the clique graph) and solve them separately. When
+  false, all cliques are solved together as a single Newton problem. */
+  bool use_islands{true};
 
   /** Maximum iterations for exact linesearch. */
   int max_linesearch_iterations{100};
