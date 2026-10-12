@@ -22,6 +22,10 @@ TEST_F(UnboundedLinearProgramTest0, TestNlopt) {
   MathematicalProgramResult result;
   solver.Solve(*prog_, {}, {}, &result);
   EXPECT_FALSE(result.is_success());
+  EXPECT_EQ(result.get_solution_result(), SolutionResult::kUnbounded);
+  const int NLOPT_ROUNDOFF_LIMITED = -4;
+  EXPECT_EQ(result.get_solver_details<NloptSolver>().status,
+            NLOPT_ROUNDOFF_LIMITED);
   EXPECT_EQ(result.get_optimal_cost(),
             -std::numeric_limits<double>::infinity());
 
@@ -31,6 +35,8 @@ TEST_F(UnboundedLinearProgramTest0, TestNlopt) {
   solver.Solve(*prog_, {}, solver_options1, &result);
   EXPECT_EQ(result.get_solver_details<NloptSolver>().status,
             NLOPT_MAXEVAL_REACHED);
+  EXPECT_EQ(result.get_solution_result(), SolutionResult::kIterationLimit);
+  EXPECT_TRUE(result.get_x_val().allFinite());
 
   const int NLOPT_MAXTIME_REACHED = 6;
   SolverOptions solver_options2;
@@ -121,6 +127,117 @@ GTEST_TEST(NloptSolverTest, NanSolutionIsNotSuccess) {
   const auto result = solver.Solve(prog, Vector1d(0.5), options);
   EXPECT_FALSE(result.is_success());
   EXPECT_EQ(result.get_solution_result(), SolutionResult::kSolverSpecificError);
+}
+
+// On a negative return code, the result still carries NLopt's status and the
+// point it returned.
+GTEST_TEST(NloptSolverTest, RoundoffLimitedKeepsPoint) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>();
+  prog.AddQuadraticCost(pow(x(0) - 1, 2) + pow(x(1) - 2, 2));
+  // A repeated equality constraint is rank deficient; the default LD_SLSQP
+  // stops on it with NLOPT_ROUNDOFF_LIMITED.
+  prog.AddLinearEqualityConstraint(x(0) + x(1) == 1);
+  prog.AddLinearEqualityConstraint(x(0) + x(1) == 1);
+  NloptSolver solver;
+  const auto result = solver.Solve(prog, Eigen::Vector2d(0.3, 0.4));
+  const int NLOPT_ROUNDOFF_LIMITED = -4;
+  EXPECT_FALSE(result.is_success());
+  EXPECT_EQ(result.get_solution_result(), SolutionResult::kSolverSpecificError);
+  EXPECT_EQ(result.get_solver_details<NloptSolver>().status,
+            NLOPT_ROUNDOFF_LIMITED);
+  EXPECT_EQ(result.get_x_val().size(), 2);
+  EXPECT_TRUE(result.get_x_val().allFinite());
+}
+
+// NLopt rejects these arguments before optimizing, so there is no point.
+// This also covers OUT_OF_MEMORY, which is handled the same way but is
+// impractical to trigger.
+GTEST_TEST(NloptSolverTest, InvalidArgsHasNoPoint) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>();
+  prog.AddQuadraticCost(x.cast<symbolic::Expression>().dot(x));
+  NloptSolver solver;
+  SolverOptions options;
+  // A global algorithm requires finite bounds on every variable.
+  options.SetOption(solver.id(), NloptSolver::AlgorithmName(), "GN_DIRECT");
+  const auto result = solver.Solve(prog, Eigen::Vector2d(0.3, 0.4), options);
+  const int NLOPT_INVALID_ARGS = -2;
+  EXPECT_FALSE(result.is_success());
+  EXPECT_EQ(result.get_solution_result(), SolutionResult::kInvalidInput);
+  EXPECT_EQ(result.get_solver_details<NloptSolver>().status,
+            NLOPT_INVALID_ARGS);
+  EXPECT_TRUE(result.get_x_val().array().isNaN().all());
+}
+
+class ThrowCost final : public Cost {
+ public:
+  ThrowCost() : Cost(1, "ThrowCost") {}
+
+ private:
+  void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
+              Eigen::VectorXd* y) const final {
+    EvalGeneric();
+  }
+
+  void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
+              AutoDiffVecXd* y) const final {
+    EvalGeneric();
+  }
+
+  void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
+              VectorX<symbolic::Expression>* y) const final {
+    EvalGeneric();
+  }
+
+  void EvalGeneric() const {
+    throw std::runtime_error("ThrowCost::EvalGeneric");
+  }
+};
+
+class ThrowConstraint final : public Constraint {
+ public:
+  ThrowConstraint()
+      : Constraint(1, 1, Vector1d(0.0), Vector1d(1.0), "ThrowConstraint") {}
+
+ private:
+  void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
+              Eigen::VectorXd* y) const final {
+    EvalGeneric();
+  }
+
+  void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
+              AutoDiffVecXd* y) const final {
+    EvalGeneric();
+  }
+
+  void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
+              VectorX<symbolic::Expression>* y) const final {
+    EvalGeneric();
+  }
+
+  void EvalGeneric() const {
+    throw std::runtime_error("ThrowConstraint::EvalGeneric");
+  }
+};
+
+GTEST_TEST(NloptSolverTest, TestCostExceptionHandling) {
+  MathematicalProgram prog;
+  const auto x = prog.NewContinuousVariables<1>();
+  prog.AddCost(std::make_shared<ThrowCost>(), x);
+  NloptSolver solver;
+  DRAKE_EXPECT_THROWS_MESSAGE(solver.Solve(prog),
+                              "Exception.*NLopt.*ThrowCost.*");
+}
+
+GTEST_TEST(NloptSolverTest, TestConstraintExceptionHandling) {
+  MathematicalProgram prog;
+  const auto x = prog.NewContinuousVariables<1>();
+  prog.AddQuadraticCost(x(0) * x(0));
+  prog.AddConstraint(std::make_shared<ThrowConstraint>(), x);
+  NloptSolver solver;
+  DRAKE_EXPECT_THROWS_MESSAGE(solver.Solve(prog),
+                              "Exception.*NLopt.*ThrowConstraint.*");
 }
 
 GTEST_TEST(QPtest, TestUnitBallExample) {

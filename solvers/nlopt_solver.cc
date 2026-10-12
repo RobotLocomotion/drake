@@ -6,6 +6,7 @@
 #include <list>
 #include <set>
 #include <stdexcept>
+#include <string>
 #include <unordered_map>
 #include <vector>
 
@@ -48,17 +49,40 @@ AutoDiffVecXd MakeInputAutoDiffVec(const MathematicalProgram& prog,
   return this_x;
 }
 
-// This function meets the signature requirements for nlopt::vfunc as
-// described in
-// http://ab-initio.mit.edu/wiki/index.php/NLopt_C-plus-plus_Reference#Objective_function
-// Note : NLopt uses the term "Objective" which corresponds to the Drake usage
-// of "Cost".
-// TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-double EvaluateCosts(const std::vector<double>& x, std::vector<double>& grad,
-                     void* f_data) {
-  const MathematicalProgram* prog =
-      reinterpret_cast<const MathematicalProgram*>(f_data);
+// Records exceptions thrown by Drake's cost and constraint evaluators. We
+// can't let them propagate directly to NLopt because they will be swallowed.
+// DoSolve2 owns the sink and rethrows the saved message after NLopt has
+// returned; the callback data structs below refer to it by pointer.
+class ErrorSink {
+ public:
+  // Records `e` and stops NLopt.
+  [[noreturn]] void Record(const std::exception& e) {
+    message_ = fmt::format(
+        "Exception while evaluating NLopt costs and constraints: '{}'",
+        e.what());
+    throw nlopt::forced_stop();
+  }
 
+  // Empty until Record() has been called; the recorded message always carries
+  // the prefix above, so a non-empty message means "an evaluation threw".
+  const std::string& message() const { return message_; }
+
+ private:
+  std::string message_;
+};
+
+// The data passed to EvaluateCosts.
+struct CostData {
+  const MathematicalProgram* prog{};
+  // Where to report an exception thrown while evaluating a cost.
+  ErrorSink* error_sink{};
+};
+
+double DoEvaluateCosts(const std::vector<double>& x,
+                       std::vector<double>* grad_out,
+                       const MathematicalProgram* prog) {
+  DRAKE_DEMAND(grad_out != nullptr);
+  std::vector<double>& grad = *grad_out;
   double cost = 0;
   Eigen::VectorXd xvec = MakeEigenVector(x);
 
@@ -96,21 +120,42 @@ double EvaluateCosts(const std::vector<double>& x, std::vector<double>& grad,
   return cost;
 }
 
+// This function meets the signature requirements for nlopt::vfunc as
+// described in
+// http://ab-initio.mit.edu/wiki/index.php/NLopt_C-plus-plus_Reference#Objective_function
+// Note : NLopt uses the term "Objective" which corresponds to the Drake usage
+// of "Cost".
+// TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+double EvaluateCosts(const std::vector<double>& x, std::vector<double>& grad,
+                     void* f_data) {
+  const CostData* data = reinterpret_cast<const CostData*>(f_data);
+  try {
+    return DoEvaluateCosts(x, &grad, data->prog);
+  } catch (const std::exception& e) {
+    DRAKE_DEMAND(data->error_sink != nullptr);
+    data->error_sink->Record(e);
+  }
+}
+
 /// Structure to marshall data into the NLopt callback functions,
 /// which take only a single pointer argument.
 struct WrappedConstraint {
   WrappedConstraint(const Constraint* constraint_in,
                     const VectorXDecisionVariable* vars_in,
-                    const MathematicalProgram* prog_in)
+                    const MathematicalProgram* prog_in,
+                    ErrorSink* error_sink_in)
       : constraint(constraint_in),
         vars(vars_in),
         prog(prog_in),
+        error_sink(error_sink_in),
         force_bounds(false),
         force_upper(false) {}
 
   const Constraint* constraint;
   const VectorXDecisionVariable* vars;
   const MathematicalProgram* prog;
+  // Where to report an exception thrown while evaluating this constraint.
+  ErrorSink* error_sink;
   bool force_bounds;  ///< force usage of only upper or lower bounds
   bool force_upper;   ///< Only used if force_bounds is set.  Selects
                       ///< which bounds are being tested (lower bound
@@ -154,13 +199,9 @@ double ApplyConstraintBounds(double result, double lb, double ub) {
   return result;
 }
 
-// This function meets the signature of nlopt_mfunc as described in
-// http://ab-initio.mit.edu/wiki/index.php/NLopt_Reference#Vector-valued_constraints
-void EvaluateVectorConstraint(unsigned m, double* result, unsigned n,
-                              const double* x, double* grad, void* f_data) {
-  const WrappedConstraint* wrapped =
-      reinterpret_cast<WrappedConstraint*>(f_data);
-
+void DoEvaluateVectorConstraint(unsigned m, double* result, unsigned n,
+                                const double* x, double* grad,
+                                const WrappedConstraint* wrapped) {
   Eigen::VectorXd xvec(n);
   for (size_t i = 0; i < n; i++) {
     xvec[i] = x[i];
@@ -243,21 +284,36 @@ void EvaluateVectorConstraint(unsigned m, double* result, unsigned n,
   }
 }
 
+// This function meets the signature of nlopt_mfunc as described in
+// http://ab-initio.mit.edu/wiki/index.php/NLopt_Reference#Vector-valued_constraints
+void EvaluateVectorConstraint(unsigned m, double* result, unsigned n,
+                              const double* x, double* grad, void* f_data) {
+  const WrappedConstraint* wrapped =
+      reinterpret_cast<WrappedConstraint*>(f_data);
+  try {
+    DoEvaluateVectorConstraint(m, result, n, x, grad, wrapped);
+  } catch (const std::exception& e) {
+    DRAKE_DEMAND(wrapped->error_sink != nullptr);
+    wrapped->error_sink->Record(e);
+  }
+}
+
 template <typename C>
 void WrapConstraint(const MathematicalProgram& prog, const Binding<C>& binding,
-                    double constraint_tol, nlopt::opt* opt,
+                    double constraint_tol, ErrorSink* error_sink,
+                    nlopt::opt* opt,
                     std::list<WrappedConstraint>* wrapped_list) {
   // Version of the wrapped constraint which refers only to equality
   // constraints (if any), and will be used with
   // add_equality_mconstraint.
   WrappedConstraint wrapped_eq(binding.evaluator().get(), &binding.variables(),
-                               &prog);
+                               &prog, error_sink);
 
   // Version of the wrapped constraint which refers only to inequality
   // constraints (if any), and will be used with
   // add_equality_mconstraint.
   WrappedConstraint wrapped_in(binding.evaluator().get(), &binding.variables(),
-                               &prog);
+                               &prog, error_sink);
 
   bool is_pure_inequality = true;
   const Eigen::VectorXd& lower_bound = binding.evaluator()->lower_bound();
@@ -531,36 +587,43 @@ void NloptSolver::DoSolve2(const MathematicalProgram& prog,
   opt.set_lower_bounds(xlow);
   opt.set_upper_bounds(xupp);
 
-  opt.set_min_objective(EvaluateCosts, const_cast<MathematicalProgram*>(&prog));
+  // If any cost or constraint evaluation throws an exception, we need to
+  // intervene to capture the message, otherwise NLopt will simply swallow it.
+  // The sink records the message and stops NLopt; we rethrow any recorded
+  // message after calling optimize().
+  ErrorSink error_sink;
+
+  CostData cost_data{&prog, &error_sink};
+  opt.set_min_objective(EvaluateCosts, &cost_data);
 
   std::list<WrappedConstraint> wrapped_vector;
 
   // TODO(sam.creasey): Missing test coverage for generic constraints
   // with >1 output.
   for (const auto& c : prog.generic_constraints()) {
-    WrapConstraint(prog, c, constraint_tol, &opt, &wrapped_vector);
+    WrapConstraint(prog, c, constraint_tol, &error_sink, &opt, &wrapped_vector);
   }
 
   for (const auto& c : prog.quadratic_constraints()) {
-    WrapConstraint(prog, c, constraint_tol, &opt, &wrapped_vector);
+    WrapConstraint(prog, c, constraint_tol, &error_sink, &opt, &wrapped_vector);
   }
 
   for (const auto& c : prog.lorentz_cone_constraints()) {
-    WrapConstraint(prog, c, constraint_tol, &opt, &wrapped_vector);
+    WrapConstraint(prog, c, constraint_tol, &error_sink, &opt, &wrapped_vector);
   }
 
   for (const auto& c : prog.rotated_lorentz_cone_constraints()) {
-    WrapConstraint(prog, c, constraint_tol, &opt, &wrapped_vector);
+    WrapConstraint(prog, c, constraint_tol, &error_sink, &opt, &wrapped_vector);
   }
 
   for (const auto& c : prog.linear_equality_constraints()) {
-    WrapConstraint(prog, c, constraint_tol, &opt, &wrapped_vector);
+    WrapConstraint(prog, c, constraint_tol, &error_sink, &opt, &wrapped_vector);
   }
 
   // TODO(sam.creasey): Missing test coverage for linear constraints
   // with >1 output.
   for (const auto& c : prog.linear_constraints()) {
-    WrapConstraint(prog, c, constraint_tol, &opt, &wrapped_vector);
+    WrapConstraint(prog, c, constraint_tol, &error_sink, &opt, &wrapped_vector);
   }
 
   opt.set_xtol_rel(parsed_options.xtol_rel);
@@ -610,92 +673,77 @@ void NloptSolver::DoSolve2(const MathematicalProgram& prog,
 
   double minf = 0;
   const double kUnboundedTol = -1E30;
-  try {
-    const nlopt::result nlopt_result = opt.optimize(x, minf);
-    solver_details.status = nlopt_result;
-    if (nlopt_result == nlopt::SUCCESS ||
-        nlopt_result == nlopt::STOPVAL_REACHED ||
-        nlopt_result == nlopt::XTOL_REACHED ||
-        nlopt_result == nlopt::FTOL_REACHED ||
-        nlopt_result == nlopt::MAXEVAL_REACHED ||
-        nlopt_result == nlopt::MAXTIME_REACHED) {
-      result->set_x_val(Eigen::Map<Eigen::VectorXd>(x.data(), nx));
+  // Every return code reaches the switch below, including the negative ones
+  // that NLopt's C++ wrapper would otherwise turn into exceptions.
+  opt.set_exceptions_enabled(false);
+  const nlopt::result nlopt_result = opt.optimize(x, minf);
+  if (!error_sink.message().empty()) {
+    throw std::runtime_error(error_sink.message());
+  }
+  solver_details.status = nlopt_result;
+  // On these two codes NLopt may not have written a point.
+  if (nlopt_result != nlopt::INVALID_ARGS &&
+      nlopt_result != nlopt::OUT_OF_MEMORY) {
+    result->set_x_val(Eigen::Map<Eigen::VectorXd>(x.data(), nx));
+  }
+  switch (nlopt_result) {
+    case nlopt::SUCCESS: {
+      result->set_solution_result(SolutionResult::kSolutionFound);
+      break;
     }
-    switch (nlopt_result) {
-      case nlopt::SUCCESS: {
-        result->set_solution_result(SolutionResult::kSolutionFound);
-        break;
-      }
-      case nlopt::STOPVAL_REACHED:
-      case nlopt::FTOL_REACHED:
-      case nlopt::XTOL_REACHED: {
-        // All three of these can stop before the solver has converged, so
-        // re-check the constraints. NLopt's constraint-aware algorithms
-        // currently gate their stopval test on feasibility, so in practice
-        // STOPVAL_REACHED is not expected to arrive here with a violated
-        // constraint; it shares this check rather than relying on that
-        // remaining true.
-        bool all_constraints_satisfied = true;
-        auto constraint_test = [&prog, constraint_tol,
-                                &all_constraints_satisfied,
-                                result](auto constraints) {
-          all_constraints_satisfied &= IsVectorOfConstraintsSatisfiedAtSolution(
-              prog, constraints, result->get_x_val(), constraint_tol);
-        };
-        constraint_test(prog.generic_constraints());
-        constraint_test(prog.bounding_box_constraints());
-        constraint_test(prog.linear_constraints());
-        constraint_test(prog.linear_equality_constraints());
-        constraint_test(prog.quadratic_constraints());
-        constraint_test(prog.lorentz_cone_constraints());
-        constraint_test(prog.rotated_lorentz_cone_constraints());
+    case nlopt::STOPVAL_REACHED:
+    case nlopt::FTOL_REACHED:
+    case nlopt::XTOL_REACHED: {
+      // All three of these can stop before the solver has converged, so
+      // re-check the constraints. NLopt's constraint-aware algorithms
+      // currently gate their stopval test on feasibility, so in practice
+      // STOPVAL_REACHED is not expected to arrive here with a violated
+      // constraint; it shares this check rather than relying on that
+      // remaining true.
+      bool all_constraints_satisfied = true;
+      auto constraint_test = [&prog, constraint_tol, &all_constraints_satisfied,
+                              result](auto constraints) {
+        all_constraints_satisfied &= IsVectorOfConstraintsSatisfiedAtSolution(
+            prog, constraints, result->get_x_val(), constraint_tol);
+      };
+      constraint_test(prog.generic_constraints());
+      constraint_test(prog.bounding_box_constraints());
+      constraint_test(prog.linear_constraints());
+      constraint_test(prog.linear_equality_constraints());
+      constraint_test(prog.quadratic_constraints());
+      constraint_test(prog.lorentz_cone_constraints());
+      constraint_test(prog.rotated_lorentz_cone_constraints());
 
-        if (!all_constraints_satisfied) {
-          result->set_solution_result(SolutionResult::kInfeasibleConstraints);
-        }
-        break;
+      if (!all_constraints_satisfied) {
+        result->set_solution_result(SolutionResult::kInfeasibleConstraints);
       }
-      case nlopt::MAXTIME_REACHED:
-      case nlopt::MAXEVAL_REACHED: {
-        result->set_solution_result(SolutionResult::kIterationLimit);
-        break;
-      }
-      case nlopt::INVALID_ARGS: {
-        result->set_solution_result(SolutionResult::kInvalidInput);
-        break;
-      }
-      case nlopt::ROUNDOFF_LIMITED: {
-        if (minf < kUnboundedTol) {
-          result->set_solution_result(SolutionResult::kUnbounded);
-          minf = -std::numeric_limits<double>::infinity();
-        } else {
-          result->set_solution_result(SolutionResult::kSolverSpecificError);
-        }
-        break;
-      }
-      default: {
+      break;
+    }
+    case nlopt::MAXTIME_REACHED:
+    case nlopt::MAXEVAL_REACHED: {
+      result->set_solution_result(SolutionResult::kIterationLimit);
+      break;
+    }
+    case nlopt::INVALID_ARGS: {
+      result->set_solution_result(SolutionResult::kInvalidInput);
+      break;
+    }
+    case nlopt::ROUNDOFF_LIMITED: {
+      if (minf < kUnboundedTol) {
+        result->set_solution_result(SolutionResult::kUnbounded);
+        minf = MathematicalProgram::kUnboundedCost;
+      } else {
         result->set_solution_result(SolutionResult::kSolverSpecificError);
       }
+      break;
     }
-    // NLopt can report success with a NaN solution (#24995).
-    if (result->get_solution_result() == SolutionResult::kSolutionFound &&
-        result->get_x_val().array().isNaN().any()) {
+    default: {
       result->set_solution_result(SolutionResult::kSolverSpecificError);
     }
-  } catch (std::invalid_argument&) {
-    result->set_solution_result(SolutionResult::kInvalidInput);
-  } catch (std::bad_alloc&) {
-    result->set_solution_result(SolutionResult::kSolverSpecificError);
-  } catch (nlopt::roundoff_limited&) {
-    if (minf < kUnboundedTol) {
-      result->set_solution_result(SolutionResult::kUnbounded);
-      minf = MathematicalProgram::kUnboundedCost;
-    } else {
-      result->set_solution_result(SolutionResult::kSolverSpecificError);
-    }
-  } catch (nlopt::forced_stop&) {
-    result->set_solution_result(SolutionResult::kSolverSpecificError);
-  } catch (std::runtime_error&) {
+  }
+  // NLopt can report success with a NaN solution (#24995).
+  if (result->get_solution_result() == SolutionResult::kSolutionFound &&
+      result->get_x_val().array().isNaN().any()) {
     result->set_solution_result(SolutionResult::kSolverSpecificError);
   }
 
