@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <vector>
 
 #include "drake/multibody/contact_solvers/icf/icf_model.h"
@@ -75,6 +76,16 @@ added: a rigid one between the world (body 0) and body 1, and a compliant
 multi-clique case). */
 template <typename T>
 void AddDistanceConstraints(IcfModel<T>* model);
+
+/* Construct a full Hessian for the model from its island-specific
+sub-Hessians.
+
+@pre The` sub_hessians` are the complete set of island Hessians described by
+`sparsity_pattern` and `partition`. */
+template <typename T>
+std::unique_ptr<IcfHessian<T>> CombineSubHessians(
+    const contact_solvers::internal::BlockSparsityPattern& sparsity_pattern,
+    const IcfPartition& partition, std::vector<IcfHessian<T>> sub_hessians);
 
 }  // namespace internal
 }  // namespace icf

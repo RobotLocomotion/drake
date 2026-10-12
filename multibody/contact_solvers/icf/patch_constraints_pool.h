@@ -74,10 +74,18 @@ class PatchConstraintsPool {
   /* @see IsAbstractConstraintsPool. */
   const IcfModel<T>& model() const { return *model_; }
   int num_constraints() const { return num_patches(); }
-  void AccumulateGradient(const IcfData<T>& data, VectorX<T>* gradient) const;
-  void AccumulateHessian(const IcfData<T>& data, IcfHessian<T>* hessian) const;
+  void AccumulateGradient(const IcfData<T>& data, std::span<const int> patches,
+                          VectorX<T>* gradient) const;
+  void AccumulateHessian(const IcfData<T>& data, std::span<const int> patches,
+                         std::span<const int> clique_to_block, int island,
+                         IcfHessian<T>* hessian) const;
   void ReduceInto(const ReducedMapping& mapping,
                   PatchConstraintsPool<T>* reduced_pool) const;
+
+  /* @see HasSpatialVelocityCalcData. */
+  T CalcData(const EigenPool<Vector6<T>>& V_WB,
+             std::span<const int> constraints,
+             PatchConstraintsDataPool<T>* patch_data) const;
 
   /* Returns the number of patches (pairs of contacting bodies) in the pool. */
   int num_patches() const { return ssize(num_pairs_); }
@@ -157,11 +165,6 @@ class PatchConstraintsPool {
   to clique j > i iff sparsity[i] contains j. */
   void CalcSparsityPattern(std::vector<std::vector<int>>* sparsity) const;
 
-  /* Computes constraint data for each patch, given the body spatial velocities
-  V_WB. */
-  void CalcData(const EigenPool<Vector6<T>>& V_WB,
-                PatchConstraintsDataPool<T>* patch_data) const;
-
   /* Computes the first and second derivatives of the constraint cost
   ℓ̃(α) = ℓ(v + α⋅w).
 
@@ -171,8 +174,10 @@ class PatchConstraintsPool {
   @param U_AbB_W_pool Scratch space for patch spatial velocities.
   @param[out] dcost the first derivative dℓ̃ /dα on output.
   @param[out] d2cost the second derivative d²ℓ̃ /dα² on output. */
+  /* Island-filtered overload: derivatives for only the listed patches. */
   void CalcCostAlongLine(const PatchConstraintsDataPool<T>& patch_data,
                          const EigenPool<Vector6<T>>& U_WB_pool,
+                         std::span<const int> patches,
                          EigenPool<Vector6<T>>* U_AbB_W_pool, T* dcost,
                          T* d2cost) const;
 
@@ -216,20 +221,24 @@ class PatchConstraintsPool {
                                 Vector3<T>* gamma_Bc_W, Matrix3<T>* G) const;
 
   /* Computes relative spatial velocities V_AbB_W for each patch, given body
-  spatial velocities V_WB. When A is anchored, V_WA = 0 and V_AbB_W = V_WB. */
+  spatial velocities V_WB. When A is anchored, V_WA = 0 and V_AbB_W = V_WB.
+  `patches` lists the patch indices to process. */
   void CalcConstraintVelocities(const EigenPool<Vector6<T>>& V_WB_pool,
+                                std::span<const int> patches,
                                 EigenPool<Vector6<T>>* V_AbB_W_pool) const;
 
-  /* Computes contact velocities for each contact pair from body spatial
+  /* Computes contact velocities for the listed patches from body spatial
   velocities V_WB. */
   void CalcContactVelocities(const EigenPool<Vector6<T>>& V_WB_pool,
+                             std::span<const int> patches,
                              EigenPool<Vector3<T>>* v_AcBc_W_pool) const;
 
-  /* Computes cost, gradient, and Hessian contributions for each patch. */
-  void CalcPatchQuantities(const EigenPool<Vector3<T>>& v_AcBc_W_pool,
-                           std::vector<T>* cost_pool,
-                           EigenPool<Vector6<T>>* spatial_impulses_pool,
-                           EigenPool<Matrix6<T>>* patch_hessians_pool) const;
+  /* Computes cost, gradient, and Hessian contributions for the listed patches.
+  Returns the sum of the processed patches' costs. */
+  T CalcPatchQuantities(const EigenPool<Vector3<T>>& v_AcBc_W_pool,
+                        std::span<const int> patches, std::vector<T>* cost_pool,
+                        EigenPool<Vector6<T>>* spatial_impulses_pool,
+                        EigenPool<Matrix6<T>>* patch_hessians_pool) const;
 
   /* Computes friction regularization Rₜ = σ⋅wₜ for a patch. */
   T CalcRt(int patch_index) const;
@@ -280,6 +289,8 @@ class PatchConstraintsPool {
   std::vector<T> net_friction_;
 };
 static_assert(IsAbstractConstraintsPool<PatchConstraintsPool>);
+static_assert(
+    HasSpatialVelocityCalcData<PatchConstraintsPool, PatchConstraintsDataPool>);
 
 }  // namespace internal
 }  // namespace icf
