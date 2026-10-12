@@ -1,6 +1,8 @@
 #include "drake/multibody/contact_solvers/icf/limit_constraints_pool.h"
 
 #include <limits>
+#include <memory>
+#include <utility>
 #include <vector>
 
 #include <fmt/format.h>
@@ -26,91 +28,119 @@ namespace {
 
 constexpr double kEpsilon = std::numeric_limits<double>::epsilon();
 
+template <typename T>
+class LimitConstraintsPoolBaseTest : public ::testing::Test {
+ protected:
+  explicit LimitConstraintsPoolBaseTest(bool use_islands)
+      : use_islands_(use_islands) {}
+
+  void SetUp() override {
+    // Create a simple model with two cliques.
+
+    MakeUnconstrainedModel(&model_);
+    std::unique_ptr<IcfParameters<T>> params = model_.ReleaseParameters();
+    params->use_islands = use_islands_;
+    model_.ResetParameters(std::move(params));
+  }
+
+  IcfModel<T> model_;
+  bool use_islands_{};
+};
+
+template <typename T>
+class LimitConstraintsPoolParamTest
+    : public LimitConstraintsPoolBaseTest<T>,
+      public ::testing::WithParamInterface<bool> {
+ protected:
+  LimitConstraintsPoolParamTest()
+      : LimitConstraintsPoolBaseTest<T>(/* use_islands = */ GetParam()) {}
+};
+
+using LimitConstraintsPoolParamTestD = LimitConstraintsPoolParamTest<double>;
+using LimitConstraintsPoolParamTestAd =
+    LimitConstraintsPoolParamTest<AutoDiffXd>;
+
 /* Checks that model.CalcData does not incur any heap allocations on a problem
 with limit constraints. */
-GTEST_TEST(LimitConstraintsPool, LimitMallocOnCalcData) {
-  IcfModel<double> model;
-  MakeUnconstrainedModel(&model);
-  AddLimitConstraints(&model);
-  model.SetSparsityPattern();
-  EXPECT_EQ(model.num_cliques(), 3);
-  EXPECT_EQ(model.num_velocities(), 18);
-  EXPECT_EQ(model.num_constraints(), 2);
-  EXPECT_EQ(model.num_limit_constraints(), 2);
+TEST_P(LimitConstraintsPoolParamTestD, LimitMallocOnCalcData) {
+  AddLimitConstraints(&model_);
+  model_.SetSparsityPattern();
+  EXPECT_EQ(model_.num_cliques(), 3);
+  EXPECT_EQ(model_.num_velocities(), 18);
+  EXPECT_EQ(model_.num_constraints(), 2);
+  EXPECT_EQ(model_.num_limit_constraints(), 2);
+  EXPECT_EQ(model_.partition().num_islands(), use_islands_ ? 3 : 1);
 
   IcfData<double> data;
-  model.ResizeData(&data);
+  model_.ResizeData(&data);
   EXPECT_EQ(data.limit_constraints_data().num_constraints(), 2);
 
-  const int nv = model.num_velocities();
+  const int nv = model_.num_velocities();
   const VectorXd v = VectorXd::LinSpaced(nv, -10.0, 10.0);
 
   // Computing data should not cause any new allocations.
   {
     drake::test::LimitMalloc guard;
-    model.CalcData(v, &data);
+    model_.CalcAllData(v, &data);
   }
 }
 
 /* Checks that pool.ReduceInto does not incur any heap allocations on a
 problem with limit constraints. */
-GTEST_TEST(LimitConstraintsPool, LimitMallocOnReduceInto) {
-  IcfModel<double> model;
-  MakeUnconstrainedModel(&model);
-  AddLimitConstraints(&model);
+TEST_P(LimitConstraintsPoolParamTestD, LimitMallocOnReduceInto) {
+  AddLimitConstraints(&model_);
 
   IcfModel<double> reduced_model;
   ReducedMapping mapping;
 
   // Do a not-smaller reduction to allocate memory in the reduced model.
-  MakeModelReducible(&model, {});
-  model.ReduceInto(&reduced_model, &mapping);
+  MakeModelReducible(&model_, {});
+  model_.ReduceInto(&reduced_model, &mapping);
 
   // Given prior allocation of a big enough model, the constraint pool
   // reduction does not allocate.
   {
     // TODO(#23912): consider reducing these allocations.
     drake::test::LimitMalloc guard({24});
-    model.limit_constraints_pool().ReduceInto(
+    model_.limit_constraints_pool().ReduceInto(
         mapping, &reduced_model.limit_constraints_pool());
   }
 }
 
 /* Verifies that limit constraints produce correct data. */
-GTEST_TEST(LimitConstraintsPool, Data) {
-  IcfModel<AutoDiffXd> model;
-  MakeUnconstrainedModel(&model);
-  model.SetSparsityPattern();
-  EXPECT_EQ(model.num_cliques(), 3);
-  EXPECT_EQ(model.num_velocities(), 18);
-  EXPECT_EQ(model.num_constraints(), 0);
+TEST_P(LimitConstraintsPoolParamTestAd, Data) {
+  model_.SetSparsityPattern();
+  EXPECT_EQ(model_.num_cliques(), 3);
+  EXPECT_EQ(model_.num_velocities(), 18);
+  EXPECT_EQ(model_.num_constraints(), 0);
 
   IcfData<AutoDiffXd> data;
-  model.ResizeData(&data);
-  EXPECT_EQ(data.num_velocities(), model.num_velocities());
+  model_.ResizeData(&data);
+  EXPECT_EQ(data.num_velocities(), model_.num_velocities());
   EXPECT_EQ(data.limit_constraints_data().num_constraints(), 0);
 
   // At this point there should be no limit constraints.
-  EXPECT_EQ(model.num_limit_constraints(), 0);
-  EXPECT_EQ(model.num_constraints(), 0);
+  EXPECT_EQ(model_.num_limit_constraints(), 0);
+  EXPECT_EQ(model_.num_constraints(), 0);
 
   // Add a few limit constraints to the model.
-  AddLimitConstraints(&model);
-  EXPECT_EQ(model.num_limit_constraints(), 2);
-  EXPECT_EQ(model.num_constraints(), 2);
+  AddLimitConstraints(&model_);
+  model_.SetSparsityPattern();
+  EXPECT_EQ(model_.num_limit_constraints(), 2);
+  EXPECT_EQ(model_.num_constraints(), 2);
 
   // Resize data to include limit constraints data.
-  model.ResizeData(&data);
+  model_.ResizeData(&data);
   EXPECT_EQ(data.limit_constraints_data().num_constraints(), 2);
 
-  const int nv = model.num_velocities();
+  const int nv = model_.num_velocities();
   const VectorX<AutoDiffXd> q0 = VectorXd::LinSpaced(nv, -1.0, 1.0);
   VectorXd v_value = VectorXd::LinSpaced(nv, -10, 10.0);
   VectorX<AutoDiffXd> v(nv);
   math::InitializeAutoDiff(v_value, &v);
-  model.CalcData(v, &data);
+  model_.CalcAllData(v, &data);
 
-  const AutoDiffXd dt = model.time_step();
+  const AutoDiffXd dt = model_.time_step();
   VectorX<AutoDiffXd> q = q0 + dt * v;
 
   const LimitConstraintsDataPool<AutoDiffXd>& limits_data =
@@ -146,7 +176,12 @@ GTEST_TEST(LimitConstraintsPool, Data) {
                               MatrixCompareType::relative));
 
   // Verify contributions to Hessian.
-  auto hessian = model.MakeHessian(data);
+  std::vector<IcfHessian<AutoDiffXd>> island_hessians;
+  for (int i = 0; i < model_.partition().num_islands(); ++i) {
+    island_hessians.emplace_back(*model_.MakeHessian(i, data));
+  }
+  auto hessian = CombineSubHessians(model_.sparsity_pattern(),
+                                    model_.partition(), island_hessians);
   MatrixXd hessian_value = math::ExtractValue(hessian->MakeDenseMatrix());
   MatrixXd gradient_derivatives = math::ExtractGradient(data.gradient());
   EXPECT_TRUE(CompareMatrices(hessian_value, gradient_derivatives,
@@ -154,25 +189,24 @@ GTEST_TEST(LimitConstraintsPool, Data) {
 }
 
 /* Verifies that reducing the limit constraint pool produces correct data. */
-GTEST_TEST(LimitConstraintsPool, Reduce) {
-  IcfModel<double> model;
-  MakeUnconstrainedModel(&model);
-  AddLimitConstraints(&model);
+TEST_P(LimitConstraintsPoolParamTestD, Reduce) {
+  AddLimitConstraints(&model_);
+  model_.SetSparsityPattern();
 
   IcfData<double> data;
-  model.ResizeData(&data);
-  const int nv = model.num_velocities();
+  model_.ResizeData(&data);
+  const int nv = model_.num_velocities();
   const VectorXd v = VectorXd::LinSpaced(nv, -10, 10.0);
-  model.CalcData(v, &data);
-  const auto& full_pool = model.limit_constraints_pool();
+  model_.CalcAllData(v, &data);
+  const auto& full_pool = model_.limit_constraints_pool();
 
   IcfModel<double> reduced_model;
   ReducedMapping mapping;
 
   auto check_reduced = [&](const std::vector<int>& locked_dofs) {
     SCOPED_TRACE(fmt::format("locked_dofs [{}]", fmt::join(locked_dofs, ", ")));
-    MakeModelReducible(&model, locked_dofs);
-    model.ReduceInto(&reduced_model, &mapping);
+    MakeModelReducible(&model_, locked_dofs);
+    model_.ReduceInto(&reduced_model, &mapping);
     const auto& reduced_pool = reduced_model.limit_constraints_pool();
     int reduced_constraint_cursor{0};
     for (int k = 0; k < full_pool.num_constraints(); ++k) {
@@ -238,10 +272,15 @@ GTEST_TEST(LimitConstraintsPool, Reduce) {
   check_reduced(clique2_locked);
 
   // Lock everything.
-  std::vector<int> all_locked(model.num_velocities());
+  std::vector<int> all_locked(model_.num_velocities());
   std::iota(all_locked.begin(), all_locked.end(), 0);
   check_reduced(all_locked);
 }
+
+INSTANTIATE_TEST_SUITE_P(FlipIslandsD, LimitConstraintsPoolParamTestD,
+                         ::testing::Bool());
+INSTANTIATE_TEST_SUITE_P(FlipIslandsAd, LimitConstraintsPoolParamTestAd,
+                         ::testing::Bool());
 
 }  // namespace
 }  // namespace internal
