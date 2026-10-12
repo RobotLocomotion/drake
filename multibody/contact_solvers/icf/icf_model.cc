@@ -1,7 +1,10 @@
 #include "drake/multibody/contact_solvers/icf/icf_model.h"
 
+#include <span>
 #include <utility>
+#include <vector>
 
+#include "drake/common/unused.h"
 #include "drake/multibody/plant/slicing_and_indexing.h"
 
 namespace drake {
@@ -107,238 +110,282 @@ void IcfModel<T>::ResizeData(IcfData<T>* data) const {
        .num_welds = weld_constraints_pool_.num_constraints(),
        .gain_sizes = gain_constraints_pool_.constraint_sizes(),
        .limit_sizes = limit_constraints_pool_.constraint_sizes(),
-       .patch_sizes = patch_constraints_pool_.patch_sizes()});
+       .patch_sizes = patch_constraints_pool_.patch_sizes(),
+       .num_islands = partition_.num_islands()});
 }
 
 template <typename T>
-void IcfModel<T>::CalcData(const VectorX<T>& v, IcfData<T>* data) const {
+void IcfModel<T>::CalcAllData(const VectorX<T>& v, IcfData<T>* data) const {
+  DRAKE_ASSERT(data != nullptr);
   // Set generalized velocities v.
   data->set_v(v);
+  for (int i = 0; i < partition().num_islands(); ++i) {
+    CalcData(v, i, data);
+  }
+}
 
-  // Set momentum cost (1/2 v'Av - r'v) and gradient (Av - r).
-  CalcMomentumTerms(v, data);
+template <typename T>
+T IcfModel<T>::CalcData(const VectorX<T>& v, int island,
+                        IcfData<T>* data) const {
+  DRAKE_ASSERT(data != nullptr);
 
-  // Compute spatial velocities for all bodies.
+  // Momentum terms (Av, gradient = Av - r) for the island's clique segments.
+  T cost = CalcMomentumTerms(v, island, data);
+
+  // Spatial velocities for the island's bodies.
   EigenPool<Vector6<T>>& V_WB = data->mutable_V_WB();
-  CalcBodySpatialVelocities(v, &V_WB);
+  CalcBodySpatialVelocities(v, island, &V_WB);
 
-  // Compute constraint data.
-  ball_constraints_pool_.CalcData(V_WB, &data->mutable_ball_constraints_data());
-  coupler_constraints_pool_.CalcData(v,
-                                     &data->mutable_coupler_constraints_data());
-  distance_constraints_pool_.CalcData(
-      V_WB, &data->mutable_distance_constraints_data());
-  gain_constraints_pool_.CalcData(v, &data->mutable_gain_constraints_data());
-  limit_constraints_pool_.CalcData(v, &data->mutable_limit_constraints_data());
-  patch_constraints_pool_.CalcData(V_WB,
-                                   &data->mutable_patch_constraints_data());
-  weld_constraints_pool_.CalcData(V_WB, &data->mutable_weld_constraints_data());
+  // Per-constraint data and costs for the island's constraints.
+  cost +=
+      ball_constraints_pool_.CalcData(V_WB, island_balls_.items(island),
+                                      &data->mutable_ball_constraints_data());
+  cost += coupler_constraints_pool_.CalcData(
+      v, island_couplers_.items(island),
+      &data->mutable_coupler_constraints_data());
+  cost += distance_constraints_pool_.CalcData(
+      V_WB, island_distances_.items(island),
+      &data->mutable_distance_constraints_data());
+  cost += gain_constraints_pool_.CalcData(
+      v, island_gains_.items(island), &data->mutable_gain_constraints_data());
+  cost += limit_constraints_pool_.CalcData(
+      v, island_limits_.items(island), &data->mutable_limit_constraints_data());
+  cost +=
+      patch_constraints_pool_.CalcData(V_WB, island_patches_.items(island),
+                                       &data->mutable_patch_constraints_data());
+  cost +=
+      weld_constraints_pool_.CalcData(V_WB, island_welds_.items(island),
+                                      &data->mutable_weld_constraints_data());
 
-  // Accumulate gradient contributions from constraints.
+  // Accumulate constraint gradient contributions into the island's segments.
   VectorX<T>& gradient = data->mutable_gradient();
-  ball_constraints_pool_.AccumulateGradient(*data, &gradient);
-  coupler_constraints_pool_.AccumulateGradient(*data, &gradient);
-  distance_constraints_pool_.AccumulateGradient(*data, &gradient);
-  gain_constraints_pool_.AccumulateGradient(*data, &gradient);
-  limit_constraints_pool_.AccumulateGradient(*data, &gradient);
-  patch_constraints_pool_.AccumulateGradient(*data, &gradient);
-  weld_constraints_pool_.AccumulateGradient(*data, &gradient);
-
-  // Accumulate cost contributions from constraints.
-  data->set_cost(data->momentum_cost() + data->ball_constraints_data().cost() +
-                 data->coupler_constraints_data().cost() +
-                 data->distance_constraints_data().cost() +
-                 data->gain_constraints_data().cost() +
-                 data->limit_constraints_data().cost() +
-                 data->patch_constraints_data().cost() +
-                 data->weld_constraints_data().cost());
+  ball_constraints_pool_.AccumulateGradient(*data, island_balls_.items(island),
+                                            &gradient);
+  coupler_constraints_pool_.AccumulateGradient(
+      *data, island_couplers_.items(island), &gradient);
+  distance_constraints_pool_.AccumulateGradient(
+      *data, island_distances_.items(island), &gradient);
+  gain_constraints_pool_.AccumulateGradient(*data, island_gains_.items(island),
+                                            &gradient);
+  limit_constraints_pool_.AccumulateGradient(
+      *data, island_limits_.items(island), &gradient);
+  patch_constraints_pool_.AccumulateGradient(
+      *data, island_patches_.items(island), &gradient);
+  weld_constraints_pool_.AccumulateGradient(*data, island_welds_.items(island),
+                                            &gradient);
+  data->set_island_cost(island, cost);
+  return cost;
 }
 
 template <typename T>
 std::unique_ptr<IcfHessian<T>> IcfModel<T>::MakeHessian(
-    const IcfData<T>& data) const {
-  auto hessian = std::make_unique<IcfHessian<T>>(sparsity_pattern());
-  UpdateHessian(data, hessian.get());
+    int island, const IcfData<T>& data) const {
+  auto hessian =
+      std::make_unique<IcfHessian<T>>(island_sparsity_pattern(island));
+  UpdateHessian(island, data, hessian.get());
   return hessian;
 }
 
 template <typename T>
-void IcfModel<T>::UpdateHessian(const IcfData<T>& data,
+void IcfModel<T>::UpdateHessian(int island, const IcfData<T>& data,
                                 IcfHessian<T>* hessian) const {
   hessian->SetZero();
 
-  // Initialize hessian = A (block diagonal).
-  for (int c = 0; c < num_cliques_; ++c) {
-    ConstMatrixXView A_clique = A(c);
-    hessian->AddToBlock(c, c, A_clique);
+  const std::span<const int> clique_to_block = partition_.clique_local_index();
+
+  // Initialize the island's sub-Hessian to its block-diagonal A blocks, indexed
+  // by the island's local block numbering.
+  for (int c : partition_.island_cliques(island)) {
+    const int block = partition_.clique_local_index(c);
+    hessian->AddToBlock(block, block, A(c));
   }
 
-  // Add constraints' contributions.
-  ball_constraints_pool_.AccumulateHessian(data, hessian);
-  coupler_constraints_pool_.AccumulateHessian(data, hessian);
-  distance_constraints_pool_.AccumulateHessian(data, hessian);
-  gain_constraints_pool_.AccumulateHessian(data, hessian);
-  limit_constraints_pool_.AccumulateHessian(data, hessian);
-  patch_constraints_pool_.AccumulateHessian(data, hessian);
-  weld_constraints_pool_.AccumulateHessian(data, hessian);
+  // Add constraints' contributions for the island's constraints.
+  ball_constraints_pool_.AccumulateHessian(data, island_balls_.items(island),
+                                           clique_to_block, island, hessian);
+  coupler_constraints_pool_.AccumulateHessian(
+      data, island_couplers_.items(island), clique_to_block, island, hessian);
+  distance_constraints_pool_.AccumulateHessian(
+      data, island_distances_.items(island), clique_to_block, island, hessian);
+  gain_constraints_pool_.AccumulateHessian(data, island_gains_.items(island),
+                                           clique_to_block, island, hessian);
+  limit_constraints_pool_.AccumulateHessian(data, island_limits_.items(island),
+                                            clique_to_block, island, hessian);
+  patch_constraints_pool_.AccumulateHessian(data, island_patches_.items(island),
+                                            clique_to_block, island, hessian);
+  weld_constraints_pool_.AccumulateHessian(data, island_welds_.items(island),
+                                           clique_to_block, island, hessian);
 }
 
 template <typename T>
 void IcfModel<T>::CalcSearchDirectionData(
-    const IcfData<T>& data, const VectorX<T>& w,
+    const IcfData<T>& data, const VectorX<T>& w, int island,
     IcfSearchDirectionData<T>* search_direction_data) const {
   search_direction_data->w.resize(num_velocities_);
   search_direction_data->U.Resize(num_bodies_, 6, 1);
 
-  // We'll use search_direction_data->w as scratch, to avoid memory allocation.
+  // Use search_direction_data->w as scratch for A⋅w over the island's cliques.
   VectorX<T>& temp = search_direction_data->w;
-  MultiplyByDynamicsMatrix(w, &temp);  // temp = A⋅w
+  MultiplyByDynamicsMatrix(w, island, &temp);  // temp = A⋅w (island segments).
 
   const VectorX<T>& v = data.v();
-  search_direction_data->a = temp.dot(w);       // a = ‖w‖²
-  const T vAw = v.dot(temp);                    // vAw = vᵀ⋅A⋅w
-  search_direction_data->b = vAw - w.dot(r());  // b = vᵀ⋅A⋅w - w⋅r
-  search_direction_data->c = data.momentum_cost();
+  const VectorX<T>& Av = data.Av();
 
-  // It is now safe to overwrite with the desired value.
+  // a = wᵀ⋅A⋅w, b = vᵀ⋅A⋅w - wᵀ⋅r, c = ½vᵀ⋅A⋅v - rᵀ⋅v, all restricted to the
+  // island's clique segments (the only segments where w is nonzero).
+  T a = 0, vAw = 0, wr = 0, c = 0;
+  for (int cl : partition_.island_cliques(island)) {
+    const auto w_c = clique_segment(cl, w);
+    const auto Aw_c = clique_segment(cl, temp);
+    const auto v_c = clique_segment(cl, v);
+    const auto Av_c = clique_segment(cl, Av);
+    const auto r_c = clique_segment(cl, r_);
+    a += w_c.dot(Aw_c);
+    vAw += v_c.dot(Aw_c);
+    wr += w_c.dot(r_c);
+    c += v_c.dot(0.5 * Av_c - r_c);
+  }
+  search_direction_data->a = a;
+  search_direction_data->b = vAw - wr;
+  search_direction_data->c = c;
+
+  // It is now safe to overwrite the scratch with the desired value.
   search_direction_data->w = w;
 
-  // U = J⋅w.
-  CalcBodySpatialVelocities(w, &search_direction_data->U);
+  // U = J⋅w over the island's bodies.
+  CalcBodySpatialVelocities(w, island, &search_direction_data->U);
 }
 
 template <typename T>
 T IcfModel<T>::CalcCostAlongLine(
-    const T& alpha, const IcfData<T>& data,
+    const T& alpha, const IcfData<T>& data, int island,
     const IcfSearchDirectionData<T>& search_direction, T* dcost_dalpha,
     T* d2cost_dalpha2) const {
   const T& a = search_direction.a;
   const T& b = search_direction.b;
   const T& c = search_direction.c;
 
-  VectorXView v_alpha = data.scratch().v_alpha[0];
-  DRAKE_ASSERT(v_alpha.size() == num_velocities_);
-  v_alpha.noalias() = data.v() + alpha * search_direction.w;
+  typename IcfData<T>::Scratch& scratch = data.scratch(island);
 
-  // Compute momentum contributions:
-  T cost = (0.5 * a * alpha + b) * alpha + c;  // = aα²/2 + bα + c
+  // v_alpha = v + α⋅w, computed only on the island's clique segments (the only
+  // place w is nonzero); other segments are not read by the island's pools.
+  VectorXView v_alpha = scratch.v_alpha[0];
+  DRAKE_ASSERT(v_alpha.size() == num_velocities_);
+  const VectorX<T>& v = data.v();
+  const VectorX<T>& w = search_direction.w;
+  for (int cl : partition_.island_cliques(island)) {
+    const int start = clique_starts()[cl];
+    const int nv = params().clique_sizes[cl];
+    v_alpha.segment(start, nv).noalias() =
+        v.segment(start, nv) + alpha * w.segment(start, nv);
+  }
+
+  // Momentum contributions: aα²/2 + bα + c and its derivatives.
+  T cost = (0.5 * a * alpha + b) * alpha + c;
   *dcost_dalpha = a * alpha + b;
   *d2cost_dalpha2 = a;
 
-  // Add coupler constraints contributions:
+  const std::span<const int> balls = island_balls_.items(island);
+  const std::span<const int> couplers = island_couplers_.items(island);
+  const std::span<const int> distances = island_distances_.items(island);
+  const std::span<const int> gains = island_gains_.items(island);
+  const std::span<const int> limits = island_limits_.items(island);
+  const std::span<const int> patches = island_patches_.items(island);
+  const std::span<const int> welds = island_welds_.items(island);
+
+  // Coupler constraints.
   {
     T constraint_dcost, constraint_d2cost;
-
-    coupler_constraints_pool_.CalcData(
-        v_alpha, &data.scratch().coupler_constraints_data);
+    const T cc = coupler_constraints_pool_.CalcData(
+        v_alpha, couplers, &scratch.coupler_constraints_data);
     coupler_constraints_pool_.CalcCostAlongLine(
-        data.scratch().coupler_constraints_data, search_direction.w,
+        scratch.coupler_constraints_data, search_direction.w, couplers,
         &constraint_dcost, &constraint_d2cost);
-
-    cost += data.scratch().coupler_constraints_data.cost();
+    cost += cc;
     *dcost_dalpha += constraint_dcost;
     *d2cost_dalpha2 += constraint_d2cost;
   }
 
-  // Add gain constraints contributions:
+  // Gain constraints.
   {
     T constraint_dcost, constraint_d2cost;
-
-    gain_constraints_pool_.CalcData(v_alpha,
-                                    &data.scratch().gain_constraints_data);
+    const T gc = gain_constraints_pool_.CalcData(
+        v_alpha, gains, &scratch.gain_constraints_data);
     gain_constraints_pool_.CalcCostAlongLine(
-        data.scratch().gain_constraints_data, search_direction.w,
-        &data.scratch().Gw_gain, &constraint_dcost, &constraint_d2cost);
-
-    cost += data.scratch().gain_constraints_data.cost();
+        scratch.gain_constraints_data, search_direction.w, gains,
+        &scratch.Gw_gain, &constraint_dcost, &constraint_d2cost);
+    cost += gc;
     *dcost_dalpha += constraint_dcost;
     *d2cost_dalpha2 += constraint_d2cost;
   }
 
-  // Add limit constraints contributions:
+  // Limit constraints.
   {
     T constraint_dcost, constraint_d2cost;
-
-    limit_constraints_pool_.CalcData(v_alpha,
-                                     &data.scratch().limit_constraints_data);
+    const T lc = limit_constraints_pool_.CalcData(
+        v_alpha, limits, &scratch.limit_constraints_data);
     limit_constraints_pool_.CalcCostAlongLine(
-        data.scratch().limit_constraints_data, search_direction.w,
-        &data.scratch().Gw_limit, &constraint_dcost, &constraint_d2cost);
-
-    cost += data.scratch().limit_constraints_data.cost();
+        scratch.limit_constraints_data, search_direction.w, limits,
+        &scratch.Gw_limit, &constraint_dcost, &constraint_d2cost);
+    cost += lc;
     *dcost_dalpha += constraint_dcost;
     *d2cost_dalpha2 += constraint_d2cost;
   }
 
-  // Add patch constraints contributions:
+  // Patch constraints.
   {
     T constraint_dcost, constraint_d2cost;
-
-    EigenPool<Vector6<T>>& V_WB_alpha = data.scratch().V_WB_alpha;
+    EigenPool<Vector6<T>>& V_WB_alpha = scratch.V_WB_alpha;
     DRAKE_ASSERT(V_WB_alpha.size() == num_bodies_);
-
-    CalcBodySpatialVelocities(v_alpha, &V_WB_alpha);
-    patch_constraints_pool_.CalcData(V_WB_alpha,
-                                     &data.scratch().patch_constraints_data);
+    CalcBodySpatialVelocities(v_alpha, island, &V_WB_alpha);
+    const T pc = patch_constraints_pool_.CalcData(
+        V_WB_alpha, patches, &scratch.patch_constraints_data);
     patch_constraints_pool_.CalcCostAlongLine(
-        data.scratch().patch_constraints_data, search_direction.U,
-        &data.scratch().U_AbB_W, &constraint_dcost, &constraint_d2cost);
-
-    cost += data.scratch().patch_constraints_data.cost();
+        scratch.patch_constraints_data, search_direction.U, patches,
+        &scratch.U_AbB_W, &constraint_dcost, &constraint_d2cost);
+    cost += pc;
     *dcost_dalpha += constraint_dcost;
     *d2cost_dalpha2 += constraint_d2cost;
   }
 
-  // Add ball constraints contributions:
+  // Ball constraints (V_WB_alpha already computed above).
   {
     T constraint_dcost, constraint_d2cost;
-
-    EigenPool<Vector6<T>>& V_WB_alpha = data.scratch().V_WB_alpha;
-    // N.B. V_WB_alpha was already computed above for patch constraints.
-
-    ball_constraints_pool_.CalcData(V_WB_alpha,
-                                    &data.scratch().ball_constraints_data);
+    EigenPool<Vector6<T>>& V_WB_alpha = scratch.V_WB_alpha;
+    const T wc = ball_constraints_pool_.CalcData(
+        V_WB_alpha, balls, &scratch.ball_constraints_data);
     ball_constraints_pool_.CalcCostAlongLine(
-        data.scratch().ball_constraints_data, search_direction.U,
+        scratch.ball_constraints_data, search_direction.U, balls,
         &constraint_dcost, &constraint_d2cost);
-
-    cost += data.scratch().ball_constraints_data.cost();
+    cost += wc;
     *dcost_dalpha += constraint_dcost;
     *d2cost_dalpha2 += constraint_d2cost;
   }
 
-  // Add distance constraints contributions:
+  //  Distance constraints (V_WB_alpha was already computed above).
   {
     T constraint_dcost, constraint_d2cost;
-
-    EigenPool<Vector6<T>>& V_WB_alpha = data.scratch().V_WB_alpha;
-    // N.B. V_WB_alpha was already computed above for patch constraints.
-
-    distance_constraints_pool_.CalcData(
-        V_WB_alpha, &data.scratch().distance_constraints_data);
+    EigenPool<Vector6<T>>& V_WB_alpha = scratch.V_WB_alpha;
+    const T wc = distance_constraints_pool_.CalcData(
+        V_WB_alpha, distances, &scratch.distance_constraints_data);
     distance_constraints_pool_.CalcCostAlongLine(
-        data.scratch().distance_constraints_data, search_direction.U,
+        scratch.distance_constraints_data, search_direction.U, distances,
         &constraint_dcost, &constraint_d2cost);
-
-    cost += data.scratch().distance_constraints_data.cost();
+    cost += wc;
     *dcost_dalpha += constraint_dcost;
     *d2cost_dalpha2 += constraint_d2cost;
   }
 
-  // Add weld constraints contributions:
+  // Weld constraints (V_WB_alpha already computed above).
   {
     T constraint_dcost, constraint_d2cost;
-
-    EigenPool<Vector6<T>>& V_WB_alpha = data.scratch().V_WB_alpha;
-    // N.B. V_WB_alpha was already computed above for patch constraints.
-
-    weld_constraints_pool_.CalcData(V_WB_alpha,
-                                    &data.scratch().weld_constraints_data);
+    EigenPool<Vector6<T>>& V_WB_alpha = scratch.V_WB_alpha;
+    const T wc = weld_constraints_pool_.CalcData(
+        V_WB_alpha, welds, &scratch.weld_constraints_data);
     weld_constraints_pool_.CalcCostAlongLine(
-        data.scratch().weld_constraints_data, search_direction.U,
+        scratch.weld_constraints_data, search_direction.U, welds,
         &constraint_dcost, &constraint_d2cost);
-
-    cost += data.scratch().weld_constraints_data.cost();
+    cost += wc;
     *dcost_dalpha += constraint_dcost;
     *d2cost_dalpha2 += constraint_d2cost;
   }
@@ -380,6 +427,128 @@ void IcfModel<T>::SetSparsityPattern() {
   // TODO(#23912): This line allocates.
   sparsity_pattern_ = std::make_unique<BlockSparsityPattern>(
       std::move(block_sizes), std::move(sparsity));
+
+  // Partition cliques into islands (connected components) for per-island
+  // solves, then group constraints and bodies by island.
+  partition_.Compute(*sparsity_pattern_, params().use_islands);
+  BuildIslandMaps();
+  BuildIslandSparsityPatterns();
+}
+
+template <typename T>
+void IcfModel<T>::BuildIslandSparsityPatterns() {
+  const int num_islands = partition_.num_islands();
+  const std::vector<std::vector<int>>& global_neighbors =
+      sparsity_pattern_->neighbors();
+  const std::vector<int>& clique_sizes = params().clique_sizes;
+
+  // Reuse one set of pattern objects across calls, but rebuild the contents
+  // each time the sparsity changes (the SetSparsityPattern() cadence).
+  island_sparsity_patterns_.clear();
+  island_sparsity_patterns_.reserve(num_islands);
+
+  for (int i = 0; i < num_islands; ++i) {
+    const std::span<const int> cliques = partition_.island_cliques(i);
+    const int n = ssize(cliques);
+
+    // Local block sizes follow the island's (ascending) clique order.
+    island_block_sizes_.assign(n, 0);
+    for (int l = 0; l < n; ++l)
+      island_block_sizes_[l] = clique_sizes[cliques[l]];
+
+    // Local neighbors: map each global neighbor of clique cliques[l] to its
+    // island-local index. All neighbors lie in the same island (islands are
+    // connected components), and local indexing preserves global ordering, so
+    // the lower-triangular (j >= i) invariant carries over.
+    island_neighbors_.resize(n);
+    for (int l = 0; l < n; ++l) {
+      std::vector<int>& local = island_neighbors_[l];
+      local.clear();
+      local.reserve(ssize(global_neighbors[cliques[l]]));
+      for (int g : global_neighbors[cliques[l]]) {
+        local.push_back(partition_.clique_local_index(g));
+      }
+    }
+
+    std::vector<int> block_sizes(island_block_sizes_.begin(),
+                                 island_block_sizes_.begin() + n);
+    std::vector<std::vector<int>> neighbors(island_neighbors_.begin(),
+                                            island_neighbors_.begin() + n);
+    island_sparsity_patterns_.emplace_back(std::move(block_sizes),
+                                           std::move(neighbors));
+  }
+}
+
+template <typename T>
+void IcfModel<T>::BuildIslandMaps() {
+  const int num_islands = partition_.num_islands();
+
+  // Builds `map` so that map.items(i) lists the indices k in [0, n) whose
+  // key_fn(k) is island i. A negative key omits item k (e.g., anchored bodies).
+  std::vector<int>& keys = island_keys_;
+  auto build = [&](IslandItemMap* map, int n, auto&& key_fn) {
+    keys.resize(n);
+    for (int k = 0; k < n; ++k) keys[k] = key_fn(k);
+    map->Build(num_islands, std::span<const int>(keys.data(), n));
+  };
+
+  // The island of a (single-clique) constraint, or of a constraint between two
+  // bodies (at least one of which is dynamic; both share an island).
+  auto island_of_clique = [&](int clique) {
+    return partition_.clique_to_island(clique);
+  };
+  auto island_of_bodies = [&](int b0, int b1) {
+    const int c0 = body_to_clique(b0);
+    const int clique = (c0 >= 0) ? c0 : body_to_clique(b1);
+    DRAKE_ASSERT(clique >= 0);
+    return island_of_clique(clique);
+  };
+
+  const std::vector<std::pair<int, int>>& ball_bodies =
+      ball_constraints_pool_.body_pairs();
+  build(&island_balls_, ssize(ball_bodies), [&](int k) {
+    return island_of_bodies(ball_bodies[k].first, ball_bodies[k].second);
+  });
+
+  const std::vector<int>& coupler_clique =
+      coupler_constraints_pool_.constraint_to_clique();
+  build(&island_couplers_, ssize(coupler_clique), [&](int k) {
+    return island_of_clique(coupler_clique[k]);
+  });
+
+  const std::vector<std::pair<int, int>>& distance_bodies =
+      distance_constraints_pool_.body_pairs();
+  build(&island_distances_, ssize(distance_bodies), [&](int k) {
+    return island_of_bodies(distance_bodies[k].first,
+                            distance_bodies[k].second);
+  });
+
+  const std::vector<int>& gain_clique = gain_constraints_pool_.clique();
+  build(&island_gains_, ssize(gain_clique), [&](int k) {
+    return island_of_clique(gain_clique[k]);
+  });
+
+  const std::vector<int>& limit_clique = limit_constraints_pool_.clique();
+  build(&island_limits_, ssize(limit_clique), [&](int k) {
+    return island_of_clique(limit_clique[k]);
+  });
+
+  const std::vector<std::pair<int, int>>& patch_bodies =
+      patch_constraints_pool_.bodies();
+  build(&island_patches_, ssize(patch_bodies), [&](int k) {
+    return island_of_bodies(patch_bodies[k].first, patch_bodies[k].second);
+  });
+
+  const std::vector<std::pair<int, int>>& weld_bodies =
+      weld_constraints_pool_.body_pairs();
+  build(&island_welds_, ssize(weld_bodies), [&](int k) {
+    return island_of_bodies(weld_bodies[k].first, weld_bodies[k].second);
+  });
+
+  // Dynamic bodies only; anchored bodies (negative clique) belong to no island.
+  build(&island_bodies_, num_bodies_, [&](int b) {
+    return is_anchored(b) ? -1 : island_of_clique(body_to_clique(b));
+  });
 }
 
 template <typename T>
@@ -434,6 +603,7 @@ void IcfModel<T>::ReduceInto(IcfModel<T>* reduced_model,
   reduced_params->k0 = SelectRows(full_params.k0, unlocked_dofs);
   reduced_params->body_mass = full_params.body_mass;
   reduced_params->body_is_floating = full_params.body_is_floating;
+  reduced_params->use_islands = full_params.use_islands;
 
   // Map all cliques possibly having unlocked DoFs.
   mapping->clique_subsequence.ResetToSize(num_cliques());
@@ -601,20 +771,40 @@ void IcfModel<T>::MultiplyByDynamicsMatrix(const VectorX<T>& v,
 }
 
 template <typename T>
-void IcfModel<T>::CalcMomentumTerms(const VectorX<T>& v,
-                                    IcfData<T>* data) const {
+void IcfModel<T>::MultiplyByDynamicsMatrix(const VectorX<T>& v, int island,
+                                           VectorX<T>* result) const {
+  DRAKE_ASSERT(v.size() == num_velocities_);
+  DRAKE_ASSERT(result != nullptr);
+  DRAKE_ASSERT(result->size() == num_velocities_);
+
+  for (int c : partition_.island_cliques(island)) {
+    ConstMatrixXView A_clique = A(c);
+    VectorBlock<const VectorX<T>> v_clique = clique_segment(c, v);
+    VectorBlock<VectorX<T>> Av_clique = mutable_clique_segment(c, result);
+    Av_clique.noalias() = A_clique * v_clique;  // Required to avoid allocation!
+  }
+}
+
+template <typename T>
+T IcfModel<T>::CalcMomentumTerms(const VectorX<T>& v, int island,
+                                 IcfData<T>* data) const {
   DRAKE_ASSERT(v.size() == num_velocities_);
   VectorX<T>& Av = data->mutable_Av();
-  VectorXView Av_minus_r = data->scratch().Av_minus_r[0];
-  DRAKE_ASSERT(Av_minus_r.size() == num_velocities_);
+  VectorX<T>& gradient = data->mutable_gradient();
 
-  // Cost.
-  MultiplyByDynamicsMatrix(v, &Av);
-  Av_minus_r = 0.5 * Av - r_;
-  data->set_momentum_cost(v.dot(Av_minus_r));
-
-  // Gradient.
-  data->mutable_gradient() = Av - r_;
+  T momentum_cost = 0;
+  for (int c : partition_.island_cliques(island)) {
+    ConstMatrixXView A_clique = A(c);
+    const auto v_c = clique_segment(c, v);
+    const auto r_c = clique_segment(c, r_);
+    auto Av_c = mutable_clique_segment(c, &Av);
+    Av_c.noalias() = A_clique * v_c;  // Required to avoid allocation!
+    // Cost ½vᵀAv - rᵀv and gradient Av - r, restricted to this clique.
+    momentum_cost += v_c.dot(0.5 * Av_c - r_c);
+    mutable_clique_segment(c, &gradient) = Av_c - r_c;
+  }
+  data->set_island_momentum_cost(island, momentum_cost);
+  return momentum_cost;
 }
 
 template <typename T>
@@ -635,6 +825,27 @@ void IcfModel<T>::CalcBodySpatialVelocities(
       }
     } else {
       V_WB.setZero();  // Anchored body.
+    }
+  }
+}
+
+template <typename T>
+void IcfModel<T>::CalcBodySpatialVelocities(
+    const VectorX<T>& v, int island, EigenPool<Vector6<T>>* V_pool) const {
+  EigenPool<Vector6<T>>& spatial_velocities = *V_pool;
+  DRAKE_ASSERT(v.size() == num_velocities_);
+  DRAKE_ASSERT(spatial_velocities.size() == num_bodies_);
+  // island_bodies() lists only dynamic bodies (anchored bodies belong to no
+  // island), so every body here has a valid clique.
+  for (int b : island_bodies_.items(island)) {
+    const int c = body_to_clique(b);
+    DRAKE_ASSERT(c >= 0);
+    Vector6<T>& V_WB = spatial_velocities[b];
+    VectorBlock<const VectorX<T>> v_clique = clique_segment(c, v);
+    if (is_floating(b)) {
+      V_WB = v_clique;
+    } else {
+      V_WB = J_WB(b) * v_clique;
     }
   }
 }

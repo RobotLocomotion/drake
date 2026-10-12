@@ -2,7 +2,6 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
-#include "drake/multibody/contact_solvers/icf/abstract_constraints_pool.h"
 #include "drake/multibody/contact_solvers/icf/eigen_pool.h"
 #include "drake/multibody/contact_solvers/icf/holonomic_constraints_data_pool.h"
 #include "drake/multibody/contact_solvers/icf/holonomic_constraints_pool.h"
@@ -91,7 +90,8 @@ class DistanceConstraintsPool
   EigenPool<Vector3<T>> p_BQ_W_;
   EigenPool<Vector3<T>> p_hat_W_;
 };
-static_assert(IsAbstractConstraintsPool<DistanceConstraintsPool>);
+static_assert(IsHolonomicConstraintsPool<DistanceConstraintsPool,
+                                         DistanceConstraintsDataPool>);
 
 }  // namespace internal
 }  // namespace icf

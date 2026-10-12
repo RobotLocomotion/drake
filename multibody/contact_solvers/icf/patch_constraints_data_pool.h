@@ -65,13 +65,13 @@ class PatchConstraintsDataPool {
   std::vector<T>& mutable_cost_pool() { return cost_pool_; }
 
   /* Returns the total cost over all patches. */
-  const T& cost() const { return cost_; }
-  T& mutable_cost() { return cost_; }
+  T ComputeCost() const {
+    return std::reduce(cost_pool_.begin(), cost_pool_.end());
+  }
 
  private:
   int num_patches_{0};
   int num_pairs_{0};
-  T cost_{NAN};
 
   // Data per patch.
   std::vector<T> cost_pool_;

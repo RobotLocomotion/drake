@@ -1,6 +1,7 @@
 #pragma once
 
 #include <span>
+#include <vector>
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
@@ -39,15 +40,20 @@ class GainConstraintsDataPool {
   /* Returns the number of gain constraints this data pool is for. */
   int num_constraints() const { return gamma_pool_.size(); }
 
-  /* Returns the total constraint cost ℓ(v) for all gain constraints in the
-  pool. See GainConstraintsPool for details. */
-  const T& cost() const { return cost_; }
-  T& mutable_cost() { return cost_; }
-
   /* Returns the constraint impulse γ = -∇ℓ(v) for the k-th constraint in the
-  pool.*/
+  pool.  See GainConstraintsPool for details. */
   ConstVectorXView gamma(int k) const { return gamma_pool_[k]; }
   VectorXView mutable_gamma(int k) { return gamma_pool_[k]; }
+
+  /* Returns the total constraint cost ℓ(v) over all constraints in the pool.
+  @pre all cost(k) are valid. */
+  T ComputeCost() const {
+    return std::reduce(cost_pool_.begin(), cost_pool_.end());
+  }
+
+  /* Returns the constraint cost ℓ(v) for the k-th constraint in the pool. */
+  const T& cost(int k) const { return cost_pool_[k]; }
+  T& mutable_cost(int k) { return cost_pool_[k]; }
 
   /* Returns the (diagonal) Hessian block G = -∂γ/∂v for the k-th constraint in
   the pool. */
@@ -55,7 +61,7 @@ class GainConstraintsDataPool {
   VectorXView mutable_G(int k) { return G_pool_[k]; }
 
  private:
-  T cost_{NAN};                       // Total cost over all gain constraints.
+  std::vector<T> cost_pool_;          // cost per constraint.
   EigenPool<VectorX<T>> gamma_pool_;  // Generalized impulses per constraint.
   EigenPool<VectorX<T>> G_pool_;      // Diagonal Hessians G = -∂γ/∂v ≥ 0.
 };
