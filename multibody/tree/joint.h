@@ -380,8 +380,7 @@ class Joint : public MultibodyElement<T> {
 
   /// @return true if the joint is locked, false otherwise.
   bool is_locked(const systems::Context<T>& context) const {
-    DRAKE_DEMAND(has_mobilizer());
-    return mobilizer_->is_locked(context);
+    return has_mobilizer() && mobilizer_->is_locked(context);
   }
 
   /// @name            Methods to get and set limits
@@ -815,8 +814,9 @@ class Joint : public MultibodyElement<T> {
   std::unique_ptr<Joint<ToScalar>> CloneToScalar(
       internal::MultibodyTree<ToScalar>* tree_clone) const {
     std::unique_ptr<Joint<ToScalar>> joint_clone = DoCloneToScalar(*tree_clone);
-    DRAKE_DEMAND(mobilizer_ != nullptr);
-    joint_clone->mobilizer_ = &tree_clone->get_mutable_variant(*mobilizer_);
+    joint_clone->mobilizer_ =
+        mobilizer_ == nullptr ? nullptr
+                              : &tree_clone->get_mutable_variant(*mobilizer_);
     // Cloning doesn't re-run Build(), so carry over any shadow-link frame
     // substitutions rather than leaving the clone reporting the user frames.
     if (effective_frame_on_parent_ != nullptr) {
