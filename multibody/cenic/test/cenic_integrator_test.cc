@@ -803,6 +803,61 @@ TEST_P(BallOnTable, ExternalForces) {
   EXPECT_NO_THROW(simulator_->AdvanceTo(simulation_time + 0.1));
 }
 
+/* Checks that IcfSolverParameters::use_islands reaches the ICF problem, also
+when joint locking requires a reduced model, and that solving islands
+separately doesn't change the simulation. Two independent double pendulums form
+two islands (with one pendulum partially locked). */
+GTEST_TEST(CenicIntegrator, IslandsWithJointLocking) {
+  struct Result {
+    VectorXd x;
+    int64_t num_factorizations{};
+  };
+  auto simulate = [](bool use_islands) {
+    DiagramBuilder<double> builder;
+    auto& plant = *builder.AddSystem<MultibodyPlant<double>>(0.0);
+    Parser(&plant, "a").AddModelsFromString(kDoublePendulumMjcf, "xml");
+    Parser(&plant, "b").AddModelsFromString(kDoublePendulumMjcf, "xml");
+    plant.Finalize();
+    auto diagram = builder.Build();
+
+    Simulator<double> simulator(*diagram);
+    Context<double>& plant_context =
+        plant.GetMyMutableContextFromRoot(&simulator.get_mutable_context());
+    plant.SetPositions(&plant_context, Vector4d(M_PI / 4, M_PI / 2, 0.3, -0.2));
+    plant.SetVelocities(&plant_context, Vector4d(0.1, 0.2, -0.3, 0.4));
+    plant
+        .GetJointByName("joint1",
+                        plant.GetModelInstanceByName("a::double_pendulum"))
+        .Lock(&plant_context);
+
+    // Use fixed steps, so that both runs take the same steps and differ only by
+    // the solver's convergence tolerance.
+    auto& integrator = simulator.reset_integrator<CenicIntegrator<double>>();
+    integrator.set_maximum_step_size(0.01);
+    integrator.set_fixed_step_mode(true);
+    IcfSolverParameters params = integrator.get_solver_parameters();
+    params.use_islands = use_islands;
+    integrator.SetSolverParameters(params);
+    simulator.AdvanceTo(0.5);
+
+    Result result{.x = plant.GetPositionsAndVelocities(plant_context)};
+    for (const auto& [key, value] : integrator.GetStatisticsSummary()) {
+      if (key == "cenic_total_hessian_factorizations") {
+        result.num_factorizations = std::get<int64_t>(value);
+      }
+    }
+    return result;
+  };
+
+  const Result with_islands = simulate(true);
+  const Result without_islands = simulate(false);
+  EXPECT_TRUE(CompareMatrices(with_islands.x, without_islands.x, 1e-6,
+                              MatrixCompareType::relative));
+  // With islands, each island is factored separately.
+  EXPECT_GT(with_islands.num_factorizations,
+            without_islands.num_factorizations);
+}
+
 INSTANTIATE_TEST_SUITE_P(
     AllParamsPendulum, DoublePendulum,
     testing::Combine(testing::Range(0, 3), testing::Range(0, 3),

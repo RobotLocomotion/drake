@@ -40,12 +40,18 @@ class HolonomicConstraintsDataPool {
   const ConstraintVector& gamma(int k) const { return gamma_pool_[k]; }
   ConstraintVector& mutable_gamma(int k) { return gamma_pool_[k]; }
 
-  /* Returns the total constraint cost ℓ(v) over all constraints in the pool. */
-  const T& cost() const { return cost_; }
-  T& mutable_cost() { return cost_; }
+  /* Returns the total constraint cost ℓ(v) over all constraints in the pool.
+  @pre all cost(k) are valid. */
+  T ComputeCost() const {
+    return std::reduce(cost_pool_.begin(), cost_pool_.end());
+  }
+
+  /* Returns the constraint cost ℓ(v) for the k-th constraint in the pool. */
+  const T& cost(int k) const { return cost_pool_[k]; }
+  T& mutable_cost(int k) { return cost_pool_[k]; }
 
  private:
-  T cost_{NAN};  // Total cost over all constraints.
+  std::vector<T> cost_pool_;                  // Cost per constraint.
   std::vector<ConstraintVector> gamma_pool_;  // Constraint impulses.
 };
 

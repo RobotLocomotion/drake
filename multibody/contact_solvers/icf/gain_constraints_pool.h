@@ -56,10 +56,19 @@ class GainConstraintsPool {
   /* @see IsAbstractConstraintsPool. */
   const IcfModel<T>& model() const { return *model_; }
   int num_constraints() const { return clique_.size(); }
-  void AccumulateGradient(const IcfData<T>& data, VectorX<T>* gradient) const;
-  void AccumulateHessian(const IcfData<T>& data, IcfHessian<T>* hessian) const;
+  void AccumulateGradient(const IcfData<T>& data,
+                          std::span<const int> constraints,
+                          VectorX<T>* gradient) const;
+  void AccumulateHessian(const IcfData<T>& data,
+                         std::span<const int> constraints,
+                         std::span<const int> clique_to_block,
+                         IcfHessian<T>* hessian) const;
   void ReduceInto(const ReducedMapping& mapping,
                   GainConstraintsPool<T>* reduced_pool) const;
+
+  /* @see HasJointVelocityCalcData. */
+  T CalcData(const VectorX<T>& v, std::span<const int> constraints,
+             GainConstraintsDataPool<T>* gain_data) const;
 
   /* Returns the number of velocities for each gain constraint. */
   std::span<const int> constraint_sizes() const {
@@ -89,22 +98,19 @@ class GainConstraintsPool {
   void Set(int index, int clique, const VectorX<T>& K, const VectorX<T>& b,
            const VectorX<T>& e);
 
-  /* Computes problem data as a function of the generalized velocities `v` for
-  the full plant. */
-  void CalcData(const VectorX<T>& v,
-                GainConstraintsDataPool<T>* gain_data) const;
-
   /* Computes the first and second derivatives of the constraint cost
-  ℓ̃(α) = ℓ(v + α⋅w).
+  ℓ̃(α) = ℓ(v + α⋅w), for only the listed constraints.
 
   @param gain_data Constraint data computed at v + α⋅w.
   @param w The search direction.
+  @param constraints indices of constraints to operate on.
   @param Gw_scratch Scratch space for intermediate values for each clique.
   @param[out] dcost The first derivative dℓ̃ /dα on output.
   @param[out] d2cost The second derivative d²ℓ̃ /dα² on output. */
   void CalcCostAlongLine(const GainConstraintsDataPool<T>& gain_data,
-                         const VectorX<T>& w, EigenPool<VectorX<T>>* Gw_scratch,
-                         T* dcost, T* d2cost) const;
+                         const VectorX<T>& w, std::span<const int> constraints,
+                         EigenPool<VectorX<T>>* Gw_scratch, T* dcost,
+                         T* d2cost) const;
 
   /* Testing only access. */
   const std::vector<int>& clique() const { return clique_; }
@@ -138,6 +144,8 @@ class GainConstraintsPool {
   EigenPool<VectorX<T>> ue_;  // Upper effort limit.
 };
 static_assert(IsAbstractConstraintsPool<GainConstraintsPool>);
+static_assert(
+    HasJointVelocityCalcData<GainConstraintsPool, GainConstraintsDataPool>);
 
 }  // namespace internal
 }  // namespace icf

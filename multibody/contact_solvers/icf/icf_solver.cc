@@ -1,7 +1,9 @@
 #include "drake/multibody/contact_solvers/icf/icf_solver.h"
 
 #include <algorithm>
+#include <exception>
 #include <limits>
+#include <span>
 
 #include "drake/common/text_logging.h"
 #include "drake/multibody/contact_solvers/newton_with_bisection.h"
@@ -19,8 +21,72 @@ using contact_solvers::internal::DoNewtonWithBisectionFallback;
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
 
+namespace {
+
+// Returns Σ_c clique_segment(c, a)ᵀ clique_segment(c, b), summed over the
+// cliques of `island`. Used for island-restricted inner products (e.g., gᵀw)
+// where the full vectors carry meaningful values only on the island's segments.
+double IslandDot(const IcfModel<double>& model, int island, const VectorXd& a,
+                 const VectorXd& b) {
+  double sum = 0.0;
+  for (int c : model.partition().island_cliques(island)) {
+    sum += model.clique_segment(c, a).dot(model.clique_segment(c, b));
+  }
+  return sum;
+}
+
+// Returns the weighted norm over the cliques of `island`: ‖weight ⊙ x‖,
+// restricted to the island's clique segments. Used for the D-scaled
+// convergence quantities.
+double IslandWeightedNorm(const IcfModel<double>& model, int island,
+                          const VectorXd& weight, const VectorXd& x) {
+  double sum_sq = 0.0;
+  for (int c : model.partition().island_cliques(island)) {
+    const auto w_c = model.clique_segment(c, weight);
+    const auto x_c = model.clique_segment(c, x);
+    sum_sq += (w_c.array() * x_c.array()).matrix().squaredNorm();
+  }
+  return std::sqrt(sum_sq);
+}
+
+// Gathers the island's clique segments of `source` (scaled by `sign`) into the
+// contiguous island-local layout `local`, where local block l corresponds to
+// the l-th clique of partition().island_cliques(island). This matches the local
+// block indexing of the island's sub-Hessian, so `local` can be used as the
+// right-hand side of the island's linear solve.
+void GatherIsland(const IcfModel<double>& model, int island,
+                  const VectorXd& source, double sign, VectorXd* local) {
+  int total = 0;
+  for (int c : model.partition().island_cliques(island)) {
+    total += model.clique_size(c);
+  }
+  local->resize(total);
+  int offset = 0;
+  for (int c : model.partition().island_cliques(island)) {
+    const int n = model.clique_size(c);
+    local->segment(offset, n) = sign * model.clique_segment(c, source);
+    offset += n;
+  }
+}
+
+// Scatters the contiguous island-local vector `local` (in the island's local
+// block layout, see GatherIsland) back into the island's clique segments of the
+// full-size `full`. Segments outside the island are left untouched.
+void ScatterIsland(const IcfModel<double>& model, int island,
+                   const VectorXd& local, VectorXd* full) {
+  int offset = 0;
+  for (int c : model.partition().island_cliques(island)) {
+    const int n = model.clique_size(c);
+    model.mutable_clique_segment(c, full) = local.segment(offset, n);
+    offset += n;
+  }
+}
+
+}  // namespace
+
 void IcfSolverStats::Clear() {
   num_iterations = 0;
+  max_island_iterations = 0;
   num_factorizations = 0;
   cost.clear();
   gradient_norm.clear();
@@ -41,47 +107,111 @@ IcfSolver::~IcfSolver() = default;
 
 bool IcfSolver::SolveWithGuess(const IcfModel<double>& model,
                                const double tolerance, IcfData<double>* data) {
-  using std::clamp;
   DRAKE_ASSERT(data != nullptr);
   DRAKE_ASSERT(tolerance > 0);
   DRAKE_ASSERT(model.num_velocities() >= 0);
   DRAKE_ASSERT(model.num_velocities() == data->num_velocities());
+  DRAKE_ASSERT(model.params().use_islands == parameters_.use_islands);
 
-  // Retrieve scratch space for decision variables vₖ and search direction wₖ.
-  VectorXd& v = decision_variables_;
-  VectorXd& dv = search_direction_;  // Also stores Δvₖ = αₖ⋅wₖ.
-  v.resize(model.num_velocities());
-  dv.resize(model.num_velocities());
+  num_islands_ = model.partition().num_islands();
 
-  // Set the initial guess as stored in data.
-  v = data->v();
+  // Pre-allocate scratch for the search direction wₖ. This is full size; each
+  // island writes only its own clique segments.
+  search_direction_.resize(model.num_velocities());
+
+  // The decision variables vₖ live in data->v(), starting from the initial
+  // guess stored there. Each island updates only its own clique segments (see
+  // SolveIsland).
+
+  // Grow the per-island state pool as needed. Storage is grow-only: it never
+  // shrinks, so per-island factorizations can be reused across time steps.
+  while (ssize(island_states_) < num_islands_) {
+    island_states_.push_back(std::make_unique<IslandSolverState>());
+  }
+
+  stats_.Clear();
+
+  if (parameters_.print_solver_stats) {
+    drake::log()->info("IcfSolver starting convex solve over {} island(s):",
+                       num_islands_);
+  }
+
+  // Solve each island as an independent convex subproblem. Each island owns its
+  // IslandSolverState and writes only disjoint regions of `data` and
+  // search_direction_, so the per-island solves do not interfere.
+  for (int island = 0; island < num_islands_; ++island) {
+    IslandSolverState& state = *island_states_[island];
+    state.converged = SolveIsland(model, island, tolerance, data, &state);
+  }
+
+  // Aggregate stats in island order: iterations and factorizations sum, the
+  // per-iteration vectors are concatenated (so their sizes match the total
+  // iterations), and convergence is the AND over all islands. For a single
+  // island this is exactly the per-island record.
+  bool all_converged = true;
+  for (int island = 0; island < num_islands_; ++island) {
+    const IslandSolverState& state = *island_states_[island];
+    all_converged = all_converged && state.converged;
+
+    const IcfSolverStats& island_stats = state.stats;
+    stats_.num_iterations += island_stats.num_iterations;
+    stats_.max_island_iterations =
+        std::max(stats_.max_island_iterations, island_stats.num_iterations);
+    stats_.num_factorizations += island_stats.num_factorizations;
+    stats_.cost.insert(stats_.cost.end(), island_stats.cost.begin(),
+                       island_stats.cost.end());
+    stats_.gradient_norm.insert(stats_.gradient_norm.end(),
+                                island_stats.gradient_norm.begin(),
+                                island_stats.gradient_norm.end());
+    stats_.ls_iterations.insert(stats_.ls_iterations.end(),
+                                island_stats.ls_iterations.begin(),
+                                island_stats.ls_iterations.end());
+    stats_.alpha.insert(stats_.alpha.end(), island_stats.alpha.begin(),
+                        island_stats.alpha.end());
+    stats_.step_norm.insert(stats_.step_norm.end(),
+                            island_stats.step_norm.begin(),
+                            island_stats.step_norm.end());
+  }
+
+  return all_converged;
+}
+
+bool IcfSolver::SolveIsland(const IcfModel<double>& model, const int island,
+                            const double tolerance, IcfData<double>* data,
+                            IslandSolverState* state) {
+  using std::clamp;
+  IcfSolverStats& stats = state->stats;
+  stats.Clear();
 
   // Convergence tolerances are scaled by D = diag(M)⁻⁰ᐧ⁵, so that all
-  // entries of g̃ = D⋅g and ṽ = D⁻¹⋅v have the same units [Castro et al., 2021].
+  // entries of g̃ = D⋅g and ṽ = D⁻¹⋅v have the same units [Castro et al., 2021].
   //
   // Convergence is achieved when either the (normalized) gradient is small
   //   ‖D⋅gₖ‖ ≤ ε max(1, ‖D⋅r‖),
   // or the (normalized) step size is sufficiently small,
   //   η ‖D⁻¹⋅Δvₖ‖ ≤ ε max(1, ‖D⋅r‖).
   // where η = θ / (1 − θ), θ = ‖D⁻¹⋅Δvₖ‖ / ‖D⁻¹⋅Δvₖ₋₁‖, as per [Hairer and
-  // Wanner, 1996].
+  // Wanner, 1996]. All norms are restricted to the island's clique segments;
+  // for a single island these reduce to the full-problem quantities.
   const VectorXd& D = model.scale_factor();
-  const double scale = std::max(1.0, (D.asDiagonal() * model.r()).norm());
+  const double scale =
+      std::max(1.0, IslandWeightedNorm(model, island, D, model.r()));
   const double epsilon = std::max(tolerance, parameters_.min_tolerance);
   const double scaled_tolerance = epsilon * scale;
 
   double alpha{NAN};     // Linesearch parameter α.
   int ls_iterations{0};  // Count of linesearch iterations taken.
   double eta = 1.0;      // Convergence scaling factor η.
-  stats_.Clear();
 
-  if (parameters_.print_solver_stats) {
-    drake::log()->info("IcfSolver starting convex solve:");
-  }
+  VectorXd& v = data->mutable_v();   // The decision variables vₖ.
+  VectorXd& dv = search_direction_;  // Also stores Δvₖ = αₖ⋅wₖ.
+
   for (int k = 0; k < parameters_.max_iterations; ++k) {
-    // Compute the cost and gradient.
-    model.CalcData(v, data);
-    const double grad_norm = (D.asDiagonal() * data->gradient()).norm();
+    // Compute the island's cost and gradient (writes the island's segments of
+    // data; does not touch data->v(), which we update ourselves below).
+    model.CalcData(island, data);
+    const double grad_norm =
+        IslandWeightedNorm(model, island, D, data->gradient());
 
     // Gradient-based convergence check. Allows for early exit if v is already
     // close enough to the solution.
@@ -89,19 +219,19 @@ bool IcfSolver::SolveWithGuess(const IcfModel<double>& model,
       if (parameters_.print_solver_stats && k == 0) {
         // This ensures that we get a printout even when the initial guess is
         // good enough that no iterations are performed.
-        drake::log()->info("  k: {}, cost: {:.6f}, gradient: {:e}", k,
-                           data->cost(), grad_norm);
+        drake::log()->info("  island {}: k: {}, cost: {:.6f}, gradient: {:e}",
+                           island, k, data->island_cost(island), grad_norm);
       }
       return true;
     }
 
     // Step-size-based convergence check. This is only valid after the first
-    // iteration has been completed, since we need the step size ‖D⁻¹⋅Δvₖ‖
+    // iteration has been completed, since we need the step size ‖D⁻¹⋅Δvₖ‖.
     if (k > 0) {
       // For k = 1, we have η = 1, so this is equivalent to ‖D⁻¹⋅Δvₖ‖ < tol.
       // Otherwise we use η = θ/(1−θ) as set below (see [Hairer and Wanner,
       // 1996], p.120).
-      if (eta * stats_.step_norm.back() < scaled_tolerance) {
+      if (eta * stats.step_norm.back() < scaled_tolerance) {
         return true;
       }
     }
@@ -110,8 +240,8 @@ bool IcfSolver::SolveWithGuess(const IcfModel<double>& model,
     // IV.8.11 of [Hairer and Wanner, 1996]. This essentially predicts whether
     // we'll converge in the next few iterations, assuming linear convergence.
     if (k > 1) {
-      const double dvk = stats_.step_norm[k - 1];    // ‖D⁻¹⋅Δvₖ‖
-      const double dvkm1 = stats_.step_norm[k - 2];  // ‖D⁻¹⋅Δvₖ₋₁‖
+      const double dvk = stats.step_norm[k - 1];    // ‖D⁻¹⋅Δvₖ‖
+      const double dvkm1 = stats.step_norm[k - 2];  // ‖D⁻¹⋅Δvₖ₋₁‖
 
       // Convergence rate estimate θ = ‖D⁻¹⋅Δvₖ‖ / ‖D⁻¹⋅Δvₖ₋₁‖. Note that unlike
       // in the Newton-Raphson steps discussed in [Hairer and Wanner, 1996], it
@@ -130,7 +260,7 @@ bool IcfSolver::SolveWithGuess(const IcfModel<double>& model,
       if (anticipated_residual > scaled_tolerance) {
         // We likely won't converge in time at this (linear) rate, so we should
         // recompute the Hessian in hopes of faster (quadratic) convergence.
-        hessian_factorization_is_fresh_enough_ = false;
+        state->hessian_factorization_is_fresh_enough = false;
       }
     }
 
@@ -138,7 +268,8 @@ bool IcfSolver::SolveWithGuess(const IcfModel<double>& model,
     // unchanged, so we can reuse it without checking. The sparsity pattern is
     // often but not always the same between solves, so we need to perform the
     // full check when k = 0.
-    bool reuse_sparsity_pattern = (k > 0) || !SparsityPatternChanged(model);
+    const bool reuse_sparsity_pattern =
+        (k > 0) || !IslandSparsityChanged(model, island, *state);
 
     // We reuse the previous hessian when all of the following hold:
     //   1. Reuse is enabled in the solver parameters.
@@ -146,41 +277,60 @@ bool IcfSolver::SolveWithGuess(const IcfModel<double>& model,
     //      computed.
     //   3. The "anticipated residual" heuristics indicate that we'll converge
     //      in time under a linear convergence assumption.
-    bool reuse_hessian = parameters_.enable_hessian_reuse &&
-                         reuse_sparsity_pattern &&
-                         hessian_factorization_is_fresh_enough_;
+    const bool reuse_hessian = parameters_.enable_hessian_reuse &&
+                               reuse_sparsity_pattern &&
+                               state->hessian_factorization_is_fresh_enough;
 
-    // Compute the search direction wₖ = -Hₖ⁻¹⋅gₖ.
-    ComputeSearchDirection(model, *data, &dv, reuse_hessian,
-                           reuse_sparsity_pattern);
+    // Compute the search direction wₖ = -Hₖ⁻¹⋅gₖ for the island.
+    ComputeIslandSearchDirection(model, island, *data, &dv, state,
+                                 reuse_hessian, reuse_sparsity_pattern);
 
     // If the sparsity pattern changed, store it for future checks.
     if (!reuse_sparsity_pattern) {
-      previous_sparsity_pattern_ =
-          std::make_unique<BlockSparsityPattern>(model.sparsity_pattern());
+      state->previous_sparsity_pattern = std::make_unique<BlockSparsityPattern>(
+          model.island_sparsity_pattern(island));
+      state->previous_velocities.clear();
+      for (int c : model.partition().island_cliques(island)) {
+        const int start = model.clique_starts()[c];
+        for (int j = 0; j < model.clique_size(c); ++j) {
+          state->previous_velocities.push_back(
+              model.original_velocity(start + j));
+        }
+      }
     }
 
-    // Compute the optimal step size αₖ = min_α ℓ(vₖ + α⋅wₖ).
-    std::tie(alpha, ls_iterations) = PerformExactLineSearch(model, *data, dv);
+    // Compute the optimal step size αₖ = min_α ℓᵢ(vₖ + α⋅wₖ).
+    std::tie(alpha, ls_iterations) =
+        PerformExactLineSearchIsland(model, island, *data, dv);
 
-    // Update the decision variables (velocities), vₖ₊₁ = vₖ + αₖ⋅wₖ.
-    dv *= alpha;  // Store Δvₖ = αₖ⋅wₖ for recording the step size later.
-    v += dv;
+    // Update the decision variables (velocities), vₖ₊₁ = vₖ + αₖ⋅wₖ, on the
+    // island's clique segments only. We also accumulate the step size
+    // ‖D⁻¹⋅Δvₖ‖ over those segments.
+    double step_norm_sq = 0.0;
+    for (int c : model.partition().island_cliques(island)) {
+      auto dv_c = model.mutable_clique_segment(c, &dv);
+      dv_c *= alpha;  // Store Δvₖ = αₖ⋅wₖ.
+      const auto D_c = model.clique_segment(c, D);
+      step_norm_sq += (dv_c.array() / D_c.array()).matrix().squaredNorm();
+      model.mutable_clique_segment(c, &v) += dv_c;
+    }
+    const double step_norm = std::sqrt(step_norm_sq);
 
-    // Finalize solver stats now that we've finished the iteration.
-    stats_.num_iterations++;
-    stats_.cost.push_back(data->cost());
-    stats_.gradient_norm.push_back(grad_norm);
-    stats_.ls_iterations.push_back(ls_iterations);
-    stats_.alpha.push_back(alpha);
-    const double step_norm = (D.cwiseInverse().asDiagonal() * dv).norm();
-    stats_.step_norm.push_back(step_norm);
+    // Finalize per-island stats now that we've finished the iteration.
+    stats.num_iterations++;
+    stats.max_island_iterations = stats.num_iterations;
+    stats.cost.push_back(data->island_cost(island));
+    stats.gradient_norm.push_back(grad_norm);
+    stats.ls_iterations.push_back(ls_iterations);
+    stats.alpha.push_back(alpha);
+    stats.step_norm.push_back(step_norm);
 
     if (parameters_.print_solver_stats) {
       drake::log()->info(
-          "  k: {}, cost: {:.6f}, gradient: {:e}, step: {:e}, ls_iterations: "
-          "{}, alpha: {:.6f}",
-          k, data->cost(), grad_norm, step_norm, ls_iterations, alpha);
+          "  island {}: k: {}, cost: {:.6f}, gradient: {:e}, step: {:e}, "
+          "ls_iterations: {}, alpha: {:.6f}",
+          island, k, data->island_cost(island), grad_norm, step_norm,
+          ls_iterations, alpha);
     }
   }
 
@@ -192,33 +342,36 @@ void IcfSolver::SetParameters(const IcfSolverParameters& parameters) {
   stats_.Reserve(parameters_.max_iterations);
 }
 
-std::pair<double, int> IcfSolver::PerformExactLineSearch(
-    const IcfModel<double>& model, const IcfData<double>& data,
-    const VectorXd& w) {
+std::pair<double, int> IcfSolver::PerformExactLineSearchIsland(
+    const IcfModel<double>& model, const int island,
+    const IcfData<double>& data, const VectorXd& w) {
   const double alpha_max = parameters_.alpha_max;
 
-  // Set up prerequisites for efficiently computing ℓ̃(α) and its derivatives.
+  // Set up prerequisites for efficiently computing ℓ̃ᵢ(α) and its derivatives.
+  // Only the island's clique segments of w are read.
   IcfSearchDirectionData<double>& search_data = search_direction_data_;
-  model.CalcSearchDirectionData(data, w, &search_data);
+  model.CalcSearchDirectionData(data, w, island, &search_data);
 
-  // First we'll evaluate ∂ℓ̃/∂α at α = 0. This should be strictly negative,
+  // First we'll evaluate ∂ℓ̃ᵢ/∂α at α = 0. This should be strictly negative,
   // since the Hessian is positive definite. This is cheap since we already have
   // the gradient at α = 0 cached from solving for the search direction earlier.
-  const double ell0 = data.cost();              // Cost ℓ̃(0).
-  const double dell0 = data.gradient().dot(w);  // Derivative ∂ℓ̃/∂α at α = 0.
-  // The derivative along the linesearch direction, ∂ℓ̃/∂α, should be negative at
+  // Both quantities are restricted to the island's clique segments.
+  const double ell0 = data.island_cost(island);  // Cost ℓ̃ᵢ(0).
+  const double dell0 =
+      IslandDot(model, island, data.gradient(), w);  // ∂ℓ̃ᵢ/∂α at 0.
+  // The derivative along the linesearch direction, ∂ℓ̃ᵢ/∂α, should be negative
   // at α = 0 since the Hessian is positive definite.
   DRAKE_THROW_UNLESS(dell0 < 0, dell0);
 
-  // First and second derivatives of ℓ̃(α).
-  double dell{NAN};   // First derivative ∂ℓ̃/∂α.
-  double d2ell{NAN};  // Second derivative ∂²ℓ̃/∂α².
+  // First and second derivatives of ℓ̃ᵢ(α).
+  double dell{NAN};   // First derivative ∂ℓ̃ᵢ/∂α.
+  double d2ell{NAN};  // Second derivative ∂²ℓ̃ᵢ/∂α².
 
-  // Next we'll evaluate ℓ̃, ∂ℓ̃/∂α, and ∂²ℓ̃/∂α² at α = α_max. If the cost is
+  // Next we'll evaluate ℓ̃ᵢ, ∂ℓ̃ᵢ/∂α, and ∂²ℓ̃ᵢ/∂α² at α = α_max. If the cost is
   // still decreasing here, we just accept α_max to take the largest step
   // possible.
-  const double ell =
-      model.CalcCostAlongLine(alpha_max, data, search_data, &dell, &d2ell);
+  const double ell = model.CalcCostAlongLine(alpha_max, data, island,
+                                             search_data, &dell, &d2ell);
   if (dell <= std::numeric_limits<double>::epsilon()) {
     return std::make_pair(alpha_max, 0);
   }
@@ -248,22 +401,23 @@ std::pair<double, int> IcfSolver::PerformExactLineSearch(
 
   // We've exhausted all of the early exit conditions, so now we move on to the
   // Newton method with bisection fallback. To do so, we define an anonymous
-  // function that computes the value and gradient of f(α) = −ℓ̃'(α)/ℓ̃'₀, where
-  // ℓ̃'(α) = ∂ℓ̃/∂α and ℓ̃'₀ = ℓ̃'(0). Normalizing in this way reduces
+  // function that computes the value and gradient of f(α) = −ℓ̃ᵢ'(α)/ℓ̃ᵢ'₀,
+  // where ℓ̃ᵢ'(α) = ∂ℓ̃ᵢ/∂α and ℓ̃ᵢ'₀ = ℓ̃ᵢ'(0). Normalizing in this way reduces
   // round-off errors, ensuring f(0) = -1.
   const double dell_scale = -dell0;
-  auto cost_and_gradient = [&model, &data, &search_data,
+  auto cost_and_gradient = [&model, island, &data, &search_data,
                             &dell_scale](double x) {
     double dell_dalpha;
     double d2ell_dalpha2;
-    model.CalcCostAlongLine(x, data, search_data, &dell_dalpha, &d2ell_dalpha2);
+    model.CalcCostAlongLine(x, data, island, search_data, &dell_dalpha,
+                            &d2ell_dalpha2);
     return std::make_pair(dell_dalpha / dell_scale, d2ell_dalpha2 / dell_scale);
   };
 
-  // The initial bracket is [0, α_max], since we already know that ℓ̃'(0) < 0 and
-  // ℓ̃'(α_max) > 0. Values at the endpoints of the bracket are f(0) = -1 (by
-  // definition) and f(α_max) = dell / dell_scale, because we just set dell =
-  // ℓ̃'(α_max) above.
+  // The initial bracket is [0, α_max], since we already know that ℓ̃ᵢ'(0) < 0
+  // and ℓ̃ᵢ'(α_max) > 0. Values at the endpoints of the bracket are f(0) = -1
+  // (by definition) and f(α_max) = dell / dell_scale, because we just set
+  // dell = ℓ̃ᵢ'(α_max) above.
   const Bracket bracket(0.0, -1.0, alpha_max, dell / dell_scale);
 
   // Finally, solve for f(α) = 0 using Newton with bisection fallback.
@@ -310,62 +464,89 @@ double IcfSolver::SolveQuadraticInUnitInterval(const double a, const double b,
   return clamp(s, 0.0, 1.0);  // Ensure s ∈ [0, 1].
 }
 
-void IcfSolver::ComputeSearchDirection(const IcfModel<double>& model,
-                                       const IcfData<double>& data, VectorXd* w,
-                                       bool reuse_factorization,
-                                       bool reuse_sparsity_pattern) {
+void IcfSolver::ComputeIslandSearchDirection(
+    const IcfModel<double>& model, const int island,
+    const IcfData<double>& data, VectorXd* w, IslandSolverState* state,
+    bool reuse_factorization, bool reuse_sparsity_pattern) {
   DRAKE_ASSERT(w != nullptr);
 
   if (parameters_.use_dense_algebra) {
     if (!reuse_factorization) {
-      // Compute and factorize the dense Hessian.
+      // Compute and factorize the dense island sub-Hessian.
       // N.B. Dense algebra is just for testing and debugging, so we don't mind
-      // this expensive heap allocation.
-      const MatrixXd H = model.MakeHessian(data)->MakeDenseMatrix();
-      dense_hessian_factorization_ = H.ldlt();
-      stats_.num_factorizations++;
+      // these expensive heap allocations.
+      const MatrixXd H = model.MakeHessian(island, data)->MakeDenseMatrix();
+      state->dense_hessian_factorization = H.ldlt();
+      state->stats.num_factorizations++;
 
       // The factorization is now fresh, so we should try to reuse it next time.
-      hessian_factorization_is_fresh_enough_ = true;
+      state->hessian_factorization_is_fresh_enough = true;
     }
 
-    // Compute the search direction w = -H⁻¹⋅g with dense algebra.
-    *w = dense_hessian_factorization_.solve(-data.gradient());
+    // Compute the island search direction w = -H⁻¹⋅g with dense algebra,
+    // gathering the right-hand side -g into the island's local block layout,
+    // solving, and scattering the result back into w.
+    GatherIsland(model, island, data.gradient(), -1.0, &state->local_rhs);
+    const VectorXd w_local =
+        state->dense_hessian_factorization.solve(state->local_rhs);
+    ScatterIsland(model, island, w_local, w);
 
   } else {  // Use sparse algebra.
     if (!reuse_factorization) {
       if (reuse_sparsity_pattern) {
-        // Compute the sparse Hessian, reusing the existing sparsity pattern.
-        model.UpdateHessian(data, hessian_.get());
-        hessian_factorization_.UpdateMatrix(*hessian_);
+        // Compute the sparse sub-Hessian, reusing the existing sparsity
+        // pattern.
+        model.UpdateHessian(island, data, state->hessian.get());
+        state->hessian_factorization.UpdateMatrix(*state->hessian);
       } else {
-        // Compute the sparse Hessian from scratch.
-        hessian_ = model.MakeHessian(data);
-        hessian_factorization_.SetMatrix(*hessian_);
+        // Compute the sparse sub-Hessian from scratch.
+        state->hessian = model.MakeHessian(island, data);
+        state->hessian_factorization.SetMatrix(*state->hessian);
       }
 
-      // Perform a sparse Cholesky factorization of the Hessian.
-      DRAKE_THROW_UNLESS(hessian_factorization_.Factor());
-      stats_.num_factorizations++;
+      // Perform a sparse Cholesky factorization of the sub-Hessian.
+      DRAKE_THROW_UNLESS(state->hessian_factorization.Factor());
+      state->stats.num_factorizations++;
 
       // The factorization is now fresh, so we should try to reuse it next time.
-      hessian_factorization_is_fresh_enough_ = true;
+      state->hessian_factorization_is_fresh_enough = true;
     }
 
-    // Compute the search direction w = -H⁻¹⋅g with sparse algebra.
-    *w = -data.gradient();
-    hessian_factorization_.SolveInPlace(w);
+    // Compute the island search direction w = -H⁻¹⋅g with sparse algebra,
+    // operating in the island's local block layout, then scatter into w.
+    GatherIsland(model, island, data.gradient(), -1.0, &state->local_rhs);
+    state->hessian_factorization.SolveInPlace(&state->local_rhs);
+    ScatterIsland(model, island, state->local_rhs, w);
   }
 }
 
-bool IcfSolver::SparsityPatternChanged(const IcfModel<double>& model) const {
-  if (previous_sparsity_pattern_ == nullptr) {
+bool IcfSolver::IslandSparsityChanged(const IcfModel<double>& model,
+                                      const int island,
+                                      const IslandSolverState& state) const {
+  if (state.previous_sparsity_pattern == nullptr) {
     return true;  // No previous sparsity pattern to compare against.
   }
-  return (model.sparsity_pattern().neighbors() !=
-          previous_sparsity_pattern_->neighbors()) ||
-         (model.sparsity_pattern().block_sizes() !=
-          previous_sparsity_pattern_->block_sizes());
+  // Same island index, but possibly different dofs. N.B. Comparing clique
+  // indices is not enough: ReduceInto() renumbers them, and a lock can remove
+  // different dofs from a clique without changing its size.
+  int i = 0;
+  for (int c : model.partition().island_cliques(island)) {
+    const int start = model.clique_starts()[c];
+    for (int k = 0; k < model.clique_size(c); ++k, ++i) {
+      if (i >= ssize(state.previous_velocities) ||
+          state.previous_velocities[i] != model.original_velocity(start + k)) {
+        return true;
+      }
+    }
+  }
+  if (i != ssize(state.previous_velocities)) {
+    return true;
+  }
+  const BlockSparsityPattern& current = model.island_sparsity_pattern(island);
+  return (current.neighbors() !=
+          state.previous_sparsity_pattern->neighbors()) ||
+         (current.block_sizes() !=
+          state.previous_sparsity_pattern->block_sizes());
 }
 
 }  // namespace internal

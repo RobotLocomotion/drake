@@ -91,8 +91,9 @@ void LimitConstraintsPool<T>::Set(int index, int clique, int dof, const T& q0,
 }
 
 template <typename T>
-void LimitConstraintsPool<T>::CalcData(
-    const VectorX<T>& v, LimitConstraintsDataPool<T>* limit_data) const {
+T LimitConstraintsPool<T>::CalcData(
+    const VectorX<T>& v, std::span<const int> constraints,
+    LimitConstraintsDataPool<T>* limit_data) const {
   DRAKE_ASSERT(limit_data != nullptr);
 
   const T& dt = model().time_step();
@@ -101,12 +102,13 @@ void LimitConstraintsPool<T>::CalcData(
   const T taud = kBeta * dt_eff / M_PI;
   // Pre-compute a portion of the regularization formula; see below.
   const T R_time_step_factor = (dt_eff * dt_eff) / (dt * (dt + taud));
-  T& cost = limit_data->mutable_cost();
-  cost = 0;
-  for (int k = 0; k < num_constraints(); ++k) {
+  T total_cost = 0;
+  for (int k : constraints) {
     const int c = clique_[k];
     const int nv = model().clique_size(c);
     VectorBlock<const VectorX<T>> vk = model().clique_segment(c, v);
+    T& cost = limit_data->mutable_cost(k);
+    cost = 0;
     VectorXView gamma_lower = limit_data->mutable_gamma_lower(k);
     VectorXView gamma_upper = limit_data->mutable_gamma_upper(k);
     VectorXView G_lower = limit_data->mutable_G_lower(k);
@@ -131,17 +133,20 @@ void LimitConstraintsPool<T>::CalcData(
       const T v_hat_upper = gu0_[k](i) / (dt + taud);
       cost += CalcLimitData(v_hat_upper, R, vu, &gamma_upper(i), &G_upper(i));
     }
+    total_cost += cost;
   }
+  return total_cost;
 }
 
 template <typename T>
-void LimitConstraintsPool<T>::AccumulateGradient(const IcfData<T>& data,
-                                                 VectorX<T>* gradient) const {
+void LimitConstraintsPool<T>::AccumulateGradient(
+    const IcfData<T>& data, std::span<const int> constraints,
+    VectorX<T>* gradient) const {
   DRAKE_ASSERT(gradient != nullptr);
 
   const LimitConstraintsDataPool<T>& limit_data = data.limit_constraints_data();
 
-  for (int k = 0; k < num_constraints(); ++k) {
+  for (int k : constraints) {
     const int c = clique_[k];
     VectorBlock<VectorX<T>> gradient_c =
         model().mutable_clique_segment(c, gradient);
@@ -156,26 +161,30 @@ void LimitConstraintsPool<T>::AccumulateGradient(const IcfData<T>& data,
 }
 
 template <typename T>
-void LimitConstraintsPool<T>::AccumulateHessian(const IcfData<T>& data,
-                                                IcfHessian<T>* hessian) const {
+void LimitConstraintsPool<T>::AccumulateHessian(
+    const IcfData<T>& data, std::span<const int> constraints,
+    std::span<const int> clique_to_block, IcfHessian<T>* hessian) const {
   DRAKE_ASSERT(hessian != nullptr);
+  DRAKE_ASSERT(ssize(clique_to_block) == model().num_cliques());
 
   const LimitConstraintsDataPool<T>& limit_data = data.limit_constraints_data();
 
-  for (int k = 0; k < num_constraints(); ++k) {
+  for (int k : constraints) {
     const int c = clique_[k];
+    const int block = clique_to_block[c];
 
     const MatrixX<T> G_lower = limit_data.G_lower(k).asDiagonal();
     const MatrixX<T> G_upper = limit_data.G_upper(k).asDiagonal();
-    hessian->AddToBlock(c, c, G_lower);
-    hessian->AddToBlock(c, c, G_upper);
+    hessian->AddToBlock(block, block, G_lower);
+    hessian->AddToBlock(block, block, G_upper);
   }
 }
 
 template <typename T>
 void LimitConstraintsPool<T>::CalcCostAlongLine(
     const LimitConstraintsDataPool<T>& limit_data, const VectorX<T>& w,
-    EigenPool<VectorX<T>>* Gw_scratch, T* dcost, T* d2cost) const {
+    std::span<const int> constraints, EigenPool<VectorX<T>>* Gw_scratch,
+    T* dcost, T* d2cost) const {
   DRAKE_ASSERT(Gw_scratch != nullptr);
   DRAKE_ASSERT(dcost != nullptr);
   DRAKE_ASSERT(d2cost != nullptr);
@@ -183,7 +192,7 @@ void LimitConstraintsPool<T>::CalcCostAlongLine(
 
   (*dcost) = 0.0;
   (*d2cost) = 0.0;
-  for (int k = 0; k < num_constraints(); ++k) {
+  for (int k : constraints) {
     const int c = clique_[k];
     VectorBlock<const VectorX<T>> w_c = model().clique_segment(c, w);
     Gw_pool.Resize(1, model().clique_size(c), 1);
