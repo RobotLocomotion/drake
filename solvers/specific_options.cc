@@ -119,6 +119,29 @@ template std::optional<double> SpecificOptions::Pop(std::string_view);
 template std::optional<int> SpecificOptions::Pop(std::string_view);
 template std::optional<std::string> SpecificOptions::Pop(std::string_view);
 
+string_map<OptionValue> SpecificOptions::PopAllWithPrefix(
+    std::string_view prefix) {
+  DRAKE_THROW_UNLESS(!prefix.empty());
+  string_map<OptionValue> result;
+  for (const auto& [key, boxed_value] : direct_options_) {
+    if (key.starts_with(prefix) && !popped_.contains(key)) {
+      result.emplace(key, boxed_value);
+      popped_.emplace(key);
+    }
+  }
+  for (auto iter = respelled_.begin(); iter != respelled_.end();) {
+    const std::string& key = iter->first;
+    OptionValue& boxed_value = iter->second;
+    if (key.starts_with(prefix) && !direct_options_.contains(key)) {
+      result.emplace(key, std::move(boxed_value));
+      iter = respelled_.erase(iter);
+    } else {
+      ++iter;
+    }
+  }
+  return result;
+}
+
 void SpecificOptions::CopyToCallbacks(
     const std::function<void(const std::string& key, double)>& set_double,
     const std::function<void(const std::string& key, int)>& set_int,

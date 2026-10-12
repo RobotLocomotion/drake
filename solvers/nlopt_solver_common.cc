@@ -105,5 +105,13 @@ std::string NloptSolver::LocalOptimizerMaxTimeName() {
   return "local_optimizer_max_time";
 }
 
+std::string NloptSolver::ParamPrefix() {
+  return "nlopt_param:";
+}
+
+std::string NloptSolver::LocalOptimizerParamPrefix() {
+  return "local_optimizer_param:";
+}
+
 }  // namespace solvers
 }  // namespace drake

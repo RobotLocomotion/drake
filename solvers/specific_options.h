@@ -10,6 +10,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/name_value.h"
+#include "drake/common/string_map.h"
 #include "drake/common/string_unordered_map.h"
 #include "drake/common/string_unordered_set.h"
 #include "drake/solvers/solver_id.h"
@@ -47,8 +48,8 @@ useful:
   so that only the back-end specific names need to be implemented during options
   handling.
 
-- Pop() can yank options that require special handling, so that they will not
-  participate in the Method 1 or 2 copying / callbacks.
+- Pop() or PopAllWithPrefix() can yank options that require special handling,
+  so that they will not participate in the Method 1 or 2 copying / callbacks.
 
 For examples of use, refer to any of the existing Drake solver wrappers. */
 class SpecificOptions {
@@ -85,6 +86,14 @@ class SpecificOptions {
   @tparam Result must be one of: double, int, std::string. */
   template <typename Result>
   std::optional<Result> Pop(std::string_view key);
+
+  /* Returns and effectively removes (in the same sense as Pop()) every option
+  whose name starts with `prefix`, of any type, keyed by its full name. As with
+  Pop(), a solver-specific option shadows a respelled option of the same
+  name.
+  @throws std::exception if `prefix` is empty. */
+  string_map<SolverOptions::OptionValue> PopAllWithPrefix(
+      std::string_view prefix);
 
   /* Helper for "Method 1 - dynamic", per our class overview. Converts options
   when the solver offers a generic key-value API where options are passed by
