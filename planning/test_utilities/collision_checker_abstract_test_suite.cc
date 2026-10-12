@@ -288,7 +288,7 @@ void CollisionCheckerAbstractTestSuite::TestDistanceQueries(
     const std::vector<RobotClearance> batched = checker.CalcRobotClearances(
         qs_.configs, influence_distance, parallelism);
     ASSERT_EQ(batched.size(), qs_.configs.size());
-    for (int i = 0; i < ssize(qs_.configs); ++i) {
+    for (size_t i = 0; i < qs_.configs.size(); ++i) {
       SCOPED_TRACE(fmt::format("influence_distance = {}, i = {}",
                                influence_distance, i));
       const RobotClearance expected =

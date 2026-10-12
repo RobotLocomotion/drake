@@ -2223,7 +2223,7 @@ GTEST_TEST(CollisionCheckerTest, CalcMultipleRobotClearances) {
 
     // Confirm behavior (1). Results for every configuration.
     ASSERT_EQ(results.size(), configs.size());
-    for (int i = 0; i < ssize(configs); ++i) {
+    for (size_t i = 0; i < configs.size(); ++i) {
       ASSERT_EQ(results[i].size(), 1);
       EXPECT_EQ(results[i].distances()(0), configs[i](0));
       EXPECT_TRUE(
