@@ -7,6 +7,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
+#include "drake/multibody/contact_solvers/icf/abstract_constraints_pool.h"
 #include "drake/multibody/contact_solvers/icf/eigen_pool.h"
 #include "drake/multibody/contact_solvers/icf/holonomic_constraints_data_pool.h"
 #include "drake/multibody/contact_solvers/icf/icf_data.h"
@@ -146,9 +147,18 @@ class HolonomicConstraintsPool {
   /* @see IsAbstractConstraintsPool. */
   const IcfModel<T>& model() const { return *model_; }
   int num_constraints() const { return ssize(body_pairs_); }
-  void AccumulateGradient(const IcfData<T>& data, VectorX<T>* gradient) const;
-  void AccumulateHessian(const IcfData<T>& data, IcfHessian<T>* hessian) const;
+  void AccumulateGradient(const IcfData<T>& data,
+                          std::span<const int> constraints,
+                          VectorX<T>* gradient) const;
+  void AccumulateHessian(const IcfData<T>& data,
+                         std::span<const int> constraints,
+                         std::span<const int> clique_to_block,
+                         IcfHessian<T>* hessian) const;
   void ReduceInto(const ReducedMapping& mapping, Derived* reduced_pool) const;
+
+  /* @see HasSpatialVelocityCalcData. */
+  T CalcData(const EigenPool<Vector6<T>>& V_WB,
+             std::span<const int> constraints, DataPool* data) const;
 
   /* Resizes the pool (generic data + the derived's geometry) to store the given
   number of constraints. Constraints hold invalid data until Set(). */
@@ -163,15 +173,17 @@ class HolonomicConstraintsPool {
   changes (R and v̂ depend on δt). */
   void PrecomputeHessianBlocks();
 
-  /* Computes problem data (impulses γ and cost) from the body spatial
-  velocities V_WB. */
-  void CalcData(const EigenPool<Vector6<T>>& V_WB, DataPool* data) const;
+  /* Computes the first and second derivatives of the cost ℓ̃(α) = ℓ(v + α⋅w),
+  for only the listed constraints.
 
-  /* Computes the first and second derivatives of the cost ℓ̃(α) = ℓ(v + α⋅w).
   @param data Constraint data computed at v + α⋅w.
-  @param U_WB Body spatial velocities evaluated at v + α⋅w. */
+  @param U_WB Body spatial velocities evaluated at v + α⋅w.
+  @param constraints indices of constraints to operate on.
+  @param[out] dcost the first derivative dℓ̃ /dα on output.
+  @param[out] d2cost the second derivative d²ℓ̃ /dα² on output. */
   void CalcCostAlongLine(const DataPool& data,
-                         const EigenPool<Vector6<T>>& U_WB, T* dcost,
+                         const EigenPool<Vector6<T>>& U_WB,
+                         std::span<const int> constraints, T* dcost,
                          T* d2cost) const;
 
   /* Testing-only access to the generic per-constraint data. */
@@ -235,6 +247,12 @@ class HolonomicConstraintsPool {
   Derived& mutable_derived() { return *static_cast<Derived*>(this); }
   const Derived& derived() const { return *static_cast<const Derived*>(this); }
 };
+
+/* Derived classes must satisfy this concept. */
+template <template <typename> typename Pool,
+          template <typename> typename DataPool>
+concept IsHolonomicConstraintsPool = IsAbstractConstraintsPool<Pool> &&
+                                     HasSpatialVelocityCalcData<Pool, DataPool>;
 
 }  // namespace internal
 }  // namespace icf

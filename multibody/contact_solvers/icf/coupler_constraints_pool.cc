@@ -77,8 +77,9 @@ void CouplerConstraintsPool<T>::Set(int index, int clique, int i, int j,
 }
 
 template <typename T>
-void CouplerConstraintsPool<T>::CalcData(
-    const VectorX<T>& v, CouplerConstraintsDataPool<T>* coupler_data) const {
+T CouplerConstraintsPool<T>::CalcData(
+    const VectorX<T>& v, std::span<const int> constraints,
+    CouplerConstraintsDataPool<T>* coupler_data) const {
   DRAKE_ASSERT(coupler_data != nullptr);
 
   const T& dt = model().time_step();
@@ -87,9 +88,9 @@ void CouplerConstraintsPool<T>::CalcData(
   const T taud = kBeta * dt_eff / M_PI;
   // Pre-compute a portion of the regularization formula; see below.
   const T R_time_step_factor = (dt_eff * dt_eff) / (dt * (dt + taud));
-  T& cost = coupler_data->mutable_cost();
-  cost = 0;
-  for (int k = 0; k < num_constraints(); ++k) {
+
+  T total_cost = 0;
+  for (int k : constraints) {
     const int c = constraint_to_clique_[k];
     auto vk = model().clique_segment(c, v);
     const int i = dofs_[k].first;
@@ -109,19 +110,23 @@ void CouplerConstraintsPool<T>::CalcData(
 
     const T gamma = -(vc - v_hat) / R;
     coupler_data->mutable_gamma(k) = gamma;
-    cost += 0.5 * (v_hat - vc) * gamma;
+    const T cost = 0.5 * (v_hat - vc) * gamma;
+    coupler_data->mutable_cost(k) = cost;
+    total_cost += cost;
   }
+  return total_cost;
 }
 
 template <typename T>
-void CouplerConstraintsPool<T>::AccumulateGradient(const IcfData<T>& data,
-                                                   VectorX<T>* gradient) const {
+void CouplerConstraintsPool<T>::AccumulateGradient(
+    const IcfData<T>& data, std::span<const int> constraints,
+    VectorX<T>* gradient) const {
   DRAKE_ASSERT(gradient != nullptr);
 
   const CouplerConstraintsDataPool<T>& coupler_data =
       data.coupler_constraints_data();
 
-  for (int k = 0; k < num_constraints(); ++k) {
+  for (int k : constraints) {
     const int c = constraint_to_clique_[k];
     auto gradient_c = model().mutable_clique_segment(c, gradient);
     const int i = dofs_[k].first;
@@ -146,8 +151,10 @@ void CouplerConstraintsPool<T>::AccumulateGradient(const IcfData<T>& data,
 
 template <typename T>
 void CouplerConstraintsPool<T>::AccumulateHessian(
-    const IcfData<T>& data, IcfHessian<T>* hessian) const {
+    const IcfData<T>& data, std::span<const int> constraints,
+    std::span<const int> clique_to_block, IcfHessian<T>* hessian) const {
   DRAKE_ASSERT(hessian != nullptr);
+  DRAKE_ASSERT(ssize(clique_to_block) == model().num_cliques());
 
   const T& dt = model().time_step();
   const T dt_eff = model().effective_time_step();
@@ -155,8 +162,9 @@ void CouplerConstraintsPool<T>::AccumulateHessian(
   const T taud = kBeta * dt_eff / M_PI;
   // Pre-compute a portion of the regularization formula; see below.
   const T R_time_step_factor = (dt_eff * dt_eff) / (dt * (dt + taud));
-  for (int k = 0; k < num_constraints(); ++k) {
+  for (int k : constraints) {
     const int c = constraint_to_clique_[k];
+    const int block = clique_to_block[c];
     const int i = dofs_[k].first;
     const int j = dofs_[k].second;
     const T& rho = gear_ratio_[k];
@@ -184,14 +192,14 @@ void CouplerConstraintsPool<T>::AccumulateHessian(
       Hc(j, i) -= rho / R;
     }
 
-    hessian->AddToBlock(c, c, Hc);
+    hessian->AddToBlock(block, block, Hc);
   }
 }
 
 template <typename T>
 void CouplerConstraintsPool<T>::CalcCostAlongLine(
     const CouplerConstraintsDataPool<T>& coupler_data, const VectorX<T>& w,
-    T* dcost, T* d2cost) const {
+    std::span<const int> constraints, T* dcost, T* d2cost) const {
   DRAKE_ASSERT(dcost != nullptr);
   DRAKE_ASSERT(d2cost != nullptr);
   *dcost = 0.0;
@@ -202,7 +210,7 @@ void CouplerConstraintsPool<T>::CalcCostAlongLine(
   const T taud = kBeta * dt_eff / M_PI;
   // Pre-compute a portion of the regularization formula; see below.
   const T R_time_step_factor = (dt_eff * dt_eff) / (dt * (dt + taud));
-  for (int k = 0; k < num_constraints(); ++k) {
+  for (int k : constraints) {
     const int c = constraint_to_clique_[k];
     const int i = dofs_[k].first;
     const int j = dofs_[k].second;

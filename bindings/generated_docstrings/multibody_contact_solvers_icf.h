@@ -120,7 +120,9 @@ R"""(Minimum tolerance ε for the convergence conditions
 
 ‖D⋅∇ℓ‖ ≤ ε max(1, ‖D⋅r‖), η ‖D⁻¹⋅Δv‖ ≤ ε max(1, ‖D⋅r‖),
 
-as detailed in Section VI.B of [Kurtz and Castro, 2025].
+as detailed in Section VI.B of [Kurtz and Castro, 2025]. When the
+problem splits into islands, the conditions (including the norms and
+r) are evaluated for each island separately; see IcfSolver.
 
 This provides a lower bound on the actual tolerance used, which is
 specified explicitly when calling the solver. For instance, CENIC
@@ -141,6 +143,15 @@ R"""(Dense algebra (LDLT) for solving for the search direction H⁻¹⋅g. This
 is primarily useful for debugging and testing: sparse algebra is
 generally much faster.)""";
             } use_dense_algebra;
+            // Symbol: drake::multibody::contact_solvers::icf::IcfSolverParameters::use_islands
+            struct /* use_islands */ {
+              // Source: drake/multibody/contact_solvers/icf/icf_solver_parameters.h
+              const char* doc =
+R"""(Whether to decompose the problem into independent constraint islands
+(connected components of the clique graph) and solve them separately.
+When false, all cliques are solved together as a single Newton
+problem.)""";
+            } use_islands;
             auto Serialize__fields() const {
               return std::array{
                 std::make_pair("alpha_max", alpha_max.doc),
@@ -152,6 +163,7 @@ generally much faster.)""";
                 std::make_pair("min_tolerance", min_tolerance.doc),
                 std::make_pair("print_solver_stats", print_solver_stats.doc),
                 std::make_pair("use_dense_algebra", use_dense_algebra.doc),
+                std::make_pair("use_islands", use_islands.doc),
               };
             }
           } IcfSolverParameters;

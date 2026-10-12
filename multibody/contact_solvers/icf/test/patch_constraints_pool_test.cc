@@ -1,5 +1,7 @@
 #include "drake/multibody/contact_solvers/icf/patch_constraints_pool.h"
 
+#include <memory>
+#include <utility>
 #include <vector>
 
 #include <fmt/format.h>
@@ -35,78 +37,107 @@ void InjectSurfaceVelocityBias(PatchConstraintsPool<double>* pool,
   }
 }
 
+template <typename T>
+class PatchConstraintsPoolBaseTest : public ::testing::Test {
+ protected:
+  explicit PatchConstraintsPoolBaseTest(bool use_islands)
+      : use_islands_(use_islands) {}
+
+  void SetUp() override {
+    // Create a simple model with two cliques.
+
+    MakeUnconstrainedModel(&model_);
+    SetIslandsConfig(&model_);
+  }
+
+  void SetIslandsConfig(IcfModel<T>* model) {
+    std::unique_ptr<IcfParameters<T>> params = model->ReleaseParameters();
+    params->use_islands = use_islands_;
+    model->ResetParameters(std::move(params));
+  }
+
+  IcfModel<T> model_;
+  bool use_islands_{};
+};
+
+template <typename T>
+class PatchConstraintsPoolParamTest
+    : public PatchConstraintsPoolBaseTest<T>,
+      public ::testing::WithParamInterface<bool> {
+ protected:
+  PatchConstraintsPoolParamTest()
+      : PatchConstraintsPoolBaseTest<T>(/* use_islands = */ GetParam()) {}
+};
+
+using PatchConstraintsPoolParamTestD = PatchConstraintsPoolParamTest<double>;
+
 /* Checks that model.CalcData does not incur any heap allocations for a model
 with contact constraints. */
-GTEST_TEST(PatchConstraintsPool, LimitMallocOnCalcData) {
-  IcfModel<double> model;
-  MakeUnconstrainedModel(&model);
-  AddPatchConstraints(&model);
-  model.SetSparsityPattern();
-  EXPECT_EQ(model.num_cliques(), 3);
-  EXPECT_EQ(model.num_velocities(), 18);
-  EXPECT_EQ(model.num_constraints(), 3);
-  EXPECT_EQ(model.patch_constraints_pool().num_constraints(), 3);
+TEST_P(PatchConstraintsPoolParamTestD, LimitMallocOnCalcData) {
+  AddPatchConstraints(&model_);
+  model_.SetSparsityPattern();
+  EXPECT_EQ(model_.num_cliques(), 3);
+  EXPECT_EQ(model_.num_velocities(), 18);
+  EXPECT_EQ(model_.num_constraints(), 3);
+  EXPECT_EQ(model_.patch_constraints_pool().num_constraints(), 3);
 
   IcfData<double> data;
-  model.ResizeData(&data);
+  model_.ResizeData(&data);
   EXPECT_EQ(data.patch_constraints_data().num_constraints(), 3);
 
-  const int nv = model.num_velocities();
+  const int nv = model_.num_velocities();
   const VectorXd v = VectorXd::LinSpaced(nv, -10.0, 10.0);
 
   // Computing data should not cause any new allocations.
   {
     drake::test::LimitMalloc guard;
-    model.CalcData(v, &data);
+    model_.CalcAllData(v, &data);
   }
 }
 
 /* Checks that pool.ReduceInto does not incur any heap allocations on a
 problem with patch constraints. */
-GTEST_TEST(PatchConstraintsPool, LimitMallocOnReduceInto) {
-  IcfModel<double> model;
-  MakeUnconstrainedModel(&model);
-  AddPatchConstraints(&model);
+TEST_P(PatchConstraintsPoolParamTestD, LimitMallocOnReduceInto) {
+  AddPatchConstraints(&model_);
 
   IcfModel<double> reduced_model;
   ReducedMapping mapping;
 
   // Do a not-smaller reduction to allocate memory in the reduced model.
-  MakeModelReducible(&model, {});
-  model.ReduceInto(&reduced_model, &mapping);
+  MakeModelReducible(&model_, {});
+  model_.ReduceInto(&reduced_model, &mapping);
 
   // Given prior allocation of a big enough model, the constraint pool
   // reduction does not allocate.
   {
     drake::test::LimitMalloc guard;
-    model.patch_constraints_pool().ReduceInto(
+    model_.patch_constraints_pool().ReduceInto(
         mapping, &reduced_model.patch_constraints_pool());
   }
 }
 
 /* Verifies that reducing the patch constraint pool produces correct data. */
-GTEST_TEST(PatchConstraintsPool, Reduce) {
-  IcfModel<double> model;
-  MakeUnconstrainedModel(&model);
-  AddPatchConstraints(&model);
-  model.patch_constraints_pool().set_stiction_tolerance(1.1e-4);
+TEST_P(PatchConstraintsPoolParamTestD, Reduce) {
+  AddPatchConstraints(&model_);
+  model_.SetSparsityPattern();
+  model_.patch_constraints_pool().set_stiction_tolerance(1.1e-4);
 
   IcfData<double> data;
-  model.ResizeData(&data);
-  const int nv = model.num_velocities();
+  model_.ResizeData(&data);
+  const int nv = model_.num_velocities();
   const VectorXd v = VectorXd::LinSpaced(nv, -10, 10.0);
-  model.CalcData(v, &data);
+  model_.CalcAllData(v, &data);
 
   IcfModel<double> reduced_model;
   ReducedMapping mapping;
 
   auto check_reduced = [&](const std::vector<int>& locked_dofs) {
     SCOPED_TRACE(fmt::format("locked_dofs [{}]", fmt::join(locked_dofs, ", ")));
-    MakeModelReducible(&model, locked_dofs);
-    model.ReduceInto(&reduced_model, &mapping);
+    MakeModelReducible(&model_, locked_dofs);
+    model_.ReduceInto(&reduced_model, &mapping);
 
     // Check the data transmitted by pool.ReduceInto().
-    const auto& full_pool = model.patch_constraints_pool();
+    const auto& full_pool = model_.patch_constraints_pool();
     const auto& reduced_pool = reduced_model.patch_constraints_pool();
     EXPECT_EQ(full_pool.stiction_tolerance(),
               reduced_pool.stiction_tolerance());
@@ -119,8 +150,8 @@ GTEST_TEST(PatchConstraintsPool, Reduce) {
       // Determine from the mapping if and how the constraint should have been
       // reduced.
       const auto& [b, a] = full_pool.bodies()[k];
-      const int clique_b = model.params().body_to_clique[b];
-      const int clique_a = model.params().body_to_clique[a];
+      const int clique_b = model_.params().body_to_clique[b];
+      const int clique_a = model_.params().body_to_clique[a];
       const bool have_b = mapping.clique_subsequence.participates(clique_b);
       const bool have_a =
           clique_a >= 0 && mapping.clique_subsequence.participates(clique_a);
@@ -204,7 +235,7 @@ GTEST_TEST(PatchConstraintsPool, Reduce) {
   check_reduced(clique2_locked);
 
   // Lock everything.
-  std::vector<int> all_locked(model.num_velocities());
+  std::vector<int> all_locked(model_.num_velocities());
   std::iota(all_locked.begin(), all_locked.end(), 0);
   check_reduced(all_locked);
 }
@@ -213,15 +244,17 @@ GTEST_TEST(PatchConstraintsPool, Reduce) {
 relative velocity J⋅v plus the surface-velocity bias v_b. We verify this across
 all three patch topologies exercised by AddPatchConstraints() (floating body A,
 floating body B, and an anchored body A). */
-GTEST_TEST(PatchConstraintsPool, CalcDataWithSurfaceVelocityBias) {
+TEST_P(PatchConstraintsPoolParamTestD, CalcDataWithSurfaceVelocityBias) {
   // Reference model, with zero bias.
   IcfModel<double> model_ref;
   MakeUnconstrainedModel(&model_ref);
+  SetIslandsConfig(&model_ref);
   AddPatchConstraints(&model_ref);
 
   // Biased model: identical, but with a distinct bias injected per pair.
   IcfModel<double> model_bias;
   MakeUnconstrainedModel(&model_bias);
+  SetIslandsConfig(&model_bias);
   AddPatchConstraints(&model_bias);
   const std::vector<Vector3d> biases = {Vector3d(0.1, 0.2, 0.3),
                                         Vector3d(-0.4, 0.5, -0.6),
@@ -232,12 +265,14 @@ GTEST_TEST(PatchConstraintsPool, CalcDataWithSurfaceVelocityBias) {
   const VectorXd v = VectorXd::LinSpaced(nv, -10.0, 10.0);
 
   IcfData<double> data_ref;
+  model_ref.SetSparsityPattern();
   model_ref.ResizeData(&data_ref);
-  model_ref.CalcData(v, &data_ref);
+  model_ref.CalcAllData(v, &data_ref);
 
   IcfData<double> data_bias;
+  model_bias.SetSparsityPattern();
   model_bias.ResizeData(&data_bias);
-  model_bias.CalcData(v, &data_bias);
+  model_bias.CalcAllData(v, &data_bias);
 
   const EigenPool<Vector3<double>>& v_ref =
       data_ref.patch_constraints_data().v_AcBc_W_pool();
@@ -258,11 +293,10 @@ We verify this by contrasting a strongly separating vs. strongly approaching
 normal bias on the same pair: a separating bias over-damps the Hunt & Crossley
 model (fn0 clamped to zero), while an approaching bias yields fn0 > 0. This is
 robust to the (unknown) baseline contact velocity of the test fixture. */
-GTEST_TEST(PatchConstraintsPool, LaggedQuantitiesWithSurfaceVelocityBias) {
-  IcfModel<double> model;
-  MakeUnconstrainedModel(&model);
-  AddPatchConstraints(&model);
-  auto& pool = model.patch_constraints_pool();
+TEST_P(PatchConstraintsPoolParamTestD,
+       LaggedQuantitiesWithSurfaceVelocityBias) {
+  AddPatchConstraints(&model_);
+  auto& pool = model_.patch_constraints_pool();
 
   // Patch 1 is the anchored (world) + dynamic-body patch, with normal +ŷ. Its
   // fe0 = 1.5 > 0, so fn0 is driven purely by the Hunt & Crossley damping term.
@@ -286,31 +320,29 @@ GTEST_TEST(PatchConstraintsPool, LaggedQuantitiesWithSurfaceVelocityBias) {
 /* ReduceInto() must carry the per-pair surface-velocity bias through to the
 reduced pool, negating it whenever the body pair is flipped (since
 v_b = v_B_ss - v_A_ss changes sign when A and B are swapped). */
-GTEST_TEST(PatchConstraintsPool, ReduceWithSurfaceVelocity) {
-  IcfModel<double> model;
-  MakeUnconstrainedModel(&model);
-  AddPatchConstraints(&model);
+TEST_P(PatchConstraintsPoolParamTestD, ReduceWithSurfaceVelocity) {
+  AddPatchConstraints(&model_);
   const std::vector<Vector3d> biases = {Vector3d(0.1, 0.2, 0.3),
                                         Vector3d(-0.4, 0.5, -0.6),
                                         Vector3d(0.7, -0.8, 0.9)};
-  InjectSurfaceVelocityBias(&model.patch_constraints_pool(), biases);
+  InjectSurfaceVelocityBias(&model_.patch_constraints_pool(), biases);
 
   IcfModel<double> reduced_model;
   ReducedMapping mapping;
 
   auto check_reduced = [&](const std::vector<int>& locked_dofs) {
     SCOPED_TRACE(fmt::format("locked_dofs [{}]", fmt::join(locked_dofs, ", ")));
-    MakeModelReducible(&model, locked_dofs);
-    model.ReduceInto(&reduced_model, &mapping);
+    MakeModelReducible(&model_, locked_dofs);
+    model_.ReduceInto(&reduced_model, &mapping);
 
-    const auto& full_pool = model.patch_constraints_pool();
+    const auto& full_pool = model_.patch_constraints_pool();
     const auto& reduced_pool = reduced_model.patch_constraints_pool();
 
     int r_k{0};
     for (int k = 0; k < full_pool.num_constraints(); ++k) {
       const auto& [b, a] = full_pool.bodies()[k];
-      const int clique_b = model.params().body_to_clique[b];
-      const int clique_a = model.params().body_to_clique[a];
+      const int clique_b = model_.params().body_to_clique[b];
+      const int clique_a = model_.params().body_to_clique[a];
       const bool have_b = mapping.clique_subsequence.participates(clique_b);
       const bool have_a =
           clique_a >= 0 && mapping.clique_subsequence.participates(clique_a);
@@ -332,6 +364,9 @@ GTEST_TEST(PatchConstraintsPool, ReduceWithSurfaceVelocity) {
   // Lock clique 1; body 1 becomes anchored, flipping patch 0 (A=2, B=1).
   check_reduced({6, 7, 8, 9, 10, 11});
 }
+
+INSTANTIATE_TEST_SUITE_P(FlipIslandsD, PatchConstraintsPoolParamTestD,
+                         ::testing::Bool());
 
 }  // namespace
 }  // namespace internal
