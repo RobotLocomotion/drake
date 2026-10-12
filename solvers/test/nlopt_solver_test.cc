@@ -2,6 +2,7 @@
 
 #include <limits>
 #include <memory>
+#include <string>
 
 #include <gtest/gtest.h>
 
@@ -289,6 +290,104 @@ TEST_F(QuadraticEqualityConstrainedProgram1, LocalOptimizerUnused) {
   ASSERT_TRUE(unused.is_success());
   EXPECT_TRUE(
       CompareMatrices(plain.GetSolution(x_), unused.GetSolution(x_), 1e-12));
+}
+
+// LD_MMA rejects a negative rho_init, which shows the value reaches NLopt.
+TEST_F(QuadraticEqualityConstrainedProgram1, LocalOptimizerParamPrefix) {
+  NloptSolver solver;
+  SolverOptions options;
+  options.SetOption(solver.id(), NloptSolver::AlgorithmName(), "LD_AUGLAG_EQ");
+  options.SetOption(solver.id(), NloptSolver::LocalOptimizerAlgorithmName(),
+                    "LD_MMA");
+  const auto plain = solver.Solve(*prog_, kLocalOptimizerInitialGuess, options);
+  EXPECT_TRUE(plain.is_success());
+
+  options.SetOption(
+      solver.id(), NloptSolver::LocalOptimizerParamPrefix() + "rho_init", -1.0);
+  const auto with_param =
+      solver.Solve(*prog_, kLocalOptimizerInitialGuess, options);
+  EXPECT_EQ(with_param.get_solution_result(), SolutionResult::kInvalidInput);
+}
+
+// Without a local optimizer algorithm, the local params are ignored rather
+// than applied to NLopt's default local optimizer (LD_MMA) or rejected.
+TEST_F(QuadraticEqualityConstrainedProgram1,
+       LocalOptimizerParamPrefixWithoutAlgorithm) {
+  NloptSolver solver;
+  SolverOptions options;
+  options.SetOption(solver.id(), NloptSolver::AlgorithmName(), "LD_AUGLAG_EQ");
+  options.SetOption(
+      solver.id(), NloptSolver::LocalOptimizerParamPrefix() + "rho_init", -1.0);
+  const auto result =
+      solver.Solve(*prog_, kLocalOptimizerInitialGuess, options);
+  EXPECT_TRUE(result.is_success());
+}
+
+// LD_MMA rejects a negative rho_init, which shows the value reaches NLopt.
+GTEST_TEST(NloptSolverTest, ParamPrefix) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>();
+  prog.AddLinearConstraint(x(0) >= 1);
+  prog.AddQuadraticCost(Eigen::Matrix2d::Identity(), Eigen::Vector2d::Zero(),
+                        x);
+  const Eigen::Vector2d initial_guess(2.0, 2.0);
+  NloptSolver solver;
+  SolverOptions options;
+  options.SetOption(solver.id(), NloptSolver::AlgorithmName(), "LD_MMA");
+  const auto plain = solver.Solve(prog, initial_guess, options);
+  EXPECT_TRUE(plain.is_success());
+
+  options.SetOption(solver.id(), NloptSolver::ParamPrefix() + "rho_init", -1.0);
+  const auto with_param = solver.Solve(prog, initial_guess, options);
+  EXPECT_EQ(with_param.get_solution_result(), SolutionResult::kInvalidInput);
+}
+
+// An integer dual_maxeval reaches LD_MMA's dual subproblem; a single
+// evaluation there leaves the linear constraint violated.
+GTEST_TEST(NloptSolverTest, ParamPrefixIntToDouble) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>();
+  // Not a bounding box, so that MMA has a dual subproblem.
+  prog.AddLinearConstraint(x(0) + x(1) >= 1);
+  prog.AddQuadraticCost(Eigen::Matrix2d::Identity(), Eigen::Vector2d::Zero(),
+                        x);
+  const Eigen::Vector2d initial_guess(2.0, 2.0);
+  const std::string dual_maxeval = NloptSolver::ParamPrefix() + "dual_maxeval";
+  NloptSolver solver;
+  SolverOptions options;
+  options.SetOption(solver.id(), NloptSolver::AlgorithmName(), "LD_MMA");
+
+  options.SetOption(solver.id(), dual_maxeval, 1000);
+  const auto large = solver.Solve(prog, initial_guess, options);
+  EXPECT_TRUE(large.is_success());
+  EXPECT_TRUE(
+      CompareMatrices(large.GetSolution(x), Eigen::Vector2d(0.5, 0.5), 1e-6));
+
+  options.SetOption(solver.id(), dual_maxeval, 1);
+  const auto small = solver.Solve(prog, initial_guess, options);
+  EXPECT_EQ(small.get_solution_result(),
+            SolutionResult::kInfeasibleConstraints);
+}
+
+// A prefixed param must be numeric, and the prefixes do not relax the
+// rejection of unrecognized option names.
+GTEST_TEST(NloptSolverTest, ParamPrefixErrors) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>();
+  prog.AddQuadraticCost(Eigen::Matrix2d::Identity(), Eigen::Vector2d::Zero(),
+                        x);
+  NloptSolver solver;
+
+  SolverOptions string_options;
+  string_options.SetOption(
+      solver.id(), NloptSolver::ParamPrefix() + "dual_ftol_rel", "1e-3");
+  DRAKE_EXPECT_THROWS_MESSAGE(solver.Solve(prog, {}, string_options),
+                              ".*floating-point or integer.*dual_ftol_rel.*");
+
+  SolverOptions unknown_options;
+  unknown_options.SetOption(solver.id(), "bad_unrecognized", 1);
+  DRAKE_EXPECT_THROWS_MESSAGE(solver.Solve(prog, {}, unknown_options),
+                              ".*not recognized.*bad_unrecognized.*");
 }
 
 TEST_F(QuadraticEqualityConstrainedProgram1, Test) {
