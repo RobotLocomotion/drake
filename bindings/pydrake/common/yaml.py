@@ -279,14 +279,14 @@ def _create_from_schema(*, schema, forthcoming_value):
     When schema is a numpy type, returns a 1-d ndarray with the same size as
     the ``forthcoming_value`` if provided, otherwise an empty array.
     """
-    if _is_union(typing.get_origin(schema)):
+    generic_base = typing.get_origin(schema)
+    if _is_union(generic_base):
         return None
     if schema == np.ndarray:
         size = len(forthcoming_value)
         return np.array([math.nan] * size)
     # The deprecated aliases typing.List[T] and typing.Dict[K, V] cannot be
     # called like constructors, so construct their runtime types instead.
-    generic_base = typing.get_origin(schema)
     if generic_base in (list, typing.List):
         return list()
     if generic_base in (dict, collections.abc.Mapping):
