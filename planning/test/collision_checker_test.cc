@@ -2163,6 +2163,132 @@ GTEST_TEST(EdgeCheckTest, CheckMultipleEdgesFree) {
   }
 }
 
+// A checker for testing CalcRobotClearances(). Its robot is a welded chain with
+// kQSize positions. The clearance for configuration q reports a single
+// distance, q[0], with Jacobian qᵀ, so each configuration's result is
+// recognizable. Like MockEdgeChecker, it tracks work done across threads.
+class MockClearanceChecker : public UnimplementedCollisionChecker {
+ public:
+  MockClearanceChecker() : UnimplementedCollisionChecker(MakeParams(), true) {
+    AllocateContexts();
+    const int num_omp_threads =
+        common_robotics_utilities::openmp_helpers::GetNumOmpThreads();
+    const int max_num_omp_threads =
+        common_robotics_utilities::openmp_helpers::GetMaxNumOmpThreads();
+    const int num_threads = std::max(num_omp_threads, max_num_omp_threads);
+    thread_signals_ = vector<int>(num_threads, 0);
+  }
+
+  using CollisionChecker::CanEvaluateInParallel;
+
+  // Returns the number of threads this was evaluated on.
+  int thread_count() const {
+    return std::accumulate(thread_signals_.begin(), thread_signals_.end(), 0);
+  }
+
+  static constexpr int kQSize = 3;
+
+ protected:
+  RobotClearance DoCalcContextRobotClearance(
+      const CollisionCheckerContext& model_context, double) const override {
+    // Make this call artificially more expensive so that parallel evaluation
+    // will actually perform work in multiple OpenMP threads.
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    const int thread_index =
+        common_robotics_utilities::openmp_helpers::GetContextOmpThreadNum();
+    thread_signals_[thread_index] = 1;
+    const auto q = plant().GetPositions(model_context.plant_context());
+    RobotClearance clearance(plant().num_positions());
+    clearance.Append(BodyIndex(1), BodyIndex(0),
+                     RobotCollisionType::kEnvironmentCollision, q(0),
+                     q.transpose());
+    return clearance;
+  }
+
+  // We just want this to *not* throw.
+  void DoUpdateContextPositions(CollisionCheckerContext*) const override {}
+
+ private:
+  static CollisionCheckerParams MakeParams() {
+    RobotDiagramBuilder<double> builder;
+    auto& plant = builder.plant();
+    // A chain of kQSize + 1 bodies welded to the world has kQSize positions.
+    const ModelInstanceIndex robot = AddChain(&plant, kQSize + 1);
+    plant.WeldFrames(plant.world_frame(),
+                     plant.GetBodyByName("b0").body_frame());
+    return {.model = builder.Build(),
+            .robot_model_instances = {robot},
+            .edge_step_size = 0.1,
+            .env_collision_padding = 0,
+            .self_collision_padding = 0};
+  }
+
+  // A per-thread signal; if the code was exercised in thread i, the value
+  // at the ith index is one, otherwise zero.
+  mutable vector<int> thread_signals_;
+};
+
+// The test for CalcRobotClearances() (plural) relies on the RobotClearance test
+// of CalcRobotClearance() (singular) for individual configurations. For this
+// function, we only need to test:
+//
+//   1. Do *all* the configurations get evaluated with the expected result?
+//   2. Does the `parallelize` parameter have the documented effect?
+//
+GTEST_TEST(CollisionCheckerTest, CalcMultipleRobotClearances) {
+  const int q_size = MockClearanceChecker::kQSize;
+
+  const VectorXd nan =
+      VectorXd::Constant(q_size, std::numeric_limits<double>::quiet_NaN());
+
+  const vector<VectorXd> configs{VectorXd::Constant(q_size, 0.25),
+                                 VectorXd::Constant(q_size, 0.5),
+                                 VectorXd::Constant(q_size, 0.75)};
+
+  for (const bool parallel : {false, true}) {
+    if (parallel & !kHasOpenmp) {
+      // We don't have OpenMP in all test configurations.
+      continue;
+    }
+    MockClearanceChecker dut;
+    ASSERT_EQ(dut.plant().num_positions(), q_size);
+
+    // Reality check; if we've requested parallel evaluation we need to confirm
+    // it'll happen; otherwise we're simply testing the serial implementation
+    // again.
+    if (parallel) {
+      ASSERT_TRUE(dut.CanEvaluateInParallel());
+    }
+
+    const vector<RobotClearance> results =
+        dut.CalcRobotClearances(configs, 0.5, parallel);
+
+    // Confirm behavior (1). Results for every configuration.
+    ASSERT_EQ(results.size(), configs.size());
+    for (size_t i = 0; i < configs.size(); ++i) {
+      ASSERT_EQ(results[i].size(), 1);
+      EXPECT_EQ(results[i].distances()(0), configs[i](0));
+      EXPECT_TRUE(
+          CompareMatrices(results[i].jacobians(), configs[i].transpose()));
+    }
+    // Confirm behavior (2). Parallel when asked, serial when not.
+    if (parallel) {
+      EXPECT_GT(dut.thread_count(), 1);
+    } else {
+      EXPECT_EQ(dut.thread_count(), 1);
+    }
+    EXPECT_TRUE(dut.CalcRobotClearances({}, 0.5, parallel).empty());
+    // We make sure there is one valid configuration first so we know we catch
+    // the invalid configuration, even if it isn't first.
+    // We're only testing against NaN as an indication that the upstream is
+    // validating at all.
+    EXPECT_THROW(dut.CalcRobotClearances({configs[0], nan}, 0.5, parallel),
+                 std::exception);
+    // The influence distance is validated even with no configurations.
+    EXPECT_THROW(dut.CalcRobotClearances({}, -1, parallel), std::exception);
+  }
+}
+
 // Additional test cases for basic EdgeMeasure functionality not covered already
 // in the above cases.
 GTEST_TEST(EdgeMeasureTest, Test) {
