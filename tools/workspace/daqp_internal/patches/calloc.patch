@@ -1,0 +1,16 @@
+[daqp_internal] Initialize some workspace memory
+
+This works around a valgrind error about an uninitialized read. Rather than
+upstreaming this, daqp_extract_result should be properly fixed.
+
+--- src/api.c
++++ src/api.c
+@@ -330,7 +330,7 @@
+     work->Mu = NULL;
+ 
+     work->lam = malloc((n+1)*sizeof(c_float));
+-    work->lam_star = malloc((n+1)*sizeof(c_float));
++    work->lam_star = calloc(n+1, sizeof(c_float));
+ 
+     work->WS= malloc((n+1)*sizeof(int));
+ 

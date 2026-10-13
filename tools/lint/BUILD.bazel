@@ -100,7 +100,13 @@ sh_binary(
     ],
 )
 
-exports_files(["ruff_format_lint.sh"])
+exports_files([
+    "buildifier.py",
+    "clang_format_lint.py",
+    "drakelint.py",
+    "library_lint_reporter.py",
+    "ruff_format_lint.sh",
+])
 
 # === test ===
 

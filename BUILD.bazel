@@ -12,6 +12,7 @@ package(
 
 exports_files([
     "CPPLINT.cfg",
+    "LICENSE.txt",
     ".bazelproject",
     ".clang-format",
     ".drake-find_resource-sentinel",
@@ -25,6 +26,13 @@ exports_files(
         "cmake/MODULE.bazel.in",
     ],
     visibility = ["//tools/workspace:__pkg__"],
+)
+
+exports_files(
+    [
+        ".bazelversion",
+    ],
+    visibility = ["//doc:__pkg__"],
 )
 
 # A legacy hack module to disambiguate the 'drake' module when Drake is being

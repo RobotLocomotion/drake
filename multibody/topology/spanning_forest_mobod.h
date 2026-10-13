@@ -128,7 +128,9 @@ class SpanningForest::Mobod {
   JointOrdinal active_joint_ordinal() const { return joint_ordinal_; }
 
   /* Returns the index of the Tree of which this %Mobod is a member. The
-  index is invalid if and only if this is the World %Mobod. */
+  index is invalid if and only if this is the World %Mobod. Note that if welded
+  Links are being fused, Links other than World may follow the World %Mobod;
+  those Links are then not part of any Tree either. */
   TreeIndex tree() const { return tree_index_; }
 
   /* Returns the index of the WeldedMobods group of which this %Mobod is a

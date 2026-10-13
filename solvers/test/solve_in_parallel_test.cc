@@ -178,7 +178,8 @@ GTEST_TEST(SolveInParallel, TestDiversePrograms) {
       convex_prog.AddLinearConstraint(x(0) + x(1) + x(2) + x(3) == 2);
   convex_prog.AddRotatedLorentzConeConstraint(x);
   convex_prog.AddLinearCost(x(0) + 2 * x(1));
-  const SolverId convex_solver = ScsSolver::id();
+  const SolverId convex_solver =
+      ScsSolver::is_available() ? ScsSolver::id() : ClarabelSolver::id();
 
   MathematicalProgram non_convex_prog;
   auto y = non_convex_prog.NewContinuousVariables<2>();
@@ -187,7 +188,8 @@ GTEST_TEST(SolveInParallel, TestDiversePrograms) {
   auto constraint3 = non_convex_prog.AddLinearConstraint(y(0) + y(1) == 1);
   auto constraint4 =
       non_convex_prog.AddQuadraticConstraint(y(0) * y(0) + y(1) * y(1), 0, 1);
-  const SolverId non_convex_solver = IpoptSolver::id();
+  const SolverId non_convex_solver =
+      IpoptSolver::is_available() ? IpoptSolver::id() : NloptSolver::id();
 
   std::unique_ptr<MathematicalProgram> non_convex_non_threadsafe_prog =
       non_convex_prog.Clone();

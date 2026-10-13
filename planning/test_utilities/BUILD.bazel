@@ -7,6 +7,11 @@ load(
 
 package(default_visibility = ["//visibility:public"])
 
+exports_files([
+    "collision_ground_plane.sdf",
+    "flying_robot_base.sdf",
+])
+
 drake_cc_package_library(
     name = "test_utilities",
     testonly = True,
@@ -28,6 +33,7 @@ drake_cc_library(
     ],
     deps = [
         "//common:nice_type_name",
+        "//common/test_utilities:eigen_matrix_compare",
         "//multibody/parsing",
         "//planning:collision_avoidance",
         "//planning:collision_checker",

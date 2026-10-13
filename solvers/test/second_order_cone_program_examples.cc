@@ -506,7 +506,7 @@ void SolveAndCheckSmallestEllipsoidCoveringProblems(
     const SolverInterface& solver,
     const std::optional<SolverOptions>& solver_options, double tol) {
   SmallestEllipsoidCoveringProblem1 prob1;
-  if (solver.available()) {
+  {
     MathematicalProgramResult result;
     solver.Solve(prob1.prog(), {}, solver_options, &result);
     prob1.CheckSolution(result, tol);
@@ -521,7 +521,7 @@ void SolveAndCheckSmallestEllipsoidCoveringProblems(
               1.2, 0.3, 1.5, 3.2;
   // clang-format on
   SmallestEllipsoidCoveringProblem prob_3d(points_3d);
-  if (solver.available()) {
+  {
     MathematicalProgramResult result;
     solver.Solve(prob_3d.prog(), {}, solver_options, &result);
     prob_3d.CheckSolution(result, tol);
@@ -536,7 +536,7 @@ void SolveAndCheckSmallestEllipsoidCoveringProblems(
               -1, -2, -3, -4, -5, -6;
   // clang-format on
   SmallestEllipsoidCoveringProblem prob_4d(points_4d);
-  if (solver.available()) {
+  {
     MathematicalProgramResult result;
     solver.Solve(prob_4d.prog(), {}, solver_options, &result);
     prob_4d.CheckSolution(result, tol);
@@ -550,25 +550,23 @@ void TestSocpDualSolution1(const SolverInterface& solver,
   auto constraint1 = prog.AddLorentzConeConstraint(
       Vector3<symbolic::Expression>(2., 2 * x(0), 3 * x(1) + 1));
   prog.AddLinearCost(x(1));
-  if (solver.available()) {
-    MathematicalProgramResult result;
-    solver.Solve(prog, {} /* empty initial guess */, solver_options, &result);
-    // The dual solution for lorentz cone constraint are the values of the dual
-    // variables, lies in the dual cone of a Lorentz cone (which is also a
-    // Lorentz cone). Notice that this is NOT the shadow price as in the linear
-    // constraints.
-    EXPECT_TRUE(CompareMatrices(result.GetDualSolution(constraint1),
-                                Eigen::Vector3d(1. / 3, 0, 1. / 3), tol));
+  MathematicalProgramResult result;
+  solver.Solve(prog, {} /* empty initial guess */, solver_options, &result);
+  // The dual solution for lorentz cone constraint are the values of the dual
+  // variables, lies in the dual cone of a Lorentz cone (which is also a
+  // Lorentz cone). Notice that this is NOT the shadow price as in the linear
+  // constraints.
+  EXPECT_TRUE(CompareMatrices(result.GetDualSolution(constraint1),
+                              Eigen::Vector3d(1. / 3, 0, 1. / 3), tol));
 
-    auto bb_con = prog.AddBoundingBoxConstraint(0.1, kInf, x(1));
-    solver.Solve(prog, {}, solver_options, &result);
-    ASSERT_TRUE(result.is_success());
-    EXPECT_NEAR(result.GetSolution(x(1)), 0.1, tol);
-    // The cost is x(1), hence the shadow price for the constraint x(1) >= 0
-    // should be 1.
-    EXPECT_TRUE(
-        CompareMatrices(result.GetDualSolution(bb_con), Vector1d(1.), tol));
-  }
+  auto bb_con = prog.AddBoundingBoxConstraint(0.1, kInf, x(1));
+  solver.Solve(prog, {}, solver_options, &result);
+  ASSERT_TRUE(result.is_success());
+  EXPECT_NEAR(result.GetSolution(x(1)), 0.1, tol);
+  // The cost is x(1), hence the shadow price for the constraint x(1) >= 0
+  // should be 1.
+  EXPECT_TRUE(
+      CompareMatrices(result.GetDualSolution(bb_con), Vector1d(1.), tol));
 }
 
 void TestSocpDualSolution2(const SolverInterface& solver,
@@ -580,17 +578,15 @@ void TestSocpDualSolution2(const SolverInterface& solver,
   auto constraint2 =
       prog.AddLorentzConeConstraint(Vector2<symbolic::Expression>(1, x + 1));
   prog.AddLinearCost(x);
-  if (solver.available()) {
-    MathematicalProgramResult result;
-    solver.Solve(prog, {}, solver_options, &result);
-    ASSERT_TRUE(result.is_success());
-    const Eigen::Vector3d constraint1_dual = Eigen::Vector3d(0.125, 0.5, 0.5);
-    EXPECT_TRUE(CompareMatrices(result.GetDualSolution(constraint1),
-                                constraint1_dual, tol));
-    // This Lorentz cone is not activated, hence its dual should be zero.
-    EXPECT_TRUE(CompareMatrices(result.GetDualSolution(constraint2),
-                                Eigen::Vector2d(0, 0), tol));
-  }
+  MathematicalProgramResult result;
+  solver.Solve(prog, {}, solver_options, &result);
+  ASSERT_TRUE(result.is_success());
+  const Eigen::Vector3d constraint1_dual = Eigen::Vector3d(0.125, 0.5, 0.5);
+  EXPECT_TRUE(CompareMatrices(result.GetDualSolution(constraint1),
+                              constraint1_dual, tol));
+  // This Lorentz cone is not activated, hence its dual should be zero.
+  EXPECT_TRUE(CompareMatrices(result.GetDualSolution(constraint2),
+                              Eigen::Vector2d(0, 0), tol));
 }
 
 void TestSocpDuplicatedVariable1(
@@ -608,13 +604,11 @@ void TestSocpDuplicatedVariable1(
   prog.AddLorentzConeConstraint(A, Eigen::Vector4d(1, 0, 0, 0),
                                 Vector3<symbolic::Variable>(x(0), x(1), x(0)));
   prog.AddLinearCost(x(0) + x(1));
-  if (solver.available()) {
-    MathematicalProgramResult result;
-    solver.Solve(prog, std::nullopt, solver_options, &result);
-    EXPECT_TRUE(result.is_success());
-    const Eigen::Vector2d x_sol = result.GetSolution(x);
-    EXPECT_NEAR(4 * x_sol(0) * x_sol(0) + 3 * x_sol(1) * x_sol(1), 1, tol);
-  }
+  MathematicalProgramResult result;
+  solver.Solve(prog, std::nullopt, solver_options, &result);
+  EXPECT_TRUE(result.is_success());
+  const Eigen::Vector2d x_sol = result.GetSolution(x);
+  EXPECT_NEAR(4 * x_sol(0) * x_sol(0) + 3 * x_sol(1) * x_sol(1), 1, tol);
 }
 
 void TestSocpDuplicatedVariable2(
@@ -635,22 +629,20 @@ void TestSocpDuplicatedVariable2(
   Eigen::Vector3d b(1, 0, 0);
   prog.AddLorentzConeConstraint(A, b, {x, x});
   prog.AddLinearCost(-x(0) - x(1));
-  if (solver.available()) {
-    MathematicalProgramResult result;
-    solver.Solve(prog, std::nullopt, solver_options, &result);
-    EXPECT_TRUE(result.is_success());
-    const auto x_sol = result.GetSolution(x);
-    // This expected solution is obtained by solving the equation
-    // 4x0²+9x1² = 1
-    // x0+x1= sqrt(13)/6
-    // where x0+x1=sqrt(13)/6 is obtained from the Jensen's inequality
-    // (4x0²+9x1²) * (1/4 + 1/9) >= (x0+x1)²
-    // Also by the fact
-    // (4x0²+9x1²) * (1/4 + 1/9) <= (1/4 + 1/9) = 13 / 36 = (sqrt(13)/6)²
-    // We obtain x + y <= sqrt(13)/6 and the bound is tight.
-    Eigen::Vector2d x_expected(3 * std::sqrt(13) / 26, 4 * std::sqrt(13) / 78);
-    EXPECT_TRUE(CompareMatrices(x_sol, x_expected, tol));
-  }
+  MathematicalProgramResult result;
+  solver.Solve(prog, std::nullopt, solver_options, &result);
+  EXPECT_TRUE(result.is_success());
+  const auto x_sol = result.GetSolution(x);
+  // This expected solution is obtained by solving the equation
+  // 4x0²+9x1² = 1
+  // x0+x1= sqrt(13)/6
+  // where x0+x1=sqrt(13)/6 is obtained from the Jensen's inequality
+  // (4x0²+9x1²) * (1/4 + 1/9) >= (x0+x1)²
+  // Also by the fact
+  // (4x0²+9x1²) * (1/4 + 1/9) <= (1/4 + 1/9) = 13 / 36 = (sqrt(13)/6)²
+  // We obtain x + y <= sqrt(13)/6 and the bound is tight.
+  Eigen::Vector2d x_expected(3 * std::sqrt(13) / 26, 4 * std::sqrt(13) / 78);
+  EXPECT_TRUE(CompareMatrices(x_sol, x_expected, tol));
 }
 
 void TestSocpDuplicatedVariable3(
@@ -706,13 +698,11 @@ void TestDegenerateSOCP(const SolverInterface& solver) {
   A.block<2, 2>(1, 1) = Eigen::Matrix2d::Identity();
   A.block<2, 2>(1, 3) = -Eigen::Matrix2d::Identity();
   prog.AddLorentzConeConstraint(A, Eigen::Vector3d::Zero(), {x, x.tail<2>()});
-  if (solver.available()) {
-    MathematicalProgramResult result;
-    solver.Solve(prog, std::nullopt, std::nullopt, &result);
-    EXPECT_TRUE(result.is_success());
-    const auto x_sol = result.GetSolution(x);
-    EXPECT_GE(x_sol(0), 0);
-  }
+  MathematicalProgramResult result;
+  solver.Solve(prog, std::nullopt, std::nullopt, &result);
+  EXPECT_TRUE(result.is_success());
+  const auto x_sol = result.GetSolution(x);
+  EXPECT_GE(x_sol(0), 0);
 }
 }  // namespace test
 }  // namespace solvers

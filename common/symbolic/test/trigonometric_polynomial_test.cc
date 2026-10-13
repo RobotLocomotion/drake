@@ -241,7 +241,9 @@ class SubstituteStereographicProjectionTest : public testing::Test {
   std::vector<SinCos> sin_cos_;
   symbolic::Variables cos_sin_vars_;
   symbolic::Variables t_;
-  std::unordered_map<symbolic::Variable, symbolic::Variable> subs_;
+  std::unordered_map<symbolic::Variable, symbolic::Variable,
+                     std::hash<symbolic::Variable>, Variable::CompareEqualTo>
+      subs_;
   symbolic::Variable a_;
   symbolic::Variable b_;
   symbolic::Variable x_;

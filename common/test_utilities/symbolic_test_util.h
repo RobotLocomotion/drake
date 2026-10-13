@@ -78,8 +78,10 @@ namespace test {
 }
 
 [[nodiscard]] inline bool ExprToDoubleMapEqual(
-    const std::map<drake::symbolic::Expression, double>& m1,
-    const std::map<drake::symbolic::Expression, double>& m2) {
+    const std::map<drake::symbolic::Expression, double,
+                   Expression::CompareLess>& m1,
+    const std::map<drake::symbolic::Expression, double,
+                   Expression::CompareLess>& m2) {
   return std::equal(m1.begin(), m1.end(), m2.begin(), m2.end(),
                     [](const auto& pair1, const auto& pair2) {
                       return ExprEqual(pair1.first, pair2.first) &&

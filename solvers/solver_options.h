@@ -37,7 +37,9 @@ use certain algorithm, for example NLOPT_LD_SLSQP, call
 `SetOption(NloptSolver::id(), NloptSolver::AlgorithmName(), "LD_SLSQP");`
 Algorithms that hand their subproblems to a local (inner) optimizer accept the
 additional "local_optimizer_..." parameters. The complete set of supported
-parameter names is given by the NloptSolver::...Name() accessors.
+parameter names is given by the NloptSolver::...Name() accessors. NLopt's
+algorithm-specific parameters are also supported, using the name prefixes given
+by NloptSolver::ParamPrefix() and NloptSolver::LocalOptimizerParamPrefix().
 
 "GUROBI" -- Parameter name and values as specified in Gurobi Reference Manual
 https://docs.gurobi.com/projects/optimizer/en/13.0/reference/parameters.html
@@ -57,6 +59,10 @@ https://osqp.org/docs/interfaces/solver_settings.html#solver-settings
 https://oxfordcontrol.github.io/ClarabelDocs/stable/api_settings/
 Note that `direct_solve_method` is not supported in Drake yet. Clarabel's
 boolean options should be passed as integers (0 or 1).
+
+"DAQP" -- Parameter name and values as specified in the struct DAQPSettings
+https://darnstrom.github.io/daqp/parameters/ (see DaqpSolver for the supported
+subset).
 
 "CSDP" -- Parameter name and values as specified at
 https://manpages.ubuntu.com/manpages/focal/en/man1/csdp-randgraph.1.html */

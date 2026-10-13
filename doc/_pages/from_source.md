@@ -33,13 +33,13 @@ officially supports when building from source:
      tools/install/libdrake/drake-config.cmake.in (along with the related
      libdrake tests). -->
 
-| Operating System ⁽¹⁾                | Architecture      | Python ⁽²⁾ | Bazel | CMake | C/C++ Compiler ⁽³⁾           |
-|-------------------------------------|-------------------|------------|-------|-------|------------------------------|
-| Ubuntu 24.04 LTS (Noble Numbat)     | x86-64            | 3.12       | 9.2   | 3.28  | GCC 13 (default) or Clang 20 |
-|                                     | arm64 ⁽⁴⁾         | 3.12       | 9.2   | 3.28  | GCC 13                       |
-| Ubuntu 26.04 LTS (Resolute Raccoon) | x86-64-v3         | 3.14       | 9.2   | 4.2   | GCC 15 (default) or Clang 21 |
-|                                     | x86-64, arm64 ⁽⁴⁾ | 3.14       | 9.2   | 4.2   | GCC 15                       |
-| macOS Tahoe (26)                    | arm64             | 3.14       | 9.2   | 4.4   | Apple LLVM 21 (Xcode 26.6)   |
+| Operating System ⁽¹⁾                | Architecture      | Python ⁽²⁾ | Bazel                        | CMake | C/C++ Compiler ⁽³⁾           |
+|-------------------------------------|-------------------|------------|------------------------------|-------|------------------------------|
+| Ubuntu 24.04 LTS (Noble Numbat)     | x86-64            | 3.12       | {{site.data.versions.bazel}} | 3.28  | GCC 13 (default) or Clang 20 |
+|                                     | arm64 ⁽⁴⁾         | 3.12       | {{site.data.versions.bazel}} | 3.28  | GCC 13                       |
+| Ubuntu 26.04 LTS (Resolute Raccoon) | x86-64-v3         | 3.14       | {{site.data.versions.bazel}} | 4.2   | GCC 15 (default) or Clang 21 |
+|                                     | x86-64, arm64 ⁽⁴⁾ | 3.14       | {{site.data.versions.bazel}} | 4.2   | GCC 15                       |
+| macOS Tahoe (26)                    | arm64             | 3.14       | {{site.data.versions.bazel}} | 4.4   | Apple LLVM 21 (Xcode 27)     |
 
 "Official support" means that we have Continuous Integration test coverage to
 notice regressions, so if it doesn't work for you then please file a bug report.
@@ -181,6 +181,8 @@ Adjusting open-source dependencies:
   See `ClpSolver::available()` to retrieve this setting at runtime.
 * `WITH_CSDP` (default `ON`). When `ON`, enables the `CsdpSolver` in the build.
   See `CsdpSolver::available()` to retrieve this setting at runtime.
+* `WITH_DAQP` (default `ON`). When `ON`, enables the `DaqpSolver` in the build.
+  See `DaqpSolver::available()` to retrieve this setting at runtime.
 * `WITH_IPOPT` (default `ON`). When `ON`, enables the `IpoptSolver` in the build.
   See `IpoptSolver::available()` to retrieve this setting at runtime.
 * `WITH_NLOPT` (default `ON`). When `ON`, enables the `NloptSolver` in the build.

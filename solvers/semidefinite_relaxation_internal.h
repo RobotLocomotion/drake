@@ -36,7 +36,8 @@ bool CheckProgramHasNonConvexQuadratics(const MathematicalProgram& prog);
 void InitializeSemidefiniteRelaxationForProg(
     const MathematicalProgram& prog, const symbolic::Variable& one,
     MathematicalProgram* relaxation, MatrixX<symbolic::Variable>* X,
-    std::map<symbolic::Variable, int>* variables_to_sorted_indices,
+    std::map<symbolic::Variable, int, symbolic::Variable::CompareLess>*
+        variables_to_sorted_indices,
     std::optional<int> group_number = std::nullopt);
 
 // Iterates over the quadratic costs and constraints in prog, remove them if
@@ -47,7 +48,8 @@ void InitializeSemidefiniteRelaxationForProg(
 // and constraints are added. It cannot be null.
 void DoLinearizeQuadraticCostsAndConstraints(
     const MathematicalProgram& prog, const MatrixXDecisionVariable& X,
-    const std::map<symbolic::Variable, int>& variables_to_sorted_indices,
+    const std::map<symbolic::Variable, int, symbolic::Variable::CompareLess>&
+        variables_to_sorted_indices,
     MathematicalProgram* relaxation);
 
 // Aggregates all the finite linear constraints in the program into a single
@@ -59,7 +61,8 @@ void DoLinearizeQuadraticCostsAndConstraints(
 // linear constraints are added. It cannot be null.
 void DoAddImpliedLinearConstraints(
     const MathematicalProgram& prog, const MatrixXDecisionVariable& X,
-    const std::map<symbolic::Variable, int>& variables_to_sorted_indices,
+    const std::map<symbolic::Variable, int, symbolic::Variable::CompareLess>&
+        variables_to_sorted_indices,
     MathematicalProgram* relaxation);
 
 // For every equality constraint Ay = b in prog, adds the implied linear
@@ -70,7 +73,8 @@ void DoAddImpliedLinearConstraints(
 // linear equality constraints are added. It cannot be null.
 void DoAddImpliedLinearEqualityConstraints(
     const MathematicalProgram& prog, const MatrixXDecisionVariable& X,
-    const std::map<symbolic::Variable, int>& variables_to_sorted_indices,
+    const std::map<symbolic::Variable, int, symbolic::Variable::CompareLess>&
+        variables_to_sorted_indices,
     MathematicalProgram* relaxation);
 
 // Takes the sparse Kronecker product of A and B.

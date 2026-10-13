@@ -57,15 +57,16 @@
 ///
 /// Some Drake types may also choose to specialize `std::hash<MyValue>` to use
 /// `DefaultHash`, so that the second template argument to `std::unordered_set`
-/// can be omitted.  For example, Drake's `symbolic::Expression` header says:
+/// can be omitted.  For example, Drake's `solvers::SolverId` header says:
 /// @code
 /// namespace std {
-/// struct hash<drake::symbolic::Expression> : public drake::DefaultHash {};
+/// template <>
+/// struct hash<drake::solvers::SolverId> : public drake::DefaultHash {};
 /// }  // namespace std
 /// @endcode
 /// so that users are able to simply write:
 /// @code
-/// std::unordered_set<drake::symbolic::Expression> foo;
+/// std::unordered_set<drake::solvers::SolverId> foo;
 /// @endcode
 ///
 /// @}

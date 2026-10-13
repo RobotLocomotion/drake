@@ -40,7 +40,9 @@ struct SinCos {
   SinCosSubstitutionType type{};
 };
 
-using SinCosSubstitution = std::unordered_map<Variable, SinCos>;
+using SinCosSubstitution =
+    std::unordered_map<Variable, SinCos, std::hash<Variable>,
+                       Variable::CompareEqualTo>;
 
 /** Given a substitution map q => {s, c}, substitutes instances of sin(q) and
  cos(q) in `e` with `s` and `c`, with partial support for trigonometric

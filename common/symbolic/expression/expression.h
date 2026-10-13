@@ -67,7 +67,9 @@ class Expression;
 
 // Substitution is a map from a Variable to a symbolic expression. It is used in
 // Expression::Substitute and Formula::Substitute methods as an argument.
-using Substitution = std::unordered_map<Variable, Expression>;
+using Substitution =
+    std::unordered_map<Variable, Expression, std::hash<Variable>,
+                       Variable::CompareEqualTo>;
 
 namespace internal {
 template <bool>
@@ -225,8 +227,8 @@ class Expression {
   [[nodiscard]] bool EqualTo(const Expression& e) const;
 
   /** Provides lexicographical ordering between expressions.
-      This function is used as a compare function in map<Expression> and
-      set<Expression> via std::less<drake::symbolic::Expression>. */
+      This function can be used as the std::map or set::set comparison functor
+      via Expression::CompareLess. */
   [[nodiscard]] bool Less(const Expression& e) const;
 
   /** Checks if this symbolic expression is convertible to Polynomial. */
@@ -608,6 +610,48 @@ class Expression {
   template <bool>
   friend struct internal::Gemm;
 
+#ifdef DRAKE_SYMBOLIC_DISTINCT_COMPARATORS
+  /** Provides a strict weak ordering on expressions (see `Less`), for use as
+  the comparator of an ordered container, e.g., `std::set<Expression,
+  Expression::CompareLess>`.
+
+  Note that `std::less<Expression>` must not be used for this purpose: the C++
+  standard requires it to be equivalent to `operator<`, which for Expression
+  constructs a symbolic Formula instead of returning a bool. (For backwards
+  compatibility, on platforms other than libc++ >= 22 this is currently an alias
+  of the deprecated `std::less<Expression>` specialization; it will become a
+  distinct type on all platforms on or after 2027-02-01.) */
+  struct CompareLess {
+    bool operator()(const Expression& lhs, const Expression& rhs) const {
+      return lhs.Less(rhs);
+    }
+  };
+#else
+  using CompareLess = std::less<Expression>;
+#endif
+
+#ifdef DRAKE_SYMBOLIC_DISTINCT_COMPARATORS
+  /** Checks structural equality of expressions (see `EqualTo`), for use as the
+  key-equality predicate of an unordered container, e.g.,
+  `std::unordered_set<Expression, std::hash<Expression>,
+  Expression::CompareEqualTo>`.
+
+  Note that `std::equal_to<Expression>` must not be used for this purpose: the
+  C++ standard requires it to be equivalent to `operator==`, which for
+  Expression constructs a symbolic Formula instead of returning a bool. (For
+  backwards compatibility, on platforms other than libc++ >= 22 this is
+  currently an alias of the deprecated `std::equal_to<Expression>`
+  specialization; it will become a distinct type on all platforms on or after
+  2027-02-01.) */
+  struct CompareEqualTo {
+    bool operator()(const Expression& lhs, const Expression& rhs) const {
+      return lhs.EqualTo(rhs);
+    }
+  };
+#else
+  using CompareEqualTo = std::equal_to<Expression>;
+#endif
+
  private:
   explicit Expression(std::unique_ptr<ExpressionCell> cell);
   void ConstructExpressionCellNaN();
@@ -844,8 +888,8 @@ double get_constant_in_addition(const Expression& e);
  *  maps 'x' to 2 and 'y' to 3.
  *  \pre{@p e is an addition expression.}
  */
-const std::map<Expression, double>& get_expr_to_coeff_map_in_addition(
-    const Expression& e);
+const std::map<Expression, double, Expression::CompareLess>&
+get_expr_to_coeff_map_in_addition(const Expression& e);
 /** Returns the constant part of the multiplication expression @p e. For
  *  instance, given 7 * x^2 * y^3, it returns 7.
  *  \pre{@p e is a multiplication expression.}
@@ -856,7 +900,7 @@ double get_constant_in_multiplication(const Expression& e);
  * return value maps 'x' to 2, 'y' to 3, and 'z' to 'x'.
  *  \pre{@p e is a multiplication expression.}
  */
-const std::map<Expression, Expression>&
+const std::map<Expression, Expression, Expression::CompareLess>&
 get_base_to_exponent_map_in_multiplication(const Expression& e);
 
 /** Returns the name of an uninterpreted-function expression @p e.
@@ -915,7 +959,10 @@ template <>
 struct __is_fast_hash<hash<drake::symbolic::Expression>> : std::false_type {};
 #endif
 
-/* Provides std::less<drake::symbolic::Expression>. */
+#ifndef DRAKE_SYMBOLIC_DISTINCT_COMPARATORS
+/* Provides std::less<drake::symbolic::Expression>. This is deprecated (in favor
+of Expression::CompareLess) and will be removed from Drake on or after
+2027-02-01. */
 template <>
 struct less<drake::symbolic::Expression> {
   bool operator()(const drake::symbolic::Expression& lhs,
@@ -924,7 +971,9 @@ struct less<drake::symbolic::Expression> {
   }
 };
 
-/* Provides std::equal_to<drake::symbolic::Expression>. */
+/* Provides std::equal_to<drake::symbolic::Expression>. This is deprecated (in
+favor of Expression::CompareEqualTo) and will be removed from Drake on or
+after 2027-02-01. */
 template <>
 struct equal_to<drake::symbolic::Expression> {
   bool operator()(const drake::symbolic::Expression& lhs,
@@ -932,6 +981,7 @@ struct equal_to<drake::symbolic::Expression> {
     return lhs.EqualTo(rhs);
   }
 };
+#endif  // DRAKE_SYMBOLIC_DISTINCT_COMPARATORS
 
 /* Provides std::numeric_limits<drake::symbolic::Expression>. */
 template <>
@@ -1676,9 +1726,9 @@ typename std::enable_if_t<
 CheckStructuralEquality(const DerivedA& m1, const DerivedB& m2) {
   EIGEN_STATIC_ASSERT_SAME_MATRIX_SIZE(DerivedA, DerivedB);
   DRAKE_DEMAND(m1.rows() == m2.rows() && m1.cols() == m2.cols());
-  // Note that std::equal_to<Expression> calls Expression::EqualTo which checks
+  // Note that Expression::CompareEqualTo calls Expression::EqualTo which checks
   // structural equality between two expressions.
-  return m1.binaryExpr(m2, std::equal_to<Expression>{}).all();
+  return m1.binaryExpr(m2, Expression::CompareEqualTo{}).all();
 }
 
 }  // namespace symbolic
