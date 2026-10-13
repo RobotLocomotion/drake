@@ -339,15 +339,12 @@ void IcfBuilder<T>::CalcGeometryContactData(
 
   // Source the contact set from MultibodyPlant's position-keyed
   // geometry_contact_data cache. This performs the same ContactModel-dependent
-  // SceneGraph query the plant itself uses, but computes it once per
-  // configuration and shares it with the plant's contact path and with any
-  // ICF-based continuous force reporter, rather than issuing a redundant query
-  // here on every solve. See MultibodyPlantIcfAttorney::EvalGeometryContactData.
-  const multibody::internal::NestedGeometryContactData<T>& data =
-      MultibodyPlantIcfAttorney<T>::EvalGeometryContactData(plant_, context)
-          .get();
-  point_pairs_ = data.point_pairs;
-  surfaces_ = data.surfaces;
+  // SceneGraph query the plant itself uses, computed once per configuration.
+  // We keep only a cheap, shared handle to the results, so that (e.g.) an
+  // integrator recording contact results for the plant's output ports can share
+  // ownership of the contact surfaces without copying them.
+  geometry_contact_data_ =
+      MultibodyPlantIcfAttorney<T>::EvalGeometryContactData(plant_, context);
 }
 
 template <typename T>
@@ -356,17 +353,19 @@ void IcfBuilder<T>::AllocatePatchConstraints(IcfModel<T>* model) const {
   // N.B. This assumes that geometry info has already been computed
   DRAKE_ASSERT(model != nullptr);
   PatchConstraintsPool<T>& patches = model->patch_constraints_pool();
-  const int num_surfaces = surfaces_.size();
+  const auto& point_pairs = geometry_contact_data_.get().point_pairs;
+  const auto& surfaces = geometry_contact_data_.get().surfaces;
+  const int num_surfaces = surfaces.size();
 
   // First we'll get the number of contact pairs for point contact. There is one
   // pair per contact patch with point contact.
-  const int num_point_contacts = point_pairs_.size();
+  const int num_point_contacts = point_pairs.size();
   std::vector<int> num_pairs_per_patch(num_point_contacts, 1);
 
   // Now we'll do hydro contact. With hydro we typically have multiple contact
   // pairs in each patch.
   for (int surface = 0; surface < num_surfaces; ++surface) {
-    const auto& s = surfaces_[surface];
+    const auto& s = surfaces[surface];
     num_pairs_per_patch.push_back(s.num_faces());
   }
 
@@ -717,7 +716,8 @@ template <typename T>
 void IcfBuilder<T>::SetPatchConstraintsForPointContact(
     const systems::Context<T>& context, IcfModel<T>* model) const {
   DRAKE_DEMAND(plant_.geometry_source_is_registered());
-  const int num_point_contacts = point_pairs_.size();
+  const auto& point_pairs = geometry_contact_data_.get().point_pairs;
+  const int num_point_contacts = point_pairs.size();
   if (num_point_contacts == 0) {
     return;
   }
@@ -732,7 +732,7 @@ void IcfBuilder<T>::SetPatchConstraintsForPointContact(
   for (int point_pair_index = 0; point_pair_index < num_point_contacts;
        ++point_pair_index) {
     const geometry::PenetrationAsPointPair<T>& point_pair =
-        point_pairs_[point_pair_index];
+        point_pairs[point_pair_index];
 
     // Retrieve participating geometries and bodies.
     const geometry::GeometryId Mid = point_pair.id_A;
@@ -804,16 +804,18 @@ void IcfBuilder<T>::SetPatchConstraintsForHydroelasticContact(
   const double kDefaultDissipation =
       geometry::DefaultProximityProperties{}.hunt_crossley_dissipation.value();
 
-  const int num_surfaces = surfaces_.size();
+  const auto& point_pairs = geometry_contact_data_.get().point_pairs;
+  const auto& surfaces = geometry_contact_data_.get().surfaces;
+  const int num_surfaces = surfaces.size();
 
   PatchConstraintsPool<T>& patches = model->patch_constraints_pool();
 
   for (int surface_index = 0; surface_index < num_surfaces; ++surface_index) {
     // To get the patch index, we need to account for the fact that there may
     // be some point contact pairs that get added before this.
-    const int patch_index = surface_index + point_pairs_.size();
+    const int patch_index = surface_index + point_pairs.size();
 
-    const geometry::ContactSurface<T>& s = surfaces_[surface_index];
+    const geometry::ContactSurface<T>& s = surfaces[surface_index];
     const bool M_is_compliant = s.HasGradE_M();
     const bool N_is_compliant = s.HasGradE_N();
     DRAKE_DEMAND(M_is_compliant || N_is_compliant);

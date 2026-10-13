@@ -25,6 +25,7 @@
 #include "drake/multibody/plant/constraint_specs.h"
 #include "drake/multibody/plant/contact_results.h"
 #include "drake/multibody/plant/coulomb_friction.h"
+#include "drake/multibody/plant/discrete_step_memory.h"
 #include "drake/multibody/plant/distance_constraint_params.h"
 #include "drake/multibody/plant/dummy_physical_model.h"
 #include "drake/multibody/plant/multibody_plant_config.h"
@@ -113,9 +114,6 @@ struct ContactByPenaltyMethodParameters {
 // Forward declarations for desired_state_input.h.
 template <typename>
 struct DesiredStateInput;
-// Forward declarations for continuous_contact_force_reporter.h.
-template <typename>
-class ContinuousContactForceReporter;
 // Forward declarations for discrete_update_manager.h.
 template <typename>
 class DiscreteUpdateManager;
@@ -498,9 +496,10 @@ time step, or we could recalculate the acceleration to immediately reflect
 the changing forces. We call the former a "sampled" port and the latter a
 "live" port.
 
-For a continuous-time plant, there is no distinction -- the output port is
-always live -- it immediately reflects the instantaneous input value. It is a
-"direct feedthrough" output port (see SystemBase::GetDirectFeedthroughs()).
+For a continuous-time plant, the output ports are live by default -- they
+immediately reflect the instantaneous input value. They are "direct feedthrough"
+output ports (see SystemBase::GetDirectFeedthroughs()). Optionally, a
+continuous-time plant can be configured for sampled output ports (see below).
 
 For a discrete-time plant, the user can choose whether the output should be
 sampled or live: Use the function SetUseSampledOutputPorts() to change whether
@@ -534,6 +533,26 @@ results will not change. If you need to see changes to outputs without running
 the plant in a Simulator, then you can either use a continuous-time plant, set
 the config option `use_sampled_output_ports=false`, or use ExecuteForcedEvents()
 to force a dynamics step and then the outputs (and positions) will change.
+
+  #### Sampled output ports for a continuous-time plant
+
+A continuous-time plant does not take discrete steps itself, so it has no
+natural sample to record. However, some integrators advance the plant with a
+contact model of their own rather than by integrating the plant's continuous
+dynamics; in particular CenicIntegrator solves a convex contact problem at each
+step. For such an integrator the plant's live dynamics output ports (which
+report the plant's compliant continuous contact model) are inconsistent with
+the trajectory actually being simulated. Calling SetUseSampledOutputPorts(true)
+on a continuous-time plant declares the same sample state variable `s` used by
+discrete-time plants and switches the dynamics output ports to report it. It is
+then the integrator's responsibility to record `s` on every step it takes;
+CenicIntegrator records the contact and constraint forces of the convex problem
+that produced the current state. Before the first step (and forever, if the
+integrator in use does not record samples) the dynamics output ports report
+zero forces, zero accelerations, and empty contact results. As with a
+discrete-time plant, the presence of `s` means the Context is no longer
+purely continuous, which some Drake features (e.g., linearization) do not
+support.
 
 @anchor mbp_actuation
                 ### Actuation
@@ -1400,12 +1419,14 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
 
   ~MultibodyPlant() override;
 
-  /// (Advanced) For a discrete-time plant, configures whether the output ports
-  /// are sampled (the default) or live (opt-in).
+  /// (Advanced) Configures whether the dynamics output ports are sampled or
+  /// live. For a discrete-time plant, sampled is the default and live is
+  /// opt-in. For a continuous-time plant, live is the default and sampled is
+  /// opt-in; sampled output ports on a continuous-time plant are only useful
+  /// when the plant is advanced by an integrator that records the sample (at
+  /// present, only CenicIntegrator does so).
   /// See @ref output_port_sampling "Output port sampling" for details.
   /// @throws std::exception if the plant is already finalized.
-  /// @throws std::exception if `use_sampled_output_ports` is `true` but `this`
-  /// %MultibodyPlant is not a discrete model (is_discrete() == false).
   void SetUseSampledOutputPorts(bool use_sampled_output_ports);
 
   /// Creates a rigid body with the provided name and spatial inertia.  This
@@ -2832,26 +2853,6 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// @throws std::exception if called pre-finalize. See Finalize().
   void SetDiscreteUpdateManager(
       std::unique_ptr<internal::DiscreteUpdateManager<T>> manager);
-
-#ifndef DRAKE_DOXYGEN_CXX
-  // Sets the reporter used to compute the reaction_forces and contact_results
-  // output ports for a continuous plant that is integrated with a
-  // discrete/convex contact model (e.g. ICF via CenicIntegrator), instead of
-  // the plant's compliant continuous contact model. See
-  // internal::ContinuousContactForceReporter and (for the ICF case)
-  // AddIcfContinuousForceReporting() in multibody/cenic. Passing nullptr clears
-  // it, restoring compliant-model reporting.
-  //
-  // Because a reporter's concrete implementation may live in a target that
-  // depends on the full MultibodyPlant (as ICF does), this is an injection
-  // point rather than something the plant constructs itself. The reporter is
-  // queried purely as a function of the Context.
-  //
-  // @pre this MultibodyPlant is continuous (time_step == 0).
-  // @throws std::exception if called pre-finalize.
-  void SetContinuousContactForceReporter(
-      std::unique_ptr<internal::ContinuousContactForceReporter<T>> reporter);
-#endif
 
 #ifndef DRAKE_DOXYGEN_CXX
   // (For testing only) Adds a DummyPhysicalModel to this plant and returns the
@@ -6625,6 +6626,29 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   void CalcReactionForces(const systems::Context<T>& context,
                           std::vector<SpatialForce<T>>* output) const;
 
+  // Helper method used by CalcReactionForces() and
+  // CalcStepMemoryFromAppliedForces(). Computes the reaction force at each
+  // joint given the `applied_forces` (body spatial forces and generalized
+  // forces) and generalized accelerations `vdot`, using inverse dynamics at
+  // the kinematic state stored in `context`.
+  // @pre `output` has size num_joints().
+  void CalcReactionForcesGivenAppliedForcesAndVdot(
+      const systems::Context<T>& context,
+      const MultibodyForces<T>& applied_forces, const VectorX<T>& vdot,
+      std::vector<SpatialForce<T>>* output) const;
+
+  // Fills in the acceleration kinematics and joint reaction forces of `memory`
+  // given the `applied_forces` and generalized accelerations `vdot` of a step
+  // that started at the state stored in `context`. This is used by integrators
+  // (e.g., CenicIntegrator) that record output port samples for a
+  // continuous-time plant with use_sampled_output_ports(); see
+  // DiscreteStepMemory. The remaining fields of `memory` are the caller's
+  // responsibility.
+  void CalcStepMemoryFromAppliedForces(
+      const systems::Context<T>& context,
+      const MultibodyForces<T>& applied_forces, const VectorX<T>& vdot,
+      internal::DiscreteStepMemory::Data<T>* memory) const;
+
   // Collects joint actuator and desired state forces and externally provided
   // spatial and generalized forces.
   void AddInForcesFromInputPortsContinuous(
@@ -7050,14 +7074,6 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   // TODO(amcastro-tri): migrate the entirety of computations related to contact
   // resolution into a default contact manager.
   std::unique_ptr<internal::DiscreteUpdateManager<T>> discrete_update_manager_;
-
-  // Optional reporter that routes the reaction_forces and contact_results
-  // output ports of a continuous plant through a discrete/convex contact model
-  // (e.g. ICF via CenicIntegrator) instead of the compliant continuous contact
-  // model. Null unless injected via SetContinuousContactForceReporter(); only
-  // meaningful for a continuous-time plant.
-  std::unique_ptr<internal::ContinuousContactForceReporter<T>>
-      continuous_force_reporter_;
 
   // (Experimental) The collection of all physical models owned by
   // this MultibodyPlant.

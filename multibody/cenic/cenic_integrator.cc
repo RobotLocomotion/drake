@@ -1,6 +1,11 @@
 #include "drake/multibody/cenic/cenic_integrator.h"
 
+#include <utility>
+#include <vector>
+
 #include "drake/common/text_logging.h"
+#include "drake/multibody/plant/discrete_step_memory.h"
+#include "drake/multibody/plant/multibody_plant_icf_attorney.h"
 #include "drake/multibody/plant/slicing_and_indexing.h"
 #include "drake/systems/framework/system_visitor.h"
 
@@ -9,9 +14,12 @@ namespace multibody {
 
 using contact_solvers::icf::IcfSolverParameters;
 using contact_solvers::icf::internal::IcfBuilder;
+using contact_solvers::icf::internal::IcfData;
 using contact_solvers::icf::internal::IcfLinearFeedbackGains;
 using contact_solvers::icf::internal::IcfModel;
 using internal::CenicDiagramStructure;
+using internal::DiscreteStepMemory;
+using internal::MultibodyPlantIcfAttorney;
 using internal::SubsystemPath;
 using multibody::internal::ExpandRows;
 using systems::Context;
@@ -214,6 +222,15 @@ void CenicIntegrator<T>::Scratch::Resize(const MultibodyPlant<T>& plant,
   actuation_feedback_storage.Resize(nv);
   external_feedback_storage.Resize(nv);
 
+  if (plant.has_sampled_output_ports()) {
+    applied_forces = std::make_unique<MultibodyForces<T>>(plant);
+    vdot.resize(nv);
+    generalized_forces.resize(nv);
+    tau_contact.resize(nv);
+    net_actuation.resize(plant.num_actuated_dofs());
+    actuation_matrix = plant.MakeActuationMatrix();
+  }
+
   // Allocate intermediate states for error control.
   x_next_full = system.AllocateTimeDerivatives();
   x_next_half_1 = system.AllocateTimeDerivatives();
@@ -361,6 +378,9 @@ bool CenicIntegrator<T>::DoStep(const T& h) {
   if (this->get_fixed_step_mode()) {
     // We're using fixed step mode, so we can just set the state to x_{t+h} and
     // move on. No need for error estimation.
+    if (plant().has_sampled_output_ports()) {
+      RecordStepMemory(model_at_x0_, has_actuation_forces, has_external_forces);
+    }
     // N.B. this is slightly faster than x_next.SetFrom(x_next_full), because
     // it saves an intermediate Eigen representation.
     x_next.get_mutable_vector().SetFrom(x_next_full.get_vector());
@@ -401,7 +421,11 @@ bool CenicIntegrator<T>::DoStep(const T& h) {
     ComputeNextContinuousState(model_at_xh_, v_guess, &x_next_half_2);
 
     // Set the state to the result of the second half-step (since this is more
-    // accurate than the full step, and we have it anyway).
+    // accurate than the full step, and we have it anyway). Since that's the
+    // state we'll report, its solve is the one we sample for output ports.
+    if (plant().has_sampled_output_ports()) {
+      RecordStepMemory(model_at_xh_, has_actuation_forces, has_external_forces);
+    }
     x_next.get_mutable_vector().SetFrom(x_next_half_2.get_vector());
     context.SetTimeAndNoteContinuousStateChange(t0 + h);
 
@@ -510,6 +534,226 @@ void CenicIntegrator<T>::ComputeNextContinuousState(
     // #created_for_root_system: See explicit check above.
     GetMutableSubstateByPath(*x_next, path).SetFromVector(sub_xc_next);
   }
+}
+
+template <typename T>
+void CenicIntegrator<T>::RecordStepMemory(const IcfModel<T>& model,
+                                          bool has_actuation_forces,
+                                          bool has_external_forces) {
+  DRAKE_DEMAND(plant().has_sampled_output_ports());
+  DRAKE_DEMAND(scratch_.applied_forces != nullptr);
+  const MultibodyPlant<T>& mbp = plant();
+  Context<T>& root_context = *this->get_mutable_context();
+  const Context<T>& context = mbp.GetMyContextFromRoot(root_context);
+
+  // The solve's time step δt and its solution v (already expanded to the full
+  // set of velocities when joint locking reduced the problem).
+  const T& dt = model.time_step();
+  const VectorX<T>& v = data_.v();
+  DRAKE_DEMAND(v.size() == model.num_velocities());
+
+  // Evaluate the (full, unreduced) model's constraint impulses at the
+  // solution. We use the full model rather than the reduced one so that the
+  // impulses of constraints acting on locked bodies are still reported; at the
+  // same velocities the two agree on every impulse. This is a single
+  // constraint evaluation, much cheaper than a solve.
+  IcfData<T>& data = scratch_.report_data;
+  model.ResizeData(&data);
+  data.set_v(v);
+  model.CalcData(v, &data);
+
+  // Assemble the forces applied to the plant during this step:
+  //  - force elements (gravity, springs, dampers, etc.),
+  //  - externally applied forces from the plant's input ports,
+  //  - actuation, and
+  //  - ICF contact and constraint forces, each impulse divided by δt.
+  MultibodyForces<T>& forces = *scratch_.applied_forces;
+  std::vector<SpatialForce<T>>& F_Bo_W_array = forces.mutable_body_forces();
+  VectorX<T>& tau = forces.mutable_generalized_forces();
+  mbp.CalcForceElementsContribution(context, &forces);  // Resets `forces`.
+  MultibodyPlantIcfAttorney<T>::AddAppliedExternalGeneralizedForces(
+      mbp, context, &forces);
+  MultibodyPlantIcfAttorney<T>::AddAppliedExternalSpatialForces(mbp, context,
+                                                                &forces);
+
+  // Actuation. When the model has actuation gain constraints, the constraint
+  // impulses are the (implicit, effort-limited) actuation that was applied.
+  // Otherwise fall back to the (effort-limited) actuation input.
+  VectorX<T>& tau_u = scratch_.generalized_forces;
+  VectorX<T>& net_actuation = scratch_.net_actuation;
+  if (has_actuation_forces) {
+    tau_u.setZero();
+    const auto& gains = model.gain_constraints_pool();
+    const auto& gain_data = data.gain_constraints_data();
+    // External force constraints, if any, come first in the pool, one per
+    // clique, followed by the actuation constraints. See IcfBuilder.
+    const int actuation_start = has_external_forces ? model.num_cliques() : 0;
+    for (int k = actuation_start; k < gains.num_constraints(); ++k) {
+      model.mutable_clique_segment(gains.clique()[k], &tau_u) +=
+          gain_data.gamma(k) / dt;
+    }
+    net_actuation = scratch_.actuation_matrix.transpose() * tau_u;
+  } else {
+    net_actuation = MultibodyPlantIcfAttorney<T>::EvalActuationInput(
+        mbp, context, /* apply_effort_limit = */ true);
+    tau_u = scratch_.actuation_matrix * net_actuation;
+  }
+  tau += tau_u;
+
+  // Adds the spatial impulse Γ (about the body origin, in world) applied to
+  // the given ICF body, as a force, into the applied body forces. ICF body
+  // indices are plant BodyIndex values; anchored bodies carry no dynamics.
+  auto add_body_impulse = [&](int icf_body, const Vector6<T>& Gamma_Bo_W) {
+    if (model.is_anchored(icf_body)) return;
+    const internal::MobodIndex mobod =
+        mbp.get_body(BodyIndex(icf_body)).mobod_index();
+    F_Bo_W_array[mobod] += SpatialForce<T>(Gamma_Bo_W / dt);
+  };
+
+  // Contact patches: the pool stores the spatial impulse Γ_Bo_W on body B; the
+  // impulse on body A is its negation shifted to Ao.
+  const auto& patches = model.patch_constraints_pool();
+  const auto& patch_data = data.patch_constraints_data();
+  for (int p = 0; p < patches.num_patches(); ++p) {
+    const int body_b = patches.bodies()[p].first;
+    const int body_a = patches.bodies()[p].second;
+    const Vector6<T> Gamma_Bo_W = patch_data.Gamma_Bo_W_pool()[p];
+    add_body_impulse(body_b, Gamma_Bo_W);
+    if (!model.is_anchored(body_a)) {
+      const Vector3<T> p_BoAo_W = -Vector3<T>(patches.p_AB_W()[p]);
+      const SpatialForce<T> Gamma_Ao_W =
+          SpatialForce<T>(Vector6<T>(-Gamma_Bo_W)).Shift(p_BoAo_W);
+      add_body_impulse(body_a, Gamma_Ao_W.get_coeffs());
+    }
+  }
+
+  // Weld and ball constraints: CalcSpatialImpulses() resolves the impulse on
+  // each body about its origin. Body pairs are ordered (A, B).
+  {
+    const auto& welds = model.weld_constraints_pool();
+    const auto& weld_data = data.weld_constraints_data();
+    for (int k = 0; k < welds.num_constraints(); ++k) {
+      Vector6<T> Gamma_Bo_W, Gamma_Ao_W;
+      welds.CalcSpatialImpulses(k, weld_data.gamma(k), &Gamma_Bo_W,
+                                &Gamma_Ao_W);
+      add_body_impulse(welds.body_pairs()[k].second, Gamma_Bo_W);
+      add_body_impulse(welds.body_pairs()[k].first, Gamma_Ao_W);
+    }
+    const auto& balls = model.ball_constraints_pool();
+    const auto& ball_data = data.ball_constraints_data();
+    for (int k = 0; k < balls.num_constraints(); ++k) {
+      Vector6<T> Gamma_Bo_W, Gamma_Ao_W;
+      balls.CalcSpatialImpulses(k, ball_data.gamma(k), &Gamma_Bo_W,
+                                &Gamma_Ao_W);
+      add_body_impulse(balls.body_pairs()[k].second, Gamma_Bo_W);
+      add_body_impulse(balls.body_pairs()[k].first, Gamma_Ao_W);
+    }
+  }
+
+  // Joint limits and couplers act in generalized coordinates. Each pool's
+  // AccumulateGradient() adds ∇ℓ = -Jᵀγ, so the generalized force is -∇ℓ/δt.
+  VectorX<T>& g = scratch_.generalized_forces;  // Done with tau_u.
+  g.setZero();
+  model.limit_constraints_pool().AccumulateGradient(data, &g);
+  model.coupler_constraints_pool().AccumulateGradient(data, &g);
+  tau -= g / dt;
+
+  // Generalized contact forces, for the generalized_contact_forces ports.
+  VectorX<T>& tau_contact = scratch_.tau_contact;
+  g.setZero();
+  patches.AccumulateGradient(data, &g);
+  tau_contact = -g / dt;
+
+  // The step's generalized accelerations.
+  VectorX<T>& vdot = scratch_.vdot;
+  vdot = (v - model.v0()) / dt;
+
+  // Contact results, one PointPairContactInfo per point pair and one
+  // HydroelasticContactInfo per contact surface. IcfBuilder orders patches as
+  // all point pairs (one contact pair each) followed by all surfaces.
+  const internal::GeometryContactData<T>& geometry_contact_data =
+      builder_->geometry_contact_data();
+  const auto& point_pairs = geometry_contact_data.get().point_pairs;
+  const auto& surfaces = geometry_contact_data.get().surfaces;
+  const int num_point_pairs = std::ssize(point_pairs);
+  const int num_surfaces = std::ssize(surfaces);
+  DRAKE_DEMAND(patches.num_patches() == num_point_pairs + num_surfaces);
+  std::vector<PointPairContactInfo<T>> point_pair_infos;
+  std::vector<HydroelasticContactInfo<T>> hydroelastic_infos;
+  if (patches.num_patches() > 0) {
+    const geometry::SceneGraphInspector<T>& inspector =
+        mbp.EvalSceneGraphInspector(context);
+    auto body_of_geometry = [&](geometry::GeometryId id) {
+      const RigidBody<T>* body =
+          mbp.GetBodyFromFrameId(inspector.GetFrameId(id));
+      DRAKE_DEMAND(body != nullptr);
+      return body->index();
+    };
+    auto p_WBo_of = [&](int icf_body) -> const Vector3<T>& {
+      return mbp.get_body(BodyIndex(icf_body))
+          .EvalPoseInWorld(context)
+          .translation();
+    };
+    point_pair_infos.reserve(num_point_pairs);
+    for (int p = 0; p < num_point_pairs; ++p) {
+      const geometry::PenetrationAsPointPair<T>& point_pair = point_pairs[p];
+      const BodyIndex bodyA_index = body_of_geometry(point_pair.id_A);
+      const BodyIndex bodyB_index = body_of_geometry(point_pair.id_B);
+      // The pool's body B is the dynamic body, which may be either of the
+      // point pair's bodies. Contact results report the force on body B of the
+      // point pair.
+      const int pool_body_b = patches.bodies()[p].first;
+      const int pair = patches.patch_pair_index(p, 0);
+      const Vector6<T> Gamma_Bo_W = patch_data.Gamma_Bo_W_pool()[p];
+      const Vector3<T> f_poolB_W = Gamma_Bo_W.template tail<3>() / dt;
+      const Vector3<T> f_Bc_W =
+          (pool_body_b == bodyB_index) ? f_poolB_W : Vector3<T>(-f_poolB_W);
+      const Vector3<T> p_WC =
+          p_WBo_of(pool_body_b) + Vector3<T>(patches.p_BC_W()[pair]);
+      const Vector3<T> v_AcBc_W = patch_data.v_AcBc_W_pool()[pair];
+      const Vector3<T> nhat_W = patches.normal_W()[pair];
+      const T separation_speed = v_AcBc_W.dot(nhat_W);
+      const T slip_speed =
+          (v_AcBc_W - separation_speed * nhat_W).norm();  // Symmetric in A, B.
+      point_pair_infos.emplace_back(bodyA_index, bodyB_index, f_Bc_W, p_WC,
+                                    separation_speed, slip_speed, point_pair);
+    }
+    hydroelastic_infos.reserve(num_surfaces);
+    for (int s = 0; s < num_surfaces; ++s) {
+      const geometry::ContactSurface<T>& surface = surfaces[s];
+      const int p = num_point_pairs + s;
+      const int pool_body_b = patches.bodies()[p].first;
+      const BodyIndex bodyM_index = body_of_geometry(surface.id_M());
+      // Contact results report the spatial force on body M (the surface's
+      // first body), applied at the surface centroid O.
+      const SpatialForce<T> F_poolB_Bo_W(
+          Vector6<T>(patch_data.Gamma_Bo_W_pool()[p]) / dt);
+      const Vector3<T> p_BoO_W = surface.centroid() - p_WBo_of(pool_body_b);
+      const SpatialForce<T> F_poolB_O_W = F_poolB_Bo_W.Shift(p_BoO_W);
+      const SpatialForce<T> F_Mo_W =
+          (pool_body_b == bodyM_index) ? F_poolB_O_W : -F_poolB_O_W;
+      // The raw pointer is kept alive by the backing store, below.
+      hydroelastic_infos.emplace_back(&surface, F_Mo_W);
+    }
+  }
+  ContactResults<T> contact_results(std::move(point_pair_infos),
+                                    std::move(hydroelastic_infos), {},
+                                    geometry_contact_data.Share());
+  contact_results.set_plant(&mbp);
+
+  // Everything is computed; now write the sample into the plant's State. This
+  // notifies the framework that abstract state changed, invalidating the
+  // sampled output ports.
+  Context<T>& plant_context = mbp.GetMyMutableContextFromRoot(&root_context);
+  DiscreteStepMemory::Data<T>& memory =
+      plant_context.template get_mutable_abstract_state<DiscreteStepMemory>(0)
+          .template Allocate<T>(GetInternalTree(mbp).forest());
+  MultibodyPlantIcfAttorney<T>::CalcStepMemoryFromAppliedForces(
+      mbp, context, forces, vdot, &memory);
+  memory.contact_solver_results.tau_contact = tau_contact;
+  memory.net_actuation = net_actuation;
+  memory.geometry_contact_data = geometry_contact_data;
+  memory.contact_results = std::move(contact_results);
 }
 
 template <typename T>

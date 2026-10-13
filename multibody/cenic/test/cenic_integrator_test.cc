@@ -1,5 +1,6 @@
 #include "drake/multibody/cenic/cenic_integrator.h"
 
+#include <cmath>
 #include <limits>
 #include <memory>
 #include <set>
@@ -14,6 +15,8 @@
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/multibody_plant.h"
+#include "drake/multibody/tree/revolute_joint.h"
+#include "drake/multibody/tree/uniform_gravity_field_element.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/analysis/test_utilities/spring_mass_system.h"
 #include "drake/systems/controllers/pid_controller.h"
@@ -86,7 +89,13 @@ class SimulationTestScenario : public testing::TestWithParam<TestParam> {
     plant_depth_ = std::get<0>(params);
     external_depth_ = std::get<1>(params);
     have_scene_graph_ = std::get<2>(params);
-    plant_ = AddPlant(builder_.get(), have_scene_graph_);
+    if (have_scene_graph_) {
+      auto result = AddMultibodyPlantSceneGraph(builder_.get(), 0.0);
+      plant_ = &result.plant;
+      scene_graph_ = &result.scene_graph;
+    } else {
+      plant_ = builder_->AddNamedSystem<MultibodyPlant<double>>("plant", 0.0);
+    }
     plant_nest_ = plant_;
     AddModels();
   }
@@ -177,14 +186,6 @@ class SimulationTestScenario : public testing::TestWithParam<TestParam> {
     integrator_->set_target_accuracy(1e-3);
   }
 
-  static MultibodyPlant<double>* AddPlant(DiagramBuilder<double>* builder,
-                                          bool have_scene_graph) {
-    if (have_scene_graph) {
-      return &AddMultibodyPlantSceneGraph(builder, 0.0).plant;
-    }
-    return builder->AddNamedSystem<MultibodyPlant<double>>("plant", 0.0);
-  }
-
   // Only available prior to Build().
   std::unique_ptr<DiagramBuilder<double>> builder_{
       std::make_unique<DiagramBuilder<double>>()};
@@ -201,6 +202,8 @@ class SimulationTestScenario : public testing::TestWithParam<TestParam> {
   bool have_scene_graph_{false};
   // A direct reference to the plant. Use it for type-specific API access.
   MultibodyPlant<double>* plant_{nullptr};
+  // The scene graph, iff have_scene_graph_.
+  geometry::SceneGraph<double>* scene_graph_{nullptr};
 
   // Depending on the value of plant_depth_, plant_nest_ will either be a
   // pointer to the plant (depth 0), or a pointer to a stack of diagrams
@@ -589,6 +592,7 @@ TEST_P(DoublePendulum, EffortLimits) {
     // analytically.
     joint.set_default_damping_vector(VectorXd::Zero(1));
   }
+  plant_->SetUseSampledOutputPorts(true);
   Build();
 
   // Apply large torques that would exceed the effort limits.
@@ -619,12 +623,20 @@ TEST_P(DoublePendulum, EffortLimits) {
   EXPECT_TRUE(u_requested[1] > 0.2);
 
   // Applied actuation should be clamped to effort limits.
-  // TODO(#24074): report this in plant.get_net_actuation_output_port().
   const VectorXd v = plant_->GetVelocities(*plant_context_);
   const VectorXd u_applied = M * (v - v0) / h + k;
 
   EXPECT_NEAR(u_applied[0], 0.1, 10 * kEpsilon);
   EXPECT_NEAR(u_applied[1], 0.2, 10 * kEpsilon);
+
+  // The sampled net_actuation port reports the clamped actuation, and the
+  // sampled generalized_acceleration port reports the step's acceleration.
+  const VectorXd u_net =
+      plant_->get_net_actuation_output_port().Eval(*plant_context_);
+  EXPECT_TRUE(CompareMatrices(u_net, Vector2d(0.1, 0.2), 1e-6));
+  const VectorXd vdot =
+      plant_->get_generalized_acceleration_output_port().Eval(*plant_context_);
+  EXPECT_TRUE(CompareMatrices(vdot, (v - v0) / h, 1e-6));
 }
 
 /* Checks that coupler constraints are handled correctly by the integrator. */
@@ -803,11 +815,349 @@ TEST_P(BallOnTable, ExternalForces) {
   EXPECT_NO_THROW(simulator_->AdvanceTo(simulation_time + 0.1));
 }
 
+/* Returns the sum of the masses of all bodies in the plant, except world. */
+double CalcTotalMass(const MultibodyPlant<double>& plant,
+                     const Context<double>& context) {
+  double mass = 0.0;
+  for (BodyIndex i(1); i < plant.num_bodies(); ++i) {
+    mass += plant.get_body(i).get_mass(context);
+  }
+  return mass;
+}
+
+const std::vector<SpatialForce<double>>& EvalReactionForces(
+    const MultibodyPlant<double>& plant, const Context<double>& context) {
+  return plant.get_reaction_forces_output_port()
+      .Eval<std::vector<SpatialForce<double>>>(context);
+}
+
+const ContactResults<double>& EvalContactResults(
+    const MultibodyPlant<double>& plant, const Context<double>& context) {
+  return plant.get_contact_results_output_port().Eval<ContactResults<double>>(
+      context);
+}
+
+/* Checks the sampled dynamics output ports of a continuous plant integrated by
+CENIC, for a system without contact or constraints. */
+TEST_P(DoublePendulum, SampledOutputPorts) {
+  plant_->SetUseSampledOutputPorts(true);
+  Build();
+  const int nv = plant_->num_velocities();
+  const auto& vdot_port = plant_->get_generalized_acceleration_output_port();
+
+  // Before the first step, the sampled dynamics ports are all zero or empty.
+  for (const SpatialForce<double>& F :
+       EvalReactionForces(*plant_, *plant_context_)) {
+    EXPECT_TRUE(F.get_coeffs().isZero());
+  }
+  EXPECT_TRUE(vdot_port.Eval(*plant_context_).isZero());
+  EXPECT_EQ(
+      EvalContactResults(*plant_, *plant_context_).num_point_pair_contacts(),
+      0);
+
+  // Take a single fixed step of size h.
+  const double h = 1e-3;
+  const VectorXd x0 = plant_->GetPositionsAndVelocities(*plant_context_);
+  integrator_->set_fixed_step_mode(true);
+  integrator_->set_maximum_step_size(h);
+  simulator_->AdvanceTo(h);
+  ASSERT_EQ(integrator_->get_num_steps_taken(), 1);
+  const VectorXd v0 = x0.tail(nv);
+  const VectorXd v1 = plant_->GetVelocities(*plant_context_);
+
+  // The sampled acceleration is exactly the step's finite difference.
+  EXPECT_TRUE(CompareMatrices(vdot_port.Eval(*plant_context_), (v1 - v0) / h,
+                              100 * kEpsilon));
+
+  // The sampled reaction forces match the live reaction forces of an identical
+  // (unsampled) continuous plant at the state where the step started, up to
+  // O(h) differences (e.g., joint damping is implicit in the ICF step).
+  MultibodyPlant<double> reference_plant(0.0);
+  Parser(&reference_plant).AddModelsFromString(kDoublePendulumMjcf, "xml");
+  reference_plant.Finalize();
+  auto reference_context = reference_plant.CreateDefaultContext();
+  reference_plant.SetPositionsAndVelocities(reference_context.get(), x0);
+  const std::vector<SpatialForce<double>>& expected =
+      EvalReactionForces(reference_plant, *reference_context);
+  const std::vector<SpatialForce<double>>& actual =
+      EvalReactionForces(*plant_, *plant_context_);
+  ASSERT_EQ(actual.size(), expected.size());
+  for (int i = 0; i < std::ssize(actual); ++i) {
+    EXPECT_TRUE(CompareMatrices(actual[i].get_coeffs(),
+                                expected[i].get_coeffs(), 1e-3,
+                                MatrixCompareType::absolute));
+    EXPECT_GT(actual[i].translational().norm(), 1e-3);
+  }
+
+  // Continue in error-controlled mode. The sample is refreshed on every step
+  // and remains physically reasonable.
+  integrator_->set_fixed_step_mode(false);
+  integrator_->set_maximum_step_size(0.1);
+  simulator_->AdvanceTo(0.5);
+  const double weight = CalcTotalMass(*plant_, *plant_context_) *
+                        UniformGravityFieldElement<double>::kDefaultStrength;
+  const std::vector<SpatialForce<double>>& reactions =
+      EvalReactionForces(*plant_, *plant_context_);
+  EXPECT_TRUE(reactions[0].get_coeffs().allFinite());
+  EXPECT_GT(reactions[0].translational().norm(), 0.1 * weight);
+  EXPECT_LT(reactions[0].translational().norm(), 10.0 * weight);
+  EXPECT_FALSE(vdot_port.Eval(*plant_context_).isZero());
+}
+
+/* The motivating case for sampled reporting: a near-rigid weld constraint with
+a small initial violation. Evaluating the ICF constraint force law at the
+current configuration would report a huge (unphysical) force; the impulse of the
+solve that actually advanced the state is O(weight). */
+TEST_P(DoublePendulum, SampledReactionForcesWithWeldConstraint) {
+  // Find the pose of link2 in link1 at the zero configuration.
+  RigidTransformd X_L1L2;
+  {
+    MultibodyPlant<double> scratch(0.0);
+    Parser(&scratch).AddModelsFromString(kDoublePendulumMjcf, "xml");
+    scratch.Finalize();
+    auto context = scratch.CreateDefaultContext();
+    X_L1L2 = scratch.CalcRelativeTransform(
+        *context, scratch.GetBodyByName("link1").body_frame(),
+        scratch.GetBodyByName("link2").body_frame());
+  }
+
+  // Weld link2 to link1 at that pose, offset by a tiny violation.
+  const double violation = 1e-8;
+  const auto& link1 = plant_->GetBodyByName("link1");
+  const auto& link2 = plant_->GetBodyByName("link2");
+  plant_->AddWeldConstraint(
+      link1, X_L1L2 * RigidTransformd(Eigen::Vector3d(0.0, 0.0, violation)),
+      link2, RigidTransformd());
+  plant_->SetUseSampledOutputPorts(true);
+  Build();
+
+  // Start at the zero configuration for joint2 (consistent with the weld up
+  // to the violation) with joint2 at rest, and joint1 swinging.
+  plant_->SetPositions(plant_context_, Vector2d(M_PI / 4, 0.0));
+  plant_->SetVelocities(plant_context_, Vector2d(0.1, 0.0));
+  const double weight = CalcTotalMass(*plant_, *plant_context_) *
+                        UniformGravityFieldElement<double>::kDefaultStrength;
+
+  const double h = 1e-3;
+  integrator_->set_fixed_step_mode(true);
+  integrator_->set_maximum_step_size(h);
+  simulator_->AdvanceTo(h);
+  ASSERT_EQ(integrator_->get_num_steps_taken(), 1);
+
+  // The weld holds joint2 (near) still.
+  const VectorXd v = plant_->GetVelocities(*plant_context_);
+  EXPECT_NEAR(v[1], 0.0, 1e-3);
+
+  // Reaction forces are O(weight); both joints carry load.
+  const std::vector<SpatialForce<double>>& reactions =
+      EvalReactionForces(*plant_, *plant_context_);
+  ASSERT_EQ(std::ssize(reactions), 2);
+  for (const SpatialForce<double>& F : reactions) {
+    EXPECT_TRUE(F.get_coeffs().allFinite());
+    EXPECT_LT(F.translational().norm(), 10.0 * weight);
+    EXPECT_GT(F.translational().norm(), 0.01 * weight);
+  }
+  const VectorXd vdot =
+      plant_->get_generalized_acceleration_output_port().Eval(*plant_context_);
+  EXPECT_TRUE(vdot.allFinite());
+  EXPECT_LT(vdot.cwiseAbs().maxCoeff(), 1e3);
+}
+
+/* Checks sampled reaction forces when joint locking reduces the ICF problem:
+the locked joint must still report the load it carries. */
+TEST_P(DoublePendulum, SampledReactionForcesWithJointLocking) {
+  plant_->SetUseSampledOutputPorts(true);
+  Build();
+  plant_->SetPositions(plant_context_, Vector2d(M_PI / 4, 0.3));
+  plant_->SetVelocities(plant_context_, Vector2d(0.5, 0.0));
+  const auto& joint2 = plant_->GetJointByName("joint2");
+  joint2.Lock(plant_context_);
+
+  const double h = 1e-3;
+  integrator_->set_fixed_step_mode(true);
+  integrator_->set_maximum_step_size(h);
+  simulator_->AdvanceTo(h);
+  ASSERT_EQ(integrator_->get_num_steps_taken(), 1);
+
+  const VectorXd vdot =
+      plant_->get_generalized_acceleration_output_port().Eval(*plant_context_);
+  EXPECT_EQ(vdot[1], 0.0);  // Locked.
+  EXPECT_NE(vdot[0], 0.0);
+
+  // The locked joint2 carries link2: its reaction force is nonzero, and the
+  // reaction torque about the hinge axis (y) is nonzero, unlike for a free
+  // hinge.
+  const std::vector<SpatialForce<double>>& reactions =
+      EvalReactionForces(*plant_, *plant_context_);
+  const SpatialForce<double>& F_joint2 = reactions[joint2.ordinal()];
+  EXPECT_TRUE(F_joint2.get_coeffs().allFinite());
+  EXPECT_GT(F_joint2.translational().norm(), 1e-3);
+  EXPECT_GT(std::abs(F_joint2.rotational()[1]), 1e-4);
+
+  // For comparison, the unlocked hinge transmits only its (small) damping
+  // torque about its axis, up to the O(h) inconsistency between the implicit
+  // ICF step and inverse dynamics at the start of the step.
+  const auto& joint1 = plant_->GetJointByName<RevoluteJoint>("joint1");
+  const double v1_0 = 0.5;  // Initial rate of joint1, set above.
+  EXPECT_NEAR(reactions[joint1.ordinal()].rotational()[1],
+              -joint1.default_damping() * v1_0, 1e-4);
+}
+
 INSTANTIATE_TEST_SUITE_P(
     AllParamsPendulum, DoublePendulum,
     testing::Combine(testing::Range(0, 3), testing::Range(0, 3),
                      testing::Bool()),
     [](const testing::TestParamInfo<DoublePendulum::ParamType>& x) {
+      return fmt::format("plant_depth_{}_external_depth_{}_scene_graph_{}",
+                         std::get<0>(x.param), std::get<1>(x.param),
+                         std::get<2>(x.param));
+    });
+
+/* Checks the sampled contact-related output ports for a ball resting on the
+table. When `hydroelastic` is true, the ball and table are made compliant
+hydroelastic so that contact is reported as a contact surface; otherwise as a
+point pair. */
+class BallOnTableSampled : public BallOnTable {
+ protected:
+  void CheckSampledContact(bool hydroelastic) {
+    if (have_scene_graph_ && hydroelastic) {
+      geometry::SceneGraphConfig config;
+      config.default_proximity_properties.compliance_type = "compliant";
+      config.default_proximity_properties.resolution_hint = 0.05;
+      scene_graph_->set_config(config);
+    }
+    plant_->SetUseSampledOutputPorts(true);
+    Build();
+
+    // Place the ball on the table at rest.
+    const double radius = 0.1;
+    VectorXd q0 = plant_->GetPositions(*plant_context_);
+    q0[6] = radius;
+    plant_->SetPositions(plant_context_, q0);
+    const auto& ball = plant_->GetBodyByName("link1");
+    const double g = UniformGravityFieldElement<double>::kDefaultStrength;
+    const double weight = ball.get_mass(*plant_context_) * g;
+
+    // Let it settle (error-controlled steps).
+    simulator_->AdvanceTo(1.0);
+
+    const ContactResults<double>& contact_results =
+        EvalContactResults(*plant_, *plant_context_);
+    EXPECT_EQ(contact_results.plant(), plant_);
+    const VectorXd vdot =
+        plant_->get_generalized_acceleration_output_port().Eval(
+            *plant_context_);
+    const VectorXd tau_contact =
+        plant_
+            ->get_generalized_contact_forces_output_port(ball.model_instance())
+            .Eval(*plant_context_);
+    const std::vector<SpatialForce<double>>& reactions =
+        EvalReactionForces(*plant_, *plant_context_);
+    ASSERT_EQ(std::ssize(reactions), 1);
+
+    if (!have_scene_graph_) {
+      // Without geometry, the ball is in free fall.
+      EXPECT_EQ(contact_results.num_point_pair_contacts(), 0);
+      EXPECT_EQ(contact_results.num_hydroelastic_contacts(), 0);
+      EXPECT_TRUE(CompareMatrices(
+          vdot, (VectorXd(6) << 0, 0, 0, 0, 0, -g).finished(), 1e-9));
+      EXPECT_TRUE(tau_contact.isZero());
+      return;
+    }
+
+    // At rest, the contact force balances the weight, the ball does not
+    // accelerate, and the free joint transmits no force.
+    const double tolerance = 0.05 * weight;
+    EXPECT_LT(vdot.cwiseAbs().maxCoeff(), 0.05 * g);
+    EXPECT_LT(reactions[0].get_coeffs().norm(), tolerance);
+    EXPECT_TRUE(CompareMatrices(
+        tau_contact, (VectorXd(6) << 0, 0, 0, 0, 0, weight).finished(),
+        tolerance));
+    const auto& accelerations =
+        plant_->get_body_spatial_accelerations_output_port()
+            .Eval<std::vector<SpatialAcceleration<double>>>(*plant_context_);
+    EXPECT_LT(accelerations[ball.index()].get_coeffs().norm(), 0.05 * g);
+
+    // The contact results report the force on the ball.
+    const geometry::SceneGraphInspector<double>& inspector =
+        scene_graph_->model_inspector();
+    if (hydroelastic) {
+      ASSERT_EQ(contact_results.num_hydroelastic_contacts(), 1);
+      EXPECT_EQ(contact_results.num_point_pair_contacts(), 0);
+      const HydroelasticContactInfo<double>& info =
+          contact_results.hydroelastic_contact_info(0);
+      const RigidBody<double>* body_M = plant_->GetBodyFromFrameId(
+          inspector.GetFrameId(info.contact_surface().id_M()));
+      ASSERT_NE(body_M, nullptr);
+      // F_Ac_W is the force on body M (== A). The force on the ball is +weight.
+      const double sign = (body_M->index() == ball.index()) ? 1.0 : -1.0;
+      EXPECT_TRUE(CompareMatrices(sign * info.F_Ac_W().translational(),
+                                  Eigen::Vector3d(0, 0, weight), tolerance));
+      EXPECT_LT(info.F_Ac_W().rotational().norm(), tolerance * radius);
+    } else {
+      ASSERT_EQ(contact_results.num_point_pair_contacts(), 1);
+      EXPECT_EQ(contact_results.num_hydroelastic_contacts(), 0);
+      const PointPairContactInfo<double>& info =
+          contact_results.point_pair_contact_info(0);
+      const RigidBody<double>* body_A = plant_->GetBodyFromFrameId(
+          inspector.GetFrameId(info.point_pair().id_A));
+      const RigidBody<double>* body_B = plant_->GetBodyFromFrameId(
+          inspector.GetFrameId(info.point_pair().id_B));
+      ASSERT_NE(body_A, nullptr);
+      ASSERT_NE(body_B, nullptr);
+      EXPECT_EQ(info.bodyA_index(), body_A->index());
+      EXPECT_EQ(info.bodyB_index(), body_B->index());
+      // contact_force() is the force on body B. The force on the ball is
+      // +weight.
+      const double sign = (info.bodyB_index() == ball.index()) ? 1.0 : -1.0;
+      EXPECT_TRUE(CompareMatrices(sign * info.contact_force(),
+                                  Eigen::Vector3d(0, 0, weight), tolerance));
+      // The contact point is at the bottom of the ball, near the table.
+      EXPECT_NEAR(info.contact_point()[2], 0.0, 1e-3);
+      EXPECT_NEAR(info.separation_speed(), 0.0, 1e-3);
+      EXPECT_NEAR(info.slip_speed(), 0.0, 1e-3);
+    }
+
+    // Lock the ball. As for a discrete plant, MultibodyPlant filters out
+    // contacts between bodies that both have no degrees of freedom (here the
+    // locked ball and the world), so the sample reports no contact, no
+    // contact forces, and no acceleration -- rather than stale values from
+    // before the lock.
+    ball.Lock(plant_context_);
+    simulator_->AdvanceTo(1.1);
+    const ContactResults<double>& locked_results =
+        EvalContactResults(*plant_, *plant_context_);
+    EXPECT_EQ(locked_results.num_hydroelastic_contacts(), 0);
+    EXPECT_EQ(locked_results.num_point_pair_contacts(), 0);
+    EXPECT_TRUE(
+        plant_
+            ->get_generalized_contact_forces_output_port(ball.model_instance())
+            .Eval(*plant_context_)
+            .isZero());
+    EXPECT_TRUE(plant_->get_generalized_acceleration_output_port()
+                    .Eval(*plant_context_)
+                    .isZero());
+    // With no contact in the model, the locked joint now carries the weight.
+    const SpatialForce<double>& F_locked =
+        EvalReactionForces(*plant_, *plant_context_)[0];
+    EXPECT_TRUE(CompareMatrices(F_locked.translational(),
+                                Eigen::Vector3d(0, 0, weight), tolerance));
+  }
+};
+
+TEST_P(BallOnTableSampled, PointContact) {
+  CheckSampledContact(/* hydroelastic = */ false);
+}
+
+TEST_P(BallOnTableSampled, HydroelasticContact) {
+  CheckSampledContact(/* hydroelastic = */ true);
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    AllParamsBallSampled, BallOnTableSampled,
+    testing::Combine(testing::Range(0, 2), testing::Range(0, 1),
+                     testing::Bool()),
+    [](const testing::TestParamInfo<BallOnTableSampled::ParamType>& x) {
       return fmt::format("plant_depth_{}_external_depth_{}_scene_graph_{}",
                          std::get<0>(x.param), std::get<1>(x.param),
                          std::get<2>(x.param));

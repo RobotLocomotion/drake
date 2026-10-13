@@ -10,6 +10,7 @@
 #include "drake/geometry/query_results/penetration_as_point_pair.h"
 #include "drake/multibody/contact_solvers/icf/icf_linear_feedback_gains.h"
 #include "drake/multibody/contact_solvers/icf/icf_model.h"
+#include "drake/multibody/plant/geometry_contact_data.h"
 #include "drake/multibody/plant/multibody_plant.h"
 
 namespace drake {
@@ -58,6 +59,16 @@ class IcfBuilder {
                    const IcfLinearFeedbackGains<T>* actuation_feedback,
                    const IcfLinearFeedbackGains<T>* external_feedback,
                    IcfModel<T>* model);
+
+  /* Returns the geometry contact data (point pairs and contact surfaces) used
+  to build the patch constraints in the most recent call to UpdateModel(). The
+  patch constraints are ordered so that patch `p < point_pairs.size()`
+  corresponds to `point_pairs[p]` (with a single contact pair), followed by one
+  patch per contact surface in order, with one contact pair per face. */
+  const multibody::internal::GeometryContactData<T>& geometry_contact_data()
+      const {
+    return geometry_contact_data_;
+  }
 
   /* Updates only the feedback gains. All other model data remains unchanged.
   @pre The existence (i.e., nullness) of the two feedbacks values must match the
@@ -205,10 +216,11 @@ class IcfBuilder {
       geometry_details_;
   mutable geometry::GeometryVersion geometry_version_;
 
-  // Local copy of the current geometry query results, updated by
-  // CalcGeometryContactData and used by the patch constraint.
-  std::vector<geometry::PenetrationAsPointPair<T>> point_pairs_;
-  std::vector<geometry::ContactSurface<T>> surfaces_;
+  // Handle to the geometry query results (point pairs and contact surfaces)
+  // used to build the patch constraints of the most recent UpdateModel().
+  // Updated by CalcGeometryContactData(). This is a cheap, shared,
+  // reference-counted handle to MultibodyPlant's cached query results.
+  multibody::internal::GeometryContactData<T> geometry_contact_data_;
 
   // Storage for intermediate computations, often overwritten.
   mutable Scratch scratch_{plant_};
