@@ -5,6 +5,4 @@ package(
 )
 
 # This is an implementation detail of python_binder_reset in :multi_config.bzl.
-original_settings(
-    name = "py_test_with_alt_binder_original_settings",
-)
+original_settings(name = "alt_binder_original_settings")
