@@ -65,6 +65,7 @@ _DEFAULT_COOLDOWN_DAYS = 7
 
 # We'll skip these repositories when making suggestions.
 _IGNORED_REPOSITORIES = [
+    "bazelisk_debs_internal",  # Not an actual external (auto-generated).
     "clang_cindex_python3_internal",  # Uses a non-default branch.
     "mosek",  # Requires special, non-automated care during upgrades.
     "pybind11",  # Uses a non-default branch.
@@ -86,8 +87,6 @@ _OTHER_REPOSITORIES = [
 
 # Packages in these cohorts should be upgraded together (in a single commit).
 _COHORTS = (
-    # bazelisk's source and deb packages must be kept aligned.
-    {"bazelisk_internal", "bazelisk_debs_internal"},
     # clarabel_cpp uses crate_universe; be sure to keep them aligned.
     {"clarabel_cpp_internal", "crate_universe"},
     # sdformat depends on both gz libraries; be sure to keep them aligned.

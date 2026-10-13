@@ -1,3 +1,0 @@
-load("//tools/lint:lint.bzl", "add_lint_tests")
-
-add_lint_tests()

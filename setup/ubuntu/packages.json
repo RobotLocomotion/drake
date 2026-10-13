@@ -13,7 +13,8 @@
         "sha256": "186d78a20e1a64f59ba08987791a989892d142c9d3a9f9cc0c5c35e201f53924",
         "urls": [
             "https://github.com/bazelbuild/bazelisk/releases/download/v1.29.0/bazelisk-amd64.deb",
-            "https://drake-mirror.csail.mit.edu/github/bazelbuild/bazelisk/v1.29.0/bazelisk-amd64.deb"
+            "https://drake-mirror.csail.mit.edu/github/bazelbuild/bazelisk/v1.29.0/bazelisk-amd64.deb",
+            "https://s3.amazonaws.com/drake-mirror/github/bazelbuild/bazelisk/v1.29.0/bazelisk-amd64.deb"
         ]
     },
     {
@@ -30,7 +31,8 @@
         "sha256": "db8ada89c841afd2cb33db7d13aa98ea4fb14612579a8bae84722250caa84272",
         "urls": [
             "https://github.com/bazelbuild/bazelisk/releases/download/v1.29.0/bazelisk-arm64.deb",
-            "https://drake-mirror.csail.mit.edu/github/bazelbuild/bazelisk/v1.29.0/bazelisk-arm64.deb"
+            "https://drake-mirror.csail.mit.edu/github/bazelbuild/bazelisk/v1.29.0/bazelisk-arm64.deb",
+            "https://s3.amazonaws.com/drake-mirror/github/bazelbuild/bazelisk/v1.29.0/bazelisk-arm64.deb"
         ]
     },
     {
