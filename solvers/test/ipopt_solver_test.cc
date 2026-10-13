@@ -3,6 +3,7 @@
 #include <filesystem>
 #include <string>
 
+#include <IpAlgTypes.hpp>
 #include <gtest/gtest.h>
 
 #include "drake/common/temp_directory.h"
@@ -12,26 +13,6 @@
 #include "drake/solvers/test/mathematical_program_test_util.h"
 #include "drake/solvers/test/quadratic_program_examples.h"
 #include "drake/solvers/test/second_order_cone_program_examples.h"
-
-#ifdef DRAKE_IPOPT_SOLVER_TEST_HAS_IPOPT
-
-#include <IpAlgTypes.hpp>
-
-namespace {
-constexpr int kIpoptMaxiterExceeded = Ipopt::MAXITER_EXCEEDED;
-constexpr int kIpoptStopAtAcceptablePoint = Ipopt::STOP_AT_ACCEPTABLE_POINT;
-constexpr int kIpoptLocalInfeasibility = Ipopt::LOCAL_INFEASIBILITY;
-}  // namespace
-
-#else
-
-namespace {
-constexpr int kIpoptMaxiterExceeded = -1;
-constexpr int kIpoptStopAtAcceptablePoint = -1;
-constexpr int kIpoptLocalInfeasibility = -1;
-}  // namespace
-
-#endif
 
 namespace drake {
 namespace solvers {
@@ -51,17 +32,14 @@ INSTANTIATE_TEST_SUITE_P(
 TEST_F(InfeasibleLinearProgramTest0, TestIpopt) {
   prog_->SetInitialGuessForAllVariables(Eigen::Vector2d(1, 2));
   IpoptSolver solver;
-  if (solver.available()) {
-    auto result = solver.Solve(*prog_, {}, {});
-    EXPECT_FALSE(result.is_success());
-    EXPECT_EQ(result.get_solution_result(),
-              SolutionResult::kInfeasibleConstraints);
-    EXPECT_EQ(result.get_solver_details<IpoptSolver>().status,
-              kIpoptLocalInfeasibility);
-    const Eigen::Vector2d x_val =
-        result.GetSolution(prog_->decision_variables());
-    EXPECT_NEAR(result.get_optimal_cost(), -x_val(0) - x_val(1), 1E-7);
-  }
+  auto result = solver.Solve(*prog_, {}, {});
+  EXPECT_FALSE(result.is_success());
+  EXPECT_EQ(result.get_solution_result(),
+            SolutionResult::kInfeasibleConstraints);
+  EXPECT_EQ(result.get_solver_details<IpoptSolver>().status,
+            Ipopt::LOCAL_INFEASIBILITY);
+  const Eigen::Vector2d x_val = result.GetSolution(prog_->decision_variables());
+  EXPECT_NEAR(result.get_optimal_cost(), -x_val(0) - x_val(1), 1E-7);
 }
 
 TEST_F(UnboundedLinearProgramTest0, TestIpopt) {
@@ -69,19 +47,15 @@ TEST_F(UnboundedLinearProgramTest0, TestIpopt) {
   prog_->SetSolverOption(IpoptSolver::id(), "diverging_iterates_tol", 1E3);
   prog_->SetSolverOption(IpoptSolver::id(), "max_iter", 1000);
   IpoptSolver solver;
-  if (solver.available()) {
-    auto result = solver.Solve(*prog_, {}, {});
-    EXPECT_EQ(result.get_solution_result(), SolutionResult::kUnbounded);
-    EXPECT_EQ(result.get_optimal_cost(),
-              -std::numeric_limits<double>::infinity());
-  }
+  auto result = solver.Solve(*prog_, {}, {});
+  EXPECT_EQ(result.get_solution_result(), SolutionResult::kUnbounded);
+  EXPECT_EQ(result.get_optimal_cost(),
+            -std::numeric_limits<double>::infinity());
 }
 
 TEST_F(DuplicatedVariableLinearProgramTest1, Test) {
   IpoptSolver solver;
-  if (solver.available()) {
-    CheckSolution(solver);
-  }
+  CheckSolution(solver);
 }
 
 TEST_P(QuadraticProgramTest, TestQP) {
@@ -97,16 +71,12 @@ INSTANTIATE_TEST_SUITE_P(
 
 GTEST_TEST(QPtest, TestUnitBallExample) {
   IpoptSolver solver;
-  if (solver.available()) {
-    TestQPonUnitBallExample(solver);
-  }
+  TestQPonUnitBallExample(solver);
 }
 
 GTEST_TEST(QPtest, TestQuadraticCostVariableOrder) {
   IpoptSolver solver;
-  if (solver.available()) {
-    TestQuadraticCostVariableOrder(solver);
-  }
+  TestQuadraticCostVariableOrder(solver);
 }
 
 class NoisyQuadraticCost {
@@ -149,36 +119,34 @@ GTEST_TEST(IpoptSolverTest, AcceptableResult) {
   options.SetOption(IpoptSolver::id(), "dual_inf_tol", 1e-6);
   options.SetOption(IpoptSolver::id(), "max_iter", 10);
   const VectorX<double> x_initial_guess = VectorX<double>::Ones(1);
-  if (solver.available()) {
-    double max_noise = 1e-2;
-    {
-      // Set up a program and give it a relatively large amount of noise for
-      // the specified tolerance.
-      MathematicalProgram prog;
-      auto x = prog.NewContinuousVariables(1);
-      prog.AddCost(NoisyQuadraticCost(max_noise), x);
-      auto result = solver.Solve(prog, x_initial_guess, options);
-      // Expect to hit iteration limit
-      EXPECT_FALSE(result.is_success());
-      EXPECT_EQ(result.get_solution_result(), SolutionResult::kIterationLimit);
-      EXPECT_EQ(result.get_solver_details<IpoptSolver>().status,
-                kIpoptMaxiterExceeded);
-    }
-    options.SetOption(IpoptSolver::id(), "acceptable_tol", 1e-3);
-    options.SetOption(IpoptSolver::id(), "acceptable_dual_inf_tol", 1e-3);
-    options.SetOption(IpoptSolver::id(), "acceptable_iter", 3);
-    {
-      // Set up  the same program, but provide acceptability criteria that
-      // should be feasible with even with the noise.
-      MathematicalProgram prog;
-      auto x = prog.NewContinuousVariables(1);
-      prog.AddCost(NoisyQuadraticCost(max_noise), x);
-      auto result = solver.Solve(prog, x_initial_guess, options);
-      EXPECT_EQ(result.get_solver_details<IpoptSolver>().status,
-                kIpoptStopAtAcceptablePoint);
-      // Expect Ipopt's "STOP_AT_ACCEPTABLE_POINT" to be translated to success.
-      EXPECT_TRUE(result.is_success());
-    }
+  double max_noise = 1e-2;
+  {
+    // Set up a program and give it a relatively large amount of noise for
+    // the specified tolerance.
+    MathematicalProgram prog;
+    auto x = prog.NewContinuousVariables(1);
+    prog.AddCost(NoisyQuadraticCost(max_noise), x);
+    auto result = solver.Solve(prog, x_initial_guess, options);
+    // Expect to hit iteration limit
+    EXPECT_FALSE(result.is_success());
+    EXPECT_EQ(result.get_solution_result(), SolutionResult::kIterationLimit);
+    EXPECT_EQ(result.get_solver_details<IpoptSolver>().status,
+              Ipopt::MAXITER_EXCEEDED);
+  }
+  options.SetOption(IpoptSolver::id(), "acceptable_tol", 1e-3);
+  options.SetOption(IpoptSolver::id(), "acceptable_dual_inf_tol", 1e-3);
+  options.SetOption(IpoptSolver::id(), "acceptable_iter", 3);
+  {
+    // Set up  the same program, but provide acceptability criteria that
+    // should be feasible with even with the noise.
+    MathematicalProgram prog;
+    auto x = prog.NewContinuousVariables(1);
+    prog.AddCost(NoisyQuadraticCost(max_noise), x);
+    auto result = solver.Solve(prog, x_initial_guess, options);
+    EXPECT_EQ(result.get_solver_details<IpoptSolver>().status,
+              Ipopt::STOP_AT_ACCEPTABLE_POINT);
+    // Expect Ipopt's "STOP_AT_ACCEPTABLE_POINT" to be translated to success.
+    EXPECT_TRUE(result.is_success());
   }
 }
 
@@ -239,9 +207,7 @@ GTEST_TEST(IpoptSolverTest, EckhardtDualSolution) {
 
 GTEST_TEST(IpoptSolverTest, TestNonconvexQP) {
   IpoptSolver solver;
-  if (solver.available()) {
-    TestNonconvexQP(solver, false, /*tol=*/1E-4);
-  }
+  TestNonconvexQP(solver, false, /*tol=*/1E-4);
 }
 
 GTEST_TEST(IpoptSolverTest, TestL2NormCost) {
@@ -268,29 +234,27 @@ GTEST_TEST(IpoptSolverTest, SolverOptionsVerbosity) {
 
   IpoptSolver solver;
 
-  if (solver.is_available()) {
-    // Setting common options.
-    for (int print_to_console : {0, 1}) {
+  // Setting common options.
+  for (int print_to_console : {0, 1}) {
+    SolverOptions options;
+    options.SetOption(CommonSolverOption::kPrintToConsole, print_to_console);
+    solver.Solve(prog, {}, options);
+  }
+  // Setting solver options.
+  for (int print_to_console : {0, 2}) {
+    SolverOptions options;
+    options.SetOption(IpoptSolver::id(), "print_level", print_to_console);
+    solver.Solve(prog, {}, options);
+  }
+  // Setting both.
+  for (int common_print_to_console : {0, 1}) {
+    for (int solver_print_to_console : {0, 2}) {
       SolverOptions options;
-      options.SetOption(CommonSolverOption::kPrintToConsole, print_to_console);
+      options.SetOption(CommonSolverOption::kPrintToConsole,
+                        common_print_to_console);
+      options.SetOption(IpoptSolver::id(), "print_level",
+                        solver_print_to_console);
       solver.Solve(prog, {}, options);
-    }
-    // Setting solver options.
-    for (int print_to_console : {0, 2}) {
-      SolverOptions options;
-      options.SetOption(IpoptSolver::id(), "print_level", print_to_console);
-      solver.Solve(prog, {}, options);
-    }
-    // Setting both.
-    for (int common_print_to_console : {0, 1}) {
-      for (int solver_print_to_console : {0, 2}) {
-        SolverOptions options;
-        options.SetOption(CommonSolverOption::kPrintToConsole,
-                          common_print_to_console);
-        options.SetOption(IpoptSolver::id(), "print_level",
-                          solver_print_to_console);
-        solver.Solve(prog, {}, options);
-      }
     }
   }
 }
@@ -306,14 +270,12 @@ GTEST_TEST(IpoptSolverTest, UnknownOptions) {
   SolverOptions options_string;
   options_string.SetOption(IpoptSolver::id(), "foobar_string", "four");
   IpoptSolver solver;
-  if (solver.is_available()) {
-    DRAKE_EXPECT_THROWS_MESSAGE(solver.Solve(prog, {}, options_double),
-                                ".*float.*foobar.*");
-    DRAKE_EXPECT_THROWS_MESSAGE(solver.Solve(prog, {}, options_int),
-                                ".*int.*foobar.*");
-    DRAKE_EXPECT_THROWS_MESSAGE(solver.Solve(prog, {}, options_string),
-                                ".*string.*foobar.*");
-  }
+  DRAKE_EXPECT_THROWS_MESSAGE(solver.Solve(prog, {}, options_double),
+                              ".*float.*foobar.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(solver.Solve(prog, {}, options_int),
+                              ".*int.*foobar.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(solver.Solve(prog, {}, options_string),
+                              ".*string.*foobar.*");
 }
 
 GTEST_TEST(IpoptSolverTest, UnsupportedLinearSolver) {
@@ -324,10 +286,8 @@ GTEST_TEST(IpoptSolverTest, UnsupportedLinearSolver) {
   // This is a valid option name, but an invalid option value.
   options.SetOption(IpoptSolver::id(), "linear_solver", "foobar");
   IpoptSolver solver;
-  if (solver.is_available()) {
-    DRAKE_EXPECT_THROWS_MESSAGE(solver.Solve(prog, {}, options),
-                                ".*option.*linear_solver.*foobar.*");
-  }
+  DRAKE_EXPECT_THROWS_MESSAGE(solver.Solve(prog, {}, options),
+                              ".*option.*linear_solver.*foobar.*");
 }
 
 // This is to verify we can set the print out file through CommonSolverOption.
@@ -344,18 +304,14 @@ GTEST_TEST(IpoptSolverTest, PrintToFile) {
   solver_options.SetOption(CommonSolverOption::kPrintFileName, filename);
 
   IpoptSolver solver;
-  if (solver.is_available()) {
-    const auto result = solver.Solve(prog, {}, solver_options);
-    EXPECT_TRUE(result.is_success());
-    EXPECT_TRUE(std::filesystem::exists({filename}));
-  }
+  const auto result = solver.Solve(prog, {}, solver_options);
+  EXPECT_TRUE(result.is_success());
+  EXPECT_TRUE(std::filesystem::exists({filename}));
 }
 
 TEST_P(TestEllipsoidsSeparation, TestSOCP) {
   IpoptSolver ipopt_solver;
-  if (ipopt_solver.available()) {
-    SolveAndCheckSolution(ipopt_solver, {}, 1.E-8);
-  }
+  SolveAndCheckSolution(ipopt_solver, {}, 1.E-8);
 }
 
 INSTANTIATE_TEST_SUITE_P(
@@ -366,9 +322,7 @@ INSTANTIATE_TEST_SUITE_P(
 
 TEST_P(TestQPasSOCP, TestSOCP) {
   IpoptSolver ipopt_solver;
-  if (ipopt_solver.available()) {
-    SolveAndCheckSolution(ipopt_solver);
-  }
+  SolveAndCheckSolution(ipopt_solver);
 }
 
 INSTANTIATE_TEST_SUITE_P(IpoptSolverTest, TestQPasSOCP,
@@ -376,9 +330,7 @@ INSTANTIATE_TEST_SUITE_P(IpoptSolverTest, TestQPasSOCP,
 
 TEST_P(TestFindSpringEquilibrium, TestSOCP) {
   IpoptSolver ipopt_solver;
-  if (ipopt_solver.available()) {
-    SolveAndCheckSolution(ipopt_solver, {}, 2E-3);
-  }
+  SolveAndCheckSolution(ipopt_solver, {}, 2E-3);
 }
 
 INSTANTIATE_TEST_SUITE_P(
@@ -388,19 +340,15 @@ INSTANTIATE_TEST_SUITE_P(
 GTEST_TEST(TestSOCP, MaximizeGeometricMeanTrivialProblem1) {
   MaximizeGeometricMeanTrivialProblem1 prob;
   IpoptSolver solver;
-  if (solver.available()) {
-    const auto result = solver.Solve(prob.prog(), {}, {});
-    prob.CheckSolution(result, 4E-6);
-  }
+  const auto result = solver.Solve(prob.prog(), {}, {});
+  prob.CheckSolution(result, 4E-6);
 }
 
 GTEST_TEST(TestSOCP, MaximizeGeometricMeanTrivialProblem2) {
   MaximizeGeometricMeanTrivialProblem2 prob;
   IpoptSolver solver;
-  if (solver.available()) {
-    const auto result = solver.Solve(prob.prog(), {}, {});
-    prob.CheckSolution(result, 1.E-6);
-  }
+  const auto result = solver.Solve(prob.prog(), {}, {});
+  prob.CheckSolution(result, 1.E-6);
 }
 
 GTEST_TEST(TestSOCP, SmallestEllipsoidCoveringProblem) {
@@ -416,23 +364,19 @@ GTEST_TEST(TestLP, PoorScaling) {
 
 TEST_F(QuadraticEqualityConstrainedProgram1, test) {
   IpoptSolver solver;
-  if (solver.available()) {
-    CheckSolution(solver, Eigen::Vector2d(0.5, 0.8), std::nullopt, 1E-6);
-  }
+  CheckSolution(solver, Eigen::Vector2d(0.5, 0.8), std::nullopt, 1E-6);
 }
 
 GTEST_TEST(TestSetSolverOptions, IntToDouble) {
   // Set a double-valued option with integer value.
   IpoptSolver solver;
-  if (solver.available()) {
-    MathematicalProgram prog;
-    auto x = prog.NewContinuousVariables<2>();
-    prog.AddLinearCost(x(0) + x(1));
-    prog.AddBoundingBoxConstraint(0, 1, x);
-    prog.SetSolverOption(solver.id(), "max_wall_time", 1);
-    auto result = solver.Solve(prog);
-    EXPECT_TRUE(result.is_success());
-  }
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>();
+  prog.AddLinearCost(x(0) + x(1));
+  prog.AddBoundingBoxConstraint(0, 1, x);
+  prog.SetSolverOption(solver.id(), "max_wall_time", 1);
+  auto result = solver.Solve(prog);
+  EXPECT_TRUE(result.is_success());
 }
 
 }  // namespace test

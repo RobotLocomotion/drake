@@ -307,22 +307,20 @@ class MinimalDistanceFromSphereProblem {
   MathematicalProgram* get_mutable_prog() { return &prog_; }
 
   void SolveAndCheckSolution(const SolverInterface& solver, double tol) const {
-    if (solver.available()) {
-      MathematicalProgramResult result;
-      solver.Solve(prog_, {}, {}, &result);
-      EXPECT_TRUE(result.is_success());
-      const Eigen::Matrix<double, Dim, 1> x_sol = result.GetSolution(x_);
-      // If pt is inside the sphere, then the optimal solution is x=pt.
-      if ((pt_ - center_).norm() <= radius_) {
-        EXPECT_TRUE(CompareMatrices(x_sol, pt_, tol));
-        EXPECT_NEAR(result.get_optimal_cost(), 0, tol);
-      } else {
-        // pt should be the intersection of the ray from center to pt, and the
-        // sphere surface.
-        Eigen::Matrix<double, Dim, 1> ray = pt_ - center_;
-        EXPECT_TRUE(CompareMatrices(
-            x_sol, center_ + radius_ * (ray.normalized()), tol));
-      }
+    MathematicalProgramResult result;
+    solver.Solve(prog_, {}, {}, &result);
+    EXPECT_TRUE(result.is_success());
+    const Eigen::Matrix<double, Dim, 1> x_sol = result.GetSolution(x_);
+    // If pt is inside the sphere, then the optimal solution is x=pt.
+    if ((pt_ - center_).norm() <= radius_) {
+      EXPECT_TRUE(CompareMatrices(x_sol, pt_, tol));
+      EXPECT_NEAR(result.get_optimal_cost(), 0, tol);
+    } else {
+      // pt should be the intersection of the ray from center to pt, and the
+      // sphere surface.
+      Eigen::Matrix<double, Dim, 1> ray = pt_ - center_;
+      EXPECT_TRUE(
+          CompareMatrices(x_sol, center_ + radius_ * (ray.normalized()), tol));
     }
   }
 
