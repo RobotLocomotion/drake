@@ -56,6 +56,8 @@ class TestNloptSolver(unittest.TestCase):
         )
         self.assertIsInstance(NloptSolver.LocalOptimizerMaxEvalName(), str)
         self.assertIsInstance(NloptSolver.LocalOptimizerMaxTimeName(), str)
+        self.assertIsInstance(NloptSolver.ParamPrefix(), str)
+        self.assertIsInstance(NloptSolver.LocalOptimizerParamPrefix(), str)
 
     def unavailable(self):
         """Per the BUILD file, this test is only run when NLopt is disabled."""

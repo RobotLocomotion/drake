@@ -37,7 +37,9 @@ use certain algorithm, for example NLOPT_LD_SLSQP, call
 `SetOption(NloptSolver::id(), NloptSolver::AlgorithmName(), "LD_SLSQP");`
 Algorithms that hand their subproblems to a local (inner) optimizer accept the
 additional "local_optimizer_..." parameters. The complete set of supported
-parameter names is given by the NloptSolver::...Name() accessors.
+parameter names is given by the NloptSolver::...Name() accessors. NLopt's
+algorithm-specific parameters are also supported, using the name prefixes given
+by NloptSolver::ParamPrefix() and NloptSolver::LocalOptimizerParamPrefix().
 
 "GUROBI" -- Parameter name and values as specified in Gurobi Reference Manual
 https://docs.gurobi.com/projects/optimizer/en/13.0/reference/parameters.html
