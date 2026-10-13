@@ -10,8 +10,6 @@ namespace contact_solvers {
 namespace icf {
 namespace internal {
 
-using contact_solvers::internal::BlockSparseSymmetricMatrix;
-
 namespace {
 // Returns true if the index is present (not removed by reduction).
 bool have(int index) {
@@ -148,8 +146,7 @@ void CouplerConstraintsPool<T>::AccumulateGradient(const IcfData<T>& data,
 
 template <typename T>
 void CouplerConstraintsPool<T>::AccumulateHessian(
-    const IcfData<T>& data,
-    BlockSparseSymmetricMatrix<MatrixX<T>>* hessian) const {
+    const IcfData<T>& data, IcfHessian<T>* hessian) const {
   DRAKE_ASSERT(hessian != nullptr);
 
   const T& dt = model().time_step();

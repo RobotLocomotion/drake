@@ -10,7 +10,6 @@ namespace contact_solvers {
 namespace icf {
 namespace internal {
 
-using contact_solvers::internal::BlockSparseSymmetricMatrix;
 using contact_solvers::internal::BlockSparsityPattern;
 using Eigen::VectorBlock;
 using multibody::internal::DemandIndicesValid;
@@ -156,18 +155,16 @@ void IcfModel<T>::CalcData(const VectorX<T>& v, IcfData<T>* data) const {
 }
 
 template <typename T>
-std::unique_ptr<BlockSparseSymmetricMatrix<MatrixX<T>>>
-IcfModel<T>::MakeHessian(const IcfData<T>& data) const {
-  auto hessian = std::make_unique<BlockSparseSymmetricMatrix<MatrixX<T>>>(
-      sparsity_pattern());
+std::unique_ptr<IcfHessian<T>> IcfModel<T>::MakeHessian(
+    const IcfData<T>& data) const {
+  auto hessian = std::make_unique<IcfHessian<T>>(sparsity_pattern());
   UpdateHessian(data, hessian.get());
   return hessian;
 }
 
 template <typename T>
-void IcfModel<T>::UpdateHessian(
-    const IcfData<T>& data,
-    BlockSparseSymmetricMatrix<MatrixX<T>>* hessian) const {
+void IcfModel<T>::UpdateHessian(const IcfData<T>& data,
+                                IcfHessian<T>* hessian) const {
   hessian->SetZero();
 
   // Initialize hessian = A (block diagonal).

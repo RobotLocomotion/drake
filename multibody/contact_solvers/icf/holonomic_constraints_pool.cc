@@ -268,9 +268,7 @@ void HolonomicConstraintsPool<T, N, Derived>::PrecomputeHessianBlocks() {
 
 template <typename T, int N, typename Derived>
 void HolonomicConstraintsPool<T, N, Derived>::AccumulateHessian(
-    const IcfData<T>&,
-    contact_solvers::internal::BlockSparseSymmetricMatrix<MatrixX<T>>* hessian)
-    const {
+    const IcfData<T>&, IcfHessian<T>* hessian) const {
   DRAKE_ASSERT(hessian != nullptr);
   for (int k = 0; k < num_constraints(); ++k) {
     const HessianBlock& hb = hessian_blocks_[k];

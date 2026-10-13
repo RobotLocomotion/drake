@@ -26,7 +26,6 @@ namespace icf {
 namespace internal {
 namespace {
 
-using contact_solvers::internal::BlockSparseSymmetricMatrix;
 using multibody::internal::ExpandRows;
 using multibody::internal::SelectRows;
 using multibody::internal::SelectRowsCols;
@@ -175,7 +174,7 @@ GTEST_TEST(IcfModel, ReducedMapping) {
 GTEST_TEST(IcfModel, ReducedDataAndHessian) {
   IcfModel<double> model;
   IcfData<double> data;
-  std::unique_ptr<BlockSparseSymmetricMatrix<MatrixXd>> hessian;
+  std::unique_ptr<IcfHessian<double>> hessian;
   MakeUnconstrainedModel(&model);
   model.SetSparsityPattern();
   model.ResizeData(&data);
@@ -189,7 +188,7 @@ GTEST_TEST(IcfModel, ReducedDataAndHessian) {
     ReducedMapping mapping;
     VectorX<double> reduced_v;
     IcfData<double> reduced_data;
-    std::unique_ptr<BlockSparseSymmetricMatrix<MatrixXd>> reduced_hessian;
+    std::unique_ptr<IcfHessian<double>> reduced_hessian;
 
     MakeModelReducible(&model, locked_dofs);
     model.ReduceInto(&reduced_model, &mapping);

@@ -9,13 +9,13 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
-#include "drake/multibody/contact_solvers/block_sparse_lower_triangular_or_symmetric_matrix.h"
 #include "drake/multibody/contact_solvers/icf/ball_constraints_pool.h"
 #include "drake/multibody/contact_solvers/icf/coupler_constraints_pool.h"
 #include "drake/multibody/contact_solvers/icf/distance_constraints_pool.h"
 #include "drake/multibody/contact_solvers/icf/eigen_pool.h"
 #include "drake/multibody/contact_solvers/icf/gain_constraints_pool.h"
 #include "drake/multibody/contact_solvers/icf/icf_data.h"
+#include "drake/multibody/contact_solvers/icf/icf_hessian.h"
 #include "drake/multibody/contact_solvers/icf/icf_search_direction_data.h"
 #include "drake/multibody/contact_solvers/icf/limit_constraints_pool.h"
 #include "drake/multibody/contact_solvers/icf/patch_constraints_pool.h"
@@ -421,16 +421,11 @@ class IcfModel {
 
   See documentation in internal::BlockSparseCholeskySolver for further details.
   */
-  std::unique_ptr<
-      contact_solvers::internal::BlockSparseSymmetricMatrix<MatrixX<T>>>
-  MakeHessian(const IcfData<T>& data) const;
+  std::unique_ptr<IcfHessian<T>> MakeHessian(const IcfData<T>& data) const;
 
   /* Updates the values of the Hessian for the input `data`.
   @pre The sparsity of the `hessian` matches the structure of `this` model. */
-  void UpdateHessian(
-      const IcfData<T>& data,
-      contact_solvers::internal::BlockSparseSymmetricMatrix<MatrixX<T>>*
-          hessian) const;
+  void UpdateHessian(const IcfData<T>& data, IcfHessian<T>* hessian) const;
 
   /* Pre-computes some quantities used to speed up CalcCostAlongLine() below. */
   void CalcSearchDirectionData(
