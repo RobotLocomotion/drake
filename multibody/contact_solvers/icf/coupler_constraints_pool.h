@@ -1,5 +1,6 @@
 #pragma once
 
+#include <span>
 #include <utility>
 #include <vector>
 
@@ -49,12 +50,26 @@ class CouplerConstraintsPool {
   const IcfModel<T>& model() const { return *model_; }
   int num_constraints() const { return constraint_to_clique_.size(); }
   void AccumulateGradient(const IcfData<T>& data, VectorX<T>* gradient) const;
+  void AccumulateGradient(const IcfData<T>& data,
+                          std::span<const int> constraints,
+                          VectorX<T>* gradient) const;
   void AccumulateHessian(
       const IcfData<T>& data,
       contact_solvers::internal::BlockSparseSymmetricMatrix<MatrixX<T>>*
           hessian) const;
+  void AccumulateHessian(
+      const IcfData<T>& data, std::span<const int> constraints,
+      std::span<const int> clique_to_block, int island,
+      contact_solvers::internal::BlockSparseSymmetricMatrix<MatrixX<T>>*
+          hessian) const;
   void ReduceInto(const ReducedMapping& mapping,
                   CouplerConstraintsPool<T>* reduced_pool) const;
+
+  /* @see HasJointVelocityCalcData. */
+  void CalcData(const VectorX<T>& v,
+                CouplerConstraintsDataPool<T>* limit_data) const;
+  T CalcData(const VectorX<T>& v, std::span<const int> constraints,
+             CouplerConstraintsDataPool<T>* limit_data) const;
 
   /* Resizes the constraints pool to store the given number of constraints.
 
@@ -81,11 +96,6 @@ class CouplerConstraintsPool {
   void Set(int index, int clique, int i, int j, const T& qi, const T& qj,
            T gear_ratio, T offset);
 
-  /* Computes problem data as a function of the generalized velocities v for the
-  full IcfModel. */
-  void CalcData(const VectorX<T>& v,
-                CouplerConstraintsDataPool<T>* coupler_data) const;
-
   /* Computes the first and second derivatives of the constraint cost
   ℓ̃ (α) = ℓ(v + α⋅w).
 
@@ -98,6 +108,11 @@ class CouplerConstraintsPool {
   void CalcCostAlongLine(const CouplerConstraintsDataPool<T>& coupler_data,
                          const VectorX<T>& w, T* dcost, T* d2cost) const;
 
+  /* Island-filtered overload: derivatives for only the listed constraints. */
+  void CalcCostAlongLine(const CouplerConstraintsDataPool<T>& coupler_data,
+                         const VectorX<T>& w, std::span<const int> constraints,
+                         T* dcost, T* d2cost) const;
+
   /* Testing only access. */
   const std::vector<int>& constraint_to_clique() const {
     return constraint_to_clique_;
@@ -108,7 +123,14 @@ class CouplerConstraintsPool {
   const std::vector<T>& R_fragment() const { return R_fragment_; }
 
  private:
+  void ResizeAllConstraints(int num_constraints);
+
   const IcfModel<T>* const model_;  // The parent model.
+
+  // Identity list {0, ..., num_constraints()-1}, used to drive the full-problem
+  // (non-islanded) code paths through the island-filtered helpers. Rebuilt in
+  // Resize().
+  std::vector<int> all_constraints_;
 
   // Clique for the k-th constraint, of size num_constraints().
   std::vector<int> constraint_to_clique_;
@@ -131,6 +153,8 @@ class CouplerConstraintsPool {
   std::vector<T> R_fragment_;
 };
 static_assert(IsAbstractConstraintsPool<CouplerConstraintsPool>);
+static_assert(HasJointVelocityCalcData<CouplerConstraintsPool,
+                                       CouplerConstraintsDataPool>);
 
 }  // namespace internal
 }  // namespace icf

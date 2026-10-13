@@ -443,11 +443,11 @@ void CenicIntegrator<T>::ComputeNextContinuousState(
   if constexpr (std::is_same_v<T, double>) {
     if (model.is_reducible()) {
       model.ReduceInto(&reduced_model_, &mapping_);
+      reduced_model_.SetSparsityPattern();
       reduced_model_.ResizeData(&data_);
       const std::vector<int>& indices =
           mapping_.velocity_subsequence.inverse_permutation();
       data_.set_v(v_guess(indices));
-      reduced_model_.SetSparsityPattern();
       solved = solver_.SolveWithGuess(reduced_model_, tolerance, &data_);
       if (solved) {
         data_.set_v(ExpandRows(data_.v(), model.num_velocities(), indices));

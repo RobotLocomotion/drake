@@ -547,6 +547,7 @@ GTEST_TEST(WeldConstraintsPool, Reduce) {
   IcfModel<double> model;
   MakeUnconstrainedModel(&model);
   AddWeldConstraints(&model);
+  model.SetSparsityPattern();
 
   IcfData<double> data;
   model.ResizeData(&data);

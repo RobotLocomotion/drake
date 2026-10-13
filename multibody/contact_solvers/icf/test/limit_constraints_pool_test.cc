@@ -158,6 +158,7 @@ GTEST_TEST(LimitConstraintsPool, Reduce) {
   IcfModel<double> model;
   MakeUnconstrainedModel(&model);
   AddLimitConstraints(&model);
+  model.SetSparsityPattern();
 
   IcfData<double> data;
   model.ResizeData(&data);
