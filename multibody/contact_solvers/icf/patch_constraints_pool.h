@@ -20,6 +20,24 @@ namespace contact_solvers {
 namespace icf {
 namespace internal {
 
+/* Given spatial force F_Bo applied at B and the relative position p_AB of B
+from A, computes the spatial force F_Ao shifted to A. Mathematically, F_Ao =
+ϕ(p_AB)ᵀ⋅F_Bo, where ϕ(p) = [-pₓ; 𝕀₃]. All quantities must be expressed in
+the same common frame.
+
+@param F The spatial force F_Bo.
+@param p The relative position p_AB.
+@returns The shifted spatial force F_Ao. */
+template <typename T>
+Vector6<T> ShiftSpatialForce(const Vector6<T>& F, const Vector3<T>& p) {
+  const auto t = F.template head<3>();
+  const auto f = F.template tail<3>();
+  Vector6<T> result;
+  result.template head<3>() = t + p.cross(f);
+  result.template tail<3>() = f;
+  return result;
+}
+
 // Forward declaration to break circular dependencies.
 template <typename T>
 class IcfModel;
