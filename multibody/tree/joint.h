@@ -66,18 +66,19 @@ class MobilizerTester;
 /// @endcode
 ///
 /// @warning Do not ever attempt to instantiate and manipulate %Joint objects
-/// on the stack; it will fail. Add joints to your plant using the provided API
-/// MultibodyPlant::AddJoint() as in the example above.
+///   on the stack; it will fail. Add joints to your plant using the provided
+///   API MultibodyPlant::AddJoint() as in the example above.
 ///
 /// @note To developers: this is the base class for all concrete Joint types.
-/// Extending this class to add a new Joint type necessarily requires working
-/// with internal implementation classes for which we cannot guarantee API
-/// stability due to the need for ongoing improvements to these
-/// performance-critical classes. So while our usual stability guarantees
-/// apply to the Joint `public` API, the `protected` API here is subject to
-/// change when the underlying internal objects change. Our release notes will
-/// say when we have made changes that might affect your Joint implementations,
-/// but we won't necessarily be able to provide a deprecation period.
+///   Extending this class to add a new Joint type necessarily requires working
+///   with internal implementation classes for which we cannot guarantee API
+///   stability due to the need for ongoing improvements to these
+///   performance-critical classes. So while our usual stability guarantees
+///   apply to the Joint `public` API, the `protected` API here is subject to
+///   change when the underlying internal objects change. Our release notes will
+///   say when we have made changes that might affect your Joint
+///   implementations, but we won't necessarily be able to provide a deprecation
+///   period.
 ///
 /// @tparam_default_scalar
 template <typename T>
@@ -294,7 +295,7 @@ class Joint : public MultibodyElement<T> {
   /// Returns the position coordinate for joints with a single degree of
   /// freedom.
   /// @throws std::exception if the joint does not have a single degree of
-  /// freedom.
+  ///   freedom.
   const T& GetOnePosition(const systems::Context<T>& context) const {
     DRAKE_THROW_UNLESS(num_positions() == 1);
     return DoGetOnePosition(context);
@@ -303,7 +304,7 @@ class Joint : public MultibodyElement<T> {
   /// Returns the velocity coordinate for joints with a single degree of
   /// freedom.
   /// @throws std::exception if the joint does not have a single degree of
-  /// freedom.
+  ///   freedom.
   const T& GetOneVelocity(const systems::Context<T>& context) const {
     DRAKE_THROW_UNLESS(num_velocities() == 1);
     return DoGetOneVelocity(context);
@@ -380,8 +381,7 @@ class Joint : public MultibodyElement<T> {
 
   /// @return true if the joint is locked, false otherwise.
   bool is_locked(const systems::Context<T>& context) const {
-    DRAKE_DEMAND(has_mobilizer());
-    return mobilizer_->is_locked(context);
+    return has_mobilizer() && mobilizer_->is_locked(context);
   }
 
   /// @name            Methods to get and set limits
@@ -423,12 +423,12 @@ class Joint : public MultibodyElement<T> {
 
   /// Sets the position limits to @p lower_limits and @p upper_limits.
   /// @throws std::exception if the dimension of @p lower_limits or
-  /// @p upper_limits does not match num_positions().
+  ///   @p upper_limits does not match num_positions().
   /// @throws std::exception if any of @p lower_limits is larger than the
-  /// corresponding term in @p upper_limits.
+  ///   corresponding term in @p upper_limits.
   /// @note Setting the position limits does not affect the
-  /// `default_positions()`, regardless of whether the current
-  /// `default_positions()` satisfy the new position limits.
+  ///   `default_positions()`, regardless of whether the current
+  ///   `default_positions()` satisfy the new position limits.
   void set_position_limits(const VectorX<double>& lower_limits,
                            const VectorX<double>& upper_limits) {
     DRAKE_THROW_UNLESS(lower_limits.size() == upper_limits.size());
@@ -440,9 +440,9 @@ class Joint : public MultibodyElement<T> {
 
   /// Sets the velocity limits to @p lower_limits and @p upper_limits.
   /// @throws std::exception if the dimension of @p lower_limits or
-  /// @p upper_limits does not match num_velocities().
+  ///   @p upper_limits does not match num_velocities().
   /// @throws std::exception if any of @p lower_limits is larger than the
-  /// corresponding term in @p upper_limits.
+  ///   corresponding term in @p upper_limits.
   void set_velocity_limits(const VectorX<double>& lower_limits,
                            const VectorX<double>& upper_limits) {
     DRAKE_THROW_UNLESS(lower_limits.size() == upper_limits.size());
@@ -454,9 +454,9 @@ class Joint : public MultibodyElement<T> {
 
   /// Sets the acceleration limits to @p lower_limits and @p upper_limits.
   /// @throws std::exception if the dimension of @p lower_limits or
-  /// @p upper_limits does not match num_velocities().
+  ///   @p upper_limits does not match num_velocities().
   /// @throws std::exception if any of @p lower_limits is larger than the
-  /// corresponding term in @p upper_limits.
+  ///   corresponding term in @p upper_limits.
   void set_acceleration_limits(const VectorX<double>& lower_limits,
                                const VectorX<double>& upper_limits) {
     DRAKE_THROW_UNLESS(lower_limits.size() == upper_limits.size());
@@ -544,7 +544,7 @@ class Joint : public MultibodyElement<T> {
   /// Returns the current value in the given `context` of the generalized
   /// velocities v for this joint.
   /// @throws std::exception if the containing MultibodyPlant has not yet been
-  /// finalized.
+  ///   finalized.
   Eigen::Ref<const VectorX<T>> GetVelocities(
       const systems::Context<T>& context) const;
 
@@ -553,9 +553,9 @@ class Joint : public MultibodyElement<T> {
   /// The pose is given by a RigidTransform `X_FM`, but a joint will
   /// represent pose differently.
   /// @note Currently this is implemented only for floating (6 dof) joints
-  /// which can represent any pose.
+  ///   which can represent any pose.
   /// @throws std::exception if called for any joint type that does not
-  /// implement this function.
+  ///   implement this function.
   /// @see default_positions() to see the resulting q₀ after this call.
   /// @see SetDefaultPosePair() for an alternative using a quaternion
   void SetDefaultPose(const math::RigidTransform<double>& X_FM) {
@@ -732,7 +732,7 @@ class Joint : public MultibodyElement<T> {
   /// Returns the Context dependent damping coefficients stored as parameters in
   /// `context`. Refer to default_damping_vector() for details.
   /// @param[in] context The context storing the state and parameters for the
-  /// model to which `this` joint belongs.
+  ///   model to which `this` joint belongs.
   const VectorX<T>& GetDampingVector(const systems::Context<T>& context) const {
     return context.get_numeric_parameter(damping_parameter_index_).value();
   }
@@ -755,17 +755,17 @@ class Joint : public MultibodyElement<T> {
   /// Sets the value of the viscous damping coefficients for this joint, stored
   /// as parameters in `context`. Refer to default_damping_vector() for details.
   /// @param[out] context The context storing the state and parameters for the
-  /// model to which `this` joint belongs.
+  ///   model to which `this` joint belongs.
   /// @param[in] damping The vector of damping values.
   /// @throws std::exception if damping.size() != num_velocities().
   /// @throws std::exception if any of the damping coefficients is negative.
   /// @note Some multi-dof joints may have specific semantics for their damping
-  /// vector that are not enforced here. For instance, QuaternionFloatingJoint
-  /// assumes identical damping values for all 3 angular velocity components and
-  /// identical damping values for all 3 translational velocity components. It
-  /// will thus use `angular_damping = damping[0]` and `translational_damping =
-  /// damping[3]`. Refer to the particular subclass for more semantic
-  /// information.
+  ///   vector that are not enforced here. For instance, QuaternionFloatingJoint
+  ///   assumes identical damping values for all 3 angular velocity components
+  ///   and identical damping values for all 3 translational velocity
+  ///   components. It will thus use `angular_damping = damping[0]` and
+  ///   `translational_damping = damping[3]`. Refer to the particular subclass
+  ///   for more semantic information.
   void SetDampingVector(systems::Context<T>* context,
                         const VectorX<T>& damping) const {
     DRAKE_THROW_UNLESS(damping.size() == num_velocities());
@@ -815,8 +815,9 @@ class Joint : public MultibodyElement<T> {
   std::unique_ptr<Joint<ToScalar>> CloneToScalar(
       internal::MultibodyTree<ToScalar>* tree_clone) const {
     std::unique_ptr<Joint<ToScalar>> joint_clone = DoCloneToScalar(*tree_clone);
-    DRAKE_DEMAND(mobilizer_ != nullptr);
-    joint_clone->mobilizer_ = &tree_clone->get_mutable_variant(*mobilizer_);
+    joint_clone->mobilizer_ =
+        (mobilizer_ == nullptr) ? nullptr
+                                : &tree_clone->get_mutable_variant(*mobilizer_);
     // Cloning doesn't re-run Build(), so carry over any shadow-link frame
     // substitutions rather than leaving the clone reporting the user frames.
     if (effective_frame_on_parent_ != nullptr) {
@@ -872,7 +873,7 @@ class Joint : public MultibodyElement<T> {
   /// implementing mobilizer should have the same value but as a fixed-size
   /// vector.
   /// @note Implementations must meet the styleguide requirements for snake_case
-  /// accessor methods.
+  ///   accessor methods.
   virtual void do_set_default_positions(
       const VectorX<double>& default_positions) = 0;
 
@@ -997,8 +998,8 @@ class Joint : public MultibodyElement<T> {
   ///
   /// @pre A mobilizer has been created for this Joint.
   /// @pre ConcreteMobilizer must exactly match the dynamic type of the
-  /// mobilizer associated with this Joint, or be a base class of the
-  /// dynamic type. This requirement is (only) checked in Debug builds.
+  ///   mobilizer associated with this Joint, or be a base class of the
+  ///   dynamic type. This requirement is (only) checked in Debug builds.
   template <template <typename> class ConcreteMobilizer>
   const ConcreteMobilizer<T>& get_mobilizer_downcast() const {
     DRAKE_DEMAND(has_mobilizer());
