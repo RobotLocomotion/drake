@@ -57,16 +57,16 @@ void RewriteMergeKeys(const YAML::Node& parent, YAML::Node* node) {
   YAML::Node error_locus;
   switch (merge_key.Type()) {
     case YAML::NodeType::Map: {
-      // Merge `merge_key` Map into `node` Map. The source may itself use a
-      // merge key, which must be resolved first: when only a child of the
-      // document is converted, an anchor defined outside that child has not
-      // been rewritten yet, and its "<<" would otherwise be copied verbatim.
+      // Merge `merge_key` Map into `node` Map. The `merge_key` might refer to
+      // another merge key, which must be rewritten first.
       RewriteMergeKeys(*node, &merge_key);
       CopyWithMergeKeySemantics(merge_key, node);
       return;
     }
     case YAML::NodeType::Sequence: {
       // Merge each Map in `merge_key` Sequence-of-Maps into the `node` Map.
+      // Each `merge_key_item` might refer to another merge key, which must be
+      // rewritten first.
       for (YAML::Node merge_key_item : merge_key) {
         if (merge_key_item.Type() != YAML::NodeType::Map) {
           error_message =
