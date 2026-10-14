@@ -118,9 +118,10 @@ AutoDiffVecXd Distances(
       collision_checker.CalcContextRobotClearance(collision_checker_context,
                                                   math::ExtractValue(x),
                                                   influence_distance_val);
-  return math::InitializeAutoDiff(
-      robot_clearance.distances(),
-      robot_clearance.jacobians() * math::ExtractGradient(x));
+  // Evaluate the product once; InitializeAutoDiff reads it row by row.
+  const Eigen::MatrixXd gradient =
+      robot_clearance.jacobians() * math::ExtractGradient(x);
+  return math::InitializeAutoDiff(robot_clearance.distances(), gradient);
 }
 
 // Explicit instantiation
