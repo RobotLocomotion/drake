@@ -2713,7 +2713,8 @@ class MultibodyTree {
   // mobilizer's state including both pose and spatial velocity; 6-dof
   // mobilizers have the unique property of being able to represent _any_ pose
   // and spatial velocity.
-  // @throws std::exception if `body` is not a free body.
+  // @throws std::exception if `body` is not a free body. That includes a body
+  //   that is fused onto a free mobod but isn't the mobod's active link.
   // @throws std::exception if called pre-finalize.
   // @pre `body` is not World
   const Mobilizer<T>& GetFreeBodyMobilizerOrThrow(
