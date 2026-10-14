@@ -36,7 +36,7 @@ rust_toolchains = use_extension(
 )
 rust_toolchains.toolchain(
     edition = "2021",
-    version = "1.96.0",
+    version = "1.99.0",
 )
 use_repo(rust_toolchains, "default_rust_toolchains")
 
