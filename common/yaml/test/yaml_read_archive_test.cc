@@ -1071,6 +1071,41 @@ doc:
 )""");
 }
 
+// A merge source that itself uses a merge key, defined outside the loaded
+// child, so nothing else rewrites the source's merge key before it is copied.
+TEST_P(YamlReadArchiveTest, ChildWithTransitiveMergeKeys) {
+  const auto test = [](const std::string& contents) {
+    SCOPED_TRACE("With contents = " + contents);
+    const auto& x = AcceptNoThrow<OuterStruct>(
+        YamlReadArchive::LoadStringAsNode(contents, "doc"));
+    EXPECT_EQ(x.outer_value, 1.0);
+    EXPECT_EQ(x.inner_struct.inner_value, 2.0);
+  };
+
+  test(R"""(
+_base: &base
+  outer_value: 1.0
+_template: &template
+  << : *base
+  inner_struct:
+    inner_value: 2.0
+doc:
+  << : *template
+)""");
+
+  // The same, through an array of merge keys.
+  test(R"""(
+_base: &base
+  outer_value: 1.0
+_template: &template
+  << : *base
+  inner_struct:
+    inner_value: 2.0
+doc:
+  << : [*template]
+)""");
+}
+
 TEST_P(YamlReadArchiveTest, NestedWithBadMergeKey) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       AcceptIntoDummy<OuterStruct>(Load(R"""(

@@ -48,7 +48,7 @@ void CopyWithMergeKeySemantics(const YAML::Node& source,
 void RewriteMergeKeys(const YAML::Node& parent, YAML::Node* node) {
   DRAKE_DEMAND(node != nullptr);
   DRAKE_DEMAND(node->Type() == YAML::NodeType::Map);
-  const YAML::Node& merge_key = (*node)["<<"];
+  YAML::Node merge_key = (*node)["<<"];
   if (!merge_key) {
     return;
   }
@@ -57,19 +57,24 @@ void RewriteMergeKeys(const YAML::Node& parent, YAML::Node* node) {
   YAML::Node error_locus;
   switch (merge_key.Type()) {
     case YAML::NodeType::Map: {
-      // Merge `merge_key` Map into `node` Map.
+      // Merge `merge_key` Map into `node` Map. The `merge_key` might refer to
+      // another merge key, which must be rewritten first.
+      RewriteMergeKeys(*node, &merge_key);
       CopyWithMergeKeySemantics(merge_key, node);
       return;
     }
     case YAML::NodeType::Sequence: {
       // Merge each Map in `merge_key` Sequence-of-Maps into the `node` Map.
-      for (const YAML::Node& merge_key_item : merge_key) {
+      // Each `merge_key_item` might refer to another merge key, which must be
+      // rewritten first.
+      for (YAML::Node merge_key_item : merge_key) {
         if (merge_key_item.Type() != YAML::NodeType::Map) {
           error_message =
               "has invalid merge key type (Sequence-of-non-Mapping).";
           error_locus = *node;
           break;
         }
+        RewriteMergeKeys(*node, &merge_key_item);
         CopyWithMergeKeySemantics(merge_key_item, node);
       }
       if (error_message != nullptr) {
