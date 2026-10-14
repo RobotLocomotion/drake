@@ -65,6 +65,7 @@ _DEFAULT_COOLDOWN_DAYS = 7
 
 # We'll skip these repositories when making suggestions.
 _IGNORED_REPOSITORIES = [
+    "bazelisk_debs_internal",  # Not an actual external (auto-generated).
     "clang_cindex_python3_internal",  # Uses a non-default branch.
     "mosek",  # Requires special, non-automated care during upgrades.
     "pybind11",  # Uses a non-default branch.
@@ -294,7 +295,7 @@ def _handle_github(
                         break
     else:
         assert upgrade_type == UpgradeType.RELEASE
-        exclude_tags_pattern = data["exclude_tags_pattern"]
+        exclude_tags_pattern = data.get("exclude_tags_pattern")
         new_commit, commit_date = _latest_release(
             gh_repo, workspace_name, exclude_tags_pattern
         )
@@ -620,7 +621,7 @@ def _do_upgrade(
                 old_attachments=data["attachments"],
             )
 
-        if data["post_upgrade_script"] is not None:
+        if data.get("post_upgrade_script", ""):
             modified_paths = _do_upgrade_scripted(
                 local_drake_checkout=local_drake_checkout,
                 workspace_root=workspace_root,

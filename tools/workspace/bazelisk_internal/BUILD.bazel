@@ -2,6 +2,20 @@ load("//tools/lint:lint.bzl", "add_lint_tests")
 load("//tools/skylark:drake_py.bzl", "drake_py_binary", "drake_py_unittest")
 
 drake_py_binary(
+    name = "generate_drake_repository_metadata",
+    srcs = ["generate_drake_repository_metadata.py"],
+)
+
+genrule(
+    name = "debs_drake_repository_metadata",
+    srcs = ["//setup:ubuntu/packages.json"],
+    outs = ["debs_drake_repository_metadata.json"],
+    cmd = "$(execpath :generate_drake_repository_metadata) $< $@",
+    tools = [":generate_drake_repository_metadata"],
+    visibility = ["//tools/workspace:__pkg__"],
+)
+
+drake_py_binary(
     name = "upgrade",
     srcs = ["upgrade.py"],
     data = [
@@ -18,10 +32,12 @@ drake_py_binary(
 drake_py_unittest(
     name = "lint_test",
     data = [
+        "//setup:ubuntu/packages.json",
         "//third_party:com_github_bazelbuild_bazelisk/LICENSE",
         "//third_party:com_github_bazelbuild_bazelisk/bazelisk.py",
         "@bazelisk_internal//:LICENSE",
         "@bazelisk_internal//:bazelisk.py",
+        "@bazelisk_internal//:drake_repository_metadata.json",
     ],
     tags = ["lint"],
     deps = [
