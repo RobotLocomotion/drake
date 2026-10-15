@@ -19,12 +19,18 @@ def read_repository_metadata():
         )
     )
     for line in inventory_path.read_text(encoding="utf-8").splitlines():
-        canonical_repo_name, json_name = line.split("/")
-        assert json_name == "drake_repository_metadata.json"
-        apparent_repo_name = canonical_repo_name.split("+")[-1]
-        json_path = Path(
-            manifest.Rlocation(f"{apparent_repo_name}/{json_name}")
-        )
+        if line.startswith("+"):
+            # Typical case -- an external repository.
+            canonical_repo_name, json_name = line.split("/")
+            assert json_name == "drake_repository_metadata.json"
+            apparent_repo_name = canonical_repo_name.split("+")[-1]
+            json_path = Path(
+                manifest.Rlocation(f"{apparent_repo_name}/{json_name}")
+            )
+        else:
+            # Uncommon case -- a Drake file (probably auto-generated).
+            json_path = Path(manifest.Rlocation(line))
+
         data = json.loads(json_path.read_text(encoding="utf-8"))
         result[data["name"]] = data
 

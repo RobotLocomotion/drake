@@ -41,7 +41,7 @@ def main():
         if m:
             new_version = m.group(1)
             break
-    assert new_version
+    assert new_version.startswith("v")
 
     # Upgrade setup/ubuntu/packages.json.
     ubuntu_dir = drake_dir / "setup" / "ubuntu"
@@ -53,6 +53,7 @@ def main():
             continue
         for i, url in enumerate(package["urls"]):
             package["urls"][i] = re.sub(r"v\d+\.\d+\.\d+", new_version, url)
+        package["version"] = new_version.removeprefix("v")
         package["sha256"] = _get_url_sha256(package["urls"][0])
     (ubuntu_dir / "packages.json").write_text(
         json.dumps(packages, indent=4) + "\n"

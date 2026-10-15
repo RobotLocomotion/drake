@@ -12,6 +12,7 @@ load(
 filegroup(
     name = "drake_repository_metadata",
     srcs = [
+        "//tools/workspace/bazelisk_internal:debs_drake_repository_metadata.json",
         "@abseil_cpp_internal//:drake_repository_metadata.json",
         "@bazelisk_internal//:drake_repository_metadata.json",
         "@ccd_internal//:drake_repository_metadata.json",
