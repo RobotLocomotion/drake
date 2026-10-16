@@ -107,10 +107,24 @@ valid. It:
 2. Builds the applied `MultibodyForces`: force elements (gravity, springs,
    damping) and the `applied_*` input ports at the start state; actuation as
    the gain-constraint impulse `γ_u/δt` when effort limits are active,
-   otherwise `B·u` with `u` clamped; patch, weld, and ball constraints as
-   spatial forces `Γ/δt` on both bodies; limit and coupler constraints as
-   `Jᵀγ/δt`. Spatial forces are kept spatial because joint reaction forces
-   need the body-level loads, not just generalized forces.
+   otherwise `B·u` with `u` clamped; patch, weld, ball, and distance
+   constraints as spatial forces `Γ/δt` on both bodies; limit and coupler
+   constraints as `Jᵀγ/δt`. Spatial forces are kept spatial because joint
+   reaction forces need the body-level loads, not just generalized forces.
+
+   The `applied_*` input ports are evaluated at the start state of the
+   recorded solve, explicitly. This is only first-order consistent with what
+   the solve applied, for two reasons. First, ICF applies external forces
+   through a gain constraint, implicitly (`−Ke·v + be`), so the two differ by
+   O(δt·Ke·v̇) when the forces depend on velocity. Second, in error-controlled
+   mode the recorded solve is the second half step, which starts at x(t₀+h/2)
+   but reuses the external-system linearization taken at x₀. The gain impulse
+   cannot be used instead, because it is a generalized force and joint
+   reaction forces need the per-body spatial forces. Both errors are O(h), the
+   same order as the integrator. Only the spatial forces affect the reported
+   reaction forces: inverse dynamics determines each joint's reaction from
+   body spatial forces and `v̇`, and applied generalized forces only enter its
+   residual.
 3. Sets `vdot = (v₁ − v₀)/δt` and `tau_contact = Jᵀγ_contact/δt`.
 4. Builds `ContactResults` from the patch pool. Patch ordering is fixed by
    `IcfBuilder`: point pair `p` is patch `p` (one pair each); hydroelastic
