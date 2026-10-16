@@ -13,6 +13,7 @@ HolonomicConstraintsDataPool<T, N>::~HolonomicConstraintsDataPool() = default;
 
 template <typename T, int N>
 void HolonomicConstraintsDataPool<T, N>::Resize(int num_constraints) {
+  cost_pool_.resize(num_constraints);
   gamma_pool_.resize(num_constraints);
 }
 

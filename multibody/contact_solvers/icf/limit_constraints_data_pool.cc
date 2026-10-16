@@ -12,6 +12,7 @@ LimitConstraintsDataPool<T>::~LimitConstraintsDataPool() = default;
 template <typename T>
 void LimitConstraintsDataPool<T>::Resize(std::span<const int> constraint_size) {
   const int num_elements = ssize(constraint_size);
+  cost_pool_.resize(num_elements);
   gamma_lower_pool_.Resize(num_elements, constraint_size);
   G_lower_pool_.Resize(num_elements, constraint_size);
   gamma_upper_pool_.Resize(num_elements, constraint_size);

@@ -83,7 +83,8 @@ class IcfPartition {
   /* Computes the islands of the clique graph encoded by `pattern`. The diagonal
   blocks of `pattern` are the cliques (graph nodes); an off-diagonal nonzero
   block (i, j) is an edge between cliques i and j. */
-  void Compute(const contact_solvers::internal::BlockSparsityPattern& pattern);
+  void Compute(const contact_solvers::internal::BlockSparsityPattern& pattern,
+               bool use_islands);
 
   int num_cliques() const { return num_cliques_; }
   int num_islands() const { return num_islands_; }
