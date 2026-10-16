@@ -128,14 +128,10 @@ valid. It:
    body spatial forces and `v̇`, and applied generalized forces only enter its
    residual.
 
-   The actuation gain constraints act per dof, so `net_actuation` is
-   `Bᵀ·γ_u/δt` only for actuators that are alone on their joint. When several
-   actuators share a joint, the solve's force is their sum and cannot be split
-   among them, so each reports its own (effort-limited) input instead. This is
-   exact unless the joint's effort limit is active, in which case the reported
-   inputs do not reflect the clamping. (`IcfBuilder` also uses a single effort
-   limit per dof, taken from the last actuator on the joint, so the clamping
-   itself is not the sum of the actuators' limits.)
+   The actuation gain constraints act per dof, with a single effort limit
+   each, so `IcfBuilder` rejects plants where several actuators share a joint.
+   Each actuated dof therefore has exactly one actuator, and `net_actuation`
+   is `Bᵀ·γ_u/δt`.
 3. Sets `vdot = (v₁ − v₀)/δt` and `tau_contact = Jᵀγ_contact/δt`.
 4. Builds `ContactResults` from the patch pool. Patch ordering is fixed by
    `IcfBuilder`: point pair `p` is patch `p` (one pair each); hydroelastic
