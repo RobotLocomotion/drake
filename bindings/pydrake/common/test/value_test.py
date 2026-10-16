@@ -1,7 +1,7 @@
 import copy
 import unittest
 
-from pydrake.common import pretty_class_name
+from pydrake.common import _binder, pretty_class_name
 from pydrake.common.cpp_param import List
 from pydrake.common.test.value_test_util import (
     CustomType,
@@ -188,3 +188,17 @@ class TestValue(unittest.TestCase):
         self.assertIsInstance(Value(True), Value[bool])
         self.assertIsInstance(Value(1.0), Value[float])
         self.assertIsInstance(Value(object()), Value[object])
+
+    @unittest.skipIf(_binder == "pybind11", "Not yet fixed to fail-fast")
+    def test_none_rejection(self):
+        with self.assertRaises(TypeError):
+            Value(None)
+        with self.assertRaises(TypeError):
+            Value[object](None)
+        with self.assertRaises(TypeError):
+            AbstractValue.Make(None)
+        value = Value[object]()
+        with self.assertRaises(TypeError):
+            value.set_value(None)
+        with self.assertRaises(TypeError):
+            value.SetFrom(None)
