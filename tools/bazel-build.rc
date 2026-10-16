@@ -23,6 +23,13 @@ common --incompatible_autoload_externally=
 # Use cloudflare's mirror for improved reliability of external downloads.
 common --module_mirrors=https://bcr.cloudflaremirrors.com
 
+# Target x86_64-v2 microarchitecture at minimum (without requesting it
+# specifically, so that Resolute can target v3). The -mcx16 flag enables the
+# CMPXCHG16B instruction in gcc/clang.
+build:linux --copt=-msse4.2
+build:linux --copt=-mpopcnt
+build:linux --copt=-mcx16
+
 # Default to an optimized build.
 build -c opt
 build --features=prefer_pic_for_opt_binaries
