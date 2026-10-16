@@ -963,6 +963,65 @@ TEST_P(DoublePendulum, SampledReactionForcesWithWeldConstraint) {
   EXPECT_LT(vdot.cwiseAbs().maxCoeff(), 1e3);
 }
 
+/* Checks that the impulses of distance constraints are reported as applied
+forces. A distance constraint between the two links holds the elbow bent; it is
+an internal force, so neither (free) hinge should report a reaction torque about
+its axis beyond its small damping torque. If the constraint force were missing
+from the applied forces, inverse dynamics would attribute it to the joints. */
+TEST_P(DoublePendulum, SampledReactionForcesWithDistanceConstraint) {
+  // Points P on link1 (its origin) and Q on link2 (its tip), and their distance
+  // with the elbow bent at a right angle.
+  const Vector2d q0(M_PI / 4, M_PI / 2);
+  const Eigen::Vector3d p_L1P(0.0, 0.0, 0.0);
+  const Eigen::Vector3d p_L2Q(0.0, 0.0, -0.3);
+  double distance{};
+  {
+    MultibodyPlant<double> scratch(0.0);
+    Parser(&scratch).AddModelsFromString(kDoublePendulumMjcf, "xml");
+    scratch.Finalize();
+    auto context = scratch.CreateDefaultContext();
+    scratch.SetPositions(context.get(), q0);
+    Eigen::Vector3d p_L1Q;
+    scratch.CalcPointsPositions(
+        *context, scratch.GetBodyByName("link2").body_frame(), p_L2Q,
+        scratch.GetBodyByName("link1").body_frame(), &p_L1Q);
+    distance = (p_L1Q - p_L1P).norm();
+  }
+
+  plant_->AddDistanceConstraint(plant_->GetBodyByName("link1"), p_L1P,
+                                plant_->GetBodyByName("link2"), p_L2Q,
+                                distance);
+  plant_->SetUseSampledOutputPorts(true);
+  Build();
+  const Vector2d v0(0.5, 0.0);  // Consistent with the constraint.
+  plant_->SetPositions(plant_context_, q0);
+  plant_->SetVelocities(plant_context_, v0);
+
+  const double h = 1e-3;
+  integrator_->set_fixed_step_mode(true);
+  integrator_->set_maximum_step_size(h);
+  simulator_->AdvanceTo(h);
+  ASSERT_EQ(integrator_->get_num_steps_taken(), 1);
+
+  // The constraint holds the elbow (near) still.
+  const VectorXd v = plant_->GetVelocities(*plant_context_);
+  EXPECT_NEAR(v[1], 0.0, 1e-3);
+
+  // Each hinge transmits only its damping torque about its axis (y), up to the
+  // O(h) inconsistency between the implicit ICF step and inverse dynamics.
+  const std::vector<SpatialForce<double>>& reactions =
+      EvalReactionForces(*plant_, *plant_context_);
+  for (const char* name : {"joint1", "joint2"}) {
+    SCOPED_TRACE(name);
+    const auto& joint = plant_->GetJointByName<RevoluteJoint>(name);
+    const SpatialForce<double>& F = reactions[joint.ordinal()];
+    EXPECT_TRUE(F.get_coeffs().allFinite());
+    EXPECT_GT(F.translational().norm(), 1e-3);
+    EXPECT_NEAR(F.rotational()[1],
+                -joint.default_damping() * v0[joint.velocity_start()], 1e-3);
+  }
+}
+
 /* Checks sampled reaction forces when joint locking reduces the ICF problem:
 the locked joint must still report the load it carries. */
 TEST_P(DoublePendulum, SampledReactionForcesWithJointLocking) {

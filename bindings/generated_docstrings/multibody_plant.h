@@ -1916,10 +1916,11 @@ used in the last time step, or we could recalculate the acceleration
 to immediately reflect the changing forces. We call the former a
 "sampled" port and the latter a "live" port.
 
-For a continuous-time plant, there is no distinction -- the output
-port is always live -- it immediately reflects the instantaneous input
-value. It is a "direct feedthrough" output port (see
-SystemBase∷GetDirectFeedthroughs()).
+For a continuous-time plant, the output ports are live by default --
+they immediately reflect the instantaneous input value. They are
+"direct feedthrough" output ports (see
+SystemBase∷GetDirectFeedthroughs()). Optionally, a continuous-time
+plant can be configured for sampled output ports (see below).
 
 For a discrete-time plant, the user can choose whether the output
 should be sampled or live: Use the function SetUseSampledOutputPorts()
@@ -1960,6 +1961,28 @@ either use a continuous-time plant, set the config option
 ``use_sampled_output_ports=false``, or use ExecuteForcedEvents() to
 force a dynamics step and then the outputs (and positions) will
 change.
+
+** Sampled output ports for a continuous-time plant
+
+A continuous-time plant does not take discrete steps itself, so it has
+no natural sample to record. However, some integrators advance the
+plant with a contact model of their own rather than by integrating the
+plant's continuous dynamics; in particular CenicIntegrator solves a
+convex contact problem at each step. For such an integrator the
+plant's live dynamics output ports (which report the plant's compliant
+continuous contact model) are inconsistent with the trajectory
+actually being simulated. Calling SetUseSampledOutputPorts(true) on a
+continuous-time plant declares the same sample state variable ``s``
+used by discrete-time plants and switches the dynamics output ports to
+report it. It is then the integrator's responsibility to record ``s``
+on every step it takes; CenicIntegrator records the contact and
+constraint forces of the convex problem that produced the current
+state. Before the first step (and forever, if the integrator in use
+does not record samples) the dynamics output ports report zero forces,
+zero accelerations, and empty contact results. As with a discrete-time
+plant, the presence of ``s`` means the Context is no longer purely
+continuous, which some Drake features (e.g., linearization) do not
+support.
 
 **** Actuation
 
@@ -7307,17 +7330,16 @@ Raises:
         struct /* SetUseSampledOutputPorts */ {
           // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
-R"""((Advanced) For a discrete-time plant, configures whether the output
-ports are sampled (the default) or live (opt-in). See
+R"""((Advanced) Configures whether the dynamics output ports are sampled or
+live. For a discrete-time plant, sampled is the default and live is
+opt-in. For a continuous-time plant, live is the default and sampled
+is opt-in; sampled output ports on a continuous-time plant are only
+useful when the plant is advanced by an integrator that records the
+sample (at present, only CenicIntegrator does so). See
 output_port_sampling "Output port sampling" for details.
 
 Raises:
-    RuntimeError if the plant is already finalized.
-
-Raises:
-    RuntimeError if ``use_sampled_output_ports`` is ``True`` but
-    ``this`` MultibodyPlant is not a discrete model (is_discrete() ==
-    false).)""";
+    RuntimeError if the plant is already finalized.)""";
         } SetUseSampledOutputPorts;
         // Symbol: drake::multibody::MultibodyPlant::SetVelocities
         struct /* SetVelocities */ {
@@ -8706,7 +8728,9 @@ cases.)""";
           // Source: drake/multibody/plant/multibody_plant_config.h
           const char* doc =
 R"""(Configures the MultibodyPlant∷SetUseSampledOutputPorts(). Ignored when
-the time_step is zero.)""";
+the time_step is zero (i.e., a continuous-time plant always defaults
+to live output ports; sampled output ports for a continuous-time plant
+must be requested by calling SetUseSampledOutputPorts() directly).)""";
         } use_sampled_output_ports;
         auto Serialize__fields() const {
           return std::array{

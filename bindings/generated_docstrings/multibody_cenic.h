@@ -76,6 +76,23 @@ Running CENIC in fixed-step mode (with error-control disabled)
 recovers the "Lagged" variant of discrete-time ICF simulation from
 [Castro et al., 2023].
 
+*Force reporting.** CENIC does not integrate the plant's own
+continuous contact dynamics, so by default the plant's dynamics output
+ports (e.g., ``reaction_forces``, `contact_results`,
+``generalized_acceleration``) report the plant's compliant contact
+model, which is inconsistent with the simulated trajectory. To report
+the ICF contact and constraint forces instead, call
+MultibodyPlant∷SetUseSampledOutputPorts(true) on the (continuous-time)
+plant before finalizing it. CENIC then records, at every step, a
+sample of the dynamics of the convex problem that produced the new
+state: the constraint impulses γ divided by that step's time step δt
+(for error-controlled steps, the second half-step), together with the
+resulting accelerations, joint reaction forces, contact results, and
+net actuation. The plant's dynamics output ports report that sample
+until the next step. Before the first step the sample is empty (zero
+forces and accelerations, no contacts). See output_port_sampling
+"Output port sampling" for details.
+
 Implementation notes:
 
 Warning:

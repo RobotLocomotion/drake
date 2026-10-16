@@ -559,7 +559,6 @@ void CenicIntegrator<T>::RecordStepMemory(const IcfModel<T>& model,
   // constraint evaluation, much cheaper than a solve.
   IcfData<T>& data = scratch_.report_data;
   model.ResizeData(&data);
-  data.set_v(v);
   model.CalcData(v, &data);
 
   // Assemble the forces applied to the plant during this step:
@@ -627,28 +626,20 @@ void CenicIntegrator<T>::RecordStepMemory(const IcfModel<T>& model,
     }
   }
 
-  // Weld and ball constraints: CalcSpatialImpulses() resolves the impulse on
-  // each body about its origin. Body pairs are ordered (A, B).
-  {
-    const auto& welds = model.weld_constraints_pool();
-    const auto& weld_data = data.weld_constraints_data();
-    for (int k = 0; k < welds.num_constraints(); ++k) {
+  // Weld, ball and distance constraints: CalcSpatialImpulses() resolves the
+  // impulse on each body about its origin. Body pairs are ordered (A, B).
+  auto add_holonomic_impulses = [&](const auto& pool) {
+    const auto& pool_data = pool.GetDataPool(data);
+    for (int k = 0; k < pool.num_constraints(); ++k) {
       Vector6<T> Gamma_Bo_W, Gamma_Ao_W;
-      welds.CalcSpatialImpulses(k, weld_data.gamma(k), &Gamma_Bo_W,
-                                &Gamma_Ao_W);
-      add_body_impulse(welds.body_pairs()[k].second, Gamma_Bo_W);
-      add_body_impulse(welds.body_pairs()[k].first, Gamma_Ao_W);
+      pool.CalcSpatialImpulses(k, pool_data.gamma(k), &Gamma_Bo_W, &Gamma_Ao_W);
+      add_body_impulse(pool.body_pairs()[k].second, Gamma_Bo_W);
+      add_body_impulse(pool.body_pairs()[k].first, Gamma_Ao_W);
     }
-    const auto& balls = model.ball_constraints_pool();
-    const auto& ball_data = data.ball_constraints_data();
-    for (int k = 0; k < balls.num_constraints(); ++k) {
-      Vector6<T> Gamma_Bo_W, Gamma_Ao_W;
-      balls.CalcSpatialImpulses(k, ball_data.gamma(k), &Gamma_Bo_W,
-                                &Gamma_Ao_W);
-      add_body_impulse(balls.body_pairs()[k].second, Gamma_Bo_W);
-      add_body_impulse(balls.body_pairs()[k].first, Gamma_Ao_W);
-    }
-  }
+  };
+  add_holonomic_impulses(model.weld_constraints_pool());
+  add_holonomic_impulses(model.ball_constraints_pool());
+  add_holonomic_impulses(model.distance_constraints_pool());
 
   // Joint limits and couplers act in generalized coordinates. Each pool's
   // AccumulateGradient() adds ∇ℓ = -Jᵀγ, so the generalized force is -∇ℓ/δt.
