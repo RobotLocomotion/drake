@@ -7,6 +7,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/nice_type_name.h"
 #include "drake/geometry/proximity/distance_to_point_callback.h"
+#include "drake/geometry/proximity/mujoco_ccd_penetration.h"
 #include "drake/geometry/query_results/signed_distance_to_point.h"
 
 namespace drake {
@@ -392,10 +393,7 @@ bool Callback(fcl::CollisionObjectd* fcl_object_A_ptr,
   // Since we want *all* collisions, we return false.
   if (!can_collide) return false;
 
-  auto result = MaybeMakePointPair(fcl_object_A_ptr, fcl_object_B_ptr, data);
-  if (result.has_value()) {
-    data.point_pairs.push_back(std::move(*result));
-  }
+  MakePointPairs(fcl_object_A_ptr, fcl_object_B_ptr, data, &data.point_pairs);
 
   return false;
 }
@@ -453,8 +451,45 @@ std::optional<PenetrationAsPointPair<T>> MaybeMakePointPair(
   return {};
 }
 
+template <typename T>
+void MakePointPairs(fcl::CollisionObjectd* fcl_object_A_ptr,
+                    fcl::CollisionObjectd* fcl_object_B_ptr,
+                    const CallbackData<T>& data,
+                    std::vector<PenetrationAsPointPair<T>>* point_pairs) {
+  DRAKE_DEMAND(point_pairs != nullptr);
+  // The MuJoCo multi-point algorithm is only implemented for doubles; other
+  // scalars always take the single-point path below.
+  if constexpr (std::is_same_v<T, double>) {
+    if (data.mujoco_ccd_geometries != nullptr) {
+      GeometryId id_A = EncodedData(*fcl_object_A_ptr).id();
+      GeometryId id_B = EncodedData(*fcl_object_B_ptr).id();
+      // Match MaybeMakePointPair's canonical ordering of the pair.
+      if (id_B < id_A) std::swap(id_A, id_B);
+      const MujocoCcdGeometries& catalog = *data.mujoco_ccd_geometries;
+      auto iter_A = catalog.find(id_A);
+      auto iter_B = iter_A != catalog.end() ? catalog.find(id_B) : iter_A;
+      if (iter_A != catalog.end() && iter_B != catalog.end()) {
+        const bool resolved = ComputeMujocoMultipointPenetration(
+            *iter_A->second, data.X_WGs.at(id_A), *iter_B->second,
+            data.X_WGs.at(id_B), id_A, id_B, &data.mujoco_ccd_scratch,
+            point_pairs);
+        if (resolved) return;
+        // MuJoCo's GJK/EPA degenerated on this pair (for example, the two
+        // hulls' vertex centroids coincide, or EPA returned non-finite
+        // witness points under very deep penetration). Fall through to the
+        // single-point algorithm so that a penetrating pair is never left
+        // unreported.
+      }
+    }
+  }
+  auto result = MaybeMakePointPair(fcl_object_A_ptr, fcl_object_B_ptr, data);
+  if (result.has_value()) {
+    point_pairs->push_back(std::move(*result));
+  }
+}
+
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    (&Callback<T>, &MaybeMakePointPair<T>));
+    (&Callback<T>, &MaybeMakePointPair<T>, &MakePointPairs<T>));
 
 }  // namespace penetration_as_point_pair
 }  // namespace internal

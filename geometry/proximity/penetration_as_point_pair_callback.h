@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <optional>
 #include <unordered_map>
 #include <vector>
@@ -8,12 +9,21 @@
 
 #include "drake/common/drake_export.h"
 #include "drake/geometry/proximity/collision_filter.h"
+#include "drake/geometry/proximity/mujoco_ccd_mesh_data.h"
 #include "drake/geometry/query_results/penetration_as_point_pair.h"
 #include "drake/math/rigid_transform.h"
 
 namespace drake {
 namespace geometry {
 namespace internal {
+
+/* The catalog of geometries that opted into the "mujoco_multipoint" point
+ contact algorithm (see DefaultProximityProperties::point_contact_algorithm):
+ for each such Convex or Mesh geometry, the precomputed collision data of its
+ convex hull. */
+using MujocoCcdGeometries =
+    std::unordered_map<GeometryId, std::shared_ptr<const MujocoCcdMeshData>>;
+
 namespace penetration_as_point_pair DRAKE_NO_EXPORT {
 
 /* Supporting data for the detecting collision between geometries and reporting
@@ -58,6 +68,15 @@ struct CallbackData {
 
   /* The results of the collision query.  */
   std::vector<PenetrationAsPointPair<T>>& point_pairs;
+
+  /* When non-null, geometry pairs where *both* ids appear in this catalog are
+   evaluated with MuJoCo's multi-point convex collision detection (producing
+   up to four PenetrationAsPointPair results per geometry pair) instead of
+   the single-point fcl query. Only consulted for T = double. Aliased. */
+  const MujocoCcdGeometries* mujoco_ccd_geometries{nullptr};
+
+  /* Reusable scratch memory for the MuJoCo query. */
+  mutable std::vector<double> mujoco_ccd_scratch;
 };
 
 /* Callback function for FCL's collide() function for retrieving a *single*
@@ -70,11 +89,25 @@ bool Callback(fcl::CollisionObjectd* fcl_object_A_ptr,
 
 /* Given two objects that are candidates for a collision, returns the
  point-pair contact result. If the penetration depth turns out to be negative
- (no collision), returns nullopt. */
+ (no collision), returns nullopt. This is always the *single-point* result,
+ regardless of data.mujoco_ccd_geometries. */
 template <typename T>
 std::optional<PenetrationAsPointPair<T>> MaybeMakePointPair(
     fcl::CollisionObjectd* fcl_object_A_ptr,
     fcl::CollisionObjectd* fcl_object_B_ptr, const CallbackData<T>& data);
+
+/* Given two objects that are candidates for a collision, appends their
+ point-pair contact results (if any) to `point_pairs`. When
+ data.mujoco_ccd_geometries contains both geometries (and T = double), the
+ pair is evaluated with MuJoCo's multi-point convex collision detection and
+ up to four point pairs are appended; otherwise this appends the single
+ MaybeMakePointPair() result. Results are appended in a deterministic order
+ for fixed inputs. */
+template <typename T>
+void MakePointPairs(fcl::CollisionObjectd* fcl_object_A_ptr,
+                    fcl::CollisionObjectd* fcl_object_B_ptr,
+                    const CallbackData<T>& data,
+                    std::vector<PenetrationAsPointPair<T>>* point_pairs);
 
 // clang-format off
 }  // namespace penetration_as_point_pair

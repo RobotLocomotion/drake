@@ -93,6 +93,7 @@ drake_cc_library(
         "//math",
     ],
     implementation_deps = [
+        ":proximity_properties",
         ":read_obj",
         ":utilities",
         "//geometry/proximity",
@@ -102,6 +103,7 @@ drake_cc_library(
         "//geometry/proximity:distance_to_shape_callback",
         "//geometry/proximity:find_collision_candidates_callback",
         "//geometry/proximity:hydroelastic_calculator",
+        "//geometry/proximity:mujoco_ccd_mesh_data",
         "//geometry/proximity:penetration_as_point_pair_callback",
         "@fcl_internal//:fcl",
         "@fmt",
@@ -1004,6 +1006,19 @@ drake_cc_googletest(
         "//geometry/proximity:make_sphere_mesh",
         "//math",
         "@fcl_internal//:fcl",
+    ],
+)
+
+drake_cc_googletest(
+    name = "mujoco_multipoint_engine_test",
+    deps = [
+        ":geometry_ids",
+        ":proximity_engine",
+        ":proximity_properties",
+        ":shape_specification",
+        "//common:memory_file",
+        "//common/test_utilities:expect_throws_message",
+        "//math",
     ],
 )
 

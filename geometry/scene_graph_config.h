@@ -27,6 +27,7 @@ struct DefaultProximityProperties {
     a->Visit(DRAKE_NVP(hunt_crossley_dissipation));
     a->Visit(DRAKE_NVP(relaxation_time));
     a->Visit(DRAKE_NVP(point_stiffness));
+    a->Visit(DRAKE_NVP(point_contact_algorithm));
     ValidateOrThrow();
   }
   /** @name Hydroelastic Contact Properties
@@ -153,6 +154,27 @@ struct DefaultProximityProperties {
   details on Drake's defaults along with guidelines on how to estimate
   parameters specific to your model. */
   std::optional<double> point_stiffness{1e6};
+
+  /** (Experimental) Selects the narrowphase algorithm used to compute point
+  contact for this geometry. There are two valid options:
+  - "single_point": the existing behavior; every penetrating geometry pair
+    reports exactly one contact point (the deepest one).
+  - "mujoco_multipoint": pairs where *both* geometries are Convex or Mesh
+    shapes (and both request this algorithm) report a contact manifold of up
+    to four contact points, computed with MuJoCo's native convex collision
+    detection (GJK/EPA plus contact-polygon clipping over the meshes' convex
+    hulls); each point carries its own depth. Face-face and edge-face
+    contacts gain the extra points; vertex-face contacts still report one
+    point. All other geometry pairs keep the "single_point" behavior. A mesh
+    whose convex hull has no volume (for example, a planar mesh) reports a
+    single point even when it selects this algorithm.
+
+  This affects QueryObject::ComputePointPairPenetration() and the point
+  contact fallback of QueryObject::ComputeContactSurfacesWithFallback() for
+  double-valued scene graphs. Scene graphs of other scalar types ignore the
+  property; those scalar types do not support penetration queries between
+  Convex or Mesh shapes in the first place. */
+  std::string point_contact_algorithm{"single_point"};
   /// @}
 
   /** Throws if the values are inconsistent. */

@@ -485,6 +485,7 @@ class TestGeometrySceneGraph(unittest.TestCase):
             hunt_crossley_dissipation=7,
             relaxation_time=None,  # Test optionality.
             point_stiffness=9,
+            point_contact_algorithm="mujoco_multipoint",
         )
         param_init_scene_graph = mut.SceneGraphConfig(
             default_proximity_properties=param_init_props
@@ -493,6 +494,7 @@ class TestGeometrySceneGraph(unittest.TestCase):
         got_props = param_init_scene_graph.default_proximity_properties
         self.assertEqual(got_props.relaxation_time, None)
         self.assertEqual(got_props.point_stiffness, 9)
+        self.assertEqual(got_props.point_contact_algorithm, "mujoco_multipoint")
 
     @numpy_compare.check_all_types
     def test_scene_graph_renderer_with_context(self, T):
