@@ -229,18 +229,6 @@ void CenicIntegrator<T>::Scratch::Resize(const MultibodyPlant<T>& plant,
     tau_contact.resize(nv);
     net_actuation.resize(plant.num_actuated_dofs());
     actuation_matrix = plant.MakeActuationMatrix();
-    std::vector<int> num_actuators_per_dof(nv, 0);
-    for (JointActuatorIndex i : plant.GetJointActuatorIndices()) {
-      const int dof = plant.get_joint_actuator(i).joint().velocity_start();
-      ++num_actuators_per_dof[dof];
-    }
-    shared_dof_actuators.clear();
-    for (JointActuatorIndex i : plant.GetJointActuatorIndices()) {
-      const JointActuator<T>& actuator = plant.get_joint_actuator(i);
-      if (num_actuators_per_dof[actuator.joint().velocity_start()] > 1) {
-        shared_dof_actuators.push_back(actuator.input_start());
-      }
-    }
   }
 
   // Allocate intermediate states for error control.
@@ -603,18 +591,9 @@ void CenicIntegrator<T>::RecordStepMemory(const IcfModel<T>& model,
       model.mutable_clique_segment(gains.clique()[k], &tau_u) +=
           gain_data.gamma(k) / dt;
     }
+    // IcfBuilder rejects actuators that share a joint, so each actuated dof
+    // has exactly one actuator and Bᵀ maps the per-dof force to it.
     net_actuation = scratch_.actuation_matrix.transpose() * tau_u;
-    // The gain constraints act per dof, so when several actuators share a dof
-    // the solve's force can't be split among them. Report their (effort
-    // limited) inputs instead, which is exact unless the dof's limit is
-    // active.
-    if (!scratch_.shared_dof_actuators.empty()) {
-      const VectorX<T>& u = MultibodyPlantIcfAttorney<T>::EvalActuationInput(
-          mbp, context, /* apply_effort_limit = */ true);
-      for (int i : scratch_.shared_dof_actuators) {
-        net_actuation[i] = u[i];
-      }
-    }
   } else {
     net_actuation = MultibodyPlantIcfAttorney<T>::EvalActuationInput(
         mbp, context, /* apply_effort_limit = */ true);

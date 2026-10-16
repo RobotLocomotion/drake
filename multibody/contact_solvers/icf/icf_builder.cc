@@ -330,6 +330,25 @@ void IcfBuilder<T>::ValidatePlant() {
         "constraint(s)",
         plant_.num_tendon_constraints()));
   }
+
+  // The actuation gain constraints act per dof, with a single effort limit
+  // each, so they can't represent several actuators sharing a joint.
+  std::vector<const JointActuator<T>*> dof_actuators(plant_.num_velocities(),
+                                                     nullptr);
+  for (JointActuatorIndex i : plant_.GetJointActuatorIndices()) {
+    const JointActuator<T>& actuator = plant_.get_joint_actuator(i);
+    const JointActuator<T>*& existing =
+        dof_actuators[actuator.joint().velocity_start()];
+    if (existing != nullptr) {
+      throw std::logic_error(fmt::format(
+          "The CENIC integrator does not support more than one actuator on a "
+          "joint, but joint '{}' is actuated by both '{}' and '{}'. Consider "
+          "modeling each motor on its own joint and coupling those joints with "
+          "constraints (e.g., MultibodyPlant::AddCouplerConstraint()).",
+          actuator.joint().name(), existing->name(), actuator.name()));
+    }
+    existing = &actuator;
+  }
 }
 
 template <typename T>
