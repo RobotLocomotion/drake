@@ -1,0 +1,86 @@
+[coal] Adjust the code for vendor_cxx compatibility
+
+Drake's vendor_cxx tool wraps each file's code in an inline namespace. It is
+line-oriented, so it cannot see that a `namespace` block sits inside a
+preprocessor conditional that Drake leaves undefined: it places the opening (or
+closing) brace of the inline namespace inside the conditional, the preprocessor
+then deletes that brace along with the rest of the block, and the inline
+namespace is left unbalanced. In practice that swallows every header included
+afterwards -- e.g., it lands <cmath> and <vector> inside `drake_vendor::std`.
+
+Coal has three such blocks, all of which are dead code for Drake:
+
+- fwd.hh ends with aliases for Coal's former name (hpp-fcl), guarded by
+  COAL_BACKWARD_COMPATIBILITY_WITH_HPP_FCL. Drake does not use the hpp::fcl
+  spelling and never defines that macro, so we delete the block. (The
+  identical `#ifdef` in data_types.h needs no patch: that block is surrounded
+  by ordinary code, so vendor_cxx wraps it correctly.)
+
+- geometric_shapes.h forward-declares orgQhull::Qhull under COAL_HAS_QHULL,
+  which Drake does not define because it does not build Coal's Qhull-based
+  convex hull. A forward declaration is free, so rather than delete it we
+  simply drop its guard.
+
+- geometric_shapes.cpp opens with a COAL_HAS_QHULL block that mixes Qhull's
+  #include statements with `using orgQhull::...` declarations. The
+  declarations are the file's first line of code, so the inline namespace
+  opens on them, inside the conditional. We move just the declarations to
+  just after `namespace coal {`, where the conditional is bracketed by
+  ordinary code. Every use of those names is inside namespace coal already,
+  so this does not change what the Qhull build compiles.
+
+Reasoning for not upstreaming this patch: Drake-specific vendoring.
+
+--- include/coal/fwd.hh
++++ include/coal/fwd.hh
+@@ -160,13 +160,4 @@
+ typedef shared_ptr<const OcTree> OcTreeConstPtr_t;
+ }  // namespace coal
+
+-#ifdef COAL_BACKWARD_COMPATIBILITY_WITH_HPP_FCL
+-namespace hpp {
+-namespace fcl {
+-using namespace coal;
+-using Transform3f = Transform3s;  // For backward compatibility
+-}  // namespace fcl
+-}  // namespace hpp
+-#endif
+-
+ #endif  // COAL_FWD_HH
+--- include/coal/shape/geometric_shapes.h
++++ include/coal/shape/geometric_shapes.h
+@@ -47,11 +47,9 @@
+ #include "coal/data_types.h"
+ #include "coal/shared_ptr_comparison.h"
+
+-#ifdef COAL_HAS_QHULL
+ namespace orgQhull {
+ class Qhull;
+ }
+-#endif
+
+ namespace coal {
+
+--- src/shape/geometric_shapes.cpp
++++ src/shape/geometric_shapes.cpp
+@@ -46,7 +46,11 @@
+ #include <libqhullcpp/QhullVertexSet.h>
+ #include <libqhullcpp/QhullRidge.h>
+ #include <libqhullcpp/Qhull.h>
++#endif
++
++namespace coal {
+
++#ifdef COAL_HAS_QHULL
+ using orgQhull::Qhull;
+ using orgQhull::QhullFacet;
+ using orgQhull::QhullPoint;
+@@ -55,8 +59,6 @@
+ using orgQhull::QhullVertexSet;
+ #endif
+
+-namespace coal {
+-
+ template <typename IndexType>
+ ConvexBaseTpl<IndexType>* ConvexBaseTpl<IndexType>::convexHull(
+     std::shared_ptr<std::vector<Vec3s>>& pts, unsigned int num_points,
