@@ -165,14 +165,14 @@ void DirectCollocationConstraint::CalcDynamics(
 
   xdot_with_dvars->resize(num_states_);
   // dxdot_dvars = dxdot_dx * dx_dvars + dxdot_du * du_dvars.
-  InitializeAutoDiff(
-      xdot,
+  // Evaluate the products once; InitializeAutoDiff reads them row by row.
+  const MatrixXd dxdot_dvars =
       dxdot_dxu.leftCols(num_states_) * ExtractGradient(x_with_dvars) +
-          dxdot_dxu.rightCols(num_inputs_) *
-              ExtractGradient(u_with_dvars,
-                              // pass in num_derivatives in case u is empty.
-                              x_with_dvars[0].derivatives().size()),
-      xdot_with_dvars);
+      dxdot_dxu.rightCols(num_inputs_) *
+          ExtractGradient(u_with_dvars,
+                          // pass in num_derivatives in case u is empty.
+                          x_with_dvars[0].derivatives().size());
+  InitializeAutoDiff(xdot, dxdot_dvars, xdot_with_dvars);
 }
 
 void DirectCollocationConstraint::DoEval(

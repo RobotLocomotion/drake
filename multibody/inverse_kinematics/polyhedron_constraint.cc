@@ -80,8 +80,10 @@ void DoEvalGeneric(const MultibodyPlant<T>& plant, systems::Context<T>* context,
     plant.CalcJacobianTranslationalVelocity(*context,
                                             JacobianWrtVariable::kQDot, frameG,
                                             p_GP, frameF, frameF, &Jq_v_FP);
-    *y = math::InitializeAutoDiff(A * p_FP_stack,
-                                  A * Jq_v_FP * math::ExtractGradient(x));
+    // Evaluate the products once; InitializeAutoDiff reads them row by row.
+    const Eigen::VectorXd y_val = A * p_FP_stack;
+    const Eigen::MatrixXd gradient = A * Jq_v_FP * math::ExtractGradient(x);
+    *y = math::InitializeAutoDiff(y_val, gradient);
   }
 }
 

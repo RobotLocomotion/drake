@@ -90,7 +90,9 @@ void EvalConstraintGradient(
   const Eigen::VectorXd y_val = A * p_EC;
   Eigen::MatrixXd dy_dx(A.rows(), plant.num_positions());
   dy_dx << A * Jq_V_EC;
-  *y = math::InitializeAutoDiff(y_val, dy_dx * math::ExtractGradient(x));
+  // Evaluate the product once; InitializeAutoDiff reads it row by row.
+  const Eigen::MatrixXd gradient = dy_dx * math::ExtractGradient(x);
+  *y = math::InitializeAutoDiff(y_val, gradient);
 }
 
 // (T, S) can be (double, double), (double, AutoDiffXd) and (AutoDiffXd,
