@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vector>
+
 #include "drake/multibody/plant/multibody_plant.h"
 
 namespace drake {
@@ -44,13 +46,14 @@ class MultibodyPlantIcfAttorney {
     return plant.EvalGeometryContactData(context);
   }
 
-  // See MultibodyPlant::CalcStepMemoryFromAppliedForces().
-  static void CalcStepMemoryFromAppliedForces(
+  // See MultibodyPlant::CalcAccelerationKinematicsAndReactionForces().
+  static void CalcAccelerationKinematicsAndReactionForces(
       const MultibodyPlant<T>& plant, const systems::Context<T>& context,
       const MultibodyForces<T>& applied_forces, const VectorX<T>& vdot,
-      DiscreteStepMemory::Data<T>* memory) {
-    plant.CalcStepMemoryFromAppliedForces(context, applied_forces, vdot,
-                                          memory);
+      AccelerationKinematicsCache<T>* ac,
+      std::vector<SpatialForce<T>>* reaction_forces) {
+    plant.CalcAccelerationKinematicsAndReactionForces(
+        context, applied_forces, vdot, ac, reaction_forces);
   }
 
   static void AddAppliedExternalGeneralizedForces(

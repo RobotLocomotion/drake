@@ -4560,26 +4560,27 @@ void MultibodyPlant<T>::CalcReactionForcesGivenAppliedForcesAndVdot(
 }
 
 template <typename T>
-void MultibodyPlant<T>::CalcStepMemoryFromAppliedForces(
+void MultibodyPlant<T>::CalcAccelerationKinematicsAndReactionForces(
     const systems::Context<T>& context,
     const MultibodyForces<T>& applied_forces, const VectorX<T>& vdot,
-    DiscreteStepMemory::Data<T>* memory) const {
+    AccelerationKinematicsCache<T>* ac,
+    std::vector<SpatialForce<T>>* reaction_forces) const {
   this->ValidateContext(context);
-  DRAKE_DEMAND(memory != nullptr);
+  DRAKE_DEMAND(ac != nullptr);
+  DRAKE_DEMAND(reaction_forces != nullptr);
   DRAKE_DEMAND(applied_forces.CheckHasRightSizeForModel(*this));
   DRAKE_DEMAND(vdot.size() == num_velocities());
 
   // Acceleration kinematics, consistent with the given vdot.
-  AccelerationKinematicsCache<T>& ac = memory->acceleration_kinematics_cache;
-  ac.get_mutable_vdot() = vdot;
+  ac->get_mutable_vdot() = vdot;
   internal_tree().CalcSpatialAccelerationsFromVdot(
       context, EvalPositionKinematics(context), EvalVelocityKinematics(context),
-      ac.get_vdot(), &ac.get_mutable_A_WB_pool());
+      ac->get_vdot(), &ac->get_mutable_A_WB_pool());
 
   // Joint reaction forces, consistent with the applied forces and vdot.
-  memory->reaction_forces.resize(num_joints());
+  reaction_forces->resize(num_joints());
   CalcReactionForcesGivenAppliedForcesAndVdot(context, applied_forces, vdot,
-                                              &memory->reaction_forces);
+                                              reaction_forces);
 }
 
 template <typename T>
