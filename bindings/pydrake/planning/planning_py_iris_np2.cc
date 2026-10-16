@@ -1,6 +1,7 @@
 #include <utility>
 
 #include "drake/bindings/generated_docstrings/planning_iris.h"
+#include "drake/bindings/pydrake/common/ref_cycle_pybind.h"
 #include "drake/bindings/pydrake/common/wrap_pybind.h"
 #include "drake/bindings/pydrake/planning/planning_py.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
@@ -43,7 +44,8 @@ void DefinePlanningIrisNp2(py::module_ m) {
 
   // IrisNp2Options
   const auto& cls_doc = doc.IrisNp2Options;
-  class_<IrisNp2Options> iris_np2_options(m, "IrisNp2Options", cls_doc.doc);
+  class_<IrisNp2Options> iris_np2_options(
+      m, "IrisNp2Options", py::dynamic_attr(), cls_doc.doc);
   iris_np2_options  // BR
       .def(py::init<>())
       .def_prop_rw("solver_options",
@@ -63,7 +65,27 @@ void DefinePlanningIrisNp2(py::module_ m) {
           py::for_getter(py_rvp::reference_internal),
 #endif  // PYDRAKE_USE_PYBIND11
           cls_doc.solver_options.doc)
-      .def_rw("sampled_iris_options", &IrisNp2Options::sampled_iris_options,
+      .def_prop_rw("sampled_iris_options",
+#ifdef PYDRAKE_USE_PYBIND11
+          py::cpp_function(
+              [](IrisNp2Options& self) -> CommonSampledIrisOptions& {
+                return self.sampled_iris_options;
+              },
+              py_rvp::reference_internal, internal::ref_cycle<0, 1>()),
+          py::cpp_function(
+              [](IrisNp2Options& self, const CommonSampledIrisOptions& value) {
+                self.sampled_iris_options = value;
+              }),
+#else   // PYDRAKE_USE_NANOBIND
+          [](IrisNp2Options& self) -> CommonSampledIrisOptions& {
+            return self.sampled_iris_options;
+          },
+          [](IrisNp2Options& self, const CommonSampledIrisOptions& value) {
+            self.sampled_iris_options = value;
+          },
+          py::for_getter(py_rvp::reference_internal),
+          py::for_getter(internal::ref_cycle<0, 1>()),
+#endif  // PYDRAKE_USE_PYBIND11
           cls_doc.sampled_iris_options.doc)
       .def_rw("parameterization", &IrisNp2Options::parameterization,
           cls_doc.parameterization.doc)
