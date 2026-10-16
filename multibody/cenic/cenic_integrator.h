@@ -187,6 +187,9 @@ class CenicIntegrator final : public systems::IntegratorBase<T> {
     VectorX<T> tau_contact;
     VectorX<T> net_actuation;
     MatrixX<T> actuation_matrix;
+    /* Actuation input indices of actuators whose joint has more than one
+    actuator. */
+    std::vector<int> shared_dof_actuators;
 
     /* Linearized external system gains (sized to the plant's num_velocities):
     Torque-limited actuation, τᵤ(v) ≈ clamp(-Kᵤ⋅v + bᵤ, e). */
