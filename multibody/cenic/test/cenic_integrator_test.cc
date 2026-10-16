@@ -639,6 +639,31 @@ TEST_P(DoublePendulum, EffortLimits) {
   EXPECT_TRUE(CompareMatrices(vdot, (v - v0) / h, 1e-6));
 }
 
+/* Checks the sampled net_actuation port when two actuators share a joint. The
+solve only knows their summed force, so each must report its own input rather
+than that sum. */
+TEST_P(DoublePendulum, SampledNetActuationWithSharedJoint) {
+  const auto& joint1 = plant_->GetJointByName("joint1");
+  const auto& joint2 = plant_->GetJointByName("joint2");
+  plant_->AddJointActuator("joint1_actuator_a", joint1, 100.0);
+  plant_->AddJointActuator("joint1_actuator_b", joint1, 100.0);
+  plant_->AddJointActuator("joint2_actuator", joint2, 100.0);
+  plant_->SetUseSampledOutputPorts(true);
+  Build();
+  const Eigen::Vector3d u(1.0, 2.0, 0.5);
+  plant_->get_actuation_input_port().FixValue(plant_context_, u);
+
+  const double h = 1e-3;
+  integrator_->set_fixed_step_mode(true);
+  integrator_->set_maximum_step_size(h);
+  simulator_->AdvanceTo(h);
+  ASSERT_EQ(integrator_->get_num_steps_taken(), 1);
+
+  const VectorXd u_net =
+      plant_->get_net_actuation_output_port().Eval(*plant_context_);
+  EXPECT_TRUE(CompareMatrices(u_net, u, 1e-6));
+}
+
 /* Checks that coupler constraints are handled correctly by the integrator. */
 TEST_P(DoublePendulum, CoupledJoints) {
   const double gear_ratio = 0.5;
