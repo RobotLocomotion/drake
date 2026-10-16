@@ -1,6 +1,7 @@
 # -*- bazel -*-
 
 load("@drake//tools/skylark:py.bzl", "py_binary")
+load("@drake_lief//:requirements.bzl", lief_requirement = "requirement")
 
 py_binary(
     name = "gen",
@@ -13,6 +14,9 @@ py_binary(
     python_version = "PY3",
     srcs_version = "PY3",
     visibility = ["//visibility:public"],
+    deps = [
+        lief_requirement("lief"),
+    ],
 )
 
 exports_files(["drake_repository_metadata.json"])
