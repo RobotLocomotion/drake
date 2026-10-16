@@ -25,7 +25,6 @@
 #include "drake/multibody/plant/constraint_specs.h"
 #include "drake/multibody/plant/contact_results.h"
 #include "drake/multibody/plant/coulomb_friction.h"
-#include "drake/multibody/plant/discrete_step_memory.h"
 #include "drake/multibody/plant/distance_constraint_params.h"
 #include "drake/multibody/plant/dummy_physical_model.h"
 #include "drake/multibody/plant/multibody_plant_config.h"
@@ -6627,27 +6626,27 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
                           std::vector<SpatialForce<T>>* output) const;
 
   // Helper method used by CalcReactionForces() and
-  // CalcStepMemoryFromAppliedForces(). Computes the reaction force at each
-  // joint given the `applied_forces` (body spatial forces and generalized
-  // forces) and generalized accelerations `vdot`, using inverse dynamics at
-  // the kinematic state stored in `context`.
+  // CalcAccelerationKinematicsAndReactionForces(). Computes the reaction force
+  // at each joint given the `applied_forces` (body spatial forces and
+  // generalized forces) and generalized accelerations `vdot`, using inverse
+  // dynamics at the kinematic state stored in `context`.
   // @pre `output` has size num_joints().
   void CalcReactionForcesGivenAppliedForcesAndVdot(
       const systems::Context<T>& context,
       const MultibodyForces<T>& applied_forces, const VectorX<T>& vdot,
       std::vector<SpatialForce<T>>* output) const;
 
-  // Fills in the acceleration kinematics and joint reaction forces of `memory`
-  // given the `applied_forces` and generalized accelerations `vdot` of a step
-  // that started at the state stored in `context`. This is used by integrators
-  // (e.g., CenicIntegrator) that record output port samples for a
-  // continuous-time plant with use_sampled_output_ports(); see
-  // DiscreteStepMemory. The remaining fields of `memory` are the caller's
-  // responsibility.
-  void CalcStepMemoryFromAppliedForces(
+  // Computes the acceleration kinematics `ac` and joint reaction forces
+  // `reaction_forces` given the `applied_forces` and generalized accelerations
+  // `vdot` of a step that started at the state stored in `context`. This is
+  // used by integrators (e.g., CenicIntegrator) that record output port
+  // samples for a continuous-time plant with use_sampled_output_ports(); see
+  // DiscreteStepMemory.
+  void CalcAccelerationKinematicsAndReactionForces(
       const systems::Context<T>& context,
       const MultibodyForces<T>& applied_forces, const VectorX<T>& vdot,
-      internal::DiscreteStepMemory::Data<T>* memory) const;
+      internal::AccelerationKinematicsCache<T>* ac,
+      std::vector<SpatialForce<T>>* reaction_forces) const;
 
   // Collects joint actuator and desired state forces and externally provided
   // spatial and generalized forces.

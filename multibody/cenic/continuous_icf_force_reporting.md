@@ -91,10 +91,12 @@ reuses that machinery for continuous plants:
   from pairs).
 - `CalcReactionForces` is split so the inverse-dynamics and joint-frame mapping
   half is a reusable helper. A new private
-  `CalcStepMemoryFromAppliedForces(context, applied_forces, vdot, memory)`
-  fills the acceleration cache and reaction forces from a given `vdot` and
-  applied `MultibodyForces`. Both are exposed to CENIC through
-  `MultibodyPlantIcfAttorney`.
+  `CalcAccelerationKinematicsAndReactionForces(context, applied_forces, vdot,
+  ac, reaction_forces)` fills the acceleration cache and reaction forces from a
+  given `vdot` and applied `MultibodyForces`. Both are exposed to CENIC through
+  `MultibodyPlantIcfAttorney`. Taking the two outputs rather than the
+  `DiscreteStepMemory::Data` they live in keeps the internal
+  `discrete_step_memory.h` out of the public `multibody_plant.h`.
 
 **Integrator side** (`multibody/cenic`). `RecordStepMemory` runs in `DoStep`
 after the accepted solve and before the new state is written, so the plant

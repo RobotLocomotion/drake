@@ -762,8 +762,9 @@ void CenicIntegrator<T>::RecordStepMemory(const IcfModel<T>& model,
   DiscreteStepMemory::Data<T>& memory =
       plant_context.template get_mutable_abstract_state<DiscreteStepMemory>(0)
           .template Allocate<T>(GetInternalTree(mbp).forest());
-  MultibodyPlantIcfAttorney<T>::CalcStepMemoryFromAppliedForces(
-      mbp, context, forces, vdot, &memory);
+  MultibodyPlantIcfAttorney<T>::CalcAccelerationKinematicsAndReactionForces(
+      mbp, context, forces, vdot, &memory.acceleration_kinematics_cache,
+      &memory.reaction_forces);
   memory.contact_solver_results.tau_contact = tau_contact;
   memory.net_actuation = net_actuation;
   memory.geometry_contact_data = geometry_contact_data;

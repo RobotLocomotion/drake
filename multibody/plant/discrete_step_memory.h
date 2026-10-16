@@ -27,7 +27,7 @@ DiscreteUpdateManager::CalcDiscreteValues, except for `reaction_forces` which is
 populated in the MbP. For a continuous-time plant with sampled output ports,
 the values are populated by the integrator advancing the plant (e.g.,
 CenicIntegrator), with help from
-MultibodyPlant::CalcStepMemoryFromAppliedForces.
+MultibodyPlant::CalcAccelerationKinematicsAndReactionForces.
 
 Once it has been populated, the stored Data is immutable forever after. Copying
 or assigning the `DiscreteStepMemory` just switches which immutable Data it is
