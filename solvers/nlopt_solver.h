@@ -13,11 +13,24 @@ namespace solvers {
  * details.
  */
 struct NloptSolverDetails {
-  /// The return status of NLopt solver. Please refer to
-  /// https://nlopt.readthedocs.io/en/latest/NLopt_Reference/#return-values.
+  /** The return code of NLopt on every termination, including the negative
+   (failure) codes. Please refer to
+   https://nlopt.readthedocs.io/en/latest/NLopt_Reference/#return-values.
+
+   On NLOPT_INVALID_ARGS (-2) and NLOPT_OUT_OF_MEMORY (-3) the result holds
+   no solution (every decision variable is NaN). On every other code,
+   including NLOPT_FAILURE (-1) and NLOPT_ROUNDOFF_LIMITED (-4), the result
+   holds the point NLopt returned. Which point that is depends on the
+   algorithm; e.g., LD_SLSQP returns its best feasible iterate if it found
+   one. The point may violate the constraints or be non-finite, and may be the
+   initial guess. */
   int status{};
 };
 
+/** Wraps the NLopt nonlinear optimization library.
+
+ If a cost or constraint throws a std::exception while NLopt is evaluating
+ it, Solve() throws std::runtime_error with that exception's message. */
 class NloptSolver final : public SolverBase {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(NloptSolver);
