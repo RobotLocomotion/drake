@@ -1,0 +1,404 @@
+<?xml version='1.0' encoding='utf-8'?>
+<sdf xmlns:drake="drake.mit.edu" version="1.7">
+  <model name="spiral_bound_sketchbook_notebook">
+    <link name="base_link">
+      <inertial>
+        <mass>0.300000</mass>
+        <pose>-2.222e-06 -0.0022317768 0.0073939272 0 0 0</pose>
+        <inertia>
+          <ixx>3.803867e-04</ixx>
+          <iyy>1.593177e-04</iyy>
+          <izz>5.379311e-04</izz>
+          <ixy>1.904233e-07</ixy>
+          <ixz>-7.736900e-09</ixz>
+          <iyz>-3.562000e-07</iyz>
+        </inertia>
+      </inertial>
+      <collision name="part_0">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/spiral_bound_sketchbook_notebook/assets/spiral_bound_sketchbook_notebook_cf_0.obj</uri>
+            <drake:declare_convex />
+            <scale>0.44440000 0.44440000 0.44440000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:compliant_hydroelastic />
+          <drake:hydroelastic_modulus>8245674.07055</drake:hydroelastic_modulus>
+          <drake:mu_dynamic>0.32</drake:mu_dynamic>
+          <drake:mu_static>0.32</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="part_1">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/spiral_bound_sketchbook_notebook/assets/spiral_bound_sketchbook_notebook_cf_1.obj</uri>
+            <drake:declare_convex />
+            <scale>0.44440000 0.44440000 0.44440000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.32</drake:mu_dynamic>
+          <drake:mu_static>0.32</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="part_2">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/spiral_bound_sketchbook_notebook/assets/spiral_bound_sketchbook_notebook_cf_2.obj</uri>
+            <drake:declare_convex />
+            <scale>0.44440000 0.44440000 0.44440000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.32</drake:mu_dynamic>
+          <drake:mu_static>0.32</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="part_3">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/spiral_bound_sketchbook_notebook/assets/spiral_bound_sketchbook_notebook_cf_3.obj</uri>
+            <drake:declare_convex />
+            <scale>0.44440000 0.44440000 0.44440000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.32</drake:mu_dynamic>
+          <drake:mu_static>0.32</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="part_4">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/spiral_bound_sketchbook_notebook/assets/spiral_bound_sketchbook_notebook_cf_4.obj</uri>
+            <drake:declare_convex />
+            <scale>0.44440000 0.44440000 0.44440000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.32</drake:mu_dynamic>
+          <drake:mu_static>0.32</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="part_5">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/spiral_bound_sketchbook_notebook/assets/spiral_bound_sketchbook_notebook_cf_5.obj</uri>
+            <drake:declare_convex />
+            <scale>0.44440000 0.44440000 0.44440000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.32</drake:mu_dynamic>
+          <drake:mu_static>0.32</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="part_6">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/spiral_bound_sketchbook_notebook/assets/spiral_bound_sketchbook_notebook_cf_6.obj</uri>
+            <drake:declare_convex />
+            <scale>0.44440000 0.44440000 0.44440000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.32</drake:mu_dynamic>
+          <drake:mu_static>0.32</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="part_7">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/spiral_bound_sketchbook_notebook/assets/spiral_bound_sketchbook_notebook_cf_7.obj</uri>
+            <drake:declare_convex />
+            <scale>0.44440000 0.44440000 0.44440000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.32</drake:mu_dynamic>
+          <drake:mu_static>0.32</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="part_8">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/spiral_bound_sketchbook_notebook/assets/spiral_bound_sketchbook_notebook_cf_8.obj</uri>
+            <drake:declare_convex />
+            <scale>0.44440000 0.44440000 0.44440000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.32</drake:mu_dynamic>
+          <drake:mu_static>0.32</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="part_9">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/spiral_bound_sketchbook_notebook/assets/spiral_bound_sketchbook_notebook_cf_9.obj</uri>
+            <drake:declare_convex />
+            <scale>0.44440000 0.44440000 0.44440000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.32</drake:mu_dynamic>
+          <drake:mu_static>0.32</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="part_10">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/spiral_bound_sketchbook_notebook/assets/spiral_bound_sketchbook_notebook_cf_10.obj</uri>
+            <drake:declare_convex />
+            <scale>0.44440000 0.44440000 0.44440000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.32</drake:mu_dynamic>
+          <drake:mu_static>0.32</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="part_11">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/spiral_bound_sketchbook_notebook/assets/spiral_bound_sketchbook_notebook_cf_11.obj</uri>
+            <drake:declare_convex />
+            <scale>0.44440000 0.44440000 0.44440000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.32</drake:mu_dynamic>
+          <drake:mu_static>0.32</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="part_12">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/spiral_bound_sketchbook_notebook/assets/spiral_bound_sketchbook_notebook_cf_12.obj</uri>
+            <drake:declare_convex />
+            <scale>0.44440000 0.44440000 0.44440000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.32</drake:mu_dynamic>
+          <drake:mu_static>0.32</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="part_13">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/spiral_bound_sketchbook_notebook/assets/spiral_bound_sketchbook_notebook_cf_13.obj</uri>
+            <drake:declare_convex />
+            <scale>0.44440000 0.44440000 0.44440000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.32</drake:mu_dynamic>
+          <drake:mu_static>0.32</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="part_14">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/spiral_bound_sketchbook_notebook/assets/spiral_bound_sketchbook_notebook_cf_14.obj</uri>
+            <drake:declare_convex />
+            <scale>0.44440000 0.44440000 0.44440000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.32</drake:mu_dynamic>
+          <drake:mu_static>0.32</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="part_15">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/spiral_bound_sketchbook_notebook/assets/spiral_bound_sketchbook_notebook_cf_15.obj</uri>
+            <drake:declare_convex />
+            <scale>0.44440000 0.44440000 0.44440000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.32</drake:mu_dynamic>
+          <drake:mu_static>0.32</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="part_16">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/spiral_bound_sketchbook_notebook/assets/spiral_bound_sketchbook_notebook_cf_16.obj</uri>
+            <drake:declare_convex />
+            <scale>0.44440000 0.44440000 0.44440000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.32</drake:mu_dynamic>
+          <drake:mu_static>0.32</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="part_17">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/spiral_bound_sketchbook_notebook/assets/spiral_bound_sketchbook_notebook_cf_17.obj</uri>
+            <drake:declare_convex />
+            <scale>0.44440000 0.44440000 0.44440000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.32</drake:mu_dynamic>
+          <drake:mu_static>0.32</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="part_18">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/spiral_bound_sketchbook_notebook/assets/spiral_bound_sketchbook_notebook_cf_18.obj</uri>
+            <drake:declare_convex />
+            <scale>0.44440000 0.44440000 0.44440000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.32</drake:mu_dynamic>
+          <drake:mu_static>0.32</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="part_19">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/spiral_bound_sketchbook_notebook/assets/spiral_bound_sketchbook_notebook_cf_19.obj</uri>
+            <drake:declare_convex />
+            <scale>0.44440000 0.44440000 0.44440000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.32</drake:mu_dynamic>
+          <drake:mu_static>0.32</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="part_20">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/spiral_bound_sketchbook_notebook/assets/spiral_bound_sketchbook_notebook_cf_20.obj</uri>
+            <drake:declare_convex />
+            <scale>0.44440000 0.44440000 0.44440000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.32</drake:mu_dynamic>
+          <drake:mu_static>0.32</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="part_21">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/spiral_bound_sketchbook_notebook/assets/spiral_bound_sketchbook_notebook_cf_21.obj</uri>
+            <drake:declare_convex />
+            <scale>0.44440000 0.44440000 0.44440000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.32</drake:mu_dynamic>
+          <drake:mu_static>0.32</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="part_22">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/spiral_bound_sketchbook_notebook/assets/spiral_bound_sketchbook_notebook_cf_22.obj</uri>
+            <drake:declare_convex />
+            <scale>0.44440000 0.44440000 0.44440000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.32</drake:mu_dynamic>
+          <drake:mu_static>0.32</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="part_23">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/spiral_bound_sketchbook_notebook/assets/spiral_bound_sketchbook_notebook_cf_23.obj</uri>
+            <drake:declare_convex />
+            <scale>0.44440000 0.44440000 0.44440000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.32</drake:mu_dynamic>
+          <drake:mu_static>0.32</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+    </link>
+  </model>
+</sdf>
