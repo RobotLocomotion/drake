@@ -3865,6 +3865,7 @@ TEST_F(SdfParserTest, FrameAttachedToJointFrame) {
     <joint name='J2' type='fixed'>
       <parent>L1</parent>
       <child>M1::L3</child>
+      <pose>0 0 0.4 0 0 0.6</pose>
     </joint>
     <frame name='F1' attached_to='J1'/>
     <frame name='F2' attached_to='J2'/>
@@ -3878,8 +3879,8 @@ TEST_F(SdfParserTest, FrameAttachedToJointFrame) {
   const RigidTransformd X_WF1_expected(RollPitchYawd(0.0, 0.0, 0.0),
                                        Vector3d(0.1, 0.2, 0.0));
 
-  const RigidTransformd X_WF2_expected(RollPitchYawd(0.0, 0.0, 0.0),
-                                       Vector3d(0.1, 0.2, 0.3));
+  const RigidTransformd X_WF2_expected(RollPitchYawd(0.0, 0.0, 0.6),
+                                       Vector3d(0.1, 0.2, 0.7));
 
   const auto& frame_F1 = plant_.GetFrameByName("F1");
   const auto& frame_F2 = plant_.GetFrameByName("F2");
@@ -3893,6 +3894,62 @@ TEST_F(SdfParserTest, FrameAttachedToJointFrame) {
   // Also check that the frame is attached to the right body
   EXPECT_EQ(frame_F1.body().index(), plant_.GetBodyByName("L2").index());
   EXPECT_EQ(frame_F2.body().index(), plant_.GetBodyByName("L3").index());
+}
+
+// Explicit frames are added to the plant in document order, so a frame
+// attached to a frame declared after it is attached to that frame's body
+// instead. Its offset must then include the later frame's pose on the body.
+TEST_F(SdfParserTest, FrameAttachedToLaterFrame) {
+  ParseTestString(R"""(
+<model name='m'>
+  <link name='a'/>
+  <frame name='F2' attached_to='F1'>
+    <pose relative_to='F1'>1 0 0 0 0 0</pose>
+  </frame>
+  <frame name='F1' attached_to='a'>
+    <pose>0 0 3 0 0 1.5707963267948966</pose>
+  </frame>
+</model>)""",
+                  "1.9");
+  const auto& frame_F1 = plant_.GetFrameByName("F1");
+  const auto& frame_F2 = plant_.GetFrameByName("F2");
+  EXPECT_EQ(&frame_F2.body(), &plant_.GetBodyByName("a"));
+  const RigidTransformd X_AF2_expected(RollPitchYawd(0, 0, M_PI_2),
+                                       Vector3d(0, 1, 3));
+  EXPECT_TRUE(
+      CompareMatrices(frame_F2.GetFixedPoseInBodyFrame().GetAsMatrix34(),
+                      X_AF2_expected.GetAsMatrix34(), kEps));
+  EXPECT_TRUE(CompareMatrices(
+      frame_F2.GetFixedPoseInBodyFrame().GetAsMatrix34(),
+      (frame_F1.GetFixedPoseInBodyFrame() * RigidTransformd(Vector3d(1, 0, 0)))
+          .GetAsMatrix34(),
+      kEps));
+}
+
+// In a static model, a later default-attached frame resolves to the model's
+// __model__ frame, which Drake fixes to the canonical link with an offset.
+TEST_F(SdfParserTest, FrameAttachedToLaterFrameStaticModel) {
+  ParseTestString(R"""(
+<model name='m'>
+  <static>true</static>
+  <link name='a'>
+    <pose>5 0 0 0 0 0</pose>
+  </link>
+  <frame name='F2' attached_to='F1'>
+    <pose relative_to='F1'>1 0 0 0 0 0</pose>
+  </frame>
+  <frame name='F1'>
+    <pose>0 0 3 0 0 1.5707963267948966</pose>
+  </frame>
+</model>)""",
+                  "1.9");
+  const auto& frame_F2 = plant_.GetFrameByName("F2");
+  EXPECT_EQ(&frame_F2.body(), &plant_.GetBodyByName("a"));
+  const RigidTransformd X_AF2_expected(RollPitchYawd(0, 0, M_PI_2),
+                                       Vector3d(-5, 1, 3));
+  EXPECT_TRUE(
+      CompareMatrices(frame_F2.GetFixedPoseInBodyFrame().GetAsMatrix34(),
+                      X_AF2_expected.GetAsMatrix34(), kEps));
 }
 
 TEST_F(SdfParserTest, SupportNonDefaultCanonicalLink) {
