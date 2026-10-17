@@ -52,12 +52,17 @@ void ExtractGradient(
     Eigen::Matrix<typename Derived::Scalar::Scalar, Derived::SizeAtCompileTime,
                   Eigen::Dynamic>* gradient) {
   DRAKE_THROW_UNLESS(gradient != nullptr);
+  // Evaluate an expensive expression (e.g., a product) once rather than once
+  // per coefficient read; each coefficient is read up to three times below.
+  // For a plain matrix (or Map, Block, etc.) this is a reference.
+  const typename Eigen::internal::nested_eval<Derived, 3>::type matrix(
+      auto_diff_matrix.derived());
   // Entries in an AutoDiff matrix must all have the same number of derivatives,
   // or 0-length derivatives in which case they are interpreted as all-zero.
   int num_derivatives_from_matrix = 0;
-  for (int i = 0; i < auto_diff_matrix.size(); ++i) {
+  for (int i = 0; i < matrix.size(); ++i) {
     const int entry_num_derivs =
-        static_cast<int>(auto_diff_matrix(i).derivatives().size());
+        static_cast<int>(matrix(i).derivatives().size());
     if (entry_num_derivs == 0) continue;  // Always OK.
     if (num_derivatives_from_matrix != 0 &&
         entry_num_derivs != num_derivatives_from_matrix) {
@@ -80,16 +85,16 @@ void ExtractGradient(
         num_derivatives_from_matrix, *num_derivatives));
   }
 
-  gradient->resize(auto_diff_matrix.size(), *num_derivatives);
+  gradient->resize(matrix.size(), *num_derivatives);
   if (gradient->size() == 0) {
     return;
   }
-  for (int i = 0; i < auto_diff_matrix.size(); ++i) {
+  for (int i = 0; i < matrix.size(); ++i) {
     auto gradient_row = gradient->row(i).transpose();
-    if (auto_diff_matrix(i).derivatives().size() == 0) {
+    if (matrix(i).derivatives().size() == 0) {
       gradient_row.setZero();
     } else {
-      gradient_row = auto_diff_matrix(i).derivatives();
+      gradient_row = matrix(i).derivatives();
     }
   }
 }
@@ -175,11 +180,19 @@ void InitializeAutoDiff(const Eigen::MatrixBase<DerivedValue>& value,
   DRAKE_DEMAND(value.size() == gradient.rows() &&
                "gradient has wrong number of rows at runtime");
 
+  // Reading a row of a product expression evaluates the entire product, so
+  // evaluate such an expression once up front rather than once per row. For a
+  // plain matrix (or Map, Block, etc.) this is a reference.
+  const typename Eigen::internal::nested_eval<DerivedValue, 1>::type value_eval(
+      value.derived());
+  const typename Eigen::internal::nested_eval<DerivedGradient, 1>::type
+      gradient_eval(gradient.derived());
+
   // Can't resize() a MatrixBase -- downcast to the actual type.
   DerivedAutoDiff& auto_diff = auto_diff_matrix->derived();
-  auto_diff.resize(value.rows(), value.cols());
+  auto_diff.resize(value_eval.rows(), value_eval.cols());
   for (Eigen::Index row = 0; row < auto_diff.size(); ++row) {
-    auto_diff(row) = {value(row), gradient.row(row).transpose()};
+    auto_diff(row) = {value_eval(row), gradient_eval.row(row).transpose()};
   }
 }
 

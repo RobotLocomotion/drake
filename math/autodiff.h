@@ -37,10 +37,15 @@ void ExtractValue(
     const Eigen::MatrixBase<Derived>& auto_diff_matrix,
     MatrixLikewise<typename Derived::Scalar::Scalar, Derived>* value) {
   DRAKE_THROW_UNLESS(value != nullptr);
-  value->resize(auto_diff_matrix.rows(), auto_diff_matrix.cols());
-  for (int i = 0; i < auto_diff_matrix.rows(); ++i) {
-    for (int j = 0; j < auto_diff_matrix.cols(); ++j) {
-      (*value)(i, j) = auto_diff_matrix(i, j).value();
+  // Reading a coefficient of a product expression evaluates the entire
+  // product, so evaluate such an expression once up front rather than once per
+  // coefficient. For a plain matrix (or Map, Block, etc.) this is a reference.
+  const typename Eigen::internal::nested_eval<Derived, 1>::type matrix(
+      auto_diff_matrix.derived());
+  value->resize(matrix.rows(), matrix.cols());
+  for (int i = 0; i < matrix.rows(); ++i) {
+    for (int j = 0; j < matrix.cols(); ++j) {
+      (*value)(i, j) = matrix(i, j).value();
     }
   }
 }
@@ -144,11 +149,16 @@ void InitializeAutoDiff(const Eigen::MatrixBase<Derived>& value,
   DRAKE_DEMAND(auto_diff_matrix != nullptr);
   if (!num_derivatives.has_value()) num_derivatives = value.size();
 
+  // Evaluate an expensive expression (e.g., a product) once rather than once
+  // per coefficient; see ExtractValue().
+  const typename Eigen::internal::nested_eval<Derived, 1>::type value_eval(
+      value.derived());
   using ADScalar = typename DerivedAutoDiff::Scalar;
-  auto_diff_matrix->resize(value.rows(), value.cols());
+  auto_diff_matrix->resize(value_eval.rows(), value_eval.cols());
   int deriv_num = deriv_num_start.value_or(0);
-  for (int i = 0; i < value.size(); ++i) {
-    (*auto_diff_matrix)(i) = ADScalar(value(i), *num_derivatives, deriv_num++);
+  for (int i = 0; i < value_eval.size(); ++i) {
+    (*auto_diff_matrix)(i) =
+        ADScalar(value_eval(i), *num_derivatives, deriv_num++);
   }
 }
 

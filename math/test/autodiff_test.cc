@@ -319,6 +319,150 @@ GTEST_TEST(AdditionalAutodiffTest, InitializeWithGradientMatrix) {
   EXPECT_TRUE(CompareMatrices(ExtractGradient(autodiff_return), gradient));
 }
 
+// Returns the number of heap allocations made while calling `func`.
+template <typename Func>
+int CountAllocations(const Func& func) {
+  test::LimitMalloc guard({.max_num_allocations = -1});
+  func();
+  return guard.num_allocations();
+}
+
+// Reading a coefficient of an Eigen product expression evaluates the entire
+// product. These tests pass product expressions to the functions under test
+// and check that each product is evaluated only once: the call must make
+// exactly as many heap allocations as evaluating the products by hand and then
+// calling the function on the results. Evaluating once per row would instead
+// add (at least) one allocation per row.
+GTEST_TEST(AdditionalAutodiffTest, InitializeNoGradientMatrixFromProduct) {
+  // Dynamic size.
+  const int num_rows = 10;
+  const MatrixXd A = MatrixXd::Random(num_rows, 4);
+  const VectorXd x = VectorXd::Random(4);
+  const VectorXd value = A * x;
+  VectorX<AutoDiffXd> autodiff(num_rows);
+  const int num_allocations_evaluated = CountAllocations([&]() {
+    const VectorXd value_evaluated = A * x;
+    InitializeAutoDiff(value_evaluated, &autodiff);
+  });
+  const int num_allocations_product = CountAllocations([&]() {
+    InitializeAutoDiff(A * x, &autodiff);
+  });
+  EXPECT_EQ(num_allocations_product, num_allocations_evaluated);
+  EXPECT_TRUE(CompareMatrices(ExtractValue(autodiff), value));
+  EXPECT_TRUE(CompareMatrices(ExtractGradient(autodiff),
+                              MatrixXd::Identity(num_rows, num_rows)));
+
+  // Static size. The product is evaluated on the stack, so with fixed-size
+  // derivatives nothing is allocated at all.
+  const Eigen::Matrix3d R = Eigen::Matrix3d::Random();
+  const Vector3d p = Vector3d::Random();
+  Eigen::Matrix<Eigen::AutoDiffScalar<Vector3d>, 3, 1> autodiff_static;
+  {
+    test::LimitMalloc guard;
+    InitializeAutoDiff(R * p, &autodiff_static);
+  }
+  EXPECT_TRUE(CompareMatrices(ExtractValue(autodiff_static), R * p));
+  EXPECT_TRUE(CompareMatrices(ExtractGradient(autodiff_static),
+                              Eigen::Matrix3d::Identity()));
+}
+
+GTEST_TEST(AdditionalAutodiffTest, InitializeWithGradientMatrixFromProduct) {
+  // Dynamic size, e.g., a constraint's value A * x and its gradient
+  // A * J * dx, chained through the gradient dx of the decision variables.
+  const int num_rows = 10;
+  const MatrixXd A = MatrixXd::Random(num_rows, 4);
+  const VectorXd x = VectorXd::Random(4);
+  const MatrixXd J = MatrixXd::Random(4, 5);
+  const MatrixXd dx = MatrixXd::Random(5, 6);
+  const VectorXd value = A * x;
+  const MatrixXd gradient = A * J * dx;
+  VectorX<AutoDiffXd> autodiff(num_rows);
+  const int num_allocations_evaluated = CountAllocations([&]() {
+    const VectorXd value_evaluated = A * x;
+    const MatrixXd gradient_evaluated = A * J * dx;
+    InitializeAutoDiff(value_evaluated, gradient_evaluated, &autodiff);
+  });
+  const int num_allocations_product = CountAllocations([&]() {
+    InitializeAutoDiff(A * x, A * J * dx, &autodiff);
+  });
+  EXPECT_EQ(num_allocations_product, num_allocations_evaluated);
+  EXPECT_TRUE(CompareMatrices(ExtractValue(autodiff), value));
+  EXPECT_TRUE(CompareMatrices(ExtractGradient(autodiff), gradient, 1e-14));
+
+  // Static size. The products are evaluated on the stack, so they allocate
+  // nothing beyond what plain fixed-size inputs do.
+  const Eigen::Matrix3d R = Eigen::Matrix3d::Random();
+  const Vector3d p = Vector3d::Random();
+  const Eigen::Matrix3d Jp = Eigen::Matrix3d::Random();
+  const Vector3d value_static = R * p;
+  const Eigen::Matrix3d gradient_static = R * Jp;
+  Vector3<AutoDiffXd> autodiff_static;
+  InitializeAutoDiff(value_static, gradient_static, &autodiff_static);
+  const int num_allocations_plain = CountAllocations([&]() {
+    InitializeAutoDiff(value_static, gradient_static, &autodiff_static);
+  });
+  const int num_allocations_static_product = CountAllocations([&]() {
+    InitializeAutoDiff(R * p, R * Jp, &autodiff_static);
+  });
+  EXPECT_EQ(num_allocations_static_product, num_allocations_plain);
+  EXPECT_TRUE(CompareMatrices(ExtractValue(autodiff_static), value_static));
+  EXPECT_TRUE(
+      CompareMatrices(ExtractGradient(autodiff_static), gradient_static));
+}
+
+// A product of a double matrix and an AutoDiff vector is an unevaluated Eigen
+// expression. (A product of two AutoDiff matrices is evaluated eagerly by
+// Drake's AutoDiff operator*, so it is not interesting here.)
+GTEST_TEST(AdditionalAutodiffTest, ExtractFromProduct) {
+  // Dynamic size.
+  const int num_rows = 10;
+  const MatrixXd A = MatrixXd::Random(num_rows, 4);
+  const VectorXd x_value = VectorXd::Random(4);
+  const VectorX<AutoDiffXd> x = InitializeAutoDiff(x_value);
+  VectorXd value(num_rows);
+  MatrixXd gradient(num_rows, 4);
+  const int num_value_allocations_evaluated = CountAllocations([&]() {
+    const VectorX<AutoDiffXd> y = A * x;
+    ExtractValue(y, &value);
+  });
+  const int num_value_allocations_product = CountAllocations([&]() {
+    ExtractValue(A * x, &value);
+  });
+  EXPECT_EQ(num_value_allocations_product, num_value_allocations_evaluated);
+  EXPECT_TRUE(CompareMatrices(value, A * x_value, 1e-14));
+
+  const int num_gradient_allocations_evaluated = CountAllocations([&]() {
+    const VectorX<AutoDiffXd> y = A * x;
+    ExtractGradient(y, {}, &gradient);
+  });
+  const int num_gradient_allocations_product = CountAllocations([&]() {
+    ExtractGradient(A * x, {}, &gradient);
+  });
+  EXPECT_EQ(num_gradient_allocations_product,
+            num_gradient_allocations_evaluated);
+  EXPECT_TRUE(CompareMatrices(gradient, A, 1e-14));
+
+  // Static size.
+  const Eigen::Matrix3d R = Eigen::Matrix3d::Random();
+  const Vector3d p_value = Vector3d::Random();
+  const Vector3<AutoDiffXd> p = InitializeAutoDiff(p_value);
+  Vector3d value_static;
+  Eigen::Matrix3Xd gradient_static(3, 3);
+  const int num_static_allocations_evaluated = CountAllocations([&]() {
+    const Vector3<AutoDiffXd> y_for_value = R * p;
+    ExtractValue(y_for_value, &value_static);
+    const Vector3<AutoDiffXd> y_for_gradient = R * p;
+    ExtractGradient(y_for_gradient, {}, &gradient_static);
+  });
+  const int num_static_allocations_product = CountAllocations([&]() {
+    ExtractValue(R * p, &value_static);
+    ExtractGradient(R * p, {}, &gradient_static);
+  });
+  EXPECT_EQ(num_static_allocations_product, num_static_allocations_evaluated);
+  EXPECT_TRUE(CompareMatrices(value_static, R * p_value, 1e-14));
+  EXPECT_TRUE(CompareMatrices(gradient_static, R, 1e-14));
+}
+
 GTEST_TEST(AdditionalAutodiffTest, InitializeAutoDiffTuple) {
   // When all sizes are known at compile time, the resulting AutoDiffScalars
   // should have a compile time number of derivatives. Each matrix has a
