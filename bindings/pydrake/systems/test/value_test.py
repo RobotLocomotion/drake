@@ -64,6 +64,11 @@ class TestValue(unittest.TestCase):
                     np.allclose(value_data.get_mutable_value(), expected_set)
                 )
 
+                # Confirm that a two-dimensional column vector is also accepted.
+                if wrap is np.array:
+                    value_data.SetFromVector(value=expected_set.reshape(-1, 1))
+                    self.assertTrue(np.allclose(value, expected_set))
+
                 # Set value to zero.
                 old_value = value_data.CopyToVector()
                 value_data.SetZero()
