@@ -1593,8 +1593,7 @@ const Frame<double>& AddFrameFromSpecification(
     ModelInstanceIndex model_instance, const Frame<double>& default_frame,
     MultibodyPlant<double>* plant) {
   const Frame<double>* parent_frame{};
-  const RigidTransformd X_PF = ResolveRigidTransform(
-      diagnostic, frame_spec.SemanticPose(), frame_spec.AttachedTo());
+  std::string resolve_to = frame_spec.AttachedTo();
   if (frame_spec.AttachedTo().empty()) {
     parent_frame = &default_frame;
   } else {
@@ -1619,15 +1618,13 @@ const Frame<double>& AddFrameFromSpecification(
         parent_frame =
             &plant->GetFrameByName(local_name, parent_model_instance);
       } else {
-        // If there is no frame named `local_name`, the `attached_to` attribute
-        // must be pointing to something we don't create implicit frames for in
-        // Drake. Currently these are models and joints. Models are handled in
-        // the first `if` block, so we're dealing with joints here. Since joints
-        // may end up in a model instance different from the model in which they
-        // were defined, we don't bother to find the joint and use its child
-        // frame. Instead we ask libsdformat to resolve the body associated with
-        // whatever is referenced by the `attached_to` attribute. Since this is
-        // a body, we're assured that its implicit frame exists in the plant.
+        // This attachment has no frame in the plant yet: either it is a
+        // joint, for which Drake creates no implicit frame, or an explicit
+        // frame declared later in the model. Resolve its attachment to a body
+        // (or a static model's implicit frame) that is already in the plant.
+        // Joints may belong to a different model instance than the one where
+        // they were defined, so look up the resolved body rather than trying
+        // to locate the joint's child frame.
         std::string resolved_attached_to_body_name;
         sdf::Errors errors =
             frame_spec.ResolveAttachedToBody(resolved_attached_to_body_name);
@@ -1639,6 +1636,9 @@ const Frame<double>& AddFrameFromSpecification(
                 .to_string();
         parent_frame = parsing::GetScopedFrameByNameMaybe(
             *plant, resolved_attached_to_body_absolute_name);
+        // Express the offset in the frame we actually attach to, preserving
+        // the joint or later frame's pose on that body.
+        resolve_to = resolved_attached_to_body_name;
       }
     }
   }
@@ -1646,6 +1646,8 @@ const Frame<double>& AddFrameFromSpecification(
   // at this point the parent_frame wouldn't be a nullptr
   DRAKE_DEMAND(parent_frame != nullptr);
 
+  const RigidTransformd X_PF =
+      ResolveRigidTransform(diagnostic, frame_spec.SemanticPose(), resolve_to);
   const Frame<double>& frame =
       plant->AddFrame(std::make_unique<FixedOffsetFrame<double>>(
           frame_spec.Name(), *parent_frame, X_PF));
