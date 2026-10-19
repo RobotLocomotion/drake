@@ -142,7 +142,7 @@ object convert_to_numpy(handle src) {
             static_assert(want_ndim == 1);
             if (ndim == 2) {
                 // Demote from 2d array to 1d array.
-                result = result.attr("squeeze")();
+                result = result.attr("ravel")();
             }
         }
         return result;
