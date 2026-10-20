@@ -12,10 +12,12 @@ bool AreAutoDiffVecXdEqual(const Eigen::Ref<const VectorX<AutoDiffXd>>& a,
     return false;
   }
   for (int i = 0; i < a.size(); ++i) {
-    if (a(i).derivatives().size() != b(i).derivatives().size()) {
+    const AutoDiffXd& a_i = internal::ReadCoefficientInStorageOrder(a, i);
+    const AutoDiffXd& b_i = internal::ReadCoefficientInStorageOrder(b, i);
+    if (a_i.derivatives().size() != b_i.derivatives().size()) {
       return false;
     }
-    if (a(i).derivatives() != b(i).derivatives()) {
+    if (a_i.derivatives() != b_i.derivatives()) {
       return false;
     }
   }

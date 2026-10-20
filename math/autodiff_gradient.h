@@ -53,16 +53,16 @@ void ExtractGradient(
                   Eigen::Dynamic>* gradient) {
   DRAKE_THROW_UNLESS(gradient != nullptr);
   // Evaluate an expensive expression (e.g., a product) once rather than once
-  // per coefficient read; each coefficient is read up to three times below.
-  // For a plain matrix (or Map, Block, etc.) this is a reference.
-  const typename Eigen::internal::nested_eval<Derived, 3>::type matrix(
+  // per coefficient read; each coefficient is read twice below. For a plain
+  // matrix (or Map, Block, etc.) this is a reference.
+  const typename Eigen::internal::nested_eval<Derived, 2>::type matrix(
       auto_diff_matrix.derived());
   // Entries in an AutoDiff matrix must all have the same number of derivatives,
   // or 0-length derivatives in which case they are interpreted as all-zero.
   int num_derivatives_from_matrix = 0;
   for (int i = 0; i < matrix.size(); ++i) {
-    const int entry_num_derivs =
-        static_cast<int>(matrix(i).derivatives().size());
+    const auto& entry = internal::ReadCoefficientInStorageOrder(matrix, i);
+    const int entry_num_derivs = static_cast<int>(entry.derivatives().size());
     if (entry_num_derivs == 0) continue;  // Always OK.
     if (num_derivatives_from_matrix != 0 &&
         entry_num_derivs != num_derivatives_from_matrix) {
@@ -91,10 +91,11 @@ void ExtractGradient(
   }
   for (int i = 0; i < matrix.size(); ++i) {
     auto gradient_row = gradient->row(i).transpose();
-    if (matrix(i).derivatives().size() == 0) {
+    const auto& entry = internal::ReadCoefficientInStorageOrder(matrix, i);
+    if (entry.derivatives().size() == 0) {
       gradient_row.setZero();
     } else {
-      gradient_row = matrix(i).derivatives();
+      gradient_row = entry.derivatives();
     }
   }
 }

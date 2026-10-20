@@ -516,6 +516,91 @@ GTEST_TEST(AdditionalAutodiffTest, ExtractFromProduct) {
   EXPECT_TRUE(CompareMatrices(gradient_static, R, 1e-14));
 }
 
+// Eigen returns each coefficient of a read-only view (e.g., Ref<const> or
+// Map<const>) by value, which for AutoDiffXd copies its derivatives. Extracting
+// from such views into preallocated outputs must not allocate.
+GTEST_TEST(AdditionalAutodiffTest, ExtractFromReadOnlyViews) {
+  MatrixX<AutoDiffXd> m(3, 4);
+  for (int i = 0; i < m.size(); ++i) {
+    m(i) = AutoDiffXd(i, Vector3d(i, 10 * i, 100 * i));
+  }
+  m(1, 2) = AutoDiffXd(7.0);  // No derivatives; extracted as zeros.
+  const MatrixXd m_value = ExtractValue(m);
+  const MatrixXd m_gradient = ExtractGradient(m);
+
+  // A column, through Ref<const>.
+  const Eigen::Ref<const VectorX<AutoDiffXd>> column = m.col(2);
+  VectorXd column_value(3);
+  MatrixXd column_gradient(3, 3);
+  {
+    test::LimitMalloc guard;
+    ExtractValue(column, &column_value);
+    ExtractGradient(column, {}, &column_gradient);
+  }
+  EXPECT_TRUE(CompareMatrices(column_value, m_value.col(2)));
+  EXPECT_TRUE(CompareMatrices(column_gradient, m_gradient.middleRows(6, 3)));
+
+  // A row, through a Map<const> with an inner stride.
+  const Eigen::Map<const RowVectorX<AutoDiffXd>, 0, Eigen::InnerStride<>> row(
+      m.data() + 1, 4, Eigen::InnerStride<>(3));
+  Eigen::RowVectorXd row_value(4);
+  MatrixXd row_gradient(4, 3);
+  {
+    test::LimitMalloc guard;
+    ExtractValue(row, &row_value);
+    ExtractGradient(row, {}, &row_gradient);
+  }
+  EXPECT_TRUE(CompareMatrices(row_value, m_value.row(1)));
+  for (int j = 0; j < 4; ++j) {
+    EXPECT_TRUE(
+        CompareMatrices(row_gradient.row(j), m_gradient.row(1 + 3 * j)));
+  }
+
+  // The whole matrix, transposed, through Ref<const>. The transpose is
+  // row-major, so its storage order matches that of m.
+  const Eigen::Ref<const MatrixX<AutoDiffXd>> ref = m;
+  Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>
+      transpose_value(4, 3);
+  MatrixXd transpose_gradient(12, 3);
+  {
+    test::LimitMalloc guard;
+    ExtractValue(ref.transpose(), &transpose_value);
+    ExtractGradient(ref.transpose(), {}, &transpose_gradient);
+  }
+  EXPECT_TRUE(CompareMatrices(transpose_value, m_value.transpose()));
+  EXPECT_TRUE(CompareMatrices(transpose_gradient, m_gradient));
+
+  // An expression without direct access, read by value.
+  EXPECT_TRUE(CompareMatrices(ExtractValue(-m), -m_value));
+  EXPECT_TRUE(CompareMatrices(ExtractGradient(-m), -m_gradient));
+
+  // A row-major copy; the gradient rows follow its storage order.
+  const Eigen::Matrix<AutoDiffXd, Eigen::Dynamic, Eigen::Dynamic,
+                      Eigen::RowMajor>
+      row_major = m;
+  EXPECT_TRUE(CompareMatrices(ExtractValue(row_major), m_value));
+  const MatrixXd row_major_gradient = ExtractGradient(row_major);
+  for (int i = 0; i < 3; ++i) {
+    for (int j = 0; j < 4; ++j) {
+      EXPECT_TRUE(CompareMatrices(row_major_gradient.row(4 * i + j),
+                                  m_gradient.row(i + 3 * j)));
+    }
+  }
+}
+
+// ExtractGradient() accepts expressions without linear access.
+GTEST_TEST(AdditionalAutodiffTest, ExtractGradientWithoutLinearAccess) {
+  MatrixX<AutoDiffXd> m(3, 4);
+  for (int i = 0; i < m.size(); ++i) {
+    m(i) = AutoDiffXd(i, Vector3d(i, 10 * i, 100 * i));
+  }
+  const Eigen::Ref<const MatrixX<AutoDiffXd>> ref = m;
+  EXPECT_TRUE(CompareMatrices(ExtractGradient(ref), ExtractGradient(m)));
+  const MatrixX<AutoDiffXd> block = m.block(1, 1, 2, 3);
+  EXPECT_TRUE(CompareMatrices(ExtractGradient(m.block(1, 1, 2, 3)),
+                              ExtractGradient(block)));
+}
+
 GTEST_TEST(AdditionalAutodiffTest, InitializeAutoDiffTuple) {
   // When all sizes are known at compile time, the resulting AutoDiffScalars
   // should have a compile time number of derivatives. Each matrix has a
@@ -677,6 +762,11 @@ GTEST_TEST(AutoDiffEqual, AreAutoDiffVecXdEqualTest) {
   EXPECT_FALSE(AreAutoDiffVecXdEqual(a, b));
   b[0].derivatives() = a[0].derivatives();
   EXPECT_TRUE(AreAutoDiffVecXdEqual(a, b));
+  {
+    // Only ExtractValue()'s outputs allocate.
+    test::LimitMalloc guard({.max_num_allocations = 2});
+    EXPECT_TRUE(AreAutoDiffVecXdEqual(a, b));
+  }
   // Set derivatives of b[0] and b[1] to have different sizes. ExtractGradient
   // will throw, but AreAutoDiffVecXdEqual should return false.
   b[1].derivatives() = Eigen::Vector3d(1, 2, 3);

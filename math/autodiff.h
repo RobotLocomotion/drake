@@ -18,6 +18,41 @@ Utilities for arithmetic on AutoDiffScalar. */
 
 namespace drake {
 namespace math {
+namespace internal {
+
+/* Returns `matrix(row, col)`, by const reference whenever `matrix` has direct
+access to its storage. Eigen returns each coefficient of a read-only
+expression (e.g., Ref<const> or Map<const>) by value, which for an AutoDiff
+scalar copies its derivatives. */
+template <typename Derived>
+decltype(auto) ReadCoefficient(const Eigen::MatrixBase<Derived>& matrix,
+                               Eigen::Index row, Eigen::Index col) {
+  if constexpr ((Derived::Flags & Eigen::DirectAccessBit) != 0) {
+    return matrix.derived().data()[row * matrix.derived().rowStride() +
+                                   col * matrix.derived().colStride()];
+  } else {
+    return matrix.derived()(row, col);
+  }
+}
+
+/* Returns the coefficient at `index` in storage order. */
+template <typename Derived>
+decltype(auto) ReadCoefficientInStorageOrder(
+    const Eigen::MatrixBase<Derived>& matrix, Eigen::Index index) {
+  if constexpr (Derived::ColsAtCompileTime == 1) {
+    return ReadCoefficient(matrix, index, 0);
+  } else if constexpr (Derived::RowsAtCompileTime == 1) {
+    return ReadCoefficient(matrix, 0, index);
+  } else if constexpr (Derived::IsRowMajor) {
+    return ReadCoefficient(matrix, index / matrix.cols(),
+                           index % matrix.cols());
+  } else {
+    return ReadCoefficient(matrix, index % matrix.rows(),
+                           index / matrix.rows());
+  }
+}
+
+}  // namespace internal
 
 /** Extracts the `value()` portion from an AutoDiffScalar matrix into a
 pre-existing matrix (resizing if necessary).
@@ -46,7 +81,7 @@ void ExtractValue(
   value->resize(matrix.rows(), matrix.cols());
   for (int i = 0; i < matrix.rows(); ++i) {
     for (int j = 0; j < matrix.cols(); ++j) {
-      (*value)(i, j) = matrix(i, j).value();
+      (*value)(i, j) = internal::ReadCoefficient(matrix, i, j).value();
     }
   }
 }
