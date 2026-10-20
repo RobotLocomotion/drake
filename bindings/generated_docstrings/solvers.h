@@ -8793,7 +8793,12 @@ constraint imposing -1 <= trace(R) <= 3.)""";
       // Symbol: drake::solvers::NloptSolver
       struct /* NloptSolver */ {
         // Source: drake/solvers/nlopt_solver.h
-        const char* doc = R"""()""";
+        const char* doc =
+R"""(Wraps the NLopt nonlinear optimization library.
+
+If a cost or constraint throws a RuntimeError while NLopt is
+evaluating it, Solve() throws RuntimeError with that exception's
+message.)""";
         // Symbol: drake::solvers::NloptSolver::AlgorithmName
         struct /* AlgorithmName */ {
           // Source: drake/solvers/nlopt_solver.h
@@ -8995,8 +9000,17 @@ obtain the details.)""";
         struct /* status */ {
           // Source: drake/solvers/nlopt_solver.h
           const char* doc =
-R"""(The return status of NLopt solver. Please refer to
-https://nlopt.readthedocs.io/en/latest/NLopt_Reference/#return-values.)""";
+R"""(The return code of NLopt on every termination, including the negative
+(failure) codes. Please refer to
+https://nlopt.readthedocs.io/en/latest/NLopt_Reference/#return-values.
+
+On NLOPT_INVALID_ARGS (-2) and NLOPT_OUT_OF_MEMORY (-3) the result
+holds no solution (every decision variable is NaN). On every other
+code, including NLOPT_FAILURE (-1) and NLOPT_ROUNDOFF_LIMITED (-4),
+the result holds the point NLopt returned. Which point that is depends
+on the algorithm; e.g., LD_SLSQP returns its best feasible iterate if
+it found one. The point may violate the constraints or be non-finite,
+and may be the initial guess.)""";
         } status;
       } NloptSolverDetails;
       // Symbol: drake::solvers::OsqpSolver
