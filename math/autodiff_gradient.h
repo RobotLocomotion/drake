@@ -53,49 +53,53 @@ void ExtractGradient(
                   Eigen::Dynamic>* gradient) {
   DRAKE_THROW_UNLESS(gradient != nullptr);
   // Evaluate an expensive expression (e.g., a product) once rather than once
-  // per coefficient read; each coefficient is read up to three times below.
-  // For a plain matrix (or Map, Block, etc.) this is a reference.
-  const typename Eigen::internal::nested_eval<Derived, 3>::type matrix(
+  // per coefficient read. For a plain matrix (or Map, Block, etc.) this is a
+  // reference.
+  const typename Eigen::internal::nested_eval<Derived, 1>::type matrix(
       auto_diff_matrix.derived());
-  // Entries in an AutoDiff matrix must all have the same number of derivatives,
-  // or 0-length derivatives in which case they are interpreted as all-zero.
-  int num_derivatives_from_matrix = 0;
-  for (int i = 0; i < matrix.size(); ++i) {
-    const int entry_num_derivs =
-        static_cast<int>(matrix(i).derivatives().size());
-    if (entry_num_derivs == 0) continue;  // Always OK.
-    if (num_derivatives_from_matrix != 0 &&
-        entry_num_derivs != num_derivatives_from_matrix) {
-      throw std::logic_error(fmt::format(
-          "ExtractGradient(): Input matrix has elements with inconsistent,"
-          " non-zero numbers of derivatives ({} and {}).",
-          num_derivatives_from_matrix, entry_num_derivs));
+  // Iterate the matrix in storage order. Entries in an AutoDiff matrix must all
+  // have the same number of derivatives, or 0-length derivatives in which case
+  // they are interpreted as all-zero.
+  std::optional<int> matrix_num_derivatives;  // Set by the first such entry.
+  Eigen::Index i = 0;  // The `gradient` row we're currently outputting.
+  for (Eigen::Index outer = 0; outer < matrix.outerSize(); ++outer) {
+    for (Eigen::Index inner = 0; inner < matrix.innerSize(); ++inner, ++i) {
+      const Eigen::Index row = Derived::IsRowMajor ? outer : inner;
+      const Eigen::Index col = Derived::IsRowMajor ? inner : outer;
+      const auto& entry = internal::DirectlyReadCoefficient(matrix, row, col);
+      const int entry_num_derivs = static_cast<int>(entry.derivatives().size());
+      if (entry_num_derivs == 0) {
+        // Rows skipped before `gradient` is resized are zeroed when it is.
+        if (matrix_num_derivatives.has_value()) {
+          gradient->row(i).setZero();
+        }
+        continue;
+      }
+      if (!matrix_num_derivatives.has_value()) {
+        // Check num_derivatives before modifying `gradient`.
+        if (num_derivatives.has_value() &&
+            entry_num_derivs != *num_derivatives) {
+          throw std::logic_error(fmt::format(
+              "ExtractGradient(): Input matrix has {} derivatives, but"
+              " num_derivatives was specified as {}. Either the input matrix"
+              " should have zero derivatives, or the number should match"
+              " num_derivatives.",
+              entry_num_derivs, *num_derivatives));
+        }
+        matrix_num_derivatives = entry_num_derivs;
+        gradient->resize(matrix.size(), entry_num_derivs);
+        gradient->topRows(i).setZero();
+      } else if (entry_num_derivs != *matrix_num_derivatives) {
+        throw std::logic_error(fmt::format(
+            "ExtractGradient(): Input matrix has elements with inconsistent,"
+            " non-zero numbers of derivatives ({} and {}).",
+            *matrix_num_derivatives, entry_num_derivs));
+      }
+      gradient->row(i) = entry.derivatives().transpose();
     }
-    num_derivatives_from_matrix = entry_num_derivs;
   }
-
-  if (!num_derivatives.has_value()) {
-    num_derivatives = num_derivatives_from_matrix;
-  } else if (num_derivatives_from_matrix != 0 &&
-             num_derivatives_from_matrix != *num_derivatives) {
-    throw std::logic_error(fmt::format(
-        "ExtractGradient(): Input matrix has {} derivatives, but"
-        " num_derivatives was specified as {}. Either the input matrix should"
-        " have zero derivatives, or the number should match num_derivatives.",
-        num_derivatives_from_matrix, *num_derivatives));
-  }
-
-  gradient->resize(matrix.size(), *num_derivatives);
-  if (gradient->size() == 0) {
-    return;
-  }
-  for (int i = 0; i < matrix.size(); ++i) {
-    auto gradient_row = gradient->row(i).transpose();
-    if (matrix(i).derivatives().size() == 0) {
-      gradient_row.setZero();
-    } else {
-      gradient_row = matrix(i).derivatives();
-    }
+  if (!matrix_num_derivatives.has_value()) {
+    gradient->setZero(matrix.size(), num_derivatives.value_or(0));
   }
 }
 
