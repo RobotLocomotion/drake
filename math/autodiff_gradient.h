@@ -192,6 +192,16 @@ void InitializeAutoDiff(const Eigen::MatrixBase<DerivedValue>& value,
   // Can't resize() a MatrixBase -- downcast to the actual type.
   DerivedAutoDiff& auto_diff = auto_diff_matrix->derived();
   auto_diff.resize(value_eval.rows(), value_eval.cols());
+  if (gradient_eval.cols() == 0) {
+    // A gradient with no columns means "no derivatives". Handle it separately
+    // because a plain matrix with no coefficients has a null data pointer, and
+    // forming row(i) of it for i > 0 would offset that null pointer (which is
+    // undefined behavior).
+    for (Eigen::Index row = 0; row < auto_diff.size(); ++row) {
+      auto_diff(row) = typename DerivedAutoDiff::Scalar{value_eval(row)};
+    }
+    return;
+  }
   for (Eigen::Index row = 0; row < auto_diff.size(); ++row) {
     auto_diff(row) = {value_eval(row), gradient_eval.row(row).transpose()};
   }
