@@ -437,6 +437,32 @@ GTEST_TEST(AdditionalAutodiffTest, InitializeWithGradientMatrixFromSolve) {
   EXPECT_TRUE(CompareMatrices(ExtractGradient(autodiff), gradient));
 }
 
+// A gradient with zero columns means "no derivatives". This happens in
+// practice when a constraint's decision variables carry no derivatives, so
+// that the chained gradient dxdot_dx * dx_dvars has no columns.
+GTEST_TEST(AdditionalAutodiffTest, InitializeWithEmptyGradientMatrix) {
+  const int num_rows = 3;
+  const MatrixXd A = MatrixXd::Random(num_rows, 4);
+  const VectorXd x = VectorXd::Random(4);
+  const MatrixXd J = MatrixXd::Random(4, 0);
+  const VectorXd value = A * x;
+
+  // Both as a plain matrix and as an unevaluated product, which the helper
+  // evaluates into an empty temporary whose data pointer is null.
+  const MatrixXd gradient_plain = A * J;
+  VectorX<AutoDiffXd> autodiff(num_rows);
+  InitializeAutoDiff(value, gradient_plain, &autodiff);
+  for (int i = 0; i < num_rows; ++i) {
+    EXPECT_EQ(autodiff(i).value(), value(i));
+    EXPECT_EQ(autodiff(i).derivatives().size(), 0);
+  }
+  InitializeAutoDiff(A * x, A * J, &autodiff);
+  for (int i = 0; i < num_rows; ++i) {
+    EXPECT_EQ(autodiff(i).value(), value(i));
+    EXPECT_EQ(autodiff(i).derivatives().size(), 0);
+  }
+}
+
 // A product of a double matrix and an AutoDiff vector is an unevaluated Eigen
 // expression. (A product of two AutoDiff matrices is evaluated eagerly by
 // Drake's AutoDiff operator*, so it is not interesting here.)

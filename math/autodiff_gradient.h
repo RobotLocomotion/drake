@@ -179,6 +179,12 @@ void InitializeAutoDiff(const Eigen::MatrixBase<DerivedValue>& value,
   DRAKE_DEMAND(auto_diff_matrix != nullptr);
   DRAKE_DEMAND(value.size() == gradient.rows() &&
                "gradient has wrong number of rows at runtime");
+  // In case of no derivatives, bail out early to avoid undefined behavior
+  // accessing gradient row(i).
+  if (gradient.cols() == 0) {
+    auto_diff_matrix->derived() = value;
+    return;
+  }
 
   // Reading a row of some expressions (e.g., a product or a solve) evaluates
   // the entire expression, so evaluate such an expression once up front rather
