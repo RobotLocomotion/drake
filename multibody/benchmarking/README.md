@@ -7,6 +7,12 @@ This is a simple benchmarking program that uses the acrobot plant to benchmark
 the performance of various plant operations under autodiff.  It is used by
 Drake developers to detect and avoid performance regressions.
 
+# autodiff_extract
+
+A benchmark for math::ExtractValue() and math::ExtractGradient() reading
+through Eigen::Ref<const AutoDiffVecXd>, alone and within the AutoDiffXd
+evaluation of a few cheap constraints and costs.
+
 # cassie
 
 This is a real-world example of a medium-sized robot with timing
