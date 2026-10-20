@@ -757,32 +757,34 @@ std::optional<RigidTransformd> ResolveJointFrameOnLink(
     return false;
   };
   const auto [frame, name_exists_in_graph] = find_frame(frame_name);
+  if (frame == nullptr && frame_name == link_name) {
+    return RigidTransformd::Identity();
+  }
+  const ScopedName absolute_name = ScopedName::Join(
+      GetInstanceScopeNameIgnoringWorld(plant, model_instance), frame_name);
+  // Reject implicit model frames before selecting a DOM or plant lookup path.
+  // Native SDF merge proxies have DOM entries, unlike Interface API proxies.
+  const auto local_name = absolute_name.get_element();
+  const bool is_model_frame =
+      local_name == "__model__" || (local_name.starts_with("_merged__") &&
+                                    local_name.ends_with("__model__"));
+  // Only a name that exists can be an implicit model frame; any other name
+  // gets the generic error below.
+  if (name_exists_in_graph && is_model_frame) {
+    diagnostic.Error(
+        element,
+        fmt::format("<{}>{}</{}> of joint '{}' names an implicit model "
+                    "frame; it must name link '{}' or an explicit frame "
+                    "fixed to it.",
+                    element_name, frame_name, element_name, joint_spec.Name(),
+                    link_name));
+    return std::nullopt;
+  }
   if (frame == nullptr) {
-    if (frame_name == link_name) return RigidTransformd::Identity();
     // Frames exported by Interface API includes (e.g., URDF <frame> elements)
     // are already in the plant, but are not in the SDFormat DOM. Look up their
     // fixed poses in the plant. An unscoped name at world scope is not looked
     // up in the plant since it could be ambiguous there.
-    const ScopedName absolute_name = ScopedName::Join(
-        GetInstanceScopeNameIgnoringWorld(plant, model_instance), frame_name);
-    // Implicit model frames, including merge-include proxies, are not links
-    // or explicit frames and must not become eligible through this fallback.
-    const auto local_name = absolute_name.get_element();
-    const bool is_model_frame =
-        local_name == "__model__" || (local_name.starts_with("_merged__") &&
-                                      local_name.ends_with("__model__"));
-    // Only a name that exists can be an implicit model frame; any other name
-    // gets the generic error below.
-    if (name_exists_in_graph && is_model_frame) {
-      diagnostic.Error(
-          element,
-          fmt::format("<{}>{}</{}> of joint '{}' names an implicit model "
-                      "frame; it must name link '{}' or an explicit frame "
-                      "fixed to it.",
-                      element_name, frame_name, element_name, joint_spec.Name(),
-                      link_name));
-      return std::nullopt;
-    }
     const Frame<double>* plant_frame = nullptr;
     // Plant-only names, such as Drake's generated joint frames, must not be
     // accepted. Their availability can depend on the order of the joints.

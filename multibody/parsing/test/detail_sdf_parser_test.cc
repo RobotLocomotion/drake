@@ -4752,6 +4752,78 @@ TEST_F(SdfParserTest, JointParentAndChildFramesUrdfIncludeErrors) {
   }
 }
 
+// Native SDF merge-includes create DOM-backed proxy frames, unlike Interface
+// API includes. Reject them even when they are attached to the expected link,
+// while continuing to accept the included model's explicit frames.
+TEST_F(SdfParserTest, JointParentAndChildFramesSdfMergeInclude) {
+  const std::string sdf_path = FindResourceOrThrow(
+      "drake/multibody/parsing/test/sdf_parser_test/joint_frames.sdf");
+  const std::string proxy = sdf::computeMergedModelProxyFrameName("u");
+  for (bool nested_scope : {false, true}) {
+    for (const std::string frame_case :
+         {"explicit", "parent_proxy", "child_proxy"}) {
+      SCOPED_TRACE(
+          fmt::format("nested_scope={}, case={}", nested_scope, frame_case));
+      const std::string model_name =
+          fmt::format("m_{}_{}", nested_scope, frame_case);
+      const std::string prefix = nested_scope ? "n::" : "";
+      const bool child_proxy = frame_case == "child_proxy";
+      std::string parent_frame = child_proxy ? "Fb" : "Fa";
+      if (frame_case == "parent_proxy") parent_frame = proxy;
+      const std::string include = fmt::format(
+          "<include merge='true'><uri>{}</uri><name>u</name></include>",
+          sdf_path);
+      ParseTestString(
+          fmt::format(R"""(
+<model name='{0}'>
+  {1}
+  <joint name='j' type='fixed'>
+    <parent>{2}{3}</parent>
+    <child>{2}{4}</child>
+    <drake:parent_frame>{2}{5}</drake:parent_frame>
+    <drake:child_frame>{2}{6}</drake:child_frame>
+  </joint>
+</model>)""",
+                      model_name,
+                      nested_scope ? "<model name='n'>" + include + "</model>"
+                                   : include,
+                      prefix, child_proxy ? "b" : "a", child_proxy ? "a" : "b",
+                      parent_frame, child_proxy ? proxy : "Fb"),
+          "1.9");
+      const ModelInstanceIndex instance = plant_.GetModelInstanceByName(
+          nested_scope ? model_name + "::n" : model_name);
+      if (frame_case == "explicit") {
+        const auto& joint = plant_.GetJointByName("j", instance);
+        EXPECT_TRUE(CompareMatrices(
+            joint.frame_on_parent().GetFixedPoseInBodyFrame().GetAsMatrix34(),
+            RigidTransformd(RollPitchYawd(M_PI_2, 0, 0), Vector3d(1, 2, 3))
+                .GetAsMatrix34(),
+            kEps));
+        EXPECT_TRUE(CompareMatrices(
+            joint.frame_on_child().GetFixedPoseInBodyFrame().GetAsMatrix34(),
+            RigidTransformd(RollPitchYawd(0, 0, M_PI_2), Vector3d(4, 5, 6))
+                .GetAsMatrix34(),
+            kEps));
+      } else {
+        EXPECT_THAT(
+            TakeError(),
+            HasSubstr(fmt::format(
+                "<drake:{0}_frame>{1}{2}</drake:{0}_frame> of joint 'j' "
+                "names an implicit model frame; it must name link "
+                "'{1}a' or an explicit frame fixed to it.",
+                child_proxy ? "child" : "parent", prefix, proxy)));
+        EXPECT_FALSE(plant_.HasJointNamed("j", instance));
+        if (nested_scope) {
+          // The nested model is fully parsed before the enclosing joint, so
+          // its proxy is already in the plant and is fixed to the right link.
+          EXPECT_EQ(&plant_.GetFrameByName(proxy, instance).link(),
+                    &plant_.GetBodyByName("a", instance));
+        }
+      }
+    }
+  }
+}
+
 // Drake creates j0_child while adding j0, but that name is absent from
 // SDFormat's frame graph. It must be rejected regardless of joint order.
 TEST_F(SdfParserTest, JointParentAndChildFramesRejectGeneratedFrames) {
