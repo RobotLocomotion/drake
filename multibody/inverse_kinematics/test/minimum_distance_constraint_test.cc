@@ -584,6 +584,81 @@ GTEST_TEST(ThreeSpheresTest, SomeLargerThanInfluenceSomeSmallerThanLowerBound) {
   }
 }
 
+GTEST_TEST(ThreeSpheresTest, AutoDiffWithSeveralPairsInRange) {
+  // All three pairs of spheres are within the influence distance, so the
+  // gradient combines the gradients of several distances.
+  NFreeSpheresModel<double> spheres_double(3);
+  NFreeSpheresModel<AutoDiffXd> spheres_autodiff(3);
+  const double minimum_distance_lower = 0.01;
+  const double minimum_distance_upper = 0.05;
+  const double d_influence = 0.1;
+  // Indices into the q vector for each sphere's position.
+  const Eigen::Index kSpheres[] = {4, 11, 18};
+  Eigen::VectorXd q =
+      spheres_double.plant().GetPositions(spheres_double.plant_context());
+  q.segment<3>(kSpheres[0]) << 0, 0, 0;
+  q.segment<3>(kSpheres[1]) << 0.01, 0, 0.03;
+  q.segment<3>(kSpheres[2]) << 0, 0.02, 0.06;
+  for (int i = 0; i < 3; ++i) {
+    for (int j = i + 1; j < 3; ++j) {
+      ASSERT_LT((q.segment<3>(kSpheres[i]) - q.segment<3>(kSpheres[j])).norm() -
+                    2 * spheres_double.radius(),
+                d_influence);
+    }
+  }
+  const int nq = q.size();
+  Eigen::MatrixXd dq(nq, 2);
+  for (int i = 0; i < nq; ++i) {
+    dq(i, 0) = std::sin(i + 1);
+    dq(i, 1) = std::cos(i + 1);
+  }
+  // The gradients are of order 10, and the numerical gradient is only accurate
+  // to about 1E-4 for them.
+  const double gradient_tol = 1E-4;
+  for (solvers::MinimumValuePenaltyFunction penalty_function :
+       {QuadraticallySmoothedHingeLoss, ExponentiallySmoothedHingeLoss}) {
+    const MinimumDistanceLowerBoundConstraint lower_from_double(
+        &spheres_double.plant(), minimum_distance_lower,
+        &spheres_double.get_mutable_plant_context(), penalty_function,
+        d_influence - minimum_distance_lower);
+    const MinimumDistanceLowerBoundConstraint lower_from_autodiff(
+        &spheres_autodiff.plant(), minimum_distance_lower,
+        &spheres_autodiff.get_mutable_plant_context(), penalty_function,
+        d_influence - minimum_distance_lower);
+    const MinimumDistanceUpperBoundConstraint upper_from_double(
+        &spheres_double.plant(), minimum_distance_upper,
+        &spheres_double.get_mutable_plant_context(),
+        d_influence - minimum_distance_upper, penalty_function);
+    const MinimumDistanceUpperBoundConstraint upper_from_autodiff(
+        &spheres_autodiff.plant(), minimum_distance_upper,
+        &spheres_autodiff.get_mutable_plant_context(),
+        d_influence - minimum_distance_upper, penalty_function);
+    TestKinematicConstraintEval(lower_from_double, lower_from_autodiff, q, dq,
+                                gradient_tol);
+    TestKinematicConstraintEval(upper_from_double, upper_from_autodiff, q, dq,
+                                gradient_tol, 1E-11 /* tol */);
+
+    // q without derivatives, with all pairs in range and with none.
+    Eigen::VectorXd q_apart = q;
+    q_apart.segment<3>(kSpheres[1]) << 1, 0, 0;
+    q_apart.segment<3>(kSpheres[2]) << 2, 0, 0;
+    for (const Eigen::VectorXd& q_val : {q, q_apart}) {
+      const AutoDiffVecXd q_no_derivatives =
+          math::InitializeAutoDiff(q_val, Eigen::MatrixXd(nq, 0));
+      for (const solvers::Constraint* dut :
+           std::vector<const solvers::Constraint*>{&lower_from_double,
+                                                   &upper_from_double}) {
+        Eigen::VectorXd y_double;
+        dut->Eval(q_val, &y_double);
+        AutoDiffVecXd y;
+        dut->Eval(q_no_derivatives, &y);
+        EXPECT_TRUE(CompareMatrices(math::ExtractValue(y), y_double));
+        EXPECT_EQ(math::ExtractGradient(y).cols(), 0);
+      }
+    }
+  }
+}
+
 GTEST_TEST(ThreeSpheresTest, SomeLargerThanInfluenceSomeSmallerThanUpperBound) {
   // Test the case with three spheres. Some pair of spheres have distance >
   // d_influence, and some pairs have distance < minimum-distance_upper.
