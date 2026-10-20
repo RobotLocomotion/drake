@@ -1,5 +1,6 @@
 #include "drake/multibody/inverse_kinematics/distance_constraint_utilities.h"
 
+#include <type_traits>
 #include <vector>
 
 #include "drake/math/autodiff_gradient.h"
@@ -8,14 +9,16 @@
 namespace drake {
 namespace multibody {
 namespace internal {
-void CalcDistanceDerivatives(const MultibodyPlant<double>& plant,
-                             const systems::Context<double>& context,
-                             const Frame<double>& frameA,
-                             const Frame<double>& frameB,
-                             const Eigen::Vector3d& p_ACa, double distance,
-                             const Eigen::Vector3d& nhat_BA_W,
-                             const Eigen::Ref<const AutoDiffVecXd>& q,
-                             AutoDiffXd* distance_autodiff) {
+namespace {
+// Computes ∂distance/∂q for the pair whose witness point on geometry A is
+// p_ACa, using Jq_v_BCa_W (3 × nq) as scratch.
+void CalcDdistanceDq(const MultibodyPlant<double>& plant,
+                     const systems::Context<double>& context,
+                     const Frame<double>& frameA, const Frame<double>& frameB,
+                     const Eigen::Vector3d& p_ACa,
+                     const Eigen::Vector3d& nhat_BA_W,
+                     Eigen::Matrix3Xd* Jq_v_BCa_W,
+                     EigenPtr<Eigen::RowVectorXd> ddistance_dq) {
   // Derivation to compute the gradient of the signed distance function w.r.t q:
   // The distance is
   // d = n̂_BA_Wᵀ * (p_WCa - p_WCb)             (1)
@@ -35,11 +38,25 @@ void CalcDistanceDerivatives(const MultibodyPlant<double>& plant,
   // ∂d / ∂q = n̂_BA_Wᵀ * (∂p_CbCa_W / ∂q)                                  (4)
   // Note that ∂p_CbCa_W / ∂q is computed as a Jacobian matrix in
   // MultibodyPlant.
-  Eigen::Matrix<double, 3, Eigen::Dynamic> Jq_v_BCa_W(3, plant.num_positions());
   plant.CalcJacobianTranslationalVelocity(context, JacobianWrtVariable::kQDot,
                                           frameA, p_ACa, frameB,
-                                          plant.world_frame(), &Jq_v_BCa_W);
-  const Eigen::RowVectorXd ddistance_dq = nhat_BA_W.transpose() * Jq_v_BCa_W;
+                                          plant.world_frame(), Jq_v_BCa_W);
+  ddistance_dq->noalias() = nhat_BA_W.transpose() * *Jq_v_BCa_W;
+}
+}  // namespace
+
+void CalcDistanceDerivatives(const MultibodyPlant<double>& plant,
+                             const systems::Context<double>& context,
+                             const Frame<double>& frameA,
+                             const Frame<double>& frameB,
+                             const Eigen::Vector3d& p_ACa, double distance,
+                             const Eigen::Vector3d& nhat_BA_W,
+                             const Eigen::Ref<const AutoDiffVecXd>& q,
+                             AutoDiffXd* distance_autodiff) {
+  Eigen::Matrix3Xd Jq_v_BCa_W(3, plant.num_positions());
+  Eigen::RowVectorXd ddistance_dq(plant.num_positions());
+  CalcDdistanceDq(plant, context, frameA, frameB, p_ACa, nhat_BA_W, &Jq_v_BCa_W,
+                  &ddistance_dq);
   distance_autodiff->value() = distance;
   distance_autodiff->derivatives() = ddistance_dq * math::ExtractGradient(q);
 }
@@ -72,32 +89,47 @@ VectorX<S> Distances(const MultibodyPlant<T>& plant,
   }
   const auto& query_object =
       query_port.template Eval<geometry::QueryObject<T>>(*context);
+  const geometry::SceneGraphInspector<T>& inspector = query_object.inspector();
 
   const std::vector<geometry::SignedDistancePair<T>> signed_distance_pairs =
       query_object.ComputeSignedDistancePairwiseClosestPoints(
           influence_distance);
-  VectorX<S> distances(signed_distance_pairs.size());
-  for (int i = 0; i < static_cast<int>(signed_distance_pairs.size()); ++i) {
-    const geometry::SceneGraphInspector<T>& inspector =
-        query_object.inspector();
-    const geometry::FrameId frame_A_id =
-        inspector.GetFrameId(signed_distance_pairs[i].id_A);
-    const geometry::FrameId frame_B_id =
-        inspector.GetFrameId(signed_distance_pairs[i].id_B);
-    const Frame<T>& frameA = plant.GetBodyFromFrameId(frame_A_id)->body_frame();
-    const Frame<T>& frameB = plant.GetBodyFromFrameId(frame_B_id)->body_frame();
-    internal::CalcDistanceDerivatives(
-        plant, *context, frameA, frameB,
-        // GetPoseInFrame() returns RigidTransform<double> -- we can't
-        // multiply across heterogeneous scalar types; so we cast the double
-        // to T.
-        inspector.GetPoseInFrame(signed_distance_pairs[i].id_A)
-                .template cast<T>() *
-            signed_distance_pairs[i].p_ACa,
-        signed_distance_pairs[i].distance, signed_distance_pairs[i].nhat_BA_W,
-        q, &distances(i));
+  const int num_pairs = std::ssize(signed_distance_pairs);
+  constexpr bool kDoubleToAutoDiff =
+      std::is_same_v<T, double> && std::is_same_v<S, AutoDiffXd>;
+  VectorX<T> distances(num_pairs);
+  Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>
+      ddistance_dq;
+  Eigen::Matrix3Xd Jq_v_BCa_W;
+  if constexpr (kDoubleToAutoDiff) {
+    ddistance_dq.resize(num_pairs, plant.num_positions());
+    Jq_v_BCa_W.resize(3, plant.num_positions());
   }
-  return distances;
+  for (int i = 0; i < num_pairs; ++i) {
+    const geometry::SignedDistancePair<T>& pair = signed_distance_pairs[i];
+    distances(i) = pair.distance;
+    if constexpr (kDoubleToAutoDiff) {
+      const Frame<double>& frameA =
+          plant.GetBodyFromFrameId(inspector.GetFrameId(pair.id_A))
+              ->body_frame();
+      const Frame<double>& frameB =
+          plant.GetBodyFromFrameId(inspector.GetFrameId(pair.id_B))
+              ->body_frame();
+      const Eigen::Vector3d p_ACa =
+          inspector.GetPoseInFrame(pair.id_A) * pair.p_ACa;
+      auto ddistance_dq_row = ddistance_dq.row(i);
+      CalcDdistanceDq(plant, *context, frameA, frameB, p_ACa, pair.nhat_BA_W,
+                      &Jq_v_BCa_W, &ddistance_dq_row);
+    }
+  }
+  if constexpr (kDoubleToAutoDiff) {
+    return math::InitializeAutoDiff(distances,
+                                    ddistance_dq * math::ExtractGradient(q));
+  } else if constexpr (std::is_same_v<T, S>) {
+    return distances;
+  } else {
+    return math::ExtractValue(distances);
+  }
 }
 
 Eigen::VectorXd Distances(
