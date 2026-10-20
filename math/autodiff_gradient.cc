@@ -11,11 +11,13 @@ bool AreAutoDiffVecXdEqual(const Eigen::Ref<const VectorX<AutoDiffXd>>& a,
   if (math::ExtractValue(a) != math::ExtractValue(b)) {
     return false;
   }
-  for (int i = 0; i < a.size(); ++i) {
-    if (a(i).derivatives().size() != b(i).derivatives().size()) {
+  for (int i = 0; i < a.rows(); ++i) {
+    const AutoDiffXd& a_i = internal::DirectlyReadCoefficient(a, i, 0);
+    const AutoDiffXd& b_i = internal::DirectlyReadCoefficient(b, i, 0);
+    if (a_i.derivatives().size() != b_i.derivatives().size()) {
       return false;
     }
-    if (a(i).derivatives() != b(i).derivatives()) {
+    if (a_i.derivatives() != b_i.derivatives()) {
       return false;
     }
   }
