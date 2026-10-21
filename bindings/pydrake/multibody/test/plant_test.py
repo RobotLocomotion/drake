@@ -1468,6 +1468,17 @@ class TestPlant(unittest.TestCase):
             self.assert_sane(Js_V_ABp_E)
 
             self.assertEqual(Js_V_ABp_E.shape, (6, nw))
+            # The base floats, so measure the lower link in the base frame.
+            Hs_V_ABp_E = plant.CalcHessianSpatialVelocity(
+                context=context,
+                with_respect_to=wrt,
+                frame_B=plant.GetFrameByName("lower_link"),
+                p_BoBp_B=np.zeros(3),
+                frame_A=base_frame,
+                frame_E=world_frame,
+            )
+            self.assert_sane(Hs_V_ABp_E)
+            self.assertEqual(Hs_V_ABp_E.shape, (nw, 6, nw))
             Js_w_AB_E = plant.CalcJacobianAngularVelocity(
                 context=context,
                 with_respect_to=wrt,
