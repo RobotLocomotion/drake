@@ -1271,6 +1271,15 @@ class MultibodyTree {
                                    EigenPtr<MatrixX<T>> Js_V_ABp_E) const;
 
   // See MultibodyPlant method.
+  void CalcHessianSpatialVelocity(const systems::Context<T>& context,
+                                  JacobianWrtVariable with_respect_to,
+                                  const Frame<T>& frame_B,
+                                  const Eigen::Ref<const Vector3<T>>& p_BP,
+                                  const Frame<T>& frame_A,
+                                  const Frame<T>& frame_E,
+                                  std::vector<Matrix6X<T>>* Hs_V_ABp_E) const;
+
+  // See MultibodyPlant method.
   void CalcJacobianAngularVelocity(const systems::Context<T>& context,
                                    JacobianWrtVariable with_respect_to,
                                    const Frame<T>& frame_B,
