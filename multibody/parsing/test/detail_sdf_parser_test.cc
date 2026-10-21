@@ -4426,54 +4426,84 @@ TEST_F(SdfParserTest, WorldJoint) {
   plant_.Finalize();
   auto context = plant_.CreateDefaultContext();
 
-  ASSERT_TRUE(plant_.HasModelInstanceNamed("parent_model"));
-  ASSERT_TRUE(plant_.HasModelInstanceNamed("child_model"));
-  ASSERT_TRUE(plant_.HasFrameNamed("child_frame"));
+  ASSERT_TRUE(plant_.HasModelInstanceNamed("M1"));
+  ASSERT_TRUE(plant_.HasModelInstanceNamed("M2"));
+  ASSERT_TRUE(plant_.HasFrameNamed("M1_offset"));
+  ASSERT_TRUE(plant_.HasFrameNamed("M2_offset"));
   ASSERT_TRUE(plant_.HasJointNamed("J1"));
   ASSERT_TRUE(plant_.HasJointNamed("J2"));
 
   EXPECT_EQ(plant_.num_joints(), 2);
   EXPECT_EQ(plant_.num_model_instances(), 4);
 
-  ModelInstanceIndex parent_instance =
-      plant_.GetModelInstanceByName("parent_model");
-  ModelInstanceIndex child_instance =
-      plant_.GetModelInstanceByName("child_model");
+  ModelInstanceIndex instance1 = plant_.GetModelInstanceByName("M1");
+  ModelInstanceIndex instance2 = plant_.GetModelInstanceByName("M2");
 
-  EXPECT_TRUE(plant_.HasBodyNamed("L_P", parent_instance));
-  EXPECT_TRUE(plant_.HasBodyNamed("L_C", child_instance));
+  EXPECT_TRUE(plant_.HasBodyNamed("L1", instance1));
+  EXPECT_TRUE(plant_.HasBodyNamed("L2", instance2));
 
-  const RigidBody<double>& parent_link =
-      plant_.GetBodyByName("L_P", parent_instance);
-  const RigidBody<double>& child_link =
-      plant_.GetBodyByName("L_C", child_instance);
-  EXPECT_NE(parent_link.index(), child_link.index());
-  EXPECT_EQ(parent_link.model_instance(), parent_instance);
-  EXPECT_EQ(child_link.model_instance(), child_instance);
+  const RigidBody<double>& link1 = plant_.GetBodyByName("L1", instance1);
+  const RigidBody<double>& link2 = plant_.GetBodyByName("L2", instance2);
+  EXPECT_NE(link1.index(), link2.index());
+  EXPECT_EQ(link1.model_instance(), instance1);
+  EXPECT_EQ(link2.model_instance(), instance2);
 
-  const Joint<double>& joint = plant_.GetJointByName<Joint>("J1");
-  EXPECT_EQ(joint.name(), "J1");
-  EXPECT_EQ(joint.parent_body().name(), "L_P");
-  EXPECT_EQ(joint.child_body().name(), "L_C");
+  // The models put L1 at (10, 0, 0) and L2 at (0, 20, 0) in World, so a frame
+  // fixed to the wrong link would be caught. Each world-scope frame is fixed to
+  // the canonical link of the model named by its attached_to, posed relative to
+  // that model.
+  const auto& frame_M1_offset = plant_.GetFrameByName("M1_offset");
+  const auto& frame_M2_offset = plant_.GetFrameByName("M2_offset");
+  EXPECT_EQ(&frame_M1_offset.body(), &link1);
+  EXPECT_EQ(&frame_M2_offset.body(), &link2);
+  EXPECT_TRUE(CompareMatrices(
+      frame_M1_offset.GetFixedPoseInBodyFrame().GetAsMatrix34(),
+      RigidTransformd(Vector3d(1, 2, 3)).GetAsMatrix34(), kEps));
+  EXPECT_TRUE(CompareMatrices(
+      frame_M2_offset.GetFixedPoseInBodyFrame().GetAsMatrix34(),
+      RigidTransformd(Vector3d(4, 5, 6)).GetAsMatrix34(), kEps));
 
-  // check relative pose between frames and joint
-  const RigidTransformd X_CJc_expected(RollPitchYawd(0, 0, 0),
-                                       Vector3d(1, 1, 1));
-  const RigidTransformd X_PJp_expected(RollPitchYawd(0, 0, 0),
-                                       Vector3d(4, 4, 4));
+  // In each joint's block, P and C are that joint's parent and child links.
+  {
+    // J1 welds L2 (C) to L1 (P). Its <pose> is relative to its <child> frame,
+    // so J1 is at (0, 20, 0) + (4, 5, 6) + (1, 1, 1) = (5, 26, 7) in World.
+    // Its frames Jp and Jc are both there, which is
+    // (5, 26, 7) - (10, 0, 0) = (-5, 26, 7) in P and
+    // (5, 26, 7) - (0, 20, 0) = (5, 6, 7) in C.
+    const Joint<double>& joint = plant_.GetJointByName<Joint>("J1");
+    EXPECT_EQ(&joint.parent_body(), &link1);
+    EXPECT_EQ(&joint.child_body(), &link2);
+    const RigidTransformd X_PJp_expected(Vector3d(-5, 26, 7));
+    const RigidTransformd X_CJc_expected(Vector3d(5, 6, 7));
+    EXPECT_TRUE(CompareMatrices(
+        joint.frame_on_parent().GetFixedPoseInBodyFrame().GetAsMatrix34(),
+        X_PJp_expected.GetAsMatrix34(), kEps));
+    EXPECT_TRUE(CompareMatrices(
+        joint.frame_on_child().GetFixedPoseInBodyFrame().GetAsMatrix34(),
+        X_CJc_expected.GetAsMatrix34(), kEps));
+  }
+  {
+    // J2 welds L1 (C) to World (P). It has no <pose>, so it is at L1.
+    const Joint<double>& joint = plant_.GetJointByName<Joint>("J2");
+    EXPECT_EQ(&joint.parent_body(), &plant_.world_body());
+    EXPECT_EQ(&joint.child_body(), &link1);
+    const RigidTransformd X_PJp_expected(Vector3d(10, 0, 0));
+    const RigidTransformd X_CJc_expected = RigidTransformd::Identity();
+    EXPECT_TRUE(CompareMatrices(
+        joint.frame_on_parent().GetFixedPoseInBodyFrame().GetAsMatrix34(),
+        X_PJp_expected.GetAsMatrix34(), kEps));
+    EXPECT_TRUE(CompareMatrices(
+        joint.frame_on_child().GetFixedPoseInBodyFrame().GetAsMatrix34(),
+        X_CJc_expected.GetAsMatrix34(), kEps));
+  }
 
-  const auto& frame_P = plant_.GetFrameByName("parent_frame");
-  const auto& frame_C = plant_.GetFrameByName("child_frame");
-
-  const RigidTransformd X_PJp =
-      joint.frame_on_parent().CalcPose(*context, frame_P);
-  EXPECT_TRUE(CompareMatrices(X_PJp_expected.GetAsMatrix4(),
-                              X_PJp.GetAsMatrix4(), kEps));
-
-  const RigidTransformd X_CJc =
-      joint.frame_on_child().CalcPose(*context, frame_C);
-  EXPECT_TRUE(CompareMatrices(X_CJc_expected.GetAsMatrix4(),
-                              X_CJc.GetAsMatrix4(), kEps));
+  // The welds reproduce the link poses given in the file.
+  EXPECT_TRUE(CompareMatrices(
+      link1.body_frame().CalcPoseInWorld(*context).GetAsMatrix34(),
+      RigidTransformd(Vector3d(10, 0, 0)).GetAsMatrix34(), kEps));
+  EXPECT_TRUE(CompareMatrices(
+      link2.body_frame().CalcPoseInWorld(*context).GetAsMatrix34(),
+      RigidTransformd(Vector3d(0, 20, 0)).GetAsMatrix34(), kEps));
 }
 
 // Tests the error handling for an unsupported visual geometry.
