@@ -665,11 +665,31 @@ void DoScalarDependentDefinitions(py::module_ m, T) {
               p_BoBp_B, frame_A, frame_E, &Js_V_ABp_E);
           return Js_V_ABp_E;
         };
+    auto CalcHessianSpatialVelocity =
+        [](const Class* self, const systems::Context<T>& context,
+            JacobianWrtVariable with_respect_to, const Frame<T>& frame_B,
+            const Eigen::Ref<const Vector3<T>>& p_BoBp_B,
+            const Frame<T>& frame_A, const Frame<T>& frame_E) {
+          std::vector<Matrix6X<T>> Hs_V_ABp_E;
+          self->CalcHessianSpatialVelocity(context, with_respect_to, frame_B,
+              p_BoBp_B, frame_A, frame_E, &Hs_V_ABp_E);
+          // Return the n slices of 6 x n as one array of shape (n, 6, n).
+          const int n = static_cast<int>(Hs_V_ABp_E.size());
+          MatrixX<T> stacked(6 * n, n);
+          for (int i = 0; i < n; ++i) {
+            stacked.template middleRows<6>(6 * i) = Hs_V_ABp_E[i];
+          }
+          return py::cast(std::move(stacked)).attr("reshape")(n, 6, n);
+        };
     cls  // BR
         .def("CalcJacobianSpatialVelocity", CalcJacobianSpatialVelocity,
             py::arg("context"), py::arg("with_respect_to"), py::arg("frame_B"),
             py::arg("p_BoBp_B"), py::arg("frame_A"), py::arg("frame_E"),
             cls_doc.CalcJacobianSpatialVelocity.doc)
+        .def("CalcHessianSpatialVelocity", CalcHessianSpatialVelocity,
+            py::arg("context"), py::arg("with_respect_to"), py::arg("frame_B"),
+            py::arg("p_BoBp_B"), py::arg("frame_A"), py::arg("frame_E"),
+            cls_doc.CalcHessianSpatialVelocity.doc)
         .def(
             "CalcJacobianAngularVelocity",
             [](const Class* self, const Context<T>& context,
