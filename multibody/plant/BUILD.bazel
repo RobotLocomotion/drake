@@ -806,6 +806,26 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "multibody_plant_hessians_test",
+    data = [
+        "@drake_models//:iiwa_description",
+    ],
+    deps = [
+        ":kuka_iiwa_model_tests",
+        ":plant",
+        "//common:autodiff",
+        "//common/symbolic:expression",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+        "//common/trajectories:piecewise_constant_curvature_trajectory",
+        "//math:autodiff",
+        "//math:geometric_transform",
+        "//math:gradient",
+        "//multibody/parsing",
+    ],
+)
+
+drake_cc_googletest(
     name = "multibody_plant_mass_matrix_test",
     data = [
         "test/atlas_with_fixed_joints.urdf",
