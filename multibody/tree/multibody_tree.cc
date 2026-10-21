@@ -12,6 +12,7 @@
 #include <fmt/ranges.h>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_bool.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/unused.h"
 #include "drake/math/rigid_transform.h"
@@ -3503,6 +3504,296 @@ void MultibodyTree<T>::CalcJacobianSpatialVelocity(
         R_EW * Js_V_ABp_E->template topRows<3>();
     Js_V_ABp_E->template bottomRows<3>() =
         R_EW * Js_V_ABp_E->template bottomRows<3>();
+  }
+}
+
+template <typename T>
+void MultibodyTree<T>::CalcHessianSpatialVelocity(
+    const systems::Context<T>& context,
+    const JacobianWrtVariable with_respect_to, const Frame<T>& frame_B,
+    const Eigen::Ref<const Vector3<T>>& p_BP, const Frame<T>& frame_A,
+    const Frame<T>& frame_E, std::vector<Matrix6X<T>>* Hs_V_ABp_E) const {
+  DRAKE_THROW_UNLESS(Hs_V_ABp_E != nullptr);
+  const bool is_wrt_qdot = (with_respect_to == JacobianWrtVariable::kQDot);
+  const int n = is_wrt_qdot ? num_positions() : num_velocities();
+
+  // Paths from World (level 0) to the bodies of B, A and E. Only mobilities on
+  // these paths have nonzero slices, and J𝑠_V_ABp has nonzero columns only
+  // for the mobilities outboard of C, the first common ancestor of A and B.
+  const SpanningForest& forest = this->forest();
+  const MobodIndex mobod_B = frame_B.body().mobod_index();
+  const MobodIndex mobod_A = frame_A.body().mobod_index();
+  const MobodIndex mobod_E = frame_E.body().mobod_index();
+  const std::vector<MobodIndex> path_B = forest.FindPathFromWorld(mobod_B);
+  const std::vector<MobodIndex> path_A = forest.FindPathFromWorld(mobod_A);
+  const std::vector<MobodIndex> path_E = forest.FindPathFromWorld(mobod_E);
+  const bool A_is_world = forest.mobods(mobod_A).is_world();
+  const bool E_is_world = forest.mobods(mobod_E).is_world();
+  const int level_C =
+      forest.mobods(forest.FindFirstCommonAncestor(mobod_B, mobod_A)).level();
+  // Mobilities on E's path at levels > level_CE are on neither A's nor B's.
+  const int level_CE = std::max(
+      forest.mobods(forest.FindFirstCommonAncestor(mobod_E, mobod_B)).level(),
+      forest.mobods(forest.FindFirstCommonAncestor(mobod_E, mobod_A)).level());
+
+  // With 𝑠 = q̇, a column node with q̇ ≠ v would need ∂N⁺/∂q.
+  // TODO(cohnt) Support 𝑠 = q̇ for joints with q̇ ≠ v.
+  if (is_wrt_qdot) {
+    for (const std::vector<MobodIndex>* path : {&path_B, &path_A}) {
+      for (int level = level_C + 1; level < ssize(*path); ++level) {
+        const SpanningForest::Mobod& mobod = forest.mobods((*path)[level]);
+        if (!body_nodes_[mobod.index()]
+                 ->get_mobilizer()
+                 .is_velocity_equal_to_qdot()) {
+          const Joint<T>& joint =
+              get_joint(forest.joints(mobod.active_joint_ordinal()).index());
+          throw std::logic_error(fmt::format(
+              "{}(): with_respect_to = JacobianWrtVariable::kQDot is not yet "
+              "supported when the kinematic path between frame_A '{}' and "
+              "frame_B '{}' contains a {} joint ('{}') whose generalized "
+              "velocities are not the time derivatives of its generalized "
+              "positions. Use JacobianWrtVariable::kV.",
+              __func__, frame_A.name(), frame_B.name(), joint.type_name(),
+              joint.name()));
+        }
+      }
+    }
+  }
+
+  // Element i of the output is Dᵢ(J𝑠_V_ABp_E).
+  Hs_V_ABp_E->resize(n);
+  // Row blocks of a 6 × 0 matrix offset a null pointer.
+  if (n == 0) return;
+  for (Matrix6X<T>& slice : *Hs_V_ABp_E) {
+    slice.resize(6, n);
+    slice.setZero();
+  }
+
+  // The Jacobians of B and of A, both at point P, as in
+  // CalcJacobianSpatialVelocity(), and E's angular velocity Jacobian.
+  // TODO(cohnt) These allocate; an allocation-free version would read the
+  //  H_PB_W cache directly instead.
+  Vector3<T> p_WP;
+  CalcPointsPositions(context, frame_B, p_BP, world_frame(), &p_WP);
+  Matrix6X<T> Js_V_WBp(6, n);
+  auto Js_w_WBp = Js_V_WBp.template topRows<3>();
+  auto Js_v_WBp = Js_V_WBp.template bottomRows<3>();
+  CalcJacobianAngularAndOrTranslationalVelocityInWorld(
+      context, with_respect_to, frame_B, p_WP, &Js_w_WBp, &Js_v_WBp);
+  Matrix6X<T> Js_V_WAp(6, n);
+  auto Js_w_WAp = Js_V_WAp.template topRows<3>();
+  auto Js_v_WAp = Js_V_WAp.template bottomRows<3>();
+  if (A_is_world) {
+    Js_V_WAp.setZero();
+  } else {
+    CalcJacobianAngularAndOrTranslationalVelocityInWorld(
+        context, with_respect_to, frame_A, p_WP, &Js_w_WAp, &Js_v_WAp);
+  }
+  Matrix3X<T> Js_w_WE(3, n);
+  if (E_is_world) {
+    Js_w_WE.setZero();
+  } else {
+    CalcJacobianAngularAndOrTranslationalVelocityInWorld(
+        context, with_respect_to, frame_E, p_WP, &Js_w_WE, nullptr);
+  }
+
+  const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
+  const FrameBodyPoseCache<T>& fbpc = EvalFrameBodyPoses(context);
+
+  // The first index in 𝑠 and the number of speeds of a mobilized body.
+  auto span = [&](const SpanningForest::Mobod& mobod) {
+    return is_wrt_qdot ? std::pair(mobod.q_start(), mobod.nq())
+                       : std::pair(mobod.v_start(), mobod.nv());
+  };
+
+  // Stack-allocated buffers for the same-node terms (nq ≤ 7, nv ≤ 6).
+  Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, 0, 42, 6> dH_FM_dq;
+  Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, 0, 7, 6> N;
+  Eigen::Matrix<T, 6, Eigen::Dynamic, 0, 6, 6> DiH_FM;
+
+  // Calls f(j) for each potentially nonzero column j of the output, i.e., those
+  // of the mobilities outboard of C on the paths to B and A.
+  auto for_each_column = [&](auto&& f) {
+    for (const std::vector<MobodIndex>* path : {&path_B, &path_A}) {
+      for (int level = level_C + 1; level < ssize(*path); ++level) {
+        const auto [start, count] = span(forest.mobods((*path)[level]));
+        for (int jj = 0; jj < count; ++jj) f(start + jj);
+      }
+    }
+  };
+
+  // Accumulates sign ⋅ Dₘ(J.col(j)) into slice m, column j, for the
+  // mobilities m of the node at level_m on `path` and the columns j of that
+  // path, where J (= Js_V_WBp or Js_V_WAp) is the path's Jacobian at P and
+  // column j of J is the unit twist [w_j; v_j] of mobility j at P:
+  //  - m upstream of j:    [w_m×w_j; w_m×v_j]   (j's node and P move with m);
+  //  - m downstream of j:  [0; w_j×v_m]         (only P moves);
+  //  - same node:          [a; b + a×p_MoP + w_j×(w_m×p_MoP)], where
+  //    [a; b] = R_WF⋅DₘH_FM.col(j), DₘH_FM = Σₖ N(k,m)⋅∂H_FM/∂qₖ, and
+  //    p_MoP rotates at rate w_m×p_MoP.
+  auto add_path_terms = [&](const std::vector<MobodIndex>& path,
+                            const Matrix6X<T>& J, const int level_m,
+                            const double sign) {
+    const BodyNode<T>& node_m = *body_nodes_[path[level_m]];
+    const SpanningForest::Mobod& mobod_m = node_m.mobod();
+    const int nv_m = mobod_m.nv();
+    const int nq_m = mobod_m.nq();
+    const auto [start_m, ns_m] = span(mobod_m);
+    if (ns_m == 0) return;
+
+    // Same-node terms occur only if node_m is itself a column node.
+    const bool has_same_node_terms = (level_m > level_C);
+    const Mobilizer<T>& mobilizer_m = node_m.get_mobilizer();
+    math::RotationMatrix<T> R_WF;
+    Vector3<T> p_MoP_W;
+    bool partials_are_zero = false;
+    if (has_same_node_terms) {
+      const Frame<T>& frame_F = node_m.inboard_frame();
+      const Frame<T>& frame_M = node_m.outboard_frame();
+      R_WF = pc.get_R_WB(node_m.inboard_mobod_index()) *
+             frame_F.get_X_BF(fbpc).rotation();
+      const math::RigidTransform<T>& X_WB = pc.get_X_WB(mobod_m.index());
+      Vector3<T> p_WoMo = X_WB.translation();
+      if (!frame_M.is_X_BF_identity(fbpc)) {
+        p_WoMo += X_WB.rotation() * frame_M.get_X_BF(fbpc).translation();
+      }
+      p_MoP_W = p_WP - p_WoMo;
+      dH_FM_dq.resize(6 * nq_m, nv_m);
+      mobilizer_m.CalcHMatrixPartials(context, &dH_FM_dq);
+      // N(q) is needed only if some partial is nonzero (today, no mobilizer
+      // with q̇ ≠ v has one), and it may be singular (e.g. at gimbal lock) or
+      // unverifiable (symbolic q). With AutoDiff, a zero partial must also have
+      // zero derivatives.
+      auto is_zero = [](const T& x) {
+        if constexpr (std::is_same_v<T, double>) {
+          return x == 0;
+        } else if constexpr (std::is_same_v<T, AutoDiffXd>) {
+          return x.value() == 0 && x.derivatives().isZero(0);
+        } else {
+          return symbolic::is_zero(x);
+        }
+      };
+      partials_are_zero = dH_FM_dq.unaryExpr(is_zero).all();
+      if (!mobilizer_m.is_velocity_equal_to_qdot() && !partials_are_zero) {
+        N.resize(nq_m, nv_m);
+        mobilizer_m.CalcNMatrix(context, &N);
+      }
+    }
+
+    for (int i = 0; i < ns_m; ++i) {
+      const int m = start_m + i;
+      Matrix6X<T>& slice = (*Hs_V_ABp_E)[m];
+      const Vector3<T> w_m = J.col(m).template head<3>();
+      const Vector3<T> v_m = J.col(m).template tail<3>();
+      if (has_same_node_terms) {
+        if (mobilizer_m.is_velocity_equal_to_qdot()) {
+          DiH_FM = dH_FM_dq.middleRows(6 * i, 6);
+        } else {
+          DiH_FM.setZero(6, nv_m);
+          if (!partials_are_zero) {
+            for (int k = 0; k < nq_m; ++k) {
+              DiH_FM += N(k, i) * dH_FM_dq.middleRows(6 * k, 6);
+            }
+          }
+        }
+      }
+      for (int level_j = level_C + 1; level_j < ssize(path); ++level_j) {
+        const auto [start_j, count_j] = span(forest.mobods(path[level_j]));
+        for (int jj = 0; jj < count_j; ++jj) {
+          const int j = start_j + jj;
+          const Vector3<T> w_j = J.col(j).template head<3>();
+          const Vector3<T> v_j = J.col(j).template tail<3>();
+          auto column = slice.col(j);
+          if (level_m < level_j) {
+            column.template head<3>() += sign * w_m.cross(w_j);
+            column.template tail<3>() += sign * w_m.cross(v_j);
+          } else if (level_m > level_j) {
+            column.template tail<3>() += sign * w_j.cross(v_m);
+          } else {
+            const Vector3<T> a = R_WF * DiH_FM.col(jj).template head<3>();
+            const Vector3<T> b = R_WF * DiH_FM.col(jj).template tail<3>();
+            column.template head<3>() += sign * a;
+            column.template tail<3>() +=
+                sign * (b + a.cross(p_MoP_W) + w_j.cross(w_m.cross(p_MoP_W)));
+          }
+        }
+      }
+    }
+  };
+
+  // Js_V_WAp is evaluated at the point of A coincident with P, which moves
+  // relative to A at rate Dₘ(p_AoP) = v^B_m − v^A_m. This adds
+  // −[0; w^A_j×(v^B_m − v^A_m)] to slice m for the columns j from A's path.
+  auto add_point_motion_terms = [&](const std::vector<MobodIndex>& path,
+                                    const int level_m) {
+    const auto [start_m, ns_m] = span(forest.mobods(path[level_m]));
+    for (int i = 0; i < ns_m; ++i) {
+      const int m = start_m + i;
+      Matrix6X<T>& slice = (*Hs_V_ABp_E)[m];
+      const Vector3<T> dp_AoP = Js_v_WBp.col(m) - Js_v_WAp.col(m);
+      for (int level_j = level_C + 1; level_j < ssize(path_A); ++level_j) {
+        const auto [start_j, count_j] = span(forest.mobods(path_A[level_j]));
+        for (int jj = 0; jj < count_j; ++jj) {
+          const int j = start_j + jj;
+          const Vector3<T> w_A_j = Js_w_WAp.col(j);
+          slice.col(j).template tail<3>() -= w_A_j.cross(dp_AoP);
+        }
+      }
+    }
+  };
+
+  // Mobilities at levels ≤ level_C are on both paths and move A and B alike.
+  for (int level = 1; level < ssize(path_B); ++level) {
+    add_path_terms(path_B, Js_V_WBp, level, 1.0);
+    if (level <= level_C) add_path_terms(path_A, Js_V_WAp, level, -1.0);
+  }
+  for (int level = level_C + 1; level < ssize(path_A); ++level) {
+    add_path_terms(path_A, Js_V_WAp, level, -1.0);
+  }
+  for (int level = level_C + 1; level < ssize(path_B); ++level) {
+    add_point_motion_terms(path_B, level);
+  }
+  for (int level = level_C + 1; level < ssize(path_A); ++level) {
+    add_point_motion_terms(path_A, level);
+  }
+
+  // Re-express in E. Since Ṙ_EW = −R_EW⋅[w_WE]ₓ, the derivative of
+  // R_EW⋅J𝑠_V_ABp_W is R_EW⋅(Dₘ(J𝑠_V_ABp_W) − w^E_m × J𝑠_V_ABp_W), the cross
+  // product applied to both 3-row blocks, with w^E_m ≠ 0 only on E's path.
+  if (!frame_E.is_world_frame()) {
+    const math::RotationMatrix<T> R_EW =
+        CalcRelativeRotationMatrix(context, frame_E, world_frame());
+    auto reexpress_slices = [&](const std::vector<MobodIndex>& path,
+                                const int level_m, const bool m_is_on_path_E) {
+      const auto [start_m, ns_m] = span(forest.mobods(path[level_m]));
+      for (int i = 0; i < ns_m; ++i) {
+        const int m = start_m + i;
+        Matrix6X<T>& slice = (*Hs_V_ABp_E)[m];
+        for_each_column([&](const int j) {
+          Vector6<T> column = slice.col(j);
+          if (m_is_on_path_E) {
+            const Vector3<T> w_E_m = Js_w_WE.col(m);
+            const Vector6<T> J_W_j = Js_V_WBp.col(j) - Js_V_WAp.col(j);
+            column.template head<3>() -= w_E_m.cross(J_W_j.template head<3>());
+            column.template tail<3>() -= w_E_m.cross(J_W_j.template tail<3>());
+          }
+          slice.col(j).template head<3>() = R_EW * column.template head<3>();
+          slice.col(j).template tail<3>() = R_EW * column.template tail<3>();
+        });
+      }
+    };
+    auto is_on_path_E = [&](const MobodIndex mobod, const int level) {
+      return level < ssize(path_E) && path_E[level] == mobod;
+    };
+    for (int level = 1; level < ssize(path_B); ++level) {
+      reexpress_slices(path_B, level, is_on_path_E(path_B[level], level));
+    }
+    for (int level = level_C + 1; level < ssize(path_A); ++level) {
+      reexpress_slices(path_A, level, is_on_path_E(path_A[level], level));
+    }
+    for (int level = level_CE + 1; level < ssize(path_E); ++level) {
+      reexpress_slices(path_E, level, true);
+    }
   }
 }
 
