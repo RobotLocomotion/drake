@@ -85,11 +85,6 @@ mkdir -p "${project}"
 ln -nsf "${setup}/pyproject.toml" "${project}/pyproject.toml"
 ln -nsf "${setup}/pdm.lock" "${project}/pdm.lock"
 
-# Don't nag about new versions of PDM; venv_upgrade will check for those.
-# Aside from that, we want to use the pinned version, so being informed about
-# newer versions is just noise.
-export PDM_CHECK_UPDATE=0
-
 # Prepare the venv that will hold Drake's requirements.
 readonly venv_drake="${drake_python}/venv.drake"
 mkvenv "${venv_drake}"
