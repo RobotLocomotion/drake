@@ -355,6 +355,10 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
   void DoCalcNplusDotMatrix(const systems::Context<T>& context,
                             EigenPtr<MatrixX<T>> NplusDot) const final;
 
+  // H_FM does not depend on q, so ∂H_FM/∂qₖ = 0.
+  void DoCalcHMatrixPartials(const systems::Context<T>& context,
+                             EigenPtr<MatrixX<T>> dH_FM_dq) const final;
+
   void DoMapVelocityToQDot(const systems::Context<T>& context,
                            const Eigen::Ref<const VectorX<T>>& v,
                            EigenPtr<VectorX<T>> qdot) const final;

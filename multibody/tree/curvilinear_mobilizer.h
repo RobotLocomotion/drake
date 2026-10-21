@@ -221,6 +221,11 @@ class CurvilinearMobilizer final : public MobilizerImpl<T, 1, 1> {
   void DoCalcNplusDotMatrix(const systems::Context<T>& context,
                             EigenPtr<MatrixX<T>> NplusDot) const final;
 
+  // ∂H_FM/∂q is calc_A_FM(q, v = 1, v̇ = 0), since A_FM = (∂H_FM/∂q)⋅v² when
+  // q̇ = v and v̇ = 0 (one-sided, from the right, at the path's breaks).
+  void DoCalcHMatrixPartials(const systems::Context<T>& context,
+                             EigenPtr<MatrixX<T>> dH_FM_dq) const final;
+
   // Maps v to qdot, which for this mobilizer is q̇ = v.
   void DoMapVelocityToQDot(const systems::Context<T>& context,
                            const Eigen::Ref<const VectorX<T>>& v,

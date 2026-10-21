@@ -204,6 +204,15 @@ TEST_F(RevoluteMobilizerTest, CalcAcrossMobilizerSpatialAcceleration) {
   EXPECT_TRUE(A_FM.IsApprox(A_FM_expected, kTolerance));
 }
 
+TEST_F(RevoluteMobilizerTest, CalcHMatrixPartials) {
+  mobilizer_->SetAngle(context_.get(), 1.5);
+  Eigen::MatrixXd dH_FM_dq =
+      Eigen::MatrixXd::Constant(6, 1, std::numeric_limits<double>::quiet_NaN());
+  mobilizer_->CalcHMatrixPartials(*context_, &dH_FM_dq);
+  EXPECT_TRUE(CompareMatrices(dH_FM_dq, Eigen::MatrixXd::Zero(6, 1)));
+  TestHMatrixPartials(*mobilizer_, context_.get());
+}
+
 TEST_F(RevoluteMobilizerTest, ProjectSpatialForce) {
   const Vector3d torque_Mo_F(1.0, 2.0, 3.0);
   const Vector3d force_Mo_F(1.0, 2.0, 3.0);
