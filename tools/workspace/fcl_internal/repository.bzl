@@ -7,8 +7,8 @@ def fcl_internal_repository(
         name = name,
         repository = "flexible-collision-library/fcl",
         upgrade_type = "commit",
-        commit = "708d2e102c12968557b70bf6785d473456310de5",
-        sha256 = "86cbeea09fa06159cc2518f9433ed97eeebe87e65c6a2bc78911a656744561bb",  # noqa
+        commit = "ae86ecde788086110f8a4cea54ae1949df8a21d3",
+        sha256 = "4fa2e0862f5b378379cb17725666de02af70d72ad06d96db0b6df8fb596b5c5a",  # noqa
         build_file = ":package.BUILD.bazel",
         patches = [
             ":patches/thread_safe_collision_object_copy_constructor.patch",
