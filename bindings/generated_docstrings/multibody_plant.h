@@ -3674,6 +3674,89 @@ Returns:
     mechanical kinetic energy, some other potential energy, or heat,
     and therefore to a decrease of the gravitational potential energy.)""";
         } CalcGravityGeneralizedForces;
+        // Symbol: drake::multibody::MultibodyPlant::CalcHessianSpatialVelocity
+        struct /* CalcHessianSpatialVelocity */ {
+          // Source: drake/multibody/plant/multibody_plant.h
+          const char* doc =
+R"""(For one point Bp fixed/welded to a frame B, calculates H𝑠_V_ABp, the
+partial derivatives with respect to "speeds" 𝑠 of J𝑠_V_ABp, Bp's
+spatial velocity Jacobian in frame A with respect to 𝑠 (see
+CalcJacobianSpatialVelocity()).
+
+
+.. raw:: html
+
+    <details><summary>Click to expand C++ code...</summary>
+
+.. code-block:: c++
+
+    H𝑠_V_ABp ≜ [ ∂(J𝑠_V_ABp)/∂𝑠₁, ... ∂(J𝑠_V_ABp)/∂𝑠ₙ ]    (n is j or k)
+
+.. raw:: html
+
+    </details>
+
+"speeds" 𝑠 is either q̇ ≜ [q̇₁ ... q̇ⱼ]ᵀ (time-derivatives of j
+generalized positions) or v ≜ [v₁ ... vₖ]ᵀ (k generalized velocities).
+Since J𝑠_V_ABp_E depends only on the generalized positions q,
+∂(J𝑠_V_ABp_E)/∂𝑠ᵢ denotes the time derivative in frame E of J𝑠_V_ABp_E
+(i.e., of its elements) when 𝑠 = eᵢ (𝑠ᵢ = 1 and all other speeds are
+zero). For 𝑠 = q̇ this is ∂(J𝑠_V_ABp_E)/∂qᵢ. For 𝑠 = v it is Σₖ
+∂(J𝑠_V_ABp_E)/∂qₖ ⋅ Nₖᵢ(q), where q̇ = N(q)⋅v; the two coincide for
+joints with q̇ = v (e.g., revolute, prismatic, and planar joints).
+Because the derivative is taken in frame E, the choice of frame_E
+changes the result by more than a re-expression.
+
+Parameter ``context``:
+    The state of the multibody system.
+
+Parameter ``with_respect_to``:
+    Enum equal to JacobianWrtVariable∷kQDot or JacobianWrtVariable∷kV,
+    indicating whether 𝑠 = q̇ (time-derivatives of generalized
+    positions) or 𝑠 = v (generalized velocities), both for the
+    Jacobian ``J𝑠_V_ABp`` and for its partial derivatives.
+
+Parameter ``frame_B``:
+    The frame on which point Bp is fixed/welded.
+
+Parameter ``p_BoBp_B``:
+    A position vector from Bo (frame_B's origin) to point Bp (regarded
+    as fixed/welded to B), expressed in frame_B.
+
+Parameter ``frame_A``:
+    The frame that measures ``v_ABp`` (Bp's velocity in A); see
+    CalcJacobianSpatialVelocity() for why there is no p_AoAp_A.
+
+Parameter ``frame_E``:
+    The frame in which the partial derivatives are taken and in which
+    ``J𝑠_V_ABp`` and its partial derivatives are expressed.
+
+Parameter ``Hs_V_ABp_E``:
+    On output, a list of n matrices (resized as needed), where n is
+    the number of elements in 𝑠, whose iᵗʰ element is
+    ``∂(J𝑠_V_ABp_E)/∂𝑠ᵢ``, a ``6 x n`` matrix with the same rows and
+    columns as ``J𝑠_V_ABp_E``. The result is a function of only
+    generalized positions q (which are pulled from the context).
+
+Note:
+    For joints with q̇ ≠ v (e.g., floating and ball joints), the
+    partial derivatives of ``Jv_V_ABp_E`` with respect to q can be
+    recovered from the 𝑠 = v result as ``∂(Jv_V_ABp_E)/∂qₖ = Σᵢ
+    ∂(Jv_V_ABp_E)/∂vᵢ ⋅ N⁺ᵢₖ(q)``, where ``N⁺(q)`` is returned by
+    MakeQDotToVelocityMap() (valid for unit quaternions and for
+    roll-pitch-yaw angles away from gimbal lock).
+
+See also:
+    See Jacobian_functions "Jacobian functions" for related functions.
+
+Raises:
+    RuntimeError if ``Hs_V_ABp_E`` is nullptr.
+
+Raises:
+    RuntimeError if ``with_respect_to`` is JacobianWrtVariable∷kQDot
+    and a joint with q̇ ≠ v (e.g., a floating or ball joint) is on the
+    kinematic path between frame_A and frame_B (not yet supported).)""";
+        } CalcHessianSpatialVelocity;
         // Symbol: drake::multibody::MultibodyPlant::CalcInverseDynamics
         struct /* CalcInverseDynamics */ {
           // Source: drake/multibody/plant/multibody_plant.h
