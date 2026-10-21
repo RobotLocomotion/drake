@@ -99,31 +99,6 @@ drake_py_experiment_binary(
 )
 
 drake_cc_googlebench_binary(
-    name = "minimum_distance_constraint",
-    srcs = ["minimum_distance_constraint.cc"],
-    data = [
-        "@drake_models//:iiwa_description",
-    ],
-    deps = [
-        "//math:gradient",
-        "//multibody/inverse_kinematics:kinematic_evaluators",
-        "//planning:robot_diagram_builder",
-        "//planning:scene_graph_collision_checker",
-        "//tools/performance:fixture_common",
-    ],
-    add_test_rule = True,
-    test_rule_args = [
-        # When testing, only run the smallest test.
-        "--benchmark_filter=.*/1/1$$",
-    ],
-)
-
-drake_py_experiment_binary(
-    name = "minimum_distance_constraint_experiment",
-    googlebench_binary = ":minimum_distance_constraint",
-)
-
-drake_cc_googlebench_binary(
     name = "position_constraint",
     srcs = ["position_constraint.cc"],
     data = [
