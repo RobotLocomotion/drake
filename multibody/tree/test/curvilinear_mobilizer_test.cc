@@ -190,6 +190,15 @@ TEST_F(CurvilinearMobilizerTest, CalcAcrossMobilizerSpatialAcceleration) {
   EXPECT_TRUE(A_FM_M_inline.IsApprox(A_FM_M_expected, kEpsilon));
 }
 
+TEST_F(CurvilinearMobilizerTest, CalcHMatrixPartials) {
+  // On a circular arc H_FM's tangent turns with the distance; on a straight
+  // segment H_FM is constant.
+  for (const double distance : {0.25 * M_PI / k_, l_ / 2 + M_PI / k_}) {
+    mobilizer_->SetDistance(context_.get(), distance);
+    TestHMatrixPartials(*mobilizer_, context_.get());
+  }
+}
+
 TEST_F(CurvilinearMobilizerTest, ProjectSpatialForce) {
   const Vector3d torque_Mo_F(1.0, 2.0, 3.0);
   const Vector3d force_Mo_F(1.0, 2.0, 3.0);

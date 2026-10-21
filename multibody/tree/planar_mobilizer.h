@@ -249,6 +249,10 @@ class PlanarMobilizer final : public MobilizerImpl<T, 3, 3> {
   void DoCalcNplusDotMatrix(const systems::Context<T>& context,
                             EigenPtr<MatrixX<T>> NplusDot) const final;
 
+  // H_FM does not depend on q, so ∂H_FM/∂qₖ = 0.
+  void DoCalcHMatrixPartials(const systems::Context<T>& context,
+                             EigenPtr<MatrixX<T>> dH_FM_dq) const final;
+
   // Maps vdot to qddot, which for this mobilizer is q̈ = v̇.
   void DoMapAccelerationToQDDot(const systems::Context<T>& context,
                                 const Eigen::Ref<const VectorX<T>>& vdot,

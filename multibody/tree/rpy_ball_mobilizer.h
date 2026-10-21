@@ -276,6 +276,10 @@ class RpyBallMobilizer final : public MobilizerImpl<T, 3, 3> {
   void DoCalcNplusDotMatrix(const systems::Context<T>& context,
                             EigenPtr<MatrixX<T>> NplusDot) const final;
 
+  // H_FM does not depend on q, so ∂H_FM/∂qₖ = 0.
+  void DoCalcHMatrixPartials(const systems::Context<T>& context,
+                             EigenPtr<MatrixX<T>> dH_FM_dq) const final;
+
   // Maps the generalized velocity v, which corresponds to the angular velocity
   // w_FM, to time derivatives of roll-pitch-yaw angles θ₀, θ₁, θ₂ in qdot.
   //

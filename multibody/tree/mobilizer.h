@@ -110,6 +110,11 @@ class BodyNode;
 //     in its inboard frame F, expressed in F) as
 //     `A_FM(q, v, v̇) = H_FM(q) * v̇ + Ḣ_FM(q, v) * v`.  The %Mobilizer method
 //     CalcAcrossMobilizerSpatialAcceleration() calculates `A_FM`.
+// - ∂H_FM/∂qₖ:
+//     The partial derivative of the mobilizer hinge matrix `H_FM` with respect
+//     to the kᵗʰ generalized position `qₖ`, a `6 x nv` matrix for each of the
+//     `nq` generalized positions.  The %Mobilizer method CalcHMatrixPartials()
+//     calculates these.
 // - N(q):
 //     This `nq x nv` kinematic coupling matrix relates q̇ (the time-derivative
 //     of the nq mobilizer's generalized positions) to `v` (the mobilizer's
@@ -631,6 +636,20 @@ class Mobilizer : public MultibodyElement<T> {
     DoCalcNplusDotMatrix(context, NplusDot);
   }
 
+  // Computes the partial derivatives ∂H_FM/∂qₖ of the hinge matrix H_FM(q)
+  // with respect to each of this mobilizer's nq generalized positions qₖ,
+  // expressed in frame F (see the class documentation for H_FM).
+  // @param[in] context stores generalized positions q.
+  // @param[out] dH_FM_dq On input it must have size (6⋅nq) x nv. On output,
+  //   rows 6k through 6k+5 store the 6 x nv matrix ∂H_FM/∂qₖ.
+  void CalcHMatrixPartials(const systems::Context<T>& context,
+                           EigenPtr<MatrixX<T>> dH_FM_dq) const {
+    DRAKE_DEMAND(dH_FM_dq != nullptr);
+    DRAKE_DEMAND(dH_FM_dq->rows() == 6 * num_positions());
+    DRAKE_DEMAND(dH_FM_dq->cols() == num_velocities());
+    DoCalcHMatrixPartials(context, dH_FM_dq);
+  }
+
   virtual bool is_velocity_equal_to_qdot() const = 0;
 
   // Computes the kinematic mapping `q̇ = N(q)⋅v` between generalized
@@ -826,6 +845,11 @@ class Mobilizer : public MultibodyElement<T> {
   //  been overridden in all subclasses.
   virtual void DoCalcNplusDotMatrix(const systems::Context<T>& context,
                                     EigenPtr<MatrixX<T>> NplusDot) const;
+
+  // NVI to CalcHMatrixPartials(). Implementations can safely assume that
+  // dH_FM_dq is not the nullptr and that dH_FM_dq has the proper size.
+  virtual void DoCalcHMatrixPartials(const systems::Context<T>& context,
+                                     EigenPtr<MatrixX<T>> dH_FM_dq) const = 0;
 
   // NVI to MapVelocityToQDot(). Implementations can safely assume that
   // v has size kNv, qdot is not the nullptr, and qdot has size kNq.

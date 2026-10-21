@@ -142,6 +142,12 @@ void RevoluteMobilizer<T>::DoCalcNplusDotMatrix(
 }
 
 template <typename T>
+void RevoluteMobilizer<T>::DoCalcHMatrixPartials(
+    const systems::Context<T>&, EigenPtr<MatrixX<T>> dH_FM_dq) const {
+  dH_FM_dq->setZero();
+}
+
+template <typename T>
 void RevoluteMobilizer<T>::DoMapVelocityToQDot(
     const systems::Context<T>&, const Eigen::Ref<const VectorX<T>>& v,
     EigenPtr<VectorX<T>> qdot) const {

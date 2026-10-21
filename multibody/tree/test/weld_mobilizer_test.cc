@@ -71,6 +71,13 @@ TEST_F(WeldMobilizerTest, CalcAcrossMobilizerTransform) {
   TestPrePostMultiplyByX_FM(X_FM, *weld_body_to_world_);
 }
 
+TEST_F(WeldMobilizerTest, CalcHMatrixPartials) {
+  Eigen::MatrixXd dH_FM_dq(0, 0);
+  weld_body_to_world_->CalcHMatrixPartials(*context_, &dH_FM_dq);
+  EXPECT_TRUE(CompareMatrices(dH_FM_dq, Eigen::MatrixXd::Zero(0, 0)));
+  TestHMatrixPartials(*weld_body_to_world_, context_.get());
+}
+
 TEST_F(WeldMobilizerTest, CalcAcrossMobilizerSpatialVeloctiy) {
   const VectorXd zero_sized_vector(0);
   const SpatialVelocity<double> V_FM =
