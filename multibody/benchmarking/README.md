@@ -90,11 +90,6 @@ https://github.com/google/benchmark#command-line
 
 A benchmark for InverseKinematics.
 
-# minimum_distance_constraint
-
-A benchmark for MinimumDistanceLowerBoundConstraint evaluated in AutoDiffXd,
-constructed from a SceneGraphCollisionChecker or from a MultibodyPlant.
-
 # position_constraint
 
 A benchmarks for PositionConstraint.
