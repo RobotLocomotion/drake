@@ -167,8 +167,10 @@ void ModelInstance<T>::SetVelocitiesInArray(
     EigenPtr<VectorX<T>> v_array) const {
   DRAKE_THROW_UNLESS(this->has_parent_tree());
   DRAKE_DEMAND(v_array != nullptr);
-  DRAKE_DEMAND(v_array->size() == this->get_parent_tree().num_velocities());
-  DRAKE_DEMAND(model_v.size() == num_velocities());
+  if (v_array->size() != this->get_parent_tree().num_velocities() ||
+      model_v.size() != num_velocities()) {
+    throw std::logic_error("Passed in array(s) is not properly sized.");
+  }
   int velocity_offset = 0;
   for (const Mobilizer<T>* mobilizer : mobilizers_) {
     const int mobilizer_velocities = mobilizer->num_velocities();
