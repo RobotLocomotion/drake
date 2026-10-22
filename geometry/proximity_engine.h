@@ -381,11 +381,23 @@ class ProximityEngine {
   // copyable unique_ptr
   //
   // The implementation details.
+  //
+  // ImplBase is the backend-agnostic handle this class holds; Impl is the
+  // backend-parameterized implementation that derives from it. The split
+  // exists so that this header never has to name a backend policy, and
+  // therefore never has to include a collision library. See
+  // geometry/proximity/fcl_backend.h for what a backend policy is.
+  class ImplBase;
+  template <typename Backend>
   class Impl;
-  Impl* impl_{};
+  ImplBase* impl_{};
+
+  // Creates an implementation on the backend this engine should use. The
+  // single place that decides; run-time selection will land here.
+  static ImplBase* MakeImpl();
 
   // Private constructor to use for scalar conversion.
-  explicit ProximityEngine(Impl* impl);
+  explicit ProximityEngine(ImplBase* impl);
 
   // Engine on one scalar can see the members of other engines.
   template <typename>
@@ -394,19 +406,20 @@ class ProximityEngine {
   // Facilitate testing.
   friend class ProximityEngineTester;
 
-  // Reports if the geometry with the given id is represented by an fcl::Convex.
+  // Reports if the geometry with the given id is represented by a convex hull.
   // This function exists solely for the purpose tracking the "represent Mesh
   // as Convex" logic in other unit tests. When we represent meshes as
   // non-convex entities in their own right, we can remove this method.
   // This very specifically does *not* answer the question of whether the
   // underlying shape is *mathematically* convex, just that it is implemented
-  // as fcl::Convex.
-  bool IsFclConvexType(GeometryId id) const;
+  // as a convex hull.
+  bool IsConvexType(GeometryId id) const;
 
-  // Returns the fcl::CollisionObjectd associated with the geometry id. In order
-  // to keep the fcl dependency in the implementation only, we type erase the
+  // Returns the backend's collision object associated with the geometry id. In
+  // order to keep the collision library in the implementation only, we type
+  // erase the
   // pointer type. But if the return value is not null, it can be safely cast to
-  // fcl::CollisionObjectd*. This is for testing only.
+  // the backend's object type. This is for testing only.
   void* GetCollisionObject(GeometryId id) const;
 
   // Returns the number of top-level file entries in the convex hull cache.

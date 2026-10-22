@@ -67,7 +67,7 @@ class CharacterizePointPairResultTest
  However, this single test will detect when that condition is no longer true
  and call for implementation of *-Mesh tests. */
 GTEST_TEST(CharacterizePointPairResultTest, MeshMesh) {
-  ASSERT_TRUE(MeshIsConvexInFcl());
+  ASSERT_TRUE(MeshIsConvexInEngine());
 }
 
 class DoubleTest : public CharacterizePointPairResultTest<double>,

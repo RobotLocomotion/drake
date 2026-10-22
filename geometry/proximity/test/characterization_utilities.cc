@@ -379,12 +379,12 @@ void MakeBackendShape<Backend>::ImplementGeometry(const Sphere& sphere, void*) {
 class ProximityEngineTester {
  public:
   template <typename T>
-  static bool IsFclConvexType(const ProximityEngine<T>& engine, GeometryId id) {
-    return engine.IsFclConvexType(id);
+  static bool IsConvexType(const ProximityEngine<T>& engine, GeometryId id) {
+    return engine.IsConvexType(id);
   }
 };
 
-::testing::AssertionResult MeshIsConvexInFcl() {
+::testing::AssertionResult MeshIsConvexInEngine() {
   // Create a small obj in a temp directory.
   const std::string obj_path = temp_directory() + "/tri.obj";
   {
@@ -402,15 +402,15 @@ class ProximityEngineTester {
   }
 
   // Add the mesh into a proximity engine and confirm it is represented by a
-  // fcl::Convex.
+  // a convex hull.
   ProximityEngine<double> engine;
   const GeometryId id = GeometryId::get_new_id();
   engine.AddDynamicGeometry(Mesh(obj_path, 1.0), {}, id);
-  if (ProximityEngineTester::IsFclConvexType(engine, id)) {
+  if (ProximityEngineTester::IsConvexType(engine, id)) {
     return ::testing::AssertionSuccess();
   }
   return ::testing::AssertionFailure()
-         << "A Mesh shape is no longer represented by an fcl::Convex in "
+         << "A Mesh shape is no longer represented by a convex hull in "
          << "ProximityEngine. We need to explicitly characterize Mesh-Shape "
          << "queries for all Shape types.";
 }

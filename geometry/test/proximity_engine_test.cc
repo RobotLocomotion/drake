@@ -84,8 +84,8 @@ class ProximityEngineTester {
   }
 
   template <typename T>
-  static bool IsFclConvexType(const ProximityEngine<T>& engine, GeometryId id) {
-    return engine.IsFclConvexType(id);
+  static bool IsConvexType(const ProximityEngine<T>& engine, GeometryId id) {
+    return engine.IsConvexType(id);
   }
 
   template <typename T>

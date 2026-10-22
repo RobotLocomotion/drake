@@ -85,7 +85,7 @@ class CharacterizeShapeDistanceResultTest
  However, this single test will detect when that condition is no longer true
  and call for implementation of *-Mesh tests. */
 GTEST_TEST(CharacterizeShapeDistanceResultTest, MeshMesh) {
-  ASSERT_TRUE(MeshIsConvexInFcl());
+  ASSERT_TRUE(MeshIsConvexInEngine());
 }
 
 class DoubleTest : public CharacterizeShapeDistanceResultTest<double>,

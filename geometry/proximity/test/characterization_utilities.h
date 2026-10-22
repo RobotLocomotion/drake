@@ -282,8 +282,9 @@ class DRAKE_NO_EXPORT MakeBackendShape : public ShapeReifier {
   std::shared_ptr<typename Backend::Geometry> object_{};
 };
 
-/* Reports if the Mesh shape is represented as a Convex shape under the hood. */
-::testing::AssertionResult MeshIsConvexInFcl();
+/* Reports if the Mesh shape is represented as a convex hull under the hood.
+ */
+::testing::AssertionResult MeshIsConvexInEngine();
 
 /* Creates a transform to align two planes. The planes are defined by a
  (point, normal) pair -- the point lies on the plane and the normal is
