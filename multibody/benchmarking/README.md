@@ -7,6 +7,14 @@ This is a simple benchmarking program that uses the acrobot plant to benchmark
 the performance of various plant operations under autodiff.  It is used by
 Drake developers to detect and avoid performance regressions.
 
+# anchored_geometry
+
+Measures the cost of collision geometry that is fixed in the world but is
+registered on bodies welded to the world (as the Parser does for static models)
+against the same geometry registered on the world body (anchored geometry): a
+grid of static boxes with one free box resting on it, timing the point-pair
+contact query and a discrete simulation step for growing numbers of boxes.
+
 # cassie
 
 This is a real-world example of a medium-sized robot with timing
