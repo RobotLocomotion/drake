@@ -181,6 +181,18 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "collision_backend",
+    hdrs = ["collision_backend.h"],
+    internal = True,
+    visibility = [
+        "//geometry:__pkg__",
+    ],
+    deps = [
+        ":fcl_backend",
+    ],
+)
+
+drake_cc_library(
     name = "collision_filter",
     srcs = ["collision_filter.cc"],
     hdrs = ["collision_filter.h"],
@@ -201,11 +213,11 @@ drake_cc_library(
         "//geometry:__pkg__",
     ],
     deps = [
+        ":collision_backend",
         ":collision_filter",
         ":proximity_utilities",
         "//common:drake_export",
         "//geometry:geometry_ids",
-        "@fcl_internal//:fcl",
     ],
 )
 
@@ -416,11 +428,11 @@ drake_cc_library(
         "//geometry:__pkg__",
     ],
     deps = [
+        ":collision_backend",
         ":collision_filter",
         ":proximity_utilities",
         "//common:drake_export",
         "//common:sorted_pair",
-        "@fcl_internal//:fcl",
         "@fmt",
     ],
 )
@@ -1242,6 +1254,7 @@ drake_cc_googletest(
     name = "collisions_exist_callback_test",
     deps = [
         ":collisions_exist_callback",
+        ":fcl_backend",
     ],
 )
 
@@ -1416,6 +1429,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "find_collision_candidates_callback_test",
     deps = [
+        ":fcl_backend",
         ":find_collision_candidates_callback",
     ],
 )
