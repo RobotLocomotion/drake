@@ -871,12 +871,13 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     find_collision_candidates::CallbackData data{&collision_filter_, &pairs};
 
     // Perform a query of the dynamic objects against themselves.
-    dynamic_tree_.collide(&data, find_collision_candidates::Callback);
+    dynamic_tree_.collide(&data,
+                          find_collision_candidates::Callback<FclBackend>);
 
     // Perform a query of the dynamic objects against the anchored. We don't do
     // anchored against anchored because those pairs are implicitly filtered.
     FclCollide(dynamic_tree_, anchored_tree_, &data,
-               find_collision_candidates::Callback);
+               find_collision_candidates::Callback<FclBackend>);
 
     std::sort(pairs.begin(), pairs.end());
 
@@ -885,10 +886,10 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
 
   bool HasCollisions() const {
     // All these quantities are aliased in the callback data.
-    has_collisions::CallbackData data{&collision_filter_};
+    has_collisions::CallbackData<FclBackend> data{&collision_filter_};
 
     // Perform a query of the dynamic objects against themselves.
-    dynamic_tree_.collide(&data, has_collisions::Callback);
+    dynamic_tree_.collide(&data, has_collisions::Callback<FclBackend>);
 
     // Testing to see if we've already discovered collisions here is not just
     // a matter of efficiency; it is a matter of correctness. If the only
@@ -899,7 +900,8 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
 
     // Perform a query of the dynamic objects against the anchored. We don't do
     // anchored against anchored because those pairs are implicitly filtered.
-    FclCollide(dynamic_tree_, anchored_tree_, &data, has_collisions::Callback);
+    FclCollide(dynamic_tree_, anchored_tree_, &data,
+               has_collisions::Callback<FclBackend>);
     return data.collisions_exist;
   }
 

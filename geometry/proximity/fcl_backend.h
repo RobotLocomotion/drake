@@ -82,6 +82,31 @@ struct FclBackend {
    PolygonSurfaceMesh encoding -- [count, v0, v1, ..., count, ...] -- as is. */
   using FaceData = std::vector<int>;
 
+  using CollisionRequest = fcl::CollisionRequestd;
+  using CollisionResult = fcl::CollisionResultd;
+
+  /* Configures a request asking only whether two geometries are in strict
+   penetration -- no contact data (see D2).
+
+   NOTE: As of 5/1/2018 the GJK implementation of Libccd appears to be
+   superior to FCL's "independent" implementation. Furthermore, libccd
+   appears to behave badly if its gjk tolerance is much tighter than
+   2e-12. Until this changes, we explicitly specify these parameters rather
+   than relying on FCL's defaults.  */
+  static void ConfigureHasCollisionRequest(CollisionRequest* request) {
+    request->num_max_contacts = 1;
+    request->enable_contact = false;
+    request->gjk_tolerance = 2e-12;
+    request->gjk_solver_type = fcl::GJKSolverType::GST_LIBCCD;
+  }
+
+  /* Performs narrowphase collision between two objects.  */
+  static void Collide(const Object* a, const Object* b,
+                      const CollisionRequest& request,
+                      CollisionResult* result) {
+    fcl::collide(a, b, request, *result);
+  }
+
   /* Converts a Drake pose into the transform type the library's API consumes.
    */
   static Transform ToTransform(const math::RigidTransformd& X_AB) {

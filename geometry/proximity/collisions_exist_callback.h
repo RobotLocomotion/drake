@@ -1,7 +1,5 @@
 #pragma once
 
-#include <fcl/fcl.h>
-
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_export.h"
 #include "drake/geometry/geometry_ids.h"
@@ -17,6 +15,7 @@ namespace has_collisions DRAKE_NO_EXPORT {
     - A collision filter instance.
     - A boolean of whether any collisions exist.
  */
+template <typename Backend>
 struct CallbackData {
   /* Constructs the fully-specified callback data. The values are as described
    in the class documentation. The parameters are all aliased in the data and
@@ -28,8 +27,8 @@ struct CallbackData {
   /* The collision filter system.  */
   const CollisionFilter& collision_filter;
 
-  /* The parameters for the fcl object-object collision function.  */
-  fcl::CollisionRequestd request;
+  /* The parameters for the backend's object-object collision function.  */
+  typename Backend::CollisionRequest request;
 
   /* The result of the collisions exist query.  */
   bool collisions_exist{false};
@@ -45,8 +44,9 @@ struct CallbackData {
  @returns true if there is a collision so that the broadphase can terminate its
           process early.
   */
-bool Callback(fcl::CollisionObjectd* object_A_ptr,
-              fcl::CollisionObjectd* object_B_ptr, void* callback_data);
+template <typename Backend>
+bool Callback(typename Backend::Object* object_A_ptr,
+              typename Backend::Object* object_B_ptr, void* callback_data);
 
 // clang-format off
 }  // namespace has_collisions
