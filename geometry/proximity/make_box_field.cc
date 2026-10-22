@@ -42,8 +42,7 @@ VolumeMeshFieldLinear<T, T> MakeBoxPressureField(const Box& box,
     // and grad_B is the gradient vector of the signed distance function
     // of the box at V, expressed in frame B.
     const auto [r_BN, grad_B, is_V_on_edge_or_vertex] =
-        point_distance::DistanceToPoint<T>::ComputeDistanceToBox(half_size,
-                                                                 r_BV);
+        point_distance::ComputeDistanceToBox(half_size, r_BV);
     unused(is_V_on_edge_or_vertex);
     T signed_distance = grad_B.dot(r_BV - r_BN);
     // Map signed_distance ∈ [-min_half_size, 0] to extent e ∈ [0, 1],

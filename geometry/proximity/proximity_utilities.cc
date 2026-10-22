@@ -1,6 +1,7 @@
 #include "drake/geometry/proximity/proximity_utilities.h"
 
 #include <set>
+#include <string_view>
 #include <unordered_set>
 
 #include "drake/common/sorted_pair.h"
@@ -9,6 +10,28 @@
 namespace drake {
 namespace geometry {
 namespace internal {
+
+std::string_view to_string(ShapeKind kind) {
+  switch (kind) {
+    case ShapeKind::kBox:
+      return "Box";
+    case ShapeKind::kCapsule:
+      return "Capsule";
+    case ShapeKind::kConvex:
+      return "Convex";
+    case ShapeKind::kCylinder:
+      return "Cylinder";
+    case ShapeKind::kEllipsoid:
+      return "Ellipsoid";
+    case ShapeKind::kHalfspace:
+      return "Halfspace";
+    case ShapeKind::kSphere:
+      return "Sphere";
+    case ShapeKind::kUnsupported:
+      return "Unsupported";
+  }
+  DRAKE_UNREACHABLE();
+}
 
 int CountEdges(const VolumeMesh<double>& mesh) {
   std::unordered_set<SortedPair<int>> edges;

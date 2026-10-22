@@ -46,8 +46,7 @@ class BvhVisitor {
     // Cb and grad_B are the closest point and signed-distance gradient to the
     // query point Q with respect to the surface of the bounding box B.
     const auto [p_BCb, grad_B, _] =
-        point_distance::DistanceToPoint<double>::ComputeDistanceToBox<3>(
-            node_M.bv().half_width(), p_BQ);
+        point_distance::ComputeDistanceToBox<3>(node_M.bv().half_width(), p_BQ);
     // phi_BQ is the signed distance of Q from the bounding box B.
     const double phi_BQ = grad_B.dot(p_BQ - p_BCb);
 

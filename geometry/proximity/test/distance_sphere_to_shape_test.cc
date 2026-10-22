@@ -18,6 +18,7 @@
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/proximity/distance_to_point_callback.h"
 #include "drake/geometry/proximity/distance_to_shape_callback.h"
+#include "drake/geometry/proximity/fcl_backend.h"
 #include "drake/geometry/proximity/proximity_utilities.h"
 #include "drake/geometry/query_results/signed_distance_to_point.h"
 #include "drake/geometry/utilities.h"
@@ -131,7 +132,7 @@ class DistancePairGeometryTest : public ::testing::Test {
 
     // Computes sphere-shape results.
     distance_functor(query_sphere_, test_shape);
-    point_distance::DistanceToPoint<T> distance_to_point(
+    point_distance::DistanceToPoint<T, FclBackend> distance_to_point(
         shape_id, X_WShape_.cast<T>(), p_WSphere<T>());
     // Computes point-shape results.
     SignedDistanceToPoint<T> point_result = distance_to_point(test_shape);

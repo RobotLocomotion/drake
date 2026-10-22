@@ -7,6 +7,7 @@
 #include "drake/common/default_scalars.h"
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/proximity/distance_to_point_callback.h"
+#include "drake/geometry/proximity/fcl_backend.h"
 #include "drake/geometry/proximity/volume_to_surface_mesh.h"
 
 namespace drake {
@@ -47,12 +48,12 @@ VolumeMeshFieldLinear<T, T> MakeCylinderPressureField(
   //  example, offset-based distance).
   const GeometryId unused_id;
   const auto identity = math::RigidTransform<T>::Identity();
-  const fcl::Cylinderd fcl_cylinder(radius, length);
+  const FclBackend::Cylinder fcl_cylinder(radius, length);
   for (const Vector3<T>& vertex : mesh_C->vertices()) {
     // V is a vertex of the cylinder mesh with frame C.
     const Vector3<T>& r_CV = vertex;
-    point_distance::DistanceToPoint<T> signed_distance_functor(unused_id,
-                                                               identity, r_CV);
+    point_distance::DistanceToPoint<T, FclBackend> signed_distance_functor(
+        unused_id, identity, r_CV);
     const T signed_distance = signed_distance_functor(fcl_cylinder).distance;
     // Map signed_distance ∈ [-min_half_size, 0] to extent e ∈ [0, 1],
     // -min_half_size ⇝ 1, 0 ⇝ 0.

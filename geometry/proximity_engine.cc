@@ -774,18 +774,20 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
 
     std::vector<SignedDistanceToPoint<T>> distances;
 
-    point_distance::CallbackData<T> data{
+    point_distance::CallbackData<T, FclBackend> data{
         &query_point, threshold, p_WQ, &X_WGs, &mesh_distance_boundary_cahe_,
         &distances};
 
     // Perform query of point vs dynamic objects (including the inactive
     // ones).
-    dynamic_tree_.distance(&query_point, &data, point_distance::Callback<T>);
+    dynamic_tree_.distance(&query_point, &data,
+                           point_distance::Callback<T, FclBackend>);
     inactive_dynamic_tree_.distance(&query_point, &data,
-                                    point_distance::Callback<T>);
+                                    point_distance::Callback<T, FclBackend>);
 
     // Perform query of point vs anchored objects.
-    anchored_tree_.distance(&query_point, &data, point_distance::Callback<T>);
+    anchored_tree_.distance(&query_point, &data,
+                            point_distance::Callback<T, FclBackend>);
 
     std::sort(distances.begin(), distances.end(),
               OrderSignedDistanceToPoint<T>);
@@ -831,14 +833,15 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
 
     double kInf = std::numeric_limits<double>::infinity();
     std::vector<SignedDistanceToPoint<T>> distances;
-    point_distance::CallbackData<T> data{
+    point_distance::CallbackData<T, FclBackend> data{
         &query_point, kInf, p_WQ, &X_WGs, &mesh_distance_boundary_cahe_,
         &distances};
     for (const GeometryId& id : ids) {
       CollisionObjectd* geometry = FindCollisionObject(id, "signed distance");
       DRAKE_DEMAND(geometry != nullptr);
 
-      point_distance::Callback<T>(&query_point, geometry, &data, kInf);
+      point_distance::Callback<T, FclBackend>(&query_point, geometry, &data,
+                                              kInf);
     }
     return distances;
   }

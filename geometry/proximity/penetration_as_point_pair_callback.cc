@@ -100,8 +100,8 @@ class PenetrationPairFunctor {
                               PenetrationAsPointPair<T>* result) {
     DRAKE_ASSERT(result != nullptr);
     const SignedDistanceToPoint<T> shape_B_to_point_Ao =
-        point_distance::DistanceToPoint<T>(id_B_, X_WB_,
-                                           X_WA_.translation())(shape_B);
+        point_distance::DistanceToPoint<T, FclBackend>(
+            id_B_, X_WB_, X_WA_.translation())(shape_B);
     const T depth = sphere_A.radius - shape_B_to_point_Ao.distance;
     if (ExtractDoubleOrThrow(depth) >= 0) {
       result->id_A = id_A_;
