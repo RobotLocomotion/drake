@@ -4,15 +4,14 @@
 #include <utility>
 #include <vector>
 
-#include <fcl/fcl.h>
-
 #include "drake/common/drake_export.h"
 #include "drake/common/eigen_types.h"
 #include "drake/math/rigid_transform.h"
 
 /* @file
  Support distance queries between shapes when they barely touch (have zero
- signed distance) by providing a reasonable distance gradient in fcl fallback
+ signed distance) by providing a reasonable distance gradient in the
+ backend fallback
  CalcDistanceFallback() in distance_to_shape_callback.cc.
  */
 
@@ -49,12 +48,14 @@ namespace shape_distance {
  @param p_ACa  Witness point of object `a` measured and expressed in frame A.
  @param p_BCb  Witness point of object `b` measured and expressed in frame B.
 
- @note  This function is used only in fcl fallback CalcDistanceFallback() in
+ @note  This function is used only in the backend fallback
+        CalcDistanceFallback() in
         distance_to_shape_callback.cc.  */
 // clang-format on
-Eigen::Vector3d CalcGradientWhenTouching(const fcl::CollisionObjectd& a,
+template <typename Backend>
+Eigen::Vector3d CalcGradientWhenTouching(const typename Backend::Object& a,
                                          const math::RigidTransformd& X_WA,
-                                         const fcl::CollisionObjectd& b,
+                                         const typename Backend::Object& b,
                                          const math::RigidTransformd& X_WB,
                                          const Eigen::Vector3d& p_ACa,
                                          const Eigen::Vector3d& p_BCb);
@@ -73,8 +74,9 @@ Eigen::Vector3d CalcGradientWhenTouching(const fcl::CollisionObjectd& a,
  of `p_BQ` (face, edge, or vertex of `box_B`) depends on its precision.
  For example, if p_BQ is on a face normal to Bx axis, p_BQ.x() should be
  within the internal tolerance from box_B.side.x()/2.  */
+template <typename Backend>
 Eigen::Vector3d PointOnBoxSurfaceHelper(const Eigen::Vector3d& p_BQ,
-                                        const fcl::Boxd& box_B);
+                                        const typename Backend::Box& box_B);
 
 /* Returns the projected interval [min, max] of a box on a line through
  World's origin. The line is defined by the parametric function s(t) = û_W⋅t
@@ -86,7 +88,8 @@ Eigen::Vector3d PointOnBoxSurfaceHelper(const Eigen::Vector3d& p_BQ,
 
  @note  Assume the caller already normalized the unit_vector_W. This function
         will give wrong answer if it's not a unit vector. */
-std::pair<double, double> ProjectedMinMax(const fcl::Boxd& box_A,
+template <typename Backend>
+std::pair<double, double> ProjectedMinMax(const typename Backend::Box& box_A,
                                           const math::RigidTransformd& X_WA,
                                           const Eigen::Vector3d& unit_vector_W);
 
@@ -106,8 +109,9 @@ std::pair<double, double> ProjectedMinMax(const fcl::Boxd& box_A,
 
  @pre The signed distance between the two boxes is zero (or within an
       internal tolerance), i.e., the two boxes barely touch.  */
+template <typename Backend>
 std::optional<Eigen::Vector3d> MaybeMakeSeparatingVector(
-    const fcl::Boxd& box_A, const fcl::Boxd& box_B,
+    const typename Backend::Box& box_A, const typename Backend::Box& box_B,
     const math::RigidTransformd& X_WA, const math::RigidTransformd& X_WB,
     const std::vector<Eigen::Vector3d>& v_Ws);
 
@@ -128,7 +132,9 @@ std::optional<Eigen::Vector3d> MaybeMakeSeparatingVector(
  @pre The signed distance between the two boxes is zero (or within an
       internal tolerance), i.e., the two witness points are at the same
       location (or within an internal tolerance) in World frame. */
-Eigen::Vector3d BoxBoxGradient(const fcl::Boxd& box_A, const fcl::Boxd& box_B,
+template <typename Backend>
+Eigen::Vector3d BoxBoxGradient(const typename Backend::Box& box_A,
+                               const typename Backend::Box& box_B,
                                const math::RigidTransformd& X_WA,
                                const math::RigidTransformd& X_WB,
                                const Eigen::Vector3d& p_ACa,

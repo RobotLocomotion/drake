@@ -76,9 +76,9 @@ GTEST_TEST(SphereShapeDistance, FallbackSupport) {
   EncodedData(id_b, true).write_to(&obj_b);
 
   SignedDistancePair<double> distance_pair_d{};
-  DRAKE_EXPECT_NO_THROW(CalcDistanceFallback<double>(
+  DRAKE_EXPECT_NO_THROW((CalcDistanceFallback<double, FclBackend>(
       obj_a, RigidTransformd(), obj_b, RigidTransformd(), request,
-      &distance_pair_d));
+      &distance_pair_d)));
   EXPECT_TRUE(distance_pair_d.id_A.is_valid());
   EXPECT_TRUE(distance_pair_d.id_B.is_valid());
   ASSERT_LT(id_a, id_b);  // Confirm assumption that the next two tests require.
@@ -87,9 +87,9 @@ GTEST_TEST(SphereShapeDistance, FallbackSupport) {
 
   SignedDistancePair<AutoDiffXd> distance_pair_ad{};
   DRAKE_EXPECT_THROWS_MESSAGE(
-      CalcDistanceFallback<AutoDiffXd>(obj_a, RigidTransform<AutoDiffXd>(),
-                                       obj_b, RigidTransform<AutoDiffXd>(),
-                                       request, &distance_pair_ad),
+      (CalcDistanceFallback<AutoDiffXd, FclBackend>(
+          obj_a, RigidTransform<AutoDiffXd>(), obj_b,
+          RigidTransform<AutoDiffXd>(), request, &distance_pair_ad)),
       "Signed distance queries between shapes .+ and .+ are not supported for "
       "scalar type .*AutoDiffXd.*");
 }
@@ -127,7 +127,7 @@ class DistancePairGeometryTest : public ::testing::Test {
     const GeometryId sphere_id = GeometryId::get_new_id();
     const GeometryId shape_id = GeometryId::get_new_id();
     RigidTransform<T> X_WSphere(R_WSphere_.cast<T>(), p_WSphere<T>());
-    DistancePairGeometry<T> distance_functor(
+    DistancePairGeometry<T, FclBackend> distance_functor(
         sphere_id, shape_id, X_WSphere, X_WShape_.cast<T>(), &shape_result);
 
     // Computes sphere-shape results.
@@ -370,7 +370,7 @@ GTEST_TEST(ComputeNarrowPhaseDistance, NoFallbackInvocation) {
   // All pairs which have Drake implementations.
   for (const CollisionObjectd* other :
        {&box, &capsule, &cylinder, &half_space, &sphere}) {
-    EXPECT_FALSE(RequiresFallback(sphere, *other));
+    EXPECT_FALSE(RequiresFallback<FclBackend>(sphere, *other));
   }
 }
 
@@ -390,7 +390,7 @@ GTEST_TEST(ComputeNarrowPhaseDistance, FallbackInvocation) {
 
   // The two exceptions involving a sphere.
   for (const CollisionObjectd* other : {&convex, &ellipsoid}) {
-    EXPECT_TRUE(RequiresFallback(sphere, *other));
+    EXPECT_TRUE(RequiresFallback<FclBackend>(sphere, *other));
   }
 
   // All other cases.
@@ -398,7 +398,7 @@ GTEST_TEST(ComputeNarrowPhaseDistance, FallbackInvocation) {
                                                     &cylinder, &half_space};
   for (const auto* s1 : others) {
     for (const auto* s2 : others) {
-      EXPECT_TRUE(RequiresFallback(*s1, *s2));
+      EXPECT_TRUE(RequiresFallback<FclBackend>(*s1, *s2));
     }
   }
 }
@@ -424,11 +424,11 @@ GTEST_TEST(ComputeNarrowPhaseDistance, OrderInvariance) {
   SignedDistancePair<double> result_BS;
   SignedDistancePair<double> result_SB;
 
-  ComputeNarrowPhaseDistance<double>(sphere, X_WS, box, X_WB, request,
-                                     &result_SB);
+  ComputeNarrowPhaseDistance<double, FclBackend>(sphere, X_WS, box, X_WB,
+                                                 request, &result_SB);
 
-  ComputeNarrowPhaseDistance<double>(box, X_WB, sphere, X_WS, request,
-                                     &result_BS);
+  ComputeNarrowPhaseDistance<double, FclBackend>(box, X_WB, sphere, X_WS,
+                                                 request, &result_BS);
 
   EXPECT_EQ(result_SB.id_A, result_BS.id_B);
   EXPECT_EQ(result_SB.id_B, result_BS.id_A);
@@ -463,7 +463,8 @@ GTEST_TEST(ComputeNarrowPhaseDistance, sphere_touches_shape) {
   // The sphere touches the box in the middle of a face of the box.
   const RigidTransformd X_WS(Vector3d{radius + side / 2., 0, 0});
   SignedDistancePair<double> result;
-  ComputeNarrowPhaseDistance<double>(sphere, X_WS, box, X_WB, request, &result);
+  ComputeNarrowPhaseDistance<double, FclBackend>(sphere, X_WS, box, X_WB,
+                                                 request, &result);
   const auto p_WCs = X_WS * result.p_ACa;
   const auto p_WCb = X_WB * result.p_BCb;
   EXPECT_EQ(p_WCs, p_WCb);
@@ -538,7 +539,7 @@ class CallbackScalarSupport : public ::testing::Test {
   CollisionFilter collision_filter_;
   std::unordered_map<GeometryId, RigidTransform<T>> X_WGs_;
   std::vector<SignedDistancePair<T>> results_;
-  CallbackData<T> data_;
+  CallbackData<T, FclBackend> data_;
   std::vector<CollisionObjectd> spheres_;
   std::vector<CollisionObjectd> boxes_;
   std::vector<CollisionObjectd> capsules_;
@@ -600,7 +601,8 @@ TYPED_TEST(CallbackScalarSupport, SupportedPairClassification) {
   auto run_callback = [this](auto& object_A, auto& object_B) {
     double threshold = std::numeric_limits<double>::max();
     this->results_.clear();
-    Callback<TypeParam>(&object_A, &object_B, &this->data_, threshold);
+    Callback<TypeParam, FclBackend>(&object_A, &object_B, &this->data_,
+                                    threshold);
   };
 
   // Supported pairs will produce a result.
@@ -651,9 +653,10 @@ GTEST_TEST(Callback, ScalarSupportWithFilters) {
   data_B.write_to(&box_B);
 
   std::vector<SignedDistancePair<T>> results;
-  CallbackData<T> data(&collision_filter, &X_WGs, kInf, &results);
+  CallbackData<T, FclBackend> data(&collision_filter, &X_WGs, kInf, &results);
   double threshold = kInf;
-  DRAKE_EXPECT_NO_THROW(Callback<T>(&box_A, &box_B, &data, threshold));
+  DRAKE_EXPECT_NO_THROW(
+      (Callback<T, FclBackend>(&box_A, &box_B, &data, threshold)));
   EXPECT_EQ(results.size(), 0u);
 }
 
@@ -675,11 +678,12 @@ GTEST_TEST(Callback, RespectCollisionFiltering) {
   collision_filter.AddGeometry(data_A.id());
   collision_filter.AddGeometry(data_B.id());
 
-  CallbackData<double> data{&collision_filter, &X_WGs, kInf, &results};
+  CallbackData<double, FclBackend> data{&collision_filter, &X_WGs, kInf,
+                                        &results};
 
   // Case: No collision filters added should produce a single result.
   double threshold = std::numeric_limits<double>::max();
-  Callback<double>(&sphere_A, &sphere_B, &data, threshold);
+  Callback<double, FclBackend>(&sphere_A, &sphere_B, &data, threshold);
   EXPECT_EQ(results.size(), 1u);
 
   // Case: filtered collisions.
@@ -696,13 +700,13 @@ GTEST_TEST(Callback, RespectCollisionFiltering) {
                          extract, false /* is_invariant */);
   results.clear();
   threshold = std::numeric_limits<double>::max();
-  Callback<double>(&sphere_A, &sphere_B, &data, threshold);
+  Callback<double, FclBackend>(&sphere_A, &sphere_B, &data, threshold);
   EXPECT_EQ(results.size(), 0u);
 
   // However, if we explicitly request collision filters be ignored, it will do
   // so.
   data.collision_filter = nullptr;
-  Callback<double>(&sphere_A, &sphere_B, &data, threshold);
+  Callback<double, FclBackend>(&sphere_A, &sphere_B, &data, threshold);
   EXPECT_EQ(results.size(), 1u);
 }
 
@@ -727,15 +731,17 @@ GTEST_TEST(Callback, ABOrdering) {
 
   // Pass in the two geometries in order (A, B).
   std::vector<SignedDistancePair<double>> results1;
-  CallbackData<double> data1{&collision_filter, &X_WGs, kInf, &results1};
-  Callback<double>(&sphere_A, &sphere_B, &data1, threshold);
+  CallbackData<double, FclBackend> data1{&collision_filter, &X_WGs, kInf,
+                                         &results1};
+  Callback<double, FclBackend>(&sphere_A, &sphere_B, &data1, threshold);
   ASSERT_EQ(results1.size(), 1u);
   EXPECT_TRUE(results1[0].id_A < results1[0].id_B);
 
   // Pass in the two geometries in order (B, A).
   std::vector<SignedDistancePair<double>> results2;
-  CallbackData<double> data2{&collision_filter, &X_WGs, kInf, &results2};
-  Callback<double>(&sphere_B, &sphere_A, &data2, threshold);
+  CallbackData<double, FclBackend> data2{&collision_filter, &X_WGs, kInf,
+                                         &results2};
+  Callback<double, FclBackend>(&sphere_B, &sphere_A, &data2, threshold);
   ASSERT_EQ(results2.size(), 1u);
   EXPECT_TRUE(results2[0].id_A < results2[0].id_B);
 
@@ -788,10 +794,12 @@ TYPED_TEST(CallbackMaxDistanceTest, MaxDistanceThreshold) {
   // Case: just inside the max distance.
   {
     std::vector<SignedDistancePair<T>> results;
-    CallbackData<T> data(&collision_filter, &X_WGs, kMaxDistance, &results);
+    CallbackData<T, FclBackend> data(&collision_filter, &X_WGs, kMaxDistance,
+                                     &results);
     // NOTE: When done, this should match kMaxDistance.
     double threshold = kInf;
-    DRAKE_EXPECT_NO_THROW(Callback<T>(&sphere_A, &sphere_B, &data, threshold));
+    DRAKE_EXPECT_NO_THROW(
+        (Callback<T, FclBackend>(&sphere_A, &sphere_B, &data, threshold)));
     EXPECT_EQ(results.size(), 1u);
     EXPECT_EQ(threshold, kMaxDistance);
   }
@@ -802,10 +810,12 @@ TYPED_TEST(CallbackMaxDistanceTest, MaxDistanceThreshold) {
         Eigen::Translation<T, 3>{Vector3<T>(2, 3, 4).normalized() *
                                  (kMaxDistance + radius_A + radius_B + kEps)});
     std::vector<SignedDistancePair<T>> results;
-    CallbackData<T> data(&collision_filter, &X_WGs, kMaxDistance, &results);
+    CallbackData<T, FclBackend> data(&collision_filter, &X_WGs, kMaxDistance,
+                                     &results);
     // NOTE: When done, this should match kMaxDistance.
     double threshold = kInf;
-    DRAKE_EXPECT_NO_THROW(Callback<T>(&sphere_A, &sphere_B, &data, threshold));
+    DRAKE_EXPECT_NO_THROW(
+        (Callback<T, FclBackend>(&sphere_A, &sphere_B, &data, threshold)));
     EXPECT_EQ(results.size(), 0u);
     EXPECT_EQ(threshold, kMaxDistance);
   }

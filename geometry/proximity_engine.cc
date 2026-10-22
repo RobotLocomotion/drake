@@ -692,20 +692,20 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
       const double max_distance) const {
     std::vector<SignedDistancePair<T>> witness_pairs;
     // All these quantities are aliased in the callback data.
-    shape_distance::CallbackData<T> data{&collision_filter_, &X_WGs,
-                                         max_distance, &witness_pairs};
+    shape_distance::CallbackData<T, FclBackend> data{
+        &collision_filter_, &X_WGs, max_distance, &witness_pairs};
     data.request.enable_nearest_points = true;
     data.request.enable_signed_distance = true;
     data.request.gjk_solver_type = fcl::GJKSolverType::GST_LIBCCD;
     data.request.distance_tolerance = distance_tolerance_;
 
     // Perform a query of the dynamic objects against themselves.
-    dynamic_tree_.distance(&data, shape_distance::Callback<T>);
+    dynamic_tree_.distance(&data, shape_distance::Callback<T, FclBackend>);
 
     // Perform a query of the dynamic objects against the anchored. We don't do
     // anchored against anchored because those pairs are implicitly filtered.
     FclDistance(dynamic_tree_, anchored_tree_, &data,
-                shape_distance::Callback<T>);
+                shape_distance::Callback<T, FclBackend>);
     std::sort(witness_pairs.begin(), witness_pairs.end(),
               OrderSignedDistancePair<T>);
     return witness_pairs;
@@ -736,8 +736,8 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     std::vector<SignedDistancePair<T>> witness_pairs;
     double max_distance = std::numeric_limits<double>::infinity();
     // All these quantities are aliased in the callback data.
-    shape_distance::CallbackData<T> data{nullptr, &X_WGs, max_distance,
-                                         &witness_pairs};
+    shape_distance::CallbackData<T, FclBackend> data{
+        nullptr, &X_WGs, max_distance, &witness_pairs};
     data.request.enable_nearest_points = true;
     data.request.enable_signed_distance = true;
     data.request.gjk_solver_type = fcl::GJKSolverType::GST_LIBCCD;
@@ -745,7 +745,8 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
 
     CollisionObjectd* object_A = FindCollisionObject(id_A, "signed distance");
     CollisionObjectd* object_B = FindCollisionObject(id_B, "signed distance");
-    shape_distance::Callback<T>(object_A, object_B, &data, max_distance);
+    shape_distance::Callback<T, FclBackend>(object_A, object_B, &data,
+                                            max_distance);
 
     // If the callback didn't throw, it returned an actual value.
     DRAKE_DEMAND(witness_pairs.size() > 0);

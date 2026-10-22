@@ -68,12 +68,13 @@ GTEST_TEST(SignedDistanceCallbackTests, ExpressionUnsupported) {
       {id1, math::RigidTransform<Expression>::Identity()},
       {id2, math::RigidTransform<Expression>::Identity()}};
   std::vector<SignedDistancePair<Expression>> pairs;
-  shape_distance::CallbackData<Expression> data{nullptr, &X_WGs, kInf, &pairs};
+  shape_distance::CallbackData<Expression, FclBackend> data{nullptr, &X_WGs,
+                                                            kInf, &pairs};
   data.request = MakeProximityEngineRequest();
   double max_dist = kInf;
   DRAKE_EXPECT_THROWS_MESSAGE(
-      shape_distance::Callback<Expression>(obj1.get(), obj2.get(), &data,
-                                           max_dist),
+      (shape_distance::Callback<Expression, FclBackend>(obj1.get(), obj2.get(),
+                                                        &data, max_dist)),
       "Signed distance queries between shapes 'Box' and 'Box' are not "
       "supported for scalar type drake::symbolic::Expression.*");
 }
@@ -107,15 +108,18 @@ GTEST_TEST(SignedDistanceCallbackTests,
   auto invoke_all_pairs =
       [&](double threshold) -> std::vector<SignedDistancePair<double>> {
     std::vector<SignedDistancePair<double>> results;
-    shape_distance::CallbackData<double> data{nullptr, &X_WGs, threshold,
-                                              &results};
+    shape_distance::CallbackData<double, FclBackend> data{nullptr, &X_WGs,
+                                                          threshold, &results};
     data.request = MakeProximityEngineRequest();
     double max_dist = threshold;
-    shape_distance::Callback<double>(obj1.get(), obj2.get(), &data, max_dist);
+    shape_distance::Callback<double, FclBackend>(obj1.get(), obj2.get(), &data,
+                                                 max_dist);
     max_dist = threshold;
-    shape_distance::Callback<double>(obj1.get(), obj3.get(), &data, max_dist);
+    shape_distance::Callback<double, FclBackend>(obj1.get(), obj3.get(), &data,
+                                                 max_dist);
     max_dist = threshold;
-    shape_distance::Callback<double>(obj2.get(), obj3.get(), &data, max_dist);
+    shape_distance::Callback<double, FclBackend>(obj2.get(), obj3.get(), &data,
+                                                 max_dist);
     return results;
   };
 
@@ -876,12 +880,12 @@ class SignedDistancePairTest
 TEST_P(SignedDistancePairTest, SinglePair) {
   const auto& data = GetParam();
   std::vector<SignedDistancePair<double>> witness_pairs;
-  shape_distance::CallbackData<double> callback_data{nullptr, &X_WGs_, kInf,
-                                                     &witness_pairs};
+  shape_distance::CallbackData<double, FclBackend> callback_data{
+      nullptr, &X_WGs_, kInf, &witness_pairs};
   callback_data.request = MakeProximityEngineRequest();
   double max_dist = kInf;
-  shape_distance::Callback<double>(fcl_object_A_.get(), fcl_object_B_.get(),
-                                   &callback_data, max_dist);
+  shape_distance::Callback<double, FclBackend>(
+      fcl_object_A_.get(), fcl_object_B_.get(), &callback_data, max_dist);
   ASSERT_EQ(witness_pairs.size(), 1);
   const auto& result = witness_pairs[0];
   const double tolerance = data.tolerance_ ? data.tolerance_ : kTolerance;
@@ -991,13 +995,14 @@ GTEST_TEST(SignedDistancePairError, HalfspaceException) {
   // evaluated due to the error condition.
   unordered_map<GeometryId, RigidTransformd> X_WGs;
   std::vector<SignedDistancePair<double>> pairs;
-  shape_distance::CallbackData<double> data{nullptr, &X_WGs, kInf, &pairs};
+  shape_distance::CallbackData<double, FclBackend> data{nullptr, &X_WGs, kInf,
+                                                        &pairs};
   data.request = MakeProximityEngineRequest();
   double max_dist = kInf;
 
   DRAKE_EXPECT_THROWS_MESSAGE(
-      shape_distance::Callback<double>(box_obj.get(), hs_obj.get(), &data,
-                                       max_dist),
+      (shape_distance::Callback<double, FclBackend>(box_obj.get(), hs_obj.get(),
+                                                    &data, max_dist)),
       "Signed distance queries between shapes .* and .* are not supported.*");
 }
 
@@ -1010,12 +1015,12 @@ class SignedDistancePairConcentricTest : public SignedDistancePairTest {};
 TEST_P(SignedDistancePairConcentricTest, DistanceInvariance) {
   const auto& data = GetParam();
   std::vector<SignedDistancePair<double>> witness_pairs;
-  shape_distance::CallbackData<double> callback_data{nullptr, &X_WGs_, kInf,
-                                                     &witness_pairs};
+  shape_distance::CallbackData<double, FclBackend> callback_data{
+      nullptr, &X_WGs_, kInf, &witness_pairs};
   callback_data.request = MakeProximityEngineRequest();
   double max_dist = kInf;
-  shape_distance::Callback<double>(fcl_object_A_.get(), fcl_object_B_.get(),
-                                   &callback_data, max_dist);
+  shape_distance::Callback<double, FclBackend>(
+      fcl_object_A_.get(), fcl_object_B_.get(), &callback_data, max_dist);
   ASSERT_EQ(witness_pairs.size(), 1);
   const auto& result = witness_pairs[0];
 
