@@ -63,11 +63,11 @@ GTEST_TEST(CollisionsExistCallback, Exist) {
   box_C.setTranslation(Vector3<double>(1., 1., 1.));
   data_C.write_to<FclBackend>(&box_C);
 
-  CallbackData data(&collision_filter);
-  Callback(&box_A, &box_B, &data);
+  CallbackData<FclBackend> data(&collision_filter);
+  Callback<FclBackend>(&box_A, &box_B, &data);
   EXPECT_TRUE(data.collisions_exist);
 
-  Callback(&box_A, &box_C, &data);
+  Callback<FclBackend>(&box_A, &box_C, &data);
   EXPECT_FALSE(data.collisions_exist);
 }
 
@@ -101,8 +101,8 @@ GTEST_TEST(CollisionsExistCallback, RespectsCollisionFilter) {
   data_B.write_to<FclBackend>(&box_B);
 
   // Make sure the pair collide.
-  CallbackData data_before(&collision_filter);
-  Callback(&box_A, &box_B, &data_before);
+  CallbackData<FclBackend> data_before(&collision_filter);
+  Callback<FclBackend>(&box_A, &box_B, &data_before);
   EXPECT_TRUE(data_before.collisions_exist);
 
   // Filter the pair (A, B); we'll put the ids in a set and simply return that
@@ -117,8 +117,8 @@ GTEST_TEST(CollisionsExistCallback, RespectsCollisionFilter) {
                          extract, false /* is_invariant */);
 
   // Make sure the pair no longer collides.
-  CallbackData data_after(&collision_filter);
-  Callback(&box_A, &box_B, &data_after);
+  CallbackData<FclBackend> data_after(&collision_filter);
+  Callback<FclBackend>(&box_A, &box_B, &data_after);
   EXPECT_FALSE(data_after.collisions_exist);
 }
 

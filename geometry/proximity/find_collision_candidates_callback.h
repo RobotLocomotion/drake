@@ -2,8 +2,6 @@
 
 #include <vector>
 
-#include <fcl/fcl.h>
-
 #include "drake/common/drake_export.h"
 #include "drake/common/sorted_pair.h"
 #include "drake/geometry/geometry_ids.h"
@@ -48,8 +46,9 @@ struct CallbackData {
  @param callback_data   Supporting data to find collision candidates.
  @returns False; the broadphase should *not* terminate its process.
   */
-bool Callback(fcl::CollisionObjectd* object_A_ptr,
-              fcl::CollisionObjectd* object_B_ptr,
+template <typename Backend>
+bool Callback(typename Backend::Object* object_A_ptr,
+              typename Backend::Object* object_B_ptr,
               // NOLINTNEXTLINE
               void* callback_data);
 

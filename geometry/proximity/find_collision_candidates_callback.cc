@@ -1,7 +1,7 @@
 #include "drake/geometry/proximity/find_collision_candidates_callback.h"
 
 #include "drake/common/drake_assert.h"
-#include "drake/geometry/proximity/fcl_backend.h"
+#include "drake/geometry/proximity/collision_backend.h"
 #include "drake/geometry/proximity/proximity_utilities.h"
 
 namespace drake {
@@ -16,14 +16,15 @@ CallbackData::CallbackData(const CollisionFilter* collision_filter_in,
   DRAKE_DEMAND(pairs_in != nullptr);
 }
 
-bool Callback(fcl::CollisionObjectd* object_A_ptr,
-              fcl::CollisionObjectd* object_B_ptr,
+template <typename Backend>
+bool Callback(typename Backend::Object* object_A_ptr,
+              typename Backend::Object* object_B_ptr,
               // NOLINTNEXTLINE
               void* callback_data) {
   auto& data = *static_cast<CallbackData*>(callback_data);
 
-  const auto encoding_a = EncodedData::read_from<FclBackend>(*object_A_ptr);
-  const auto encoding_b = EncodedData::read_from<FclBackend>(*object_B_ptr);
+  const auto encoding_a = EncodedData::read_from<Backend>(*object_A_ptr);
+  const auto encoding_b = EncodedData::read_from<Backend>(*object_B_ptr);
 
   const bool can_collide =
       data.collision_filter.CanCollideWith(encoding_a.id(), encoding_b.id());
@@ -33,6 +34,8 @@ bool Callback(fcl::CollisionObjectd* object_A_ptr,
   // Tell the broadphase to keep searching.
   return false;
 }
+
+DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_BACKENDS((&Callback<Backend>));
 
 }  // namespace find_collision_candidates
 }  // namespace internal

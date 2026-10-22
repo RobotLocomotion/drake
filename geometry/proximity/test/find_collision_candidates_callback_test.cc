@@ -40,7 +40,7 @@ GTEST_TEST(Callback, PairsProperlyFormed) {
 
   vector<SortedPair<GeometryId>> pairs;
   CallbackData data(&collision_filter, &pairs);
-  Callback(&box_A, &box_B, &data);
+  Callback<FclBackend>(&box_A, &box_B, &data);
   ASSERT_EQ(pairs.size(), 1u);
   const SortedPair<GeometryId> expected_pair{id_A, id_B};
   EXPECT_EQ(pairs[0], expected_pair);
@@ -48,7 +48,7 @@ GTEST_TEST(Callback, PairsProperlyFormed) {
   // We verify that the order the callback receives it doesn't affect the
   // results.
   pairs.clear();
-  Callback(&box_B, &box_A, &data);
+  Callback<FclBackend>(&box_B, &box_A, &data);
   ASSERT_EQ(pairs.size(), 1u);
   EXPECT_EQ(pairs[0], expected_pair);
 }
@@ -79,7 +79,7 @@ GTEST_TEST(Callback, RespectsCollisionFilter) {
 
   vector<SortedPair<GeometryId>> pairs;
   CallbackData data(&collision_filter, &pairs);
-  Callback(&box_A, &box_B, &data);
+  Callback<FclBackend>(&box_A, &box_B, &data);
   EXPECT_EQ(pairs.size(), 0u);
 }
 
