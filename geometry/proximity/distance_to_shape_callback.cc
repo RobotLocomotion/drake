@@ -50,8 +50,8 @@ template <typename FclShape>
 void DistancePairGeometry<T>::SphereShapeDistance(const fcl::Sphered& sphere_A,
                                                   const FclShape& shape_B) {
   const SignedDistanceToPoint<T> shape_B_to_point_Ao =
-      point_distance::DistanceToPoint<T>(id_B_, X_WB_,
-                                         X_WA_.translation())(shape_B);
+      point_distance::DistanceToPoint<T, FclBackend>(
+          id_B_, X_WB_, X_WA_.translation())(shape_B);
   result_->id_A = id_A_;
   result_->id_B = id_B_;
   result_->distance = shape_B_to_point_Ao.distance - sphere_A.radius;
