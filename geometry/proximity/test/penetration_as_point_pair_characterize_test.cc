@@ -4,6 +4,7 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/geometry/proximity/fcl_backend.h"
 #include "drake/geometry/proximity/penetration_as_point_pair_callback.h"
 #include "drake/geometry/proximity/test/characterization_utilities.h"
 #include "drake/math/rigid_transform.h"
@@ -27,7 +28,7 @@ using std::vector;
 
 /* Implementation of DistanceCallback for penetration as point pair. */
 template <typename T>
-class PenetrationCallback : public DistanceCallback<T> {
+class PenetrationCallback : public DistanceCallback<T, FclBackend> {
  public:
   bool Invoke(fcl::CollisionObjectd* obj_A, fcl::CollisionObjectd* obj_B,
               const CollisionFilter* collision_filter,
@@ -50,12 +51,16 @@ class PenetrationCallback : public DistanceCallback<T> {
 };
 
 template <typename T>
-class CharacterizePointPairResultTest : public CharacterizeResultTest<T> {
+class CharacterizePointPairResultTest
+    : public CharacterizeResultTest<T, FclBackend> {
  public:
   CharacterizePointPairResultTest()
-      : CharacterizeResultTest<T>(make_unique<PenetrationCallback<T>>()) {}
+      : CharacterizeResultTest<T, FclBackend>(
+            make_unique<PenetrationCallback<T>>()) {}
 
-  std::vector<double> TestDistances() const final { return {-this->kDistance}; }
+  std::vector<double> TestDistances() const final {
+    return {-CharacterizationShapes::kDistance};
+  }
 };
 
 /* *-Mesh has not been implemented because Mesh is represented by Convex.

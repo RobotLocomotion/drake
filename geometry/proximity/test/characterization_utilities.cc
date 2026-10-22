@@ -149,7 +149,7 @@ void ShapeConfigurations<T>::ImplementGeometry(const Capsule& capsule, void*) {
 
 template <typename T>
 void ShapeConfigurations<T>::ImplementGeometry(const Convex&, void*) {
-  const Box box = CharacterizeResultTest<double>::box();
+  const Box box = CharacterizationShapes::box();
   ImplementGeometry(box, nullptr);
 }
 
@@ -246,7 +246,7 @@ void ShapeConfigurations<T>::ImplementGeometry(const HalfSpace&, void*) {
 
 template <typename T>
 void ShapeConfigurations<T>::ImplementGeometry(const Mesh&, void*) {
-  const Box box = CharacterizeResultTest<double>::box();
+  const Box box = CharacterizationShapes::box();
   ImplementGeometry(box, nullptr);
 }
 
@@ -272,19 +272,26 @@ void ShapeConfigurations<T>::ImplementGeometry(const Sphere& sphere, void*) {
                                    {p2, n2, r, "sphere's +x/-y/+z octant"}};
 }
 
-MakeFclShape::MakeFclShape(const Shape& shape) : ShapeReifier() {
+template <typename Backend>
+MakeBackendShape<Backend>::MakeBackendShape(const Shape& shape)
+    : ShapeReifier() {
   shape.Reify(this);
 }
 
-void MakeFclShape::ImplementGeometry(const Box& box, void*) {
-  object_ = std::make_shared<fcl::Boxd>(box.size());
+template <typename Backend>
+void MakeBackendShape<Backend>::ImplementGeometry(const Box& box, void*) {
+  object_ = std::make_shared<typename Backend::Box>(box.size());
 }
 
-void MakeFclShape::ImplementGeometry(const Capsule& capsule, void*) {
-  object_ = std::make_shared<fcl::Capsuled>(capsule.radius(), capsule.length());
+template <typename Backend>
+void MakeBackendShape<Backend>::ImplementGeometry(const Capsule& capsule,
+                                                  void*) {
+  object_ = std::make_shared<typename Backend::Capsule>(capsule.radius(),
+                                                        capsule.length());
 }
 
-void MakeFclShape::ImplementGeometry(const Convex&, void*) {
+template <typename Backend>
+void MakeBackendShape<Backend>::ImplementGeometry(const Convex&, void*) {
   /* Note: we're ignoring the contents of the convex declaration. Instead,
     we're outputting a mesh representing a box with known dimensions.
 
@@ -302,7 +309,7 @@ void MakeFclShape::ImplementGeometry(const Convex&, void*) {
                 └──────────────────┘
                 0                  4
   */
-  const Box box = CharacterizeResultTest<double>::box();
+  const Box box = CharacterizationShapes::box();
   const Vector3d half_size = box.size() / 2;
   auto vertices = std::make_shared<vector<Vector3d>>();
   for (double x : {-1, 1}) {
@@ -323,36 +330,48 @@ void MakeFclShape::ImplementGeometry(const Convex&, void*) {
     });
   // clang-format on
 
-  object_ = std::make_shared<fcl::Convexd>(vertices, 6, faces);
+  auto backend_faces =
+      std::make_shared<typename Backend::FaceData>(Backend::MakeFaces(*faces));
+  const int num_faces = Backend::CountFaces(*backend_faces, 6);
+  object_ = Backend::MakeConvex(vertices, ssize(*vertices),
+                                std::move(backend_faces), num_faces);
 }
 
-void MakeFclShape::ImplementGeometry(const Cylinder& cylinder, void*) {
-  object_ =
-      std::make_shared<fcl::Cylinderd>(cylinder.radius(), cylinder.length());
+template <typename Backend>
+void MakeBackendShape<Backend>::ImplementGeometry(const Cylinder& cylinder,
+                                                  void*) {
+  object_ = std::make_shared<typename Backend::Cylinder>(cylinder.radius(),
+                                                         cylinder.length());
 }
 
-void MakeFclShape::ImplementGeometry(const Ellipsoid& ellipsoid, void*) {
-  object_ = std::make_shared<fcl::Ellipsoidd>(ellipsoid.a(), ellipsoid.b(),
-                                              ellipsoid.c());
+template <typename Backend>
+void MakeBackendShape<Backend>::ImplementGeometry(const Ellipsoid& ellipsoid,
+                                                  void*) {
+  object_ = std::make_shared<typename Backend::Ellipsoid>(
+      ellipsoid.a(), ellipsoid.b(), ellipsoid.c());
 }
 
-void MakeFclShape::ImplementGeometry(const HalfSpace&, void*) {
-  object_ = std::make_shared<fcl::Halfspaced>(Vector3d{0, 0, 1}, 0);
+template <typename Backend>
+void MakeBackendShape<Backend>::ImplementGeometry(const HalfSpace&, void*) {
+  object_ = std::make_shared<typename Backend::Halfspace>(Vector3d{0, 0, 1}, 0);
 }
 
-void MakeFclShape::ImplementGeometry(const Mesh&, void*) {
+template <typename Backend>
+void MakeBackendShape<Backend>::ImplementGeometry(const Mesh&, void*) {
   // For these tests, we use the same box mesh for Mesh and Convex. Therefore,
-  // the fcl representation of the Mesh type is simply that of the Convex type.
+  // the backend representation of the Mesh type is simply that of the Convex
+  // type.
   // NOTE: PointDistanceCallback::Invoke() in
   // distance_to_point_characterize_test.cc builds a MeshDistanceBoundaryCache
-  // entry that must match the geometry. It does so by turning the fcl::Convexd
+  // entry that must match the geometry. It does so by turning the convex hull
   // back into a Mesh. If this ever introduces a Mesh that is not its own convex
   // hull, that logic will need to change.
   ImplementGeometry(Convex("ignored for this test", 1.0), nullptr);
 }
 
-void MakeFclShape::ImplementGeometry(const Sphere& sphere, void*) {
-  object_ = std::make_shared<fcl::Sphered>(sphere.radius());
+template <typename Backend>
+void MakeBackendShape<Backend>::ImplementGeometry(const Sphere& sphere, void*) {
+  object_ = std::make_shared<typename Backend::Sphere>(sphere.radius());
 }
 
 /* Allow a sneak peek into ProximityEngine's inner workings so we can detect
@@ -437,10 +456,10 @@ RigidTransform<T> AlignPlanes(const Vector3<T>& P, const Vector3<T>& m,
   return RigidTransform<T>{R, p_QP_A};
 }
 
-template <typename T>
-void CharacterizeResultTest<T>::RunCallback(
-    const QueryInstance& query, fcl::CollisionObjectd* obj_A,
-    fcl::CollisionObjectd* obj_B, const CollisionFilter* collision_filter,
+template <typename T, typename Backend>
+void CharacterizeResultTest<T, Backend>::RunCallback(
+    const QueryInstance& query, typename Backend::Object* obj_A,
+    typename Backend::Object* obj_B, const CollisionFilter* collision_filter,
     const std::unordered_map<GeometryId, RigidTransform<T>>* X_WGs) const {
   callback_->ClearResults();
   ASSERT_EQ(callback_->GetNumResults(), 0);
@@ -459,8 +478,8 @@ void CharacterizeResultTest<T>::RunCallback(
   }
 }
 
-template <typename T>
-std::optional<double> CharacterizeResultTest<T>::ComputeErrorMaybe(
+template <typename T, typename Backend>
+std::optional<double> CharacterizeResultTest<T, Backend>::ComputeErrorMaybe(
     double expected_distance) const {
   if (callback_->GetNumResults() > 0) {
     const double distance =
@@ -472,8 +491,8 @@ std::optional<double> CharacterizeResultTest<T>::ComputeErrorMaybe(
   return std::nullopt;
 }
 
-template <typename T>
-vector<Configuration<T>> CharacterizeResultTest<T>::MakeConfigurations(
+template <typename T, typename Backend>
+vector<Configuration<T>> CharacterizeResultTest<T, Backend>::MakeConfigurations(
     const Shape& shape_A, const Shape& shape_B,
     const vector<double>& signed_distances) const {
   vector<Configuration<T>> configs;
@@ -517,14 +536,16 @@ vector<Configuration<T>> CharacterizeResultTest<T>::MakeConfigurations(
   return configs;
 }
 
-template <typename T>
-void CharacterizeResultTest<T>::RunCharacterization(
+template <typename T, typename Backend>
+void CharacterizeResultTest<T, Backend>::RunCharacterization(
     const QueryInstance& query, const Shape& shape_A, const Shape& shape_B,
     const vector<Configuration<T>>& configs, bool is_symmetric) {
-  fcl::CollisionObjectd object_A = MakeFclShape(shape_A).object();
+  typename Backend::Object object_A =
+      MakeBackendShape<Backend>(shape_A).object();
   const GeometryId id_A = EncodeData(&object_A);
 
-  fcl::CollisionObjectd object_B = MakeFclShape(shape_B).object();
+  typename Backend::Object object_B =
+      MakeBackendShape<Backend>(shape_B).object();
   const GeometryId id_B = EncodeData(&object_B);
 
   const auto& X_WAs = this->X_WAs();
@@ -533,20 +554,19 @@ void CharacterizeResultTest<T>::RunCharacterization(
 
   auto evaluate_callback =
       [this, &query, &worst_error, &worst_config](
-          char first, fcl::CollisionObjectd* obj_A, char second,
-          fcl::CollisionObjectd* obj_B, auto test_config,
+          char first, typename Backend::Object* obj_A, char second,
+          typename Backend::Object* obj_B, auto test_config,
           const std::unordered_map<GeometryId, RigidTransform<T>>&
               world_poses) {
-        SCOPED_TRACE(
-            fmt::format("\n{}-{} (obj {}-obj {}) query:"
-                        "\n  {}"
-                        "\n  Expected signed distance: {}"
-                        "\n  X_AB"
-                        "\n{}\n",
-                        GetGeometryName<FclBackend>(*obj_A),
-                        GetGeometryName<FclBackend>(*obj_B), first, second,
-                        test_config.description, test_config.signed_distance,
-                        fmt_eigen(test_config.X_AB.GetAsMatrix34())));
+        SCOPED_TRACE(fmt::format(
+            "\n{}-{} (obj {}-obj {}) query:"
+            "\n  {}"
+            "\n  Expected signed distance: {}"
+            "\n  X_AB"
+            "\n{}\n",
+            GetGeometryName<Backend>(*obj_A), GetGeometryName<Backend>(*obj_B),
+            first, second, test_config.description, test_config.signed_distance,
+            fmt_eigen(test_config.X_AB.GetAsMatrix34())));
         RunCallback(query, obj_A, obj_B, &collision_filter_, &world_poses);
         const std::optional<double> error =
             ComputeErrorMaybe(test_config.signed_distance);
@@ -561,8 +581,10 @@ void CharacterizeResultTest<T>::RunCharacterization(
     for (const auto& config : configs) {
       const std::unordered_map<GeometryId, RigidTransform<T>> X_WGs{
           {{id_A, X_WA}, {id_B, X_WA * config.X_AB}}};
-      object_A.setTransform(convert_to_double(X_WGs.at(id_A)).GetAsIsometry3());
-      object_B.setTransform(convert_to_double(X_WGs.at(id_B)).GetAsIsometry3());
+      object_A.setTransform(
+          Backend::ToTransform(convert_to_double(X_WGs.at(id_A))));
+      object_B.setTransform(
+          Backend::ToTransform(convert_to_double(X_WGs.at(id_B))));
 
       evaluate_callback('A', &object_A, 'B', &object_B, config, X_WGs);
       if (is_symmetric) {
@@ -602,18 +624,21 @@ void CharacterizeResultTest<T>::RunCharacterization(
   }
 }
 
-template <typename T>
-void CharacterizeResultTest<T>::RunCharacterization(const QueryInstance& query,
-                                                    bool is_symmetric) {
-  auto shape1 = MakeShape(query.shape1, false /* use_alt */);
-  auto shape2 = MakeShape(query.shape2, query.shape1 == query.shape2);
+template <typename T, typename Backend>
+void CharacterizeResultTest<T, Backend>::RunCharacterization(
+    const QueryInstance& query, bool is_symmetric) {
+  auto shape1 =
+      CharacterizationShapes::MakeShape(query.shape1, false /* use_alt */);
+  auto shape2 = CharacterizationShapes::MakeShape(query.shape2,
+                                                  query.shape1 == query.shape2);
   RunCharacterization(query, *shape1, *shape2,
                       MakeConfigurations(*shape1, *shape2, TestDistances()),
                       is_symmetric);
 }
 
-template <typename T>
-GeometryId CharacterizeResultTest<T>::EncodeData(fcl::CollisionObjectd* obj) {
+template <typename T, typename Backend>
+GeometryId CharacterizeResultTest<T, Backend>::EncodeData(
+    typename Backend::Object* obj) {
   const GeometryId id = GeometryId::get_new_id();
   const EncodedData data(id, true);
   data.write_to(obj);
@@ -621,8 +646,8 @@ GeometryId CharacterizeResultTest<T>::EncodeData(fcl::CollisionObjectd* obj) {
   return id;
 }
 
-template <typename T>
-vector<RigidTransform<T>> CharacterizeResultTest<T>::X_WAs() {
+template <typename T, typename Backend>
+vector<RigidTransform<T>> CharacterizeResultTest<T, Backend>::X_WAs() {
   return vector<RigidTransform<T>>{
       RigidTransform<T>{math::RotationMatrix<T>(AngleAxis<T>(
                             5 * M_PI / 9, Vector3<T>{-1, -1, 1}.normalized())),
@@ -632,9 +657,8 @@ vector<RigidTransform<T>> CharacterizeResultTest<T>::X_WAs() {
                         Vector3<T>{-10.0, 20.2, -12.3}}};
 }
 
-template <typename T>
-std::unique_ptr<Shape> CharacterizeResultTest<T>::MakeShape(GeometryType shape,
-                                                            bool use_alt) {
+std::unique_ptr<Shape> CharacterizationShapes::MakeShape(GeometryType shape,
+                                                         bool use_alt) {
   switch (shape) {
     case kBox:
       return std::make_unique<Box>(box(use_alt));
@@ -658,8 +682,7 @@ std::unique_ptr<Shape> CharacterizeResultTest<T>::MakeShape(GeometryType shape,
   DRAKE_UNREACHABLE();
 }
 
-template <typename T>
-Box CharacterizeResultTest<T>::box(bool alt) {
+Box CharacterizationShapes::box(bool alt) {
   if (alt) {
     return Box{kDistance * 100, kDistance * 38, kDistance * 73};
   } else {
@@ -667,8 +690,7 @@ Box CharacterizeResultTest<T>::box(bool alt) {
   }
 }
 
-template <typename T>
-Capsule CharacterizeResultTest<T>::capsule(bool alt) {
+Capsule CharacterizationShapes::capsule(bool alt) {
   if (alt) {
     return Capsule{kDistance * 19, kDistance * 100};
   } else {
@@ -676,13 +698,11 @@ Capsule CharacterizeResultTest<T>::capsule(bool alt) {
   }
 }
 
-template <typename T>
-Convex CharacterizeResultTest<T>::convex(bool) {
+Convex CharacterizationShapes::convex(bool) {
   return Convex("ignored for this test", 1.0);
 }
 
-template <typename T>
-Cylinder CharacterizeResultTest<T>::cylinder(bool alt) {
+Cylinder CharacterizationShapes::cylinder(bool alt) {
   if (alt) {
     return Cylinder{kDistance * 19, kDistance * 100};
   } else {
@@ -690,8 +710,7 @@ Cylinder CharacterizeResultTest<T>::cylinder(bool alt) {
   }
 }
 
-template <typename T>
-Ellipsoid CharacterizeResultTest<T>::ellipsoid(bool alt) {
+Ellipsoid CharacterizationShapes::ellipsoid(bool alt) {
   if (alt) {
     return Ellipsoid{kDistance * 35, kDistance * 100, kDistance * 68};
   } else {
@@ -699,18 +718,15 @@ Ellipsoid CharacterizeResultTest<T>::ellipsoid(bool alt) {
   }
 }
 
-template <typename T>
-HalfSpace CharacterizeResultTest<T>::half_space(bool) {
+HalfSpace CharacterizationShapes::half_space(bool) {
   return HalfSpace();
 }
 
-template <typename T>
-Mesh CharacterizeResultTest<T>::mesh(bool) {
+Mesh CharacterizationShapes::mesh(bool) {
   return Mesh("ignored for this test", 1.0);
 }
 
-template <typename T>
-Sphere CharacterizeResultTest<T>::sphere(bool) {
+Sphere CharacterizationShapes::sphere(bool) {
   return Sphere(kDistance * 100);
 }
 
@@ -721,7 +737,9 @@ DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
 }  // namespace geometry
 }  // namespace drake
 
-DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_SCALARS_AND_BACKENDS(
     class ::drake::geometry::internal::CharacterizeResultTest);
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_BACKENDS(
+    class ::drake::geometry::internal::MakeBackendShape);
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class ::drake::geometry::internal::ShapeConfigurations);

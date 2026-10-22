@@ -14,8 +14,9 @@
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/geometry/proximity/fcl_backend.h"
 #include "drake/geometry/proximity/proximity_utilities.h"
-#include "drake/geometry/proximity/test/fcl_utilities.h"
+#include "drake/geometry/proximity/test/backend_utilities.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/math/rigid_transform.h"
@@ -563,10 +564,10 @@ TEST_F(PenetrationAsPointPairCallbackTest, Issue10577Regression_Osculation) {
   RigidTransformd X_WA(Eigen::AngleAxisd{M_PI_2, Vector3d::UnitZ()},
                        Vector3d{-0.25, 0, 0});
   RigidTransformd X_WB(Vector3d{0, 0, 0.0085});
-  std::unique_ptr<CollisionObjectd> box =
-      MakeFclObject(Box(0.49, 0.63, 0.015), id_A, /* is_dynamic= */ true, X_WA);
-  std::unique_ptr<CollisionObjectd> cylinder =
-      MakeFclObject(Cylinder(0.08, 0.002), id_B, /* is_dynamic= */ true, X_WB);
+  std::unique_ptr<CollisionObjectd> box = MakeBackendObject<FclBackend>(
+      Box(0.49, 0.63, 0.015), id_A, /* is_dynamic= */ true, X_WA);
+  std::unique_ptr<CollisionObjectd> cylinder = MakeBackendObject<FclBackend>(
+      Cylinder(0.08, 0.002), id_B, /* is_dynamic= */ true, X_WB);
   const unordered_map<GeometryId, RigidTransformd> X_WG{{id_A, X_WA},
                                                         {id_B, X_WB}};
 
@@ -713,12 +714,14 @@ class BoxPenetrationTest : public ::testing::Test {
                      const math::RigidTransformd& X_WB) {
     const GeometryId tangent_id = GeometryId::get_new_id();
     const RigidTransformd X_WA = shape_pose(shape_type);
-    std::unique_ptr<CollisionObjectd> tangent_object = MakeFclObject(
-        shape(shape_type), tangent_id, /* is_dynamic= */ true, X_WA);
+    std::unique_ptr<CollisionObjectd> tangent_object =
+        MakeBackendObject<FclBackend>(shape(shape_type), tangent_id,
+                                      /* is_dynamic= */ true, X_WA);
 
     const GeometryId box_id = GeometryId::get_new_id();
     std::unique_ptr<CollisionObjectd> box_object =
-        MakeFclObject(box_, box_id, /* is_dynamic= */ true, X_WB);
+        MakeBackendObject<FclBackend>(box_, box_id, /* is_dynamic= */ true,
+                                      X_WB);
 
     // Note: we need a CollisionFilter for the callback data, but we don't need
     // to populate it, because we're not actually filtering anything.

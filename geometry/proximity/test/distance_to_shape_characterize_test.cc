@@ -6,6 +6,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/geometry/proximity/distance_to_shape_callback.h"
+#include "drake/geometry/proximity/fcl_backend.h"
 #include "drake/geometry/proximity/test/characterization_utilities.h"
 #include "drake/math/rigid_transform.h"
 
@@ -24,7 +25,7 @@ using std::vector;
 
 /* Implementation of DistanceCallback for signed distance. */
 template <typename T>
-class SignedDistanceCallback : public DistanceCallback<T> {
+class SignedDistanceCallback : public DistanceCallback<T, FclBackend> {
  public:
   bool Invoke(fcl::CollisionObjectd* obj_A, fcl::CollisionObjectd* obj_B,
               const CollisionFilter* collision_filter,
@@ -66,13 +67,16 @@ class SignedDistanceCallback : public DistanceCallback<T> {
 };
 
 template <typename T>
-class CharacterizeShapeDistanceResultTest : public CharacterizeResultTest<T> {
+class CharacterizeShapeDistanceResultTest
+    : public CharacterizeResultTest<T, FclBackend> {
  public:
   CharacterizeShapeDistanceResultTest()
-      : CharacterizeResultTest<T>(make_unique<SignedDistanceCallback<T>>()) {}
+      : CharacterizeResultTest<T, FclBackend>(
+            make_unique<SignedDistanceCallback<T>>()) {}
 
   std::vector<double> TestDistances() const final {
-    return {-this->kDistance, this->kDistance};
+    return {-CharacterizationShapes::kDistance,
+            CharacterizationShapes::kDistance};
   }
 };
 

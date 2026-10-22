@@ -17,7 +17,6 @@
 #include <utility>
 #include <vector>
 
-#include <fcl/fcl.h>
 #include <fmt/ostream.h>
 #include <gtest/gtest.h>
 
@@ -25,6 +24,7 @@
 #include "drake/common/drake_export.h"
 #include "drake/common/fmt.h"
 #include "drake/common/unused.h"
+#include "drake/geometry/proximity/collision_backend.h"
 #include "drake/geometry/proximity/collision_filter.h"
 #include "drake/geometry/shape_specification.h"
 #include "drake/math/rigid_transform.h"
@@ -37,7 +37,7 @@ namespace internal {
  callbacks. To test a single callback, this class should be derived and
  implemented with the details of the particular callback and its callback data
  hidden as implementation details.  */
-template <typename T>
+template <typename T, typename Backend>
 class DistanceCallback {
  public:
   virtual ~DistanceCallback() = default;
@@ -47,7 +47,8 @@ class DistanceCallback {
    responsible for calling ClearResults() if it wants the results of this
    invocation to be distinct from other invocations. */
   virtual bool Invoke(
-      fcl::CollisionObjectd*, fcl::CollisionObjectd*, const CollisionFilter*,
+      typename Backend::Object*, typename Backend::Object*,
+      const CollisionFilter*,
       const std::unordered_map<GeometryId, math::RigidTransform<T>>*) = 0;
 
   /* Forces all results to be cleared. */
@@ -81,6 +82,44 @@ enum GeometryType {
   kSphere
 };
 std::string_view to_string(GeometryType s);
+
+/* A consistent set of shapes to use across all characterization tests.
+
+ Each method can produce one of two instances of the shape (for doing, e.g.,
+ Box-Box tests with two different proportions).
+
+ As documented in query_object.h, at least one measure of each geometry should
+ be approximately 20 cm. The other measures (based on shape parameterization)
+ have been arbitrarily selected to avoid symmetry and perfectly represented
+ numerical values.
+
+ These depend on neither the query scalar nor the backend policy, so they live
+ here rather than as statics of CharacterizeResultTest; callers in
+ scalar-agnostic or backend-agnostic contexts would otherwise have to name
+ template arguments that mean nothing to them. */
+struct CharacterizationShapes {
+  /* As documented in query_object.h, the 2mm distance/depth for which the
+   queries are characterized. */
+  static constexpr double kDistance{2e-3};
+
+  static std::unique_ptr<Shape> MakeShape(GeometryType shape, bool use_alt);
+
+  static Box box(bool alt = false);
+
+  static Capsule capsule(bool alt = false);
+
+  static Convex convex(bool alt = false);
+
+  static Cylinder cylinder(bool alt = false);
+
+  static Ellipsoid ellipsoid(bool alt = false);
+
+  static HalfSpace half_space(bool alt = false);
+
+  static Mesh mesh(bool alt = false);
+
+  static Sphere sphere(bool alt = false);
+};
 
 /* This represents a single cell of the table -- an instance of invoking a
  proximity query. It explicitly calls out the two shapes and the expected
@@ -220,10 +259,11 @@ class ShapeConfigurations : public ShapeReifier {
   std::vector<ShapeTangentPlane<T>> configs_;
 };
 
-/* @name Fcl geometry from drake shape specifications. */
-class DRAKE_NO_EXPORT MakeFclShape : public ShapeReifier {
+/* @name Backend geometry from drake shape specifications. */
+template <typename Backend>
+class DRAKE_NO_EXPORT MakeBackendShape : public ShapeReifier {
  public:
-  explicit MakeFclShape(const Shape& shape);
+  explicit MakeBackendShape(const Shape& shape);
 
   /* Implementation of ShapeReifier interface  */
   using ShapeReifier::ImplementGeometry;
@@ -236,12 +276,10 @@ class DRAKE_NO_EXPORT MakeFclShape : public ShapeReifier {
   void ImplementGeometry(const Mesh& mesh, void*) final;
   void ImplementGeometry(const Sphere& sphere, void*) final;
 
-  std::shared_ptr<fcl::CollisionGeometry<double>> object() const {
-    return object_;
-  }
+  std::shared_ptr<typename Backend::Geometry> object() const { return object_; }
 
  private:
-  std::shared_ptr<fcl::CollisionGeometry<double>> object_{};
+  std::shared_ptr<typename Backend::Geometry> object_{};
 };
 
 /* Reports if the Mesh shape is represented as a Convex shape under the hood. */
@@ -282,12 +320,13 @@ math::RigidTransform<T> AlignPlanes(const Vector3<T>& P, const Vector3<T>& m,
  it for some vague "typical" case. So, we have no identity poses and non-zero
  translations. The measures of the geometry are values that are not perfectly
  represented in binary (e.g., prefer 1/3 over 1/2). */
-template <typename T>
+template <typename T, typename Backend>
 class CharacterizeResultTest : public ::testing::Test {
  public:
   /* Constructs an instance of the test for the given callback implementation.
    */
-  explicit CharacterizeResultTest(std::unique_ptr<DistanceCallback<T>> callback)
+  explicit CharacterizeResultTest(
+      std::unique_ptr<DistanceCallback<T, Backend>> callback)
       : callback_(std::move(callback)) {}
 
   /* Runs a single instance of the callback for the given collision objects.
@@ -296,8 +335,8 @@ class CharacterizeResultTest : public ::testing::Test {
    single result. Otherwise, confirms that the callback throws with a common
    "unsupported operation" type exception message. */
   void RunCallback(
-      const QueryInstance& query, fcl::CollisionObjectd* obj_A,
-      fcl::CollisionObjectd* obj_B, const CollisionFilter* collision_filter,
+      const QueryInstance& query, typename Backend::Object* obj_A,
+      typename Backend::Object* obj_B, const CollisionFilter* collision_filter,
       const std::unordered_map<GeometryId, math::RigidTransform<T>>* X_WGs)
       const;
 
@@ -391,7 +430,7 @@ class CharacterizeResultTest : public ::testing::Test {
 
   /* Generates a geometry id for the given collision object, encodes the id
    into the object, and returns the id.  */
-  GeometryId EncodeData(fcl::CollisionObjectd* obj);
+  GeometryId EncodeData(typename Backend::Object* obj);
 
   /* Returns a collection of transforms to map an experiment expressed in a
    shape A's frame A, to the world frame. The transforms are arbitrary but
@@ -399,44 +438,9 @@ class CharacterizeResultTest : public ::testing::Test {
    don't exhibit high precision due to an overly simplified scenario. */
   static std::vector<math::RigidTransform<T>> X_WAs();
 
-  /* @name A consistent set of shapes to use across all tests
-
-   Each method can produce one of two instances of the shape (for doing, e.g.,
-   Box-Box tests with two different proportions).
-
-   As documented in query_object.h, at least one measure of each geometry should
-   be approximately 20 cm. The other measures (based on shape parameterization)
-   have been arbitrarily selected to avoid symmetry and perfectly represented
-   numerical values. */
-  //@{
-
-  /* As documented in query_object.h, the 2mm distance/depth for which the
-   queries are characterized. */
-  static constexpr double kDistance{2e-3};
-
-  static std::unique_ptr<Shape> MakeShape(GeometryType shape, bool use_alt);
-
-  static Box box(bool alt = false);
-
-  static Capsule capsule(bool alt = false);
-
-  static Convex convex(bool alt = false);
-
-  static Cylinder cylinder(bool alt = false);
-
-  static Ellipsoid ellipsoid(bool alt = false);
-
-  static HalfSpace half_space(bool alt = false);
-
-  static Mesh mesh(bool alt = false);
-
-  static Sphere sphere(bool alt = false);
-
-  //}
-
  protected:
   CollisionFilter collision_filter_;
-  std::unique_ptr<DistanceCallback<T>> callback_;
+  std::unique_ptr<DistanceCallback<T, Backend>> callback_;
 };
 
 }  // namespace internal
@@ -445,7 +449,9 @@ class CharacterizeResultTest : public ::testing::Test {
 
 DRAKE_FORMATTER_AS(, drake::geometry::internal, GeometryType, x, to_string(x))
 
-DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_NONSYMBOLIC_AND_BACKENDS(
     class ::drake::geometry::internal::CharacterizeResultTest);
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_BACKENDS(
+    class ::drake::geometry::internal::MakeBackendShape);
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
     class ::drake::geometry::internal::ShapeConfigurations);

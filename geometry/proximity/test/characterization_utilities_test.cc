@@ -10,6 +10,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/geometry/proximity/fcl_backend.h"
 #include "drake/math/rigid_transform.h"
 
 namespace drake {
@@ -31,26 +32,27 @@ namespace {
  are controlled by the test to make sure that the test is detecting error that
  is *known* to exist.  */
 
-/* The MakeFclShapeTest tests confirm that Drake shape specifications turn into
- the expected fcl geometries. */
+/* The MakeBackendShapeTest tests confirm that Drake shape specifications turn
+ into the expected fcl geometries. */
 
-GTEST_TEST(MakeFclShapeTest, Box) {
+GTEST_TEST(MakeBackendShapeTest, Box) {
   const Box box(1, 2, 3);
-  auto fcl_geometry = MakeFclShape(box).object();
+  auto fcl_geometry = MakeBackendShape<FclBackend>(box).object();
   const auto& fcl_box = dynamic_cast<fcl::Boxd&>(*fcl_geometry);
   EXPECT_EQ(fcl_box.side, box.size());
 }
 
-GTEST_TEST(MakeFclShapeTest, Capsule) {
+GTEST_TEST(MakeBackendShapeTest, Capsule) {
   const Capsule capsule(0.25, 0.75);
-  auto fcl_geometry = MakeFclShape(capsule).object();
+  auto fcl_geometry = MakeBackendShape<FclBackend>(capsule).object();
   const auto& fcl_capsule = dynamic_cast<fcl::Capsuled&>(*fcl_geometry);
   EXPECT_EQ(fcl_capsule.radius, capsule.radius());
   EXPECT_EQ(fcl_capsule.lz, capsule.length());
 }
 
-GTEST_TEST(MakeFclShapeTest, Convex) {
-  auto fcl_geometry = MakeFclShape(Convex("ignored", 1.0)).object();
+GTEST_TEST(MakeBackendShapeTest, Convex) {
+  auto fcl_geometry =
+      MakeBackendShape<FclBackend>(Convex("ignored", 1.0)).object();
   const auto& fcl_convex = dynamic_cast<fcl::Convexd&>(*fcl_geometry);
   /* The convex shape is actually a box with fixed dimensions. We won't *prove*
    it's the expected box. But we'll confirm:
@@ -59,7 +61,7 @@ GTEST_TEST(MakeFclShapeTest, Convex) {
      - The extent of an axis-aligned bounding box is that of the expected box.
    This won't guarantee a box, but would require an overt, adversarial effort
    to create a non-box that passes the same tests. */
-  const Box box = CharacterizeResultTest<double>::box();
+  const Box box = CharacterizationShapes::box();
   const Vector3d half_size = box.size() / 2;
   const double dist_to_corner = half_size.norm();
   ASSERT_EQ(fcl_convex.getVertices().size(), 8);
@@ -76,33 +78,33 @@ GTEST_TEST(MakeFclShapeTest, Convex) {
   EXPECT_TRUE(CompareMatrices(max_corner, half_size, kEps));
 }
 
-GTEST_TEST(MakeFclShapeTest, Cylinder) {
+GTEST_TEST(MakeBackendShapeTest, Cylinder) {
   const Cylinder cylinder(0.25, 0.75);
-  auto fcl_geometry = MakeFclShape(cylinder).object();
+  auto fcl_geometry = MakeBackendShape<FclBackend>(cylinder).object();
   const auto& fcl_cylinder = dynamic_cast<fcl::Cylinderd&>(*fcl_geometry);
   EXPECT_EQ(fcl_cylinder.radius, cylinder.radius());
   EXPECT_EQ(fcl_cylinder.lz, cylinder.length());
 }
 
-GTEST_TEST(MakeFclShapeTest, Ellipsoid) {
+GTEST_TEST(MakeBackendShapeTest, Ellipsoid) {
   const Ellipsoid ellipsoid(0.25, 0.75, 0.6);
-  auto fcl_geometry = MakeFclShape(ellipsoid).object();
+  auto fcl_geometry = MakeBackendShape<FclBackend>(ellipsoid).object();
   const auto& fcl_ellipsoid = dynamic_cast<fcl::Ellipsoidd&>(*fcl_geometry);
   EXPECT_EQ(fcl_ellipsoid.radii[0], ellipsoid.a());
   EXPECT_EQ(fcl_ellipsoid.radii[1], ellipsoid.b());
   EXPECT_EQ(fcl_ellipsoid.radii[2], ellipsoid.c());
 }
 
-GTEST_TEST(MakeFclShapeTest, HalfSpace) {
-  auto fcl_geometry = MakeFclShape(HalfSpace{}).object();
+GTEST_TEST(MakeBackendShapeTest, HalfSpace) {
+  auto fcl_geometry = MakeBackendShape<FclBackend>(HalfSpace{}).object();
   const auto& fcl_half_space = dynamic_cast<fcl::Halfspaced&>(*fcl_geometry);
   EXPECT_EQ(fcl_half_space.n, Vector3d(0, 0, 1));
   EXPECT_EQ(fcl_half_space.d, 0);
 }
 
-GTEST_TEST(MakeFclShapeTest, Sphere) {
+GTEST_TEST(MakeBackendShapeTest, Sphere) {
   const Sphere sphere(0.7);
-  auto fcl_geometry = MakeFclShape(sphere).object();
+  auto fcl_geometry = MakeBackendShape<FclBackend>(sphere).object();
   const auto& fcl_sphere = dynamic_cast<fcl::Sphered&>(*fcl_geometry);
   EXPECT_EQ(fcl_sphere.radius, sphere.radius());
 }
@@ -159,7 +161,7 @@ void ValidateBoxSample(const Vector3d& half_size,
 }
 
 GTEST_TEST(SampleShapeSurfaceTest, Box) {
-  const Box box = CharacterizeResultTest<double>::box();
+  const Box box = CharacterizationShapes::box();
   const Vector3d half_size = box.size() / 2;
   /* We validate for a requested penetration that is too deep.  */
   EXPECT_THROW(ShapeConfigurations<double>(box, -half_size.minCoeff() * 1.01),
@@ -219,7 +221,7 @@ GTEST_TEST(SampleShapeSurfaceTest, Convex) {
    convex_half_size(). We'll generate the samples based on a convex declaration,
    but test against a box.  */
   const Convex convex("ignored", 1.0);
-  const Box box = CharacterizeResultTest<double>::box();
+  const Box box = CharacterizationShapes::box();
   const Vector3d half_size = box.size() / 2;
   /* We validate for a requested penetration that is too deep.  */
   EXPECT_THROW(
@@ -543,7 +545,7 @@ GTEST_TEST(DummyCallbackTest, ConfirmErrorSequence) {
 }
 
 template <typename T>
-class DummyImplementation : public DistanceCallback<T> {
+class DummyImplementation : public DistanceCallback<T, FclBackend> {
  public:
   bool Invoke(
       fcl::CollisionObjectd* obj_A, fcl::CollisionObjectd* obj_B,
@@ -586,10 +588,11 @@ class DummyImplementation : public DistanceCallback<T> {
      between the two shapes.
 
   Therefore, for one configuration there will be 2N calls to callback. */
-class RunCharacterizationCustomTest : public CharacterizeResultTest<double> {
+class RunCharacterizationCustomTest
+    : public CharacterizeResultTest<double, FclBackend> {
  public:
   RunCharacterizationCustomTest()
-      : CharacterizeResultTest<double>(
+      : CharacterizeResultTest<double, FclBackend>(
             std::make_unique<DummyImplementation<double>>()) {}
 
   vector<double> TestDistances() const final { return {kTruth}; }
@@ -619,21 +622,22 @@ TEST_F(RunCharacterizationCustomTest, CustomConfigurations) {
 /* In this case, we confirm that if MakeConfigurations is *not* overridden, that
  we'll get the expected collection (at least by count) of configurations
  automatically generated. Contrast that with RunCharacterizationCustomTest. */
-class RunCharacterizationTest : public CharacterizeResultTest<double> {
+class RunCharacterizationTest
+    : public CharacterizeResultTest<double, FclBackend> {
  public:
   RunCharacterizationTest()
-      : CharacterizeResultTest<double>(
+      : CharacterizeResultTest<double, FclBackend>(
             std::make_unique<DummyImplementation<double>>()) {}
 
   vector<double> TestDistances() const final {
-    return {this->sphere().radius() * 0.25};
+    return {CharacterizationShapes::sphere().radius() * 0.25};
   }
 };
 
 /* Confirm that when we don't explicitly enumerate the configurations, but
  rely on the test to generate its own, that we get the results we expect. */
 TEST_F(RunCharacterizationTest, DefaultConfigurations) {
-  const Sphere sphere = this->sphere();
+  const Sphere sphere = CharacterizationShapes::sphere();
   const int sphere_config_count =
       static_cast<int>(ShapeConfigurations<double>(sphere, 0).configs().size());
   const int pose_count = static_cast<int>(X_WAs().size());

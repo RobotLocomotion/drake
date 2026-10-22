@@ -9,6 +9,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/geometry/proximity/distance_to_point_callback.h"
+#include "drake/geometry/proximity/fcl_backend.h"
 #include "drake/geometry/proximity/make_box_mesh.h"
 #include "drake/geometry/proximity/test/characterization_utilities.h"
 #include "drake/geometry/query_results/signed_distance_to_point.h"
@@ -54,7 +55,7 @@ std::string MakeConvexObj(const fcl::Convexd& convex) {
 
 /* Implementation of DistanceCallback for signed distance. */
 template <typename T>
-class PointDistanceCallback : public DistanceCallback<T> {
+class PointDistanceCallback : public DistanceCallback<T, FclBackend> {
  public:
   bool Invoke(fcl::CollisionObjectd* obj_A, fcl::CollisionObjectd* obj_B,
               const CollisionFilter*,
@@ -98,14 +99,16 @@ class PointDistanceCallback : public DistanceCallback<T> {
 };
 
 template <typename T>
-class CharacterizePointDistanceResultTest : public CharacterizeResultTest<T> {
+class CharacterizePointDistanceResultTest
+    : public CharacterizeResultTest<T, FclBackend> {
  public:
   CharacterizePointDistanceResultTest()
-      : CharacterizeResultTest<T>(
+      : CharacterizeResultTest<T, FclBackend>(
             std::make_unique<PointDistanceCallback<T>>()) {}
 
   vector<double> TestDistances() const final {
-    return {-this->kDistance, this->kDistance};
+    return {-CharacterizationShapes::kDistance,
+            CharacterizationShapes::kDistance};
   }
 
   /* Although we're representing the point as a sphere to fit into the
