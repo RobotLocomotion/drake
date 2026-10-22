@@ -3,14 +3,11 @@
 #include <unordered_map>
 #include <vector>
 
-#include <fcl/fcl.h>
-
 #include "drake/common/drake_export.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/nice_type_name.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/proximity/collision_filter.h"
-#include "drake/geometry/proximity/fcl_backend.h"
 #include "drake/geometry/proximity/proximity_utilities.h"
 #include "drake/geometry/query_results/signed_distance_pair.h"
 #include "drake/math/rigid_transform.h"
@@ -34,9 +31,9 @@ namespace shape_distance DRAKE_NO_EXPORT {
       every supported geometry which lies within the threshold.
 
  @tparam T The computation scalar.  */
-template <typename T>
+template <typename T, typename Backend>
 struct CallbackData {
-  /* Constructs the mostly-specified callback data. The fcl distance request is
+  /* Constructs the mostly-specified callback data. The distance request is
    left in its default constructed state for subsequent configuration. The
    values are as described in the class documentation. The parameters are almost
    all aliased in the data and require the aliased parameters to remain valid at
@@ -71,7 +68,7 @@ struct CallbackData {
   const double max_distance{};
 
   /* The distance query parameters.  */
-  fcl::DistanceRequestd request;
+  typename Backend::DistanceRequest request;
 
   /* The results of the distance query.  */
   std::vector<SignedDistancePair<T>>& nearest_pairs{};
@@ -83,7 +80,7 @@ struct CallbackData {
  between the two given geometry arguments using the functor's stored poses.
 
  @tparam T  Computation scalar type.  */
-template <typename T>
+template <typename T, typename Backend>
 class DistancePairGeometry {
  public:
   /* Constructs the functor caching all parameters that do _not_ depend on
@@ -124,17 +121,20 @@ class DistancePairGeometry {
    3. Na = Ao - r * ∇φ_B(Ao)  */
   //@{
 
-  void operator()(const fcl::Sphered& sphere_A, const fcl::Sphered& sphere_B);
+  void operator()(const typename Backend::Sphere& sphere_A,
+                  const typename Backend::Sphere& sphere_B);
 
-  void operator()(const fcl::Sphered& sphere_A, const fcl::Boxd& box_B);
+  void operator()(const typename Backend::Sphere& sphere_A,
+                  const typename Backend::Box& box_B);
 
-  void operator()(const fcl::Sphered& sphere_A,
-                  const fcl::Cylinderd& cylinder_B);
+  void operator()(const typename Backend::Sphere& sphere_A,
+                  const typename Backend::Cylinder& cylinder_B);
 
-  void operator()(const fcl::Sphered& sphere_A,
-                  const fcl::Halfspaced& halfspace_B);
+  void operator()(const typename Backend::Sphere& sphere_A,
+                  const typename Backend::Halfspace& halfspace_B);
 
-  void operator()(const fcl::Sphered& sphere_A, const fcl::Capsuled& capsule_B);
+  void operator()(const typename Backend::Sphere& sphere_A,
+                  const typename Backend::Capsule& capsule_B);
 
   //@}
 
@@ -142,9 +142,9 @@ class DistancePairGeometry {
   // Distance computation between a sphere A and a generic shape B. We use
   // the overloaded call operators above to limit the kinds of queries, and
   // they all call this private template function to minimize code duplication.
-  template <typename FclShape>
-  void SphereShapeDistance(const fcl::Sphered& sphere_A,
-                           const FclShape& shape_B);
+  template <typename BackendShape>
+  void SphereShapeDistance(const typename Backend::Sphere& sphere_A,
+                           const BackendShape& shape_B);
 
   GeometryId id_A_;
   GeometryId id_B_;
@@ -160,8 +160,9 @@ class DistancePairGeometry {
  particular geometry pair does not mean we have no recourse for computing
  signed distance. Instead, we have the "fallback" function.
 
- The fallback function is a simple interface that takes two fcl collision
- objects (called `a` and `b`), fcl distance request parameters, and a pointer
+ The fallback function is a simple interface that takes two collision
+ objects (called `a` and `b`), the backend's distance request parameters, and
+ a pointer
  to the SignedDistancePair which will be populated with the results of the
  query.
 
@@ -171,41 +172,29 @@ class DistancePairGeometry {
  for a scalar type unless one is explicitly provided.  */
 //@{
 
-/* For all non-whitelisted scalar types T, throws an exception declaring the
- unsupported combination of geometry types and scalar type.  */
-template <typename T>
-void CalcDistanceFallback(const fcl::CollisionObjectd& a,
-                          const math::RigidTransform<T>&,
-                          const fcl::CollisionObjectd& b,
-                          const math::RigidTransform<T>&,
-                          const fcl::DistanceRequestd&,
-                          SignedDistancePair<T>* /* pair_data */) {
-  // By default, there is no fallback. For every scalar type for which one
-  // actually exists, it should be specialized below.
-  throw std::logic_error(fmt::format(
-      "Signed distance queries between shapes '{}' and '{}' "
-      "are not supported for scalar type {}. See the documentation for "
-      "QueryObject::ComputeSignedDistancePairwiseClosestPoints() for the "
-      "full status of supported geometries.",
-      GetGeometryName<FclBackend>(a), GetGeometryName<FclBackend>(b),
-      NiceTypeName::Get<T>()));
-}
+/* For the double scalar, computes the signed distance between the two
+ objects. For every other scalar type there is no fallback, and the call
+ throws, declaring the unsupported combination of geometry types and scalar
+ type.
 
-/* For the double scalar, computes the signed distance between the two objects.
- */
-template <>
-void CalcDistanceFallback<double>(const fcl::CollisionObjectd& a,
-                                  const math::RigidTransformd& X_WA,
-                                  const fcl::CollisionObjectd& b,
-                                  const math::RigidTransformd& X_WB,
-                                  const fcl::DistanceRequestd& request,
-                                  SignedDistancePair<double>* pair_data);
+ This was a function template plus an explicit specialization on double.
+ Adding the backend parameter makes that a *partial* specialization, which
+ C++ does not allow for function templates, so the dispatch is an
+ `if constexpr` in the definition.  */
+template <typename T, typename Backend>
+void CalcDistanceFallback(const typename Backend::Object& a,
+                          const math::RigidTransform<T>& X_WA,
+                          const typename Backend::Object& b,
+                          const math::RigidTransform<T>& X_WB,
+                          const typename Backend::DistanceRequest& request,
+                          SignedDistancePair<T>* pair_data);
 
 //@}
 
 /* Reports if the given geometries require using the fallback. */
-bool RequiresFallback(const fcl::CollisionObjectd& a,
-                      const fcl::CollisionObjectd& b);
+template <typename Backend>
+bool RequiresFallback(const typename Backend::Object& a,
+                      const typename Backend::Object& b);
 
 /* Dispatches the narrowphase shape-shape query for the object pair (`a`, `b`)
  to the appropriate primitive-primitive function (optionally defaulting to the
@@ -219,13 +208,12 @@ bool RequiresFallback(const fcl::CollisionObjectd& a,
  @param result          The structure to capture the computation results in.
  @tparam T Computation scalar type.
  @pre The pair should *not* be (Halfspace, X), unless X is Sphere.  */
-template <typename T>
-void ComputeNarrowPhaseDistance(const fcl::CollisionObjectd& a,
-                                const math::RigidTransform<T>& X_WA,
-                                const fcl::CollisionObjectd& b,
-                                const math::RigidTransform<T>& X_WB,
-                                const fcl::DistanceRequestd& request,
-                                SignedDistancePair<T>* result);
+template <typename T, typename Backend>
+void ComputeNarrowPhaseDistance(
+    const typename Backend::Object& a, const math::RigidTransform<T>& X_WA,
+    const typename Backend::Object& b, const math::RigidTransform<T>& X_WB,
+    const typename Backend::DistanceRequest& request,
+    SignedDistancePair<T>* result);
 
 // TODO(SeanCurtis-TRI): Replace this clunky mechanism with a new mechanism
 // which does this implicitly via ADL and templates.
@@ -240,30 +228,30 @@ void ComputeNarrowPhaseDistance(const fcl::CollisionObjectd& a,
 
 template <typename T>
 struct ScalarSupport {
-  static bool is_supported(fcl::NODE_TYPE, fcl::NODE_TYPE) { return false; }
+  static bool is_supported(ShapeKind, ShapeKind) { return false; }
 };
 
 /* Primitive support for double-valued query.  */
 template <>
 struct ScalarSupport<double> {
-  static bool is_supported(fcl::NODE_TYPE, fcl::NODE_TYPE);
+  static bool is_supported(ShapeKind, ShapeKind);
 };
 
 /* Primitive support for AutoDiff-valued query.  */
 template <>
 struct ScalarSupport<AutoDiffXd> {
-  static bool is_supported(fcl::NODE_TYPE node1, fcl::NODE_TYPE node2) {
+  static bool is_supported(ShapeKind kind1, ShapeKind kind2) {
     // TODO(SeanCurtis-TRI): Confirm derivatives for sphere-capsule.
     // Explicitly permit the following pair types (with ordering
     // permutations):
     //  (sphere, sphere)
     //  (sphere, box)
     //  (sphere, halfspace)
-    return (node1 == fcl::GEOM_SPHERE &&
-            (node2 == fcl::GEOM_SPHERE || node2 == fcl::GEOM_BOX ||
-             node2 == fcl::GEOM_HALFSPACE)) ||
-           (node2 == fcl::GEOM_SPHERE &&
-            (node1 == fcl::GEOM_BOX || node1 == fcl::GEOM_HALFSPACE));
+    return (kind1 == ShapeKind::kSphere &&
+            (kind2 == ShapeKind::kSphere || kind2 == ShapeKind::kBox ||
+             kind2 == ShapeKind::kHalfspace)) ||
+           (kind2 == ShapeKind::kSphere &&
+            (kind1 == ShapeKind::kBox || kind1 == ShapeKind::kHalfspace));
   }
 };
 
@@ -274,7 +262,8 @@ struct ScalarSupport<AutoDiffXd> {
 
  This callback is used in the context where we're going to report the distance
  between all O(N²) objects, regardless of the results. The final parameter
- in the callback serves as a threshold to the FCL broadphase -- any objects
+ in the callback serves as a threshold to the backend broadphase -- any
+ objects
  that are known to be farther than the `dist` value will not be dispatched to
  this narrow phase callback. This query does not *reduce* the distance so
  it does not set it.
@@ -289,11 +278,11 @@ struct ScalarSupport<AutoDiffXd> {
  @param max_distance    The maximum distance the broadphase should consider
                         for candidate pairs.
  @returns False; the broadphase should *not* terminate its process.  */
-template <typename T>
-bool Callback(fcl::CollisionObjectd* object_A_ptr,
-              fcl::CollisionObjectd* object_B_ptr,
+template <typename T, typename Backend>
+bool Callback(typename Backend::Object* object_A_ptr,
+              typename Backend::Object* object_B_ptr,
               // NOLINTNEXTLINE
-              void* callback_data, double& max_distance);
+              void* callback_data, typename Backend::Scalar& max_distance);
 
 // clang-format off
 }  // namespace shape_distance

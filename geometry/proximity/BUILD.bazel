@@ -355,10 +355,10 @@ drake_cc_library(
         "//geometry:__pkg__",
     ],
     deps = [
+        ":collision_backend",
         ":collision_filter",
         ":distance_to_point_callback",
         ":distance_to_shape_touching",
-        ":fcl_backend",
         ":proximity_utilities",
         "//common:default_scalars",
         "//common:drake_export",
@@ -376,9 +376,9 @@ drake_cc_library(
         "//geometry:__pkg__",
     ],
     deps = [
+        ":collision_backend",
         "//common:essential",
         "//math:geometric_transform",
-        "@fcl_internal//:fcl",
     ],
 )
 

@@ -4,6 +4,8 @@
 #include <optional>
 #include <vector>
 
+#include "drake/geometry/proximity/collision_backend.h"
+
 namespace drake {
 namespace geometry {
 namespace internal {
@@ -29,9 +31,10 @@ constexpr double kOverlapTolerance = 8 * kTouchingTolerance;
 
 }  // namespace
 
-Vector3d CalcGradientWhenTouching(const fcl::CollisionObjectd& a,
+template <typename Backend>
+Vector3d CalcGradientWhenTouching(const typename Backend::Object& a,
                                   const math::RigidTransformd& X_WA,
-                                  const fcl::CollisionObjectd& b,
+                                  const typename Backend::Object& b,
                                   const math::RigidTransformd& X_WB,
                                   const Eigen::Vector3d& p_ACa,
                                   const Eigen::Vector3d& p_BCb) {
@@ -39,27 +42,30 @@ Vector3d CalcGradientWhenTouching(const fcl::CollisionObjectd& a,
   // necessarily expect that it is used for all those pairs. For example, some
   // sphere-X touching pairs are resolved by DistancePairGeometry in
   // distance_to_shape_callback.h.
-  if (a.collisionGeometry()->getNodeType() == fcl::GEOM_SPHERE &&
-      static_cast<const fcl::Sphered*>(a.collisionGeometry().get())->radius >
-          0) {
+  const ShapeKind a_kind =
+      Backend::Classify(a.collisionGeometry()->getNodeType());
+  const ShapeKind b_kind =
+      Backend::Classify(b.collisionGeometry()->getNodeType());
+  if (a_kind == ShapeKind::kSphere &&
+      Backend::radius(*static_cast<const typename Backend::Sphere*>(
+          a.collisionGeometry().get())) > 0) {
     const Vector3d nhat_AB_A = p_ACa.normalized();
     const Vector3d nhat_BA_W = X_WA.rotation() * (-nhat_AB_A);
     return nhat_BA_W;
   }
-  if (b.collisionGeometry()->getNodeType() == fcl::GEOM_SPHERE &&
-      static_cast<const fcl::Sphered*>(b.collisionGeometry().get())->radius >
-          0) {
+  if (b_kind == ShapeKind::kSphere &&
+      Backend::radius(*static_cast<const typename Backend::Sphere*>(
+          b.collisionGeometry().get())) > 0) {
     const Vector3d nhat_BA_B = p_BCb.normalized();
     const Vector3d nhat_BA_W = X_WB.rotation() * nhat_BA_B;
     return nhat_BA_W;
   }
-  if (a.collisionGeometry()->getNodeType() == fcl::GEOM_BOX &&
-      b.collisionGeometry()->getNodeType() == fcl::GEOM_BOX) {
+  if (a_kind == ShapeKind::kBox && b_kind == ShapeKind::kBox) {
     const auto& box_A =
-        *static_cast<const fcl::Boxd*>(a.collisionGeometry().get());
+        *static_cast<const typename Backend::Box*>(a.collisionGeometry().get());
     const auto& box_B =
-        *static_cast<const fcl::Boxd*>(b.collisionGeometry().get());
-    return BoxBoxGradient(box_A, box_B, X_WA, X_WB, p_ACa, p_BCb);
+        *static_cast<const typename Backend::Box*>(b.collisionGeometry().get());
+    return BoxBoxGradient<Backend>(box_A, box_B, X_WA, X_WB, p_ACa, p_BCb);
   }
   // TODO(14789): Take care of other shapes and zero-radius spheres. For now,
   //  return NaN.
@@ -67,8 +73,10 @@ Vector3d CalcGradientWhenTouching(const fcl::CollisionObjectd& a,
   return Vector3d(kNan, kNan, kNan);
 }
 
-Vector3d PointOnBoxSurfaceHelper(const Vector3d& p_BQ, const fcl::Boxd& box_B) {
-  const Vector3d half_size = box_B.side / 2.0;
+template <typename Backend>
+Vector3d PointOnBoxSurfaceHelper(const Vector3d& p_BQ,
+                                 const typename Backend::Box& box_B) {
+  const Vector3d half_size = Backend::half_extents(box_B);
   Vector3d n{0.0, 0.0, 0.0};
   // Our classification is sensitive to the precision of p_BQ and this
   // internal tolerance. We assume that the caller always passes p_BQ on the
@@ -89,20 +97,22 @@ Vector3d PointOnBoxSurfaceHelper(const Vector3d& p_BQ, const fcl::Boxd& box_B) {
   return n;
 }
 
-std::pair<double, double> ProjectedMinMax(const fcl::Boxd& box_B,
+template <typename Backend>
+std::pair<double, double> ProjectedMinMax(const typename Backend::Box& box_B,
                                           const RigidTransformd& X_AB,
                                           const Vector3d& unit_vector_A) {
-  const Vector3d half_size_B = box_B.side / 2.0;
+  const Vector3d half_size_B = Backend::half_extents(box_B);
   const Vector3d unit_vector_B = X_AB.rotation().transpose() * unit_vector_A;
   double max_value = half_size_B.dot(unit_vector_B.cwiseAbs());
   double d = X_AB.translation().dot(unit_vector_A);
   return {d - max_value, d + max_value};
 }
 
+template <typename Backend>
 std::optional<Vector3d> MaybeMakeSeparatingVector(
-    const fcl::Boxd& box_A, const fcl::Boxd& box_B, const RigidTransformd& X_AB,
-    const std::vector<Vector3d>& v_As) {
-  const Vector3d half_size_A = box_A.side / 2.0;
+    const typename Backend::Box& box_A, const typename Backend::Box& box_B,
+    const RigidTransformd& X_AB, const std::vector<Vector3d>& v_As) {
+  const Vector3d half_size_A = Backend::half_extents(box_A);
   for (const Vector3d& v_A : v_As) {
     double v_A_norm = v_A.norm();
     if (v_A_norm < kZeroLengthEps) {
@@ -112,7 +122,8 @@ std::optional<Vector3d> MaybeMakeSeparatingVector(
 
     const double max_A = half_size_A.dot(unit_vector_A.cwiseAbs());
     const double min_A = -max_A;
-    const auto [min_B, max_B] = ProjectedMinMax(box_B, X_AB, unit_vector_A);
+    const auto [min_B, max_B] =
+        ProjectedMinMax<Backend>(box_B, X_AB, unit_vector_A);
 
     // The catch-all case in BoxBoxGradientImpl() applies this same test.
     if (max_A < min_B + kOverlapTolerance) {
@@ -131,13 +142,15 @@ namespace {
 
 // The implementation of BoxBoxGradient(), with box_B's pose and the result
 // expressed in box_A's frame.
-Vector3d BoxBoxGradientImpl(const fcl::Boxd& box_A, const fcl::Boxd& box_B,
+template <typename Backend>
+Vector3d BoxBoxGradientImpl(const typename Backend::Box& box_A,
+                            const typename Backend::Box& box_B,
                             const math::RigidTransformd& X_AB,
                             const Eigen::Vector3d& p_ACa,
                             const Eigen::Vector3d& p_BCb) {
   const math::RotationMatrixd& R_AB = X_AB.rotation();
-  const Vector3d v_A = PointOnBoxSurfaceHelper(p_ACa, box_A);
-  const Vector3d v_B = PointOnBoxSurfaceHelper(p_BCb, box_B);
+  const Vector3d v_A = PointOnBoxSurfaceHelper<Backend>(p_ACa, box_A);
+  const Vector3d v_B = PointOnBoxSurfaceHelper<Backend>(p_BCb, box_B);
   double s_A = v_A.sum();
   double s_B = v_B.sum();
 
@@ -150,7 +163,7 @@ Vector3d BoxBoxGradientImpl(const fcl::Boxd& box_A, const fcl::Boxd& box_B,
   if (s_A == 1) {
     const Vector3d normal_A = (v_A.dot(p_ACa) > 0 ? v_A : -v_A);
     const std::optional<Vector3d> nhat_BA_A =
-        MaybeMakeSeparatingVector(box_A, box_B, X_AB, {-normal_A});
+        MaybeMakeSeparatingVector<Backend>(box_A, box_B, X_AB, {-normal_A});
     if (nhat_BA_A.has_value()) {
       return nhat_BA_A.value();
     }
@@ -161,7 +174,8 @@ Vector3d BoxBoxGradientImpl(const fcl::Boxd& box_A, const fcl::Boxd& box_B,
     // p_BCb is on a face of B
     const Vector3d normal_B = (v_B.dot(p_BCb) > 0 ? v_B : -v_B);
     const std::optional<Vector3d> nhat_BA_A =
-        MaybeMakeSeparatingVector(box_A, box_B, X_AB, {R_AB * normal_B});
+        MaybeMakeSeparatingVector<Backend>(box_A, box_B, X_AB,
+                                           {R_AB * normal_B});
     if (nhat_BA_A.has_value()) {
       return nhat_BA_A.value();
     }
@@ -182,7 +196,8 @@ Vector3d BoxBoxGradientImpl(const fcl::Boxd& box_A, const fcl::Boxd& box_B,
     if (cross_product_A.norm() > kParallelEps) {
       // The two edges are not parallel.
       const std::optional<Vector3d> nhat_BA_A =
-          MaybeMakeSeparatingVector(box_A, box_B, X_AB, {cross_product_A});
+          MaybeMakeSeparatingVector<Backend>(box_A, box_B, X_AB,
+                                             {cross_product_A});
       if (nhat_BA_A.has_value()) {
         return nhat_BA_A.value();
       }
@@ -190,9 +205,10 @@ Vector3d BoxBoxGradientImpl(const fcl::Boxd& box_A, const fcl::Boxd& box_B,
       // Parallel edge-to-edge. A separating plane passes through at least
       // one of the two faces sharing the edge in Box A.
       const std::optional<Vector3d> nhat_BA_A =
-          MaybeMakeSeparatingVector(box_A, box_B, X_AB,
-                                    {Vector3d::Unit((axis_index_A + 1) % 3),
-                                     Vector3d::Unit((axis_index_A + 2) % 3)});
+          MaybeMakeSeparatingVector<Backend>(
+              box_A, box_B, X_AB,
+              {Vector3d::Unit((axis_index_A + 1) % 3),
+               Vector3d::Unit((axis_index_A + 2) % 3)});
       if (nhat_BA_A.has_value()) {
         return nhat_BA_A.value();
       }
@@ -205,10 +221,12 @@ Vector3d BoxBoxGradientImpl(const fcl::Boxd& box_A, const fcl::Boxd& box_B,
   // Ca is strictly on an edge and Cb is strictly on a vertex.
   if (s_A == 2 && s_B == 3) {
     const Vector3d edge_vector_A_A = Vector3d::Unit(axis_index_A);
-    const std::optional<Vector3d> nhat_BA_A = MaybeMakeSeparatingVector(
-        box_A, box_B, X_AB,
-        {edge_vector_A_A.cross(R_AB.col(0)), edge_vector_A_A.cross(R_AB.col(1)),
-         edge_vector_A_A.cross(R_AB.col(2))});
+    const std::optional<Vector3d> nhat_BA_A =
+        MaybeMakeSeparatingVector<Backend>(
+            box_A, box_B, X_AB,
+            {edge_vector_A_A.cross(R_AB.col(0)),
+             edge_vector_A_A.cross(R_AB.col(1)),
+             edge_vector_A_A.cross(R_AB.col(2))});
     if (nhat_BA_A.has_value()) {
       return nhat_BA_A.value();
     }
@@ -218,10 +236,11 @@ Vector3d BoxBoxGradientImpl(const fcl::Boxd& box_A, const fcl::Boxd& box_B,
   if (s_A == 3 && s_B == 2) {
     const Vector3d edge_vector_B_A = R_AB.col(axis_index_B);
     const std::optional<Vector3d> nhat_BA_A =
-        MaybeMakeSeparatingVector(box_A, box_B, X_AB,
-                                  {edge_vector_B_A.cross(Vector3d::UnitX()),
-                                   edge_vector_B_A.cross(Vector3d::UnitY()),
-                                   edge_vector_B_A.cross(Vector3d::UnitZ())});
+        MaybeMakeSeparatingVector<Backend>(
+            box_A, box_B, X_AB,
+            {edge_vector_B_A.cross(Vector3d::UnitX()),
+             edge_vector_B_A.cross(Vector3d::UnitY()),
+             edge_vector_B_A.cross(Vector3d::UnitZ())});
     if (nhat_BA_A.has_value()) {
       return nhat_BA_A.value();
     }
@@ -243,7 +262,7 @@ Vector3d BoxBoxGradientImpl(const fcl::Boxd& box_A, const fcl::Boxd& box_B,
   // than expected. Among the fifteen candidate directions, the one with the
   // minimum overlap is the direction of the minimum translation that separates
   // the boxes, i.e., the signed-distance gradient.
-  const Vector3d half_size_A = box_A.side / 2.0;
+  const Vector3d half_size_A = Backend::half_extents(box_A);
   double min_overlap = std::numeric_limits<double>::infinity();
   Vector3d best_nhat_BA_A = Vector3d::Zero();
   for (const Vector3d& candidate_A : candidates_A) {
@@ -254,7 +273,8 @@ Vector3d BoxBoxGradientImpl(const fcl::Boxd& box_A, const fcl::Boxd& box_B,
     const Vector3d unit_vector_A = candidate_A / candidate_norm;
     const double max_A = half_size_A.dot(unit_vector_A.cwiseAbs());
     const double min_A = -max_A;
-    const auto [min_B, max_B] = ProjectedMinMax(box_B, X_AB, unit_vector_A);
+    const auto [min_B, max_B] =
+        ProjectedMinMax<Backend>(box_B, X_AB, unit_vector_A);
     // Same test as MaybeMakeSeparatingVector().
     if (max_A < min_B + kOverlapTolerance) {
       return -unit_vector_A;
@@ -278,7 +298,9 @@ Vector3d BoxBoxGradientImpl(const fcl::Boxd& box_A, const fcl::Boxd& box_B,
 
 }  // namespace
 
-Vector3d BoxBoxGradient(const fcl::Boxd& box_A, const fcl::Boxd& box_B,
+template <typename Backend>
+Vector3d BoxBoxGradient(const typename Backend::Box& box_A,
+                        const typename Backend::Box& box_B,
                         const math::RigidTransformd& X_WA,
                         const math::RigidTransformd& X_WB,
                         const Eigen::Vector3d& p_ACa,
@@ -289,9 +311,14 @@ Vector3d BoxBoxGradient(const fcl::Boxd& box_A, const fcl::Boxd& box_B,
   // separation.
   const RigidTransformd X_AB = X_WA.InvertAndCompose(X_WB);
   const Vector3d nhat_BA_A =
-      BoxBoxGradientImpl(box_A, box_B, X_AB, p_ACa, p_BCb);
+      BoxBoxGradientImpl<Backend>(box_A, box_B, X_AB, p_ACa, p_BCb);
   return X_WA.rotation() * nhat_BA_A;
 }
+
+DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_BACKENDS(
+    (&CalcGradientWhenTouching<Backend>, &PointOnBoxSurfaceHelper<Backend>,
+     &ProjectedMinMax<Backend>, &MaybeMakeSeparatingVector<Backend>,
+     &BoxBoxGradient<Backend>));
 
 }  // namespace shape_distance
 }  // namespace internal
