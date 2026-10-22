@@ -17,7 +17,6 @@
 #include <utility>
 #include <vector>
 
-#include <fcl/fcl.h>
 #include <fmt/ostream.h>
 #include <gtest/gtest.h>
 
@@ -26,12 +25,27 @@
 #include "drake/common/fmt.h"
 #include "drake/common/unused.h"
 #include "drake/geometry/proximity/collision_filter.h"
+#include "drake/geometry/proximity/fcl_backend.h"
 #include "drake/geometry/shape_specification.h"
 #include "drake/math/rigid_transform.h"
 
 namespace drake {
 namespace geometry {
 namespace internal {
+
+/* The backend whose behavior the accuracy tables in query_object.h describe.
+
+ These tests exist to justify those tables, and Drake publishes one backend's
+ numbers -- the default's. So the harness names a backend rather than being
+ templated on one: nothing would ever instantiate it twice, and a template
+ parameter would leak into every callback adapter and into the shared
+ instantiation macros for no gain.
+
+ Changing this line is part of changing Drake's default backend. The tables
+ must be re-measured at the same time, and the Invoke() overrides in the
+ *_characterize_test.cc files will stop compiling until they are updated --
+ which is the intended prompt to revisit them.  */
+using CharacterizationBackend = FclBackend;
 
 /* The base class defining a self-contained wrapper for distance-related
  callbacks. To test a single callback, this class should be derived and
@@ -40,6 +54,8 @@ namespace internal {
 template <typename T>
 class DistanceCallback {
  public:
+  using Backend = CharacterizationBackend;
+
   virtual ~DistanceCallback() = default;
 
   /* Invokes the underlying callback for the given data. This invocation will
@@ -47,7 +63,8 @@ class DistanceCallback {
    responsible for calling ClearResults() if it wants the results of this
    invocation to be distinct from other invocations. */
   virtual bool Invoke(
-      fcl::CollisionObjectd*, fcl::CollisionObjectd*, const CollisionFilter*,
+      typename Backend::Object*, typename Backend::Object*,
+      const CollisionFilter*,
       const std::unordered_map<GeometryId, math::RigidTransform<T>>*) = 0;
 
   /* Forces all results to be cleared. */
@@ -220,10 +237,12 @@ class ShapeConfigurations : public ShapeReifier {
   std::vector<ShapeTangentPlane<T>> configs_;
 };
 
-/* @name Fcl geometry from drake shape specifications. */
-class DRAKE_NO_EXPORT MakeFclShape : public ShapeReifier {
+/* @name Backend geometry from drake shape specifications. */
+class DRAKE_NO_EXPORT MakeCharacterizationShape : public ShapeReifier {
  public:
-  explicit MakeFclShape(const Shape& shape);
+  using Backend = CharacterizationBackend;
+
+  explicit MakeCharacterizationShape(const Shape& shape);
 
   /* Implementation of ShapeReifier interface  */
   using ShapeReifier::ImplementGeometry;
@@ -236,15 +255,14 @@ class DRAKE_NO_EXPORT MakeFclShape : public ShapeReifier {
   void ImplementGeometry(const Mesh& mesh, void*) final;
   void ImplementGeometry(const Sphere& sphere, void*) final;
 
-  std::shared_ptr<fcl::CollisionGeometry<double>> object() const {
-    return object_;
-  }
+  std::shared_ptr<typename Backend::Geometry> object() const { return object_; }
 
  private:
-  std::shared_ptr<fcl::CollisionGeometry<double>> object_{};
+  std::shared_ptr<typename Backend::Geometry> object_{};
 };
 
-/* Reports if the Mesh shape is represented as a Convex shape under the hood. */
+/* Reports if the Mesh shape is represented as a convex hull under the hood.
+ */
 ::testing::AssertionResult MeshIsConvexInFcl();
 
 /* Creates a transform to align two planes. The planes are defined by a
@@ -285,6 +303,8 @@ math::RigidTransform<T> AlignPlanes(const Vector3<T>& P, const Vector3<T>& m,
 template <typename T>
 class CharacterizeResultTest : public ::testing::Test {
  public:
+  using Backend = CharacterizationBackend;
+
   /* Constructs an instance of the test for the given callback implementation.
    */
   explicit CharacterizeResultTest(std::unique_ptr<DistanceCallback<T>> callback)
@@ -296,8 +316,8 @@ class CharacterizeResultTest : public ::testing::Test {
    single result. Otherwise, confirms that the callback throws with a common
    "unsupported operation" type exception message. */
   void RunCallback(
-      const QueryInstance& query, fcl::CollisionObjectd* obj_A,
-      fcl::CollisionObjectd* obj_B, const CollisionFilter* collision_filter,
+      const QueryInstance& query, typename Backend::Object* obj_A,
+      typename Backend::Object* obj_B, const CollisionFilter* collision_filter,
       const std::unordered_map<GeometryId, math::RigidTransform<T>>* X_WGs)
       const;
 
@@ -391,7 +411,7 @@ class CharacterizeResultTest : public ::testing::Test {
 
   /* Generates a geometry id for the given collision object, encodes the id
    into the object, and returns the id.  */
-  GeometryId EncodeData(fcl::CollisionObjectd* obj);
+  GeometryId EncodeData(typename Backend::Object* obj);
 
   /* Returns a collection of transforms to map an experiment expressed in a
    shape A's frame A, to the world frame. The transforms are arbitrary but
@@ -401,15 +421,14 @@ class CharacterizeResultTest : public ::testing::Test {
 
   /* @name A consistent set of shapes to use across all tests
 
-   Each method can produce one of two instances of the shape (for doing, e.g.,
-   Box-Box tests with two different proportions).
+   Each method can produce one of two instances of the shape (for doing,
+   e.g., Box-Box tests with two different proportions).
 
-   As documented in query_object.h, at least one measure of each geometry should
-   be approximately 20 cm. The other measures (based on shape parameterization)
-   have been arbitrarily selected to avoid symmetry and perfectly represented
-   numerical values. */
+   As documented in query_object.h, at least one measure of each geometry
+   should be approximately 20 cm. The other measures (based on shape
+   parameterization) have been arbitrarily selected to avoid symmetry and
+   perfectly represented numerical values. */
   //@{
-
   /* As documented in query_object.h, the 2mm distance/depth for which the
    queries are characterized. */
   static constexpr double kDistance{2e-3};
@@ -431,7 +450,6 @@ class CharacterizeResultTest : public ::testing::Test {
   static Mesh mesh(bool alt = false);
 
   static Sphere sphere(bool alt = false);
-
   //}
 
  protected:

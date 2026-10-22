@@ -9,6 +9,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/geometry/proximity/distance_to_point_callback.h"
+#include "drake/geometry/proximity/fcl_backend.h"
 #include "drake/geometry/proximity/make_box_mesh.h"
 #include "drake/geometry/proximity/test/characterization_utilities.h"
 #include "drake/geometry/query_results/signed_distance_to_point.h"

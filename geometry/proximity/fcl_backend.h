@@ -1,11 +1,16 @@
 #pragma once
 
+#include <memory>
 #include <string_view>
+#include <utility>
+#include <vector>
 
 #include <fcl/fcl.h>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_export.h"
+#include "drake/common/eigen_types.h"
+#include "drake/math/rigid_transform.h"
 
 namespace drake {
 namespace geometry {
@@ -63,6 +68,49 @@ struct FclBackend {
   using Object = fcl::CollisionObjectd;
   using Geometry = fcl::CollisionGeometryd;
   using NodeType = fcl::NODE_TYPE;
+  using Transform = Eigen::Isometry3d;
+
+  using Box = fcl::Boxd;
+  using Capsule = fcl::Capsuled;
+  using Convex = fcl::Convexd;
+  using Cylinder = fcl::Cylinderd;
+  using Ellipsoid = fcl::Ellipsoidd;
+  using Halfspace = fcl::Halfspaced;
+  using Sphere = fcl::Sphered;
+
+  /* The per-face data a Convex is built from (see D4). FCL consumes Drake's
+   PolygonSurfaceMesh encoding -- [count, v0, v1, ..., count, ...] -- as is. */
+  using FaceData = std::vector<int>;
+
+  /* Converts a Drake pose into the transform type the library's API consumes.
+   */
+  static Transform ToTransform(const math::RigidTransformd& X_AB) {
+    return X_AB.GetAsIsometry3();
+  }
+
+  /* Converts the faces of a convex PolygonSurfaceMesh, given in that class's
+   flat encoding, into the face data a Convex requires (see D4). FCL stores
+   polygons directly, so this is the identity. */
+  static FaceData MakeFaces(const std::vector<int>& face_data) {
+    return face_data;
+  }
+
+  /* Returns the number of faces in `faces`, which for FCL is the number of
+   polygons the mesh reported rather than anything derived from `faces` (see
+   D4). */
+  static int CountFaces(const FaceData&, int num_polygons) {
+    return num_polygons;
+  }
+
+  /* Constructs a convex hull geometry. The argument list is normalized across
+   backends; FCL infers its vertex count and does not use `num_vertices` (see
+   D4). */
+  static std::shared_ptr<Convex> MakeConvex(
+      std::shared_ptr<std::vector<Vector3<double>>> vertices,
+      int /* num_vertices */, std::shared_ptr<FaceData> faces, int num_faces) {
+    return std::make_shared<Convex>(std::move(vertices), num_faces,
+                                    std::move(faces));
+  }
 
   /* Returns the name Drake uses for the given node type (see D6).
 

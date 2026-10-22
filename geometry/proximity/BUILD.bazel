@@ -381,6 +381,7 @@ drake_cc_library(
     deps = [
         "//common:drake_export",
         "//common:essential",
+        "//math:geometric_transform",
         "@fcl_internal//:fcl",
     ],
 )
@@ -1124,6 +1125,23 @@ drake_cc_googletest(
     ],
 )
 
+drake_cc_library(
+    name = "backend_utilities",
+    testonly = 1,
+    srcs = ["test/backend_utilities.cc"],
+    hdrs = ["test/backend_utilities.h"],
+    visibility = ["//visibility:private"],
+    deps = [
+        ":fcl_backend",
+        ":polygon_surface_mesh",
+        ":proximity_utilities",
+        "//geometry:geometry_ids",
+        "//geometry:shape_specification",
+        "//math:geometric_transform",
+        "@fcl_internal//:fcl",
+    ],
+)
+
 drake_cc_googletest(
     name = "bvh_test",
     deps = [
@@ -1316,8 +1334,8 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "distance_to_point_callback_test",
     deps = [
+        ":backend_utilities",
         ":distance_to_point_callback",
-        ":fcl_utilities",
         "//common/test_utilities",
         "//geometry:shape_specification",
         "//geometry:utilities",
@@ -1347,8 +1365,8 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "distance_to_shape_callback_test",
     deps = [
+        ":backend_utilities",
         ":distance_to_shape_callback",
-        ":fcl_utilities",
         ":proximity_utilities",
         "//common/test_utilities",
         "//geometry:shape_specification",
@@ -1374,22 +1392,6 @@ drake_cc_googletest(
         "//common:essential",
         "//common/test_utilities",
         "//math:geometric_transform",
-    ],
-)
-
-drake_cc_library(
-    name = "fcl_utilities",
-    testonly = 1,
-    srcs = ["test/fcl_utilities.cc"],
-    hdrs = ["test/fcl_utilities.h"],
-    visibility = ["//visibility:private"],
-    deps = [
-        ":polygon_surface_mesh",
-        ":proximity_utilities",
-        "//geometry:geometry_ids",
-        "//geometry:shape_specification",
-        "//math:geometric_transform",
-        "@fcl_internal//:fcl",
     ],
 )
 
@@ -1775,7 +1777,7 @@ drake_cc_googletest(
         "//geometry:test_obj_files",
     ],
     deps = [
-        ":fcl_utilities",
+        ":backend_utilities",
         ":penetration_as_point_pair_callback",
         "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",

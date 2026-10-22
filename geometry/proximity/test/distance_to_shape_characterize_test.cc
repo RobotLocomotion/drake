@@ -6,6 +6,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/geometry/proximity/distance_to_shape_callback.h"
+#include "drake/geometry/proximity/fcl_backend.h"
 #include "drake/geometry/proximity/test/characterization_utilities.h"
 #include "drake/math/rigid_transform.h"
 

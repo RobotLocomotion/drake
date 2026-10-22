@@ -272,19 +272,22 @@ void ShapeConfigurations<T>::ImplementGeometry(const Sphere& sphere, void*) {
                                    {p2, n2, r, "sphere's +x/-y/+z octant"}};
 }
 
-MakeFclShape::MakeFclShape(const Shape& shape) : ShapeReifier() {
+MakeCharacterizationShape::MakeCharacterizationShape(const Shape& shape)
+    : ShapeReifier() {
   shape.Reify(this);
 }
 
-void MakeFclShape::ImplementGeometry(const Box& box, void*) {
-  object_ = std::make_shared<fcl::Boxd>(box.size());
+void MakeCharacterizationShape::ImplementGeometry(const Box& box, void*) {
+  object_ = std::make_shared<typename Backend::Box>(box.size());
 }
 
-void MakeFclShape::ImplementGeometry(const Capsule& capsule, void*) {
-  object_ = std::make_shared<fcl::Capsuled>(capsule.radius(), capsule.length());
+void MakeCharacterizationShape::ImplementGeometry(const Capsule& capsule,
+                                                  void*) {
+  object_ = std::make_shared<typename Backend::Capsule>(capsule.radius(),
+                                                        capsule.length());
 }
 
-void MakeFclShape::ImplementGeometry(const Convex&, void*) {
+void MakeCharacterizationShape::ImplementGeometry(const Convex&, void*) {
   /* Note: we're ignoring the contents of the convex declaration. Instead,
     we're outputting a mesh representing a box with known dimensions.
 
@@ -323,36 +326,43 @@ void MakeFclShape::ImplementGeometry(const Convex&, void*) {
     });
   // clang-format on
 
-  object_ = std::make_shared<fcl::Convexd>(vertices, 6, faces);
+  auto backend_faces =
+      std::make_shared<typename Backend::FaceData>(Backend::MakeFaces(*faces));
+  const int num_faces = Backend::CountFaces(*backend_faces, 6);
+  object_ = Backend::MakeConvex(vertices, ssize(*vertices),
+                                std::move(backend_faces), num_faces);
 }
 
-void MakeFclShape::ImplementGeometry(const Cylinder& cylinder, void*) {
-  object_ =
-      std::make_shared<fcl::Cylinderd>(cylinder.radius(), cylinder.length());
+void MakeCharacterizationShape::ImplementGeometry(const Cylinder& cylinder,
+                                                  void*) {
+  object_ = std::make_shared<typename Backend::Cylinder>(cylinder.radius(),
+                                                         cylinder.length());
 }
 
-void MakeFclShape::ImplementGeometry(const Ellipsoid& ellipsoid, void*) {
-  object_ = std::make_shared<fcl::Ellipsoidd>(ellipsoid.a(), ellipsoid.b(),
-                                              ellipsoid.c());
+void MakeCharacterizationShape::ImplementGeometry(const Ellipsoid& ellipsoid,
+                                                  void*) {
+  object_ = std::make_shared<typename Backend::Ellipsoid>(
+      ellipsoid.a(), ellipsoid.b(), ellipsoid.c());
 }
 
-void MakeFclShape::ImplementGeometry(const HalfSpace&, void*) {
-  object_ = std::make_shared<fcl::Halfspaced>(Vector3d{0, 0, 1}, 0);
+void MakeCharacterizationShape::ImplementGeometry(const HalfSpace&, void*) {
+  object_ = std::make_shared<typename Backend::Halfspace>(Vector3d{0, 0, 1}, 0);
 }
 
-void MakeFclShape::ImplementGeometry(const Mesh&, void*) {
+void MakeCharacterizationShape::ImplementGeometry(const Mesh&, void*) {
   // For these tests, we use the same box mesh for Mesh and Convex. Therefore,
-  // the fcl representation of the Mesh type is simply that of the Convex type.
+  // the backend representation of the Mesh type is simply that of the Convex
+  // type.
   // NOTE: PointDistanceCallback::Invoke() in
   // distance_to_point_characterize_test.cc builds a MeshDistanceBoundaryCache
-  // entry that must match the geometry. It does so by turning the fcl::Convexd
+  // entry that must match the geometry. It does so by turning the convex hull
   // back into a Mesh. If this ever introduces a Mesh that is not its own convex
   // hull, that logic will need to change.
   ImplementGeometry(Convex("ignored for this test", 1.0), nullptr);
 }
 
-void MakeFclShape::ImplementGeometry(const Sphere& sphere, void*) {
-  object_ = std::make_shared<fcl::Sphered>(sphere.radius());
+void MakeCharacterizationShape::ImplementGeometry(const Sphere& sphere, void*) {
+  object_ = std::make_shared<typename Backend::Sphere>(sphere.radius());
 }
 
 /* Allow a sneak peek into ProximityEngine's inner workings so we can detect
@@ -383,7 +393,7 @@ class ProximityEngineTester {
   }
 
   // Add the mesh into a proximity engine and confirm it is represented by a
-  // fcl::Convex.
+  // a convex hull.
   ProximityEngine<double> engine;
   const GeometryId id = GeometryId::get_new_id();
   engine.AddDynamicGeometry(Mesh(obj_path, 1.0), {}, id);
@@ -391,7 +401,7 @@ class ProximityEngineTester {
     return ::testing::AssertionSuccess();
   }
   return ::testing::AssertionFailure()
-         << "A Mesh shape is no longer represented by an fcl::Convex in "
+         << "A Mesh shape is no longer represented by a convex hull in "
          << "ProximityEngine. We need to explicitly characterize Mesh-Shape "
          << "queries for all Shape types.";
 }
@@ -439,8 +449,8 @@ RigidTransform<T> AlignPlanes(const Vector3<T>& P, const Vector3<T>& m,
 
 template <typename T>
 void CharacterizeResultTest<T>::RunCallback(
-    const QueryInstance& query, fcl::CollisionObjectd* obj_A,
-    fcl::CollisionObjectd* obj_B, const CollisionFilter* collision_filter,
+    const QueryInstance& query, typename Backend::Object* obj_A,
+    typename Backend::Object* obj_B, const CollisionFilter* collision_filter,
     const std::unordered_map<GeometryId, RigidTransform<T>>* X_WGs) const {
   callback_->ClearResults();
   ASSERT_EQ(callback_->GetNumResults(), 0);
@@ -521,10 +531,12 @@ template <typename T>
 void CharacterizeResultTest<T>::RunCharacterization(
     const QueryInstance& query, const Shape& shape_A, const Shape& shape_B,
     const vector<Configuration<T>>& configs, bool is_symmetric) {
-  fcl::CollisionObjectd object_A = MakeFclShape(shape_A).object();
+  typename Backend::Object object_A =
+      MakeCharacterizationShape(shape_A).object();
   const GeometryId id_A = EncodeData(&object_A);
 
-  fcl::CollisionObjectd object_B = MakeFclShape(shape_B).object();
+  typename Backend::Object object_B =
+      MakeCharacterizationShape(shape_B).object();
   const GeometryId id_B = EncodeData(&object_B);
 
   const auto& X_WAs = this->X_WAs();
@@ -533,20 +545,19 @@ void CharacterizeResultTest<T>::RunCharacterization(
 
   auto evaluate_callback =
       [this, &query, &worst_error, &worst_config](
-          char first, fcl::CollisionObjectd* obj_A, char second,
-          fcl::CollisionObjectd* obj_B, auto test_config,
+          char first, typename Backend::Object* obj_A, char second,
+          typename Backend::Object* obj_B, auto test_config,
           const std::unordered_map<GeometryId, RigidTransform<T>>&
               world_poses) {
-        SCOPED_TRACE(
-            fmt::format("\n{}-{} (obj {}-obj {}) query:"
-                        "\n  {}"
-                        "\n  Expected signed distance: {}"
-                        "\n  X_AB"
-                        "\n{}\n",
-                        GetGeometryName<FclBackend>(*obj_A),
-                        GetGeometryName<FclBackend>(*obj_B), first, second,
-                        test_config.description, test_config.signed_distance,
-                        fmt_eigen(test_config.X_AB.GetAsMatrix34())));
+        SCOPED_TRACE(fmt::format(
+            "\n{}-{} (obj {}-obj {}) query:"
+            "\n  {}"
+            "\n  Expected signed distance: {}"
+            "\n  X_AB"
+            "\n{}\n",
+            GetGeometryName<Backend>(*obj_A), GetGeometryName<Backend>(*obj_B),
+            first, second, test_config.description, test_config.signed_distance,
+            fmt_eigen(test_config.X_AB.GetAsMatrix34())));
         RunCallback(query, obj_A, obj_B, &collision_filter_, &world_poses);
         const std::optional<double> error =
             ComputeErrorMaybe(test_config.signed_distance);
@@ -561,8 +572,10 @@ void CharacterizeResultTest<T>::RunCharacterization(
     for (const auto& config : configs) {
       const std::unordered_map<GeometryId, RigidTransform<T>> X_WGs{
           {{id_A, X_WA}, {id_B, X_WA * config.X_AB}}};
-      object_A.setTransform(convert_to_double(X_WGs.at(id_A)).GetAsIsometry3());
-      object_B.setTransform(convert_to_double(X_WGs.at(id_B)).GetAsIsometry3());
+      object_A.setTransform(
+          Backend::ToTransform(convert_to_double(X_WGs.at(id_A))));
+      object_B.setTransform(
+          Backend::ToTransform(convert_to_double(X_WGs.at(id_B))));
 
       evaluate_callback('A', &object_A, 'B', &object_B, config, X_WGs);
       if (is_symmetric) {
@@ -613,7 +626,8 @@ void CharacterizeResultTest<T>::RunCharacterization(const QueryInstance& query,
 }
 
 template <typename T>
-GeometryId CharacterizeResultTest<T>::EncodeData(fcl::CollisionObjectd* obj) {
+GeometryId CharacterizeResultTest<T>::EncodeData(
+    typename Backend::Object* obj) {
   const GeometryId id = GeometryId::get_new_id();
   const EncodedData data(id, true);
   data.write_to(obj);
