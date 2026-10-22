@@ -7,6 +7,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/nice_type_name.h"
 #include "drake/geometry/proximity/distance_to_point_callback.h"
+#include "drake/geometry/proximity/fcl_backend.h"
 #include "drake/geometry/query_results/signed_distance_to_point.h"
 
 namespace drake {
@@ -155,7 +156,8 @@ void CalcDistanceFallback(const fcl::CollisionObjectd& a,
       "for scalar type {}. See the documentation for "
       "QueryObject::ComputePointPairPenetration() for the full status of "
       "supported geometries.",
-      GetGeometryName(a), GetGeometryName(b), NiceTypeName::Get<T>()));
+      GetGeometryName<FclBackend>(a), GetGeometryName<FclBackend>(b),
+      NiceTypeName::Get<T>()));
 }
 
 /* For the double scalar, computes the signed distance between the two objects.
@@ -447,7 +449,8 @@ std::optional<PenetrationAsPointPair<T>> MaybeMakePointPair(
         "are not supported for scalar type {}. See the documentation for "
         "QueryObject::ComputePointPairPenetration() for the full status of "
         "supported geometries.",
-        GetGeometryName(*fcl_object_A_ptr), GetGeometryName(*fcl_object_B_ptr),
+        GetGeometryName<FclBackend>(*fcl_object_A_ptr),
+        GetGeometryName<FclBackend>(*fcl_object_B_ptr),
         NiceTypeName::Get<T>()));
   }
   return {};
