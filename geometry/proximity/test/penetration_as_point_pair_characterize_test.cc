@@ -34,8 +34,8 @@ class PenetrationCallback : public DistanceCallback<T> {
               const CollisionFilter* collision_filter,
               const std::unordered_map<GeometryId, math::RigidTransform<T>>*
                   X_WGs) override {
-    CallbackData<T> data(collision_filter, X_WGs, &results_);
-    return Callback<T>(obj_A, obj_B, &data);
+    CallbackData<T, FclBackend> data(collision_filter, X_WGs, &results_);
+    return Callback<T, FclBackend>(obj_A, obj_B, &data);
   }
 
   void ClearResults() override { results_.clear(); }
