@@ -128,7 +128,7 @@ uv = use_extension(
     "@rules_python//python/uv:uv.bzl",
     "uv",
 )
-uv.configure(version = "0.12.11")
+uv.configure(version = "0.13.5")
 
 pip = use_extension("@rules_python//python/extensions:pip.bzl", "pip")
 
