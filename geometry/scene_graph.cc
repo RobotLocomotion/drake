@@ -296,6 +296,11 @@ void SceneGraph<T>::RenameFrame(FrameId frame_id, const std::string& name) {
 }
 
 template <typename T>
+void SceneGraph<T>::SetFrameFixedToWorld(FrameId frame_id) {
+  hub_.mutable_model().SetFrameFixedToWorld(frame_id);
+}
+
+template <typename T>
 GeometryId SceneGraph<T>::RegisterGeometry(
     SourceId source_id, FrameId frame_id,
     std::unique_ptr<GeometryInstance> geometry) {

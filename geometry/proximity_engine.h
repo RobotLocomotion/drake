@@ -110,6 +110,25 @@ class ProximityEngine {
    ApplyActiveStatusChange(). */
   int num_inactive_dynamic() const;
 
+  /* Declares the dynamic geometry with the given `id` to be fixed relative to
+   the world (e.g., it is attached to a frame that is welded to the world).
+   A fixed geometry keeps receiving its pose in UpdateWorldPoses(), but for the
+   broadphase it is treated as anchored: it is never paired with anchored or
+   other fixed geometries, so a large static scene made of welded bodies costs
+   no more than the same scene registered as anchored geometry. Should the
+   reported pose of a fixed geometry ever change, the broadphase is updated
+   accordingly. Declaring an already fixed geometry is a no-op.
+   @throws std::exception if `id` does not refer to a rigid dynamic geometry in
+   this engine. */
+  void SetGeometryFixed(GeometryId id);
+
+  /* (Introspection) Reports true if the geometry with the given `id` has been
+   declared fixed; see SetGeometryFixed(). */
+  bool IsFixed(GeometryId id) const;
+
+  /* (Introspection) Reports the number of fixed geometries. */
+  int num_fixed() const;
+
   /* @name Topology management */
   //@{
 

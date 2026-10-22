@@ -316,6 +316,9 @@ class GeometryState {
   /** Implementation of SceneGraphInspector::GetFrameGroup().  */
   int GetFrameGroup(FrameId frame_id) const;
 
+  /** Implementation of SceneGraphInspector::IsFrameFixedToWorld().  */
+  bool IsFrameFixedToWorld(FrameId frame_id) const;
+
   /** Implementation of SceneGraphInspector::NumGeometriesForFrame().  */
   int NumGeometriesForFrame(FrameId frame_id) const;
 
@@ -451,6 +454,9 @@ class GeometryState {
 
   /** Implementation of SceneGraph::RenameFrame().  */
   void RenameFrame(FrameId frame_id, const std::string& name);
+
+  /** Implementation of SceneGraph::SetFrameFixedToWorld().  */
+  void SetFrameFixedToWorld(FrameId frame_id);
 
   /** Implementation of
    @ref SceneGraph::RegisterFrame(SourceId,FrameId,const GeometryFrame&)

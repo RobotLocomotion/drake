@@ -495,6 +495,25 @@ class SceneGraph final : public systems::LeafSystem<T> {
                           the same source. */
   void RenameFrame(FrameId frame_id, const std::string& name);
 
+  /** Declares the frame with the given `frame_id` to be fixed relative to the
+   world frame, e.g., because the body it represents is welded to the world.
+
+   The frame's geometries are still dynamic: the frame's source keeps reporting
+   the frame's pose and every query reports the geometries on this frame. For
+   proximity queries, however, the proximity geometries on a fixed frame are
+   treated like anchored geometry: they are never paired with anchored
+   geometry or with the geometry of other fixed frames, so their broadphase
+   cost is that of anchored geometry. This applies to the frame's current and
+   future proximity geometries. Should the reported pose of a fixed frame ever
+   change, the proximity queries account for the new pose.
+
+   This method modifies the underlying model and requires a new Context to be
+   allocated. Declaring the world frame or an already fixed frame is a no-op.
+
+   @param frame_id  The id of the frame.
+   @throws std::exception if `frame_id` does not map to a valid frame. */
+  void SetFrameFixedToWorld(FrameId frame_id);
+
   // TODO(jwnimmer-tri) Deprecate and remove `source_id` argument, instead using
   // the source_id associated with the given `frame_id`.
   /** Registers a new rigid geometry G for this source. This hangs geometry G on

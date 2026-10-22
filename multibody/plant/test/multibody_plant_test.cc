@@ -1629,6 +1629,44 @@ GTEST_TEST(MultibodyPlantTest, FilterWorldWelds) {
   ASSERT_EQ(contacts.size(), 0);
 }
 
+// The SceneGraph frames of bodies welded (directly or transitively) to the
+// world are declared fixed relative to the world, so their geometry is
+// treated like anchored geometry in the broadphase (#8943, #24888); other
+// frames are not.
+GTEST_TEST(MultibodyPlantTest, WorldWeldedFramesAreFixed) {
+  MultibodyPlant<double> plant(0.001);
+  geometry::SceneGraph<double> scene_graph;
+  plant.RegisterAsSourceForSceneGraph(&scene_graph);
+  const auto& inertia = SpatialInertia<double>::MakeUnitary();
+  const RigidBody<double>& welded = plant.AddRigidBody("welded", inertia);
+  const RigidBody<double>& welded_to_welded =
+      plant.AddRigidBody("welded_to_welded", inertia);
+  const RigidBody<double>& free = plant.AddRigidBody("free", inertia);
+  const RigidBody<double>& welded_to_free =
+      plant.AddRigidBody("welded_to_free", inertia);
+  plant.WeldFrames(plant.world_frame(), welded.body_frame());
+  plant.WeldFrames(welded.body_frame(), welded_to_welded.body_frame());
+  plant.WeldFrames(free.body_frame(), welded_to_free.body_frame());
+  for (const RigidBody<double>* body :
+       {&welded, &welded_to_welded, &free, &welded_to_free}) {
+    plant.RegisterCollisionGeometry(*body, RigidTransformd(),
+                                    geometry::Sphere(0.1), body->name(),
+                                    CoulombFriction<double>());
+  }
+  plant.Finalize();
+
+  const auto& inspector = scene_graph.model_inspector();
+  auto is_fixed = [&](const RigidBody<double>& body) {
+    return inspector.IsFrameFixedToWorld(
+        plant.GetBodyFrameIdOrThrow(body.index()));
+  };
+  EXPECT_TRUE(is_fixed(plant.world_body()));
+  EXPECT_TRUE(is_fixed(welded));
+  EXPECT_TRUE(is_fixed(welded_to_welded));
+  EXPECT_FALSE(is_fixed(free));
+  EXPECT_FALSE(is_fixed(welded_to_free));
+}
+
 // Ensure that all welded subgraphs are collision filtered.
 GTEST_TEST(MultibodyPlantTest, FilterWeldedSubgraphs) {
   // Build a chain with two welded subgraphs; a chain of 3, followed later by a

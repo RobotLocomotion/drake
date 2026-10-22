@@ -1639,6 +1639,120 @@ TEST_F(ProximityEngineTests, ComputePointPairPenetration) {
   EXPECT_FALSE(derivs.isZero());
 }
 
+// A fixed geometry (a dynamic geometry declared fixed relative to the world)
+// is never paired with anchored geometry or with other fixed geometry, but is
+// still paired with the remaining dynamic geometry.
+TEST_F(ProximityEngineTests, FixedGeometryCandidates) {
+  const Box box(1, 1, 1);
+  // All four boxes overlap each other.
+  const GeometryId anchored = AddAnchored(box, V3{0, 0, 0});
+  const GeometryId fixed_1 = AddDynamic(box, V3{0.5, 0, 0});
+  const GeometryId fixed_2 = AddDynamic(box, V3{0, 0.5, 0});
+  const GeometryId moving = AddDynamic(box, V3{0.25, 0.25, 0.5});
+  engine_.UpdateWorldPoses(X_WGs_);
+
+  auto candidates = [this]() {
+    std::vector<SortedPair<GeometryId>> pairs =
+        engine_.FindCollisionCandidates();
+    return std::set<SortedPair<GeometryId>>(pairs.begin(), pairs.end());
+  };
+  using Pair = SortedPair<GeometryId>;
+  EXPECT_EQ(candidates(), (std::set<Pair>{{anchored, fixed_1},
+                                          {anchored, fixed_2},
+                                          {anchored, moving},
+                                          {fixed_1, fixed_2},
+                                          {fixed_1, moving},
+                                          {fixed_2, moving}}));
+
+  engine_.SetGeometryFixed(fixed_1);
+  engine_.SetGeometryFixed(fixed_2);
+  engine_.SetGeometryFixed(fixed_2);  // Declaring twice is a no-op.
+  EXPECT_TRUE(engine_.IsFixed(fixed_1));
+  EXPECT_TRUE(engine_.IsFixed(fixed_2));
+  EXPECT_FALSE(engine_.IsFixed(moving));
+  EXPECT_EQ(engine_.num_fixed(), 2);
+  // They are still dynamic geometries.
+  EXPECT_EQ(engine_.num_dynamic(), 3);
+  EXPECT_EQ(engine_.num_anchored(), 1);
+
+  engine_.UpdateWorldPoses(X_WGs_);
+  EXPECT_EQ(candidates(),
+            (std::set<Pair>{
+                {anchored, moving}, {fixed_1, moving}, {fixed_2, moving}}));
+  EXPECT_TRUE(engine_.HasCollisions());
+  EXPECT_EQ(engine_.ComputePointPairPenetration(X_WGs_).size(), 3);
+
+  // Only rigid dynamic geometries can be declared fixed.
+  DRAKE_EXPECT_THROWS_MESSAGE(engine_.SetGeometryFixed(anchored),
+                              ".*not a rigid dynamic geometry.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      engine_.SetGeometryFixed(GeometryId::get_new_id()),
+      ".*not a rigid dynamic geometry.*");
+}
+
+// Should the pose of a fixed geometry change, the broadphase follows it.
+TEST_F(ProximityEngineTests, FixedGeometryPoseChange) {
+  const Box box(1, 1, 1);
+  const GeometryId fixed = AddDynamic(box, V3{0, 0, 0});
+  const GeometryId moving = AddDynamic(box, V3{0.5, 0, 0});
+  engine_.SetGeometryFixed(fixed);
+  engine_.UpdateWorldPoses(X_WGs_);
+  ASSERT_EQ(engine_.FindCollisionCandidates(),
+            (std::vector<SortedPair<GeometryId>>{{fixed, moving}}));
+
+  // Move the fixed geometry away: no more candidates.
+  X_WGs_[fixed] = RigidTransformd(V3{10, 0, 0});
+  engine_.UpdateWorldPoses(X_WGs_);
+  EXPECT_TRUE(engine_.FindCollisionCandidates().empty());
+
+  // And back.
+  X_WGs_[fixed] = RigidTransformd(V3{0, 0, 0});
+  engine_.UpdateWorldPoses(X_WGs_);
+  EXPECT_EQ(engine_.FindCollisionCandidates().size(), 1);
+  EXPECT_EQ(engine_.ComputePointPairPenetration(X_WGs_).size(), 1);
+}
+
+// Fixed status survives deactivation, reactivation and copies; a fixed
+// geometry can be removed.
+TEST_F(ProximityEngineTests, FixedGeometryBookkeeping) {
+  const Box box(1, 1, 1);
+  const GeometryId fixed = AddDynamic(box, V3{0, 0, 0});
+  const GeometryId moving = AddDynamic(box, V3{0.5, 0, 0});
+  engine_.SetGeometryFixed(fixed);
+  engine_.UpdateWorldPoses(X_WGs_);
+
+  Deactivate({fixed});
+  EXPECT_TRUE(engine_.IsFixed(fixed));
+  EXPECT_TRUE(engine_.IsInactiveDynamic(fixed));
+  EXPECT_TRUE(engine_.FindCollisionCandidates().empty());
+  Activate({fixed});
+  EXPECT_EQ(engine_.FindCollisionCandidates().size(), 1);
+
+  // A geometry declared fixed while inactive joins the fixed set when it is
+  // reactivated.
+  Deactivate({moving});
+  engine_.SetGeometryFixed(moving);
+  Activate({moving});
+  EXPECT_TRUE(engine_.FindCollisionCandidates().empty());
+
+  {
+    ProximityEngine<double> copy(engine_);
+    EXPECT_TRUE(copy.IsFixed(fixed));
+    EXPECT_EQ(copy.num_fixed(), 2);
+    EXPECT_TRUE(copy.FindCollisionCandidates().empty());
+  }
+  {
+    std::unique_ptr<ProximityEngine<AutoDiffXd>> converted =
+        engine_.ToScalarType<AutoDiffXd>();
+    EXPECT_TRUE(converted->IsFixed(fixed));
+  }
+
+  engine_.RemoveGeometry(fixed, /* is_dynamic= */ true);
+  EXPECT_FALSE(engine_.IsFixed(fixed));
+  EXPECT_EQ(engine_.num_fixed(), 1);
+  EXPECT_EQ(engine_.num_dynamic(), 1);
+}
+
 // Even when a geometry is inactive, it should still be included in distance to
 // point queries.
 TEST_F(ProximityEngineTests, InactiveGeometryInDistanceToPoint) {

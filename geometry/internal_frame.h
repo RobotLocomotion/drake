@@ -88,6 +88,13 @@ class InternalFrame {
    */
   FrameId parent_frame_id() const { return parent_id_; }
 
+  /* Reports true if this frame has been declared fixed relative to the world
+   frame (see GeometryState::SetFrameFixedToWorld()). */
+  bool is_fixed_to_world() const { return fixed_to_world_; }
+
+  /* Declares this frame fixed relative to the world frame. */
+  void set_fixed_to_world() { fixed_to_world_ = true; }
+
   /* Returns a list of ids of the frames that have *this* frame as a parent
    frame.  */
   const std::unordered_set<FrameId>& child_frames() const {
@@ -177,6 +184,9 @@ class InternalFrame {
 
   // The identifier of this frame's parent frame.
   FrameId parent_id_;
+
+  // True if this frame has been declared fixed relative to the world frame.
+  bool fixed_to_world_{false};
 
   // The identifiers of the frames, who have this frame as parent.
   std::unordered_set<FrameId> child_frames_;

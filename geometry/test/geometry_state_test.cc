@@ -1005,6 +1005,38 @@ TEST_F(GeometryStateTest, RenameFrame) {
   EXPECT_EQ(geometry_state_.GetName(frames_[0]), "something");
 }
 
+// Declaring a frame fixed relative to the world makes its current and future
+// proximity geometries fixed in the proximity engine.
+TEST_F(GeometryStateTest, SetFrameFixedToWorld) {
+  SetUpSingleSourceTree(Assign::kProximity);
+  const ProximityEngine<double>& engine = gs_tester_.proximity_engine();
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      geometry_state_.SetFrameFixedToWorld(FrameId::get_new_id()),
+      ".*unknown frame.*");
+
+  // f0 holds g0 and g1.
+  geometry_state_.SetFrameFixedToWorld(frames_[0]);
+  EXPECT_TRUE(engine.IsFixed(geometries_[0]));
+  EXPECT_TRUE(engine.IsFixed(geometries_[1]));
+  EXPECT_FALSE(engine.IsFixed(geometries_[2]));
+  EXPECT_EQ(engine.num_fixed(), 2);
+
+  // A geometry registered later on the fixed frame becomes fixed when it gets
+  // the proximity role.
+  const GeometryId later = geometry_state_.RegisterGeometry(
+      source_id_, frames_[0],
+      make_unique<GeometryInstance>(RigidTransformd(), make_unique<Sphere>(1),
+                                    "later"));
+  EXPECT_FALSE(engine.IsFixed(later));
+  geometry_state_.AssignRole(source_id_, later, ProximityProperties());
+  EXPECT_TRUE(engine.IsFixed(later));
+
+  // Declaring the world frame or an already fixed frame is a no-op.
+  geometry_state_.SetFrameFixedToWorld(InternalFrame::world_frame_id());
+  geometry_state_.SetFrameFixedToWorld(frames_[0]);
+  EXPECT_EQ(engine.num_fixed(), 3);
+}
+
 TEST_F(GeometryStateTest, RenameGeometry) {
   SetUpSingleSourceTree();
   DRAKE_EXPECT_THROWS_MESSAGE(

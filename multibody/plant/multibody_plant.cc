@@ -1777,6 +1777,18 @@ void MultibodyPlant<T>::ApplyDefaultCollisionFilters() {
     scene_graph_->collision_filter_manager().Apply(
         CollisionFilterDeclaration(CollisionFilterScope::kOmitDeformable)
             .ExcludeWithin(geometries));
+    // Bodies welded to the world are fixed in it: SceneGraph treats their
+    // geometry like anchored geometry in the broadphase, so it is not paired
+    // with other geometry fixed in the world (#8943, #24888).
+    if (subgraph.contains(world_index())) {
+      for (BodyIndex body_index : subgraph) {
+        if (body_index == world_index()) continue;
+        if (std::optional<FrameId> frame_id =
+                GetBodyFrameIdIfExists(body_index)) {
+          scene_graph_->SetFrameFixedToWorld(*frame_id);
+        }
+      }
+    }
   }
 }
 

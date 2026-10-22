@@ -149,6 +149,12 @@ int SceneGraphInspector<T>::GetFrameGroup(FrameId frame_id) const {
 }
 
 template <typename T>
+bool SceneGraphInspector<T>::IsFrameFixedToWorld(FrameId frame_id) const {
+  DRAKE_DEMAND(state_ != nullptr);
+  return state_->IsFrameFixedToWorld(frame_id);
+}
+
+template <typename T>
 int SceneGraphInspector<T>::NumGeometriesForFrame(FrameId frame_id) const {
   DRAKE_DEMAND(state_ != nullptr);
   return state_->NumGeometriesForFrame(frame_id);

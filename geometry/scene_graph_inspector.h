@@ -227,6 +227,12 @@ class SceneGraphInspector {
    @internal This value is equivalent to the old "model instance id".  */
   int GetFrameGroup(FrameId frame_id) const;
 
+  /** Reports true if the frame with the given `frame_id` is the world frame or
+   has been declared fixed relative to the world frame (see
+   SceneGraph::SetFrameFixedToWorld()).
+   @throws std::exception if `frame_id` does not map to a registered frame. */
+  bool IsFrameFixedToWorld(FrameId frame_id) const;
+
   /** Reports the number of geometries affixed to the frame with the given
    `frame_id`. This count does _not_ include geometries attached to frames that
    are descendants of this frame.

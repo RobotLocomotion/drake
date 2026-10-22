@@ -546,6 +546,15 @@ FrameId GeometryState<T>::GetParentFrame(FrameId frame_id) const {
 }
 
 template <typename T>
+bool GeometryState<T>::IsFrameFixedToWorld(FrameId frame_id) const {
+  FindOrThrow(frame_id, frames_, [frame_id]() {
+    return "Referenced an unknown frame: " + to_string(frame_id);
+  });
+  const InternalFrame& frame = frames_.at(frame_id);
+  return frame.is_world() || frame.is_fixed_to_world();
+}
+
+template <typename T>
 int GeometryState<T>::GetFrameGroup(FrameId frame_id) const {
   FindOrThrow(frame_id, frames_, [frame_id]() {
     return "No frame group available for invalid frame id: " +
@@ -1079,6 +1088,27 @@ FrameId GeometryState<T>::RegisterFrame(SourceId source_id, FrameId parent_id,
 }
 
 template <typename T>
+void GeometryState<T>::SetFrameFixedToWorld(FrameId frame_id) {
+  FindOrThrow(frame_id, frames_, [frame_id]() {
+    return "Referenced an unknown frame: " + to_string(frame_id);
+  });
+  InternalFrame& frame = frames_[frame_id];
+  if (frame.is_world() || frame.is_fixed_to_world()) return;
+  frame.set_fixed_to_world();
+  // Geometries that already have the proximity role move into the anchored
+  // broadphase now; later ones do when the role is assigned.
+  bool changed = false;
+  for (GeometryId geometry_id : frame.child_geometries()) {
+    const InternalGeometry& geometry = geometries_.at(geometry_id);
+    if (geometry.has_proximity_role() && !geometry.is_deformable()) {
+      geometry_engine_->SetGeometryFixed(geometry_id);
+      changed = true;
+    }
+  }
+  if (changed) geometry_version_.modify_proximity();
+}
+
+template <typename T>
 void GeometryState<T>::RenameFrame(FrameId frame_id, const std::string& name) {
   FindOrThrow(frame_id, frames_, [frame_id]() {
     return "Cannot rename frame with invalid frame id: " + to_string(frame_id);
@@ -1335,6 +1365,9 @@ void GeometryState<T>::AssignRole(SourceId source_id, GeometryId geometry_id,
         geometry_engine_->AddDynamicGeometry(geometry.shape(), X_WG,
                                              geometry_id,
                                              *geometry.proximity_properties());
+        if (frames_.at(geometry.frame_id()).is_fixed_to_world()) {
+          geometry_engine_->SetGeometryFixed(geometry_id);
+        }
       } else {
         geometry_engine_->AddAnchoredGeometry(geometry.shape(), geometry.X_FG(),
                                               geometry_id,
@@ -2065,6 +2098,9 @@ void GeometryState<T>::AddToProximityEngineUnchecked(
         convert_to_double(kinematics_data_.X_WGs.at(geometry_id));
     geometry_engine_->AddDynamicGeometry(geometry.shape(), X_WG, geometry_id,
                                          *geometry.proximity_properties());
+    if (frames_.at(geometry.frame_id()).is_fixed_to_world()) {
+      geometry_engine_->SetGeometryFixed(geometry_id);
+    }
   } else {
     geometry_engine_->AddAnchoredGeometry(geometry.shape(), geometry.X_FG(),
                                           geometry_id,
