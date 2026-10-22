@@ -8,6 +8,8 @@
 #include <fcl/fcl.h>
 #include <gtest/gtest.h>
 
+#include "drake/geometry/proximity/fcl_backend.h"
+
 namespace drake {
 namespace geometry {
 namespace internal {
@@ -47,21 +49,28 @@ GTEST_TEST(EncodedData, ConstructionFromFclObject) {
   EncodedData data_A(id_A, true);
   CollisionObjectd object(std::shared_ptr<CollisionGeometryd>(nullptr));
 
-  data_A.write_to(&object);
+  data_A.write_to<FclBackend>(&object);
   {
-    EncodedData data_read(object);
+    const auto data_read = EncodedData::read_from<FclBackend>(object);
     EXPECT_TRUE(data_read.is_dynamic());
     EXPECT_EQ(data_read.id(), data_A.id());
   }
 
   data_A.set_anchored();
-  data_A.write_to(&object);
+  data_A.write_to<FclBackend>(&object);
   {
-    EncodedData data_read(object);
+    const auto data_read = EncodedData::read_from<FclBackend>(object);
     EXPECT_FALSE(data_read.is_dynamic());
     EXPECT_EQ(data_read.id(), data_A.id());
   }
 }
+
+// EncodedData reads from and writes to the backend's collision object type and
+// nothing else. In particular, the collision geometry also has user data
+// accessors, but must be rejected; geometries can be shared across objects.
+static_assert(BackendCollisionObject<CollisionObjectd, FclBackend>);
+static_assert(!BackendCollisionObject<CollisionGeometryd, FclBackend>);
+static_assert(!BackendCollisionObject<const CollisionObjectd, FclBackend>);
 
 class VolumeMeshUtilities : public ::testing::Test {
  public:

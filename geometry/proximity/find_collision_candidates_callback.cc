@@ -1,5 +1,6 @@
 #include "drake/geometry/proximity/find_collision_candidates_callback.h"
 
+#include "drake/geometry/proximity/fcl_backend.h"
 #include "drake/geometry/proximity/proximity_utilities.h"
 
 namespace drake {
@@ -20,8 +21,8 @@ bool Callback(fcl::CollisionObjectd* object_A_ptr,
               void* callback_data) {
   auto& data = *static_cast<CallbackData*>(callback_data);
 
-  const EncodedData encoding_a(*object_A_ptr);
-  const EncodedData encoding_b(*object_B_ptr);
+  const auto encoding_a = EncodedData::read_from<FclBackend>(*object_A_ptr);
+  const auto encoding_b = EncodedData::read_from<FclBackend>(*object_B_ptr);
 
   const bool can_collide =
       data.collision_filter.CanCollideWith(encoding_a.id(), encoding_b.id());
