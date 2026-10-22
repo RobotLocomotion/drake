@@ -37,6 +37,10 @@ GTEST_TEST(YamlJsonTest, StringEscaping) {
   data.value = "foo\n\t\"bar";
   EXPECT_EQ(SaveJsonString(data),
             R"""({"value":"foo\u000a\u0009\u0022bar"})""");
+
+  // Non-ASCII (UTF-8) text is not escaped.
+  data.value = "café";
+  EXPECT_EQ(SaveJsonString(data), R"""({"value":"café"})""");
 }
 
 GTEST_TEST(YamlJsonTest, NonFinite) {
