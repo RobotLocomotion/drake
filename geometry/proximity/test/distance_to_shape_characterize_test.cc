@@ -31,8 +31,9 @@ class SignedDistanceCallback : public DistanceCallback<T> {
               const CollisionFilter* collision_filter,
               const std::unordered_map<GeometryId, math::RigidTransform<T>>*
                   X_WGs) override {
-    CallbackData<T> data(collision_filter, X_WGs,
-                         std::numeric_limits<double>::infinity(), &results_);
+    CallbackData<T, FclBackend> data(collision_filter, X_WGs,
+                                     std::numeric_limits<double>::infinity(),
+                                     &results_);
     data.request.enable_signed_distance = true;
     data.request.gjk_solver_type = fcl::GJKSolverType::GST_LIBCCD;
     /* TODO(#14731) This reflects the fact that ProximityEngine hard
@@ -51,7 +52,7 @@ class SignedDistanceCallback : public DistanceCallback<T> {
     /* We're not testing the logic for limiting results based on a maximum
      distance. So, we'll simply set it to infinity. */
     double max_distance = std::numeric_limits<double>::infinity();
-    return Callback<T>(obj_A, obj_B, &data, max_distance);
+    return Callback<T, FclBackend>(obj_A, obj_B, &data, max_distance);
   }
 
   void ClearResults() override { results_.clear(); }
