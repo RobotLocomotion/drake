@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<robot name="joint_named_world">
+  <link name="R"/>
+  <link name="S"/>
+  <joint name="world" type="fixed">
+    <parent link="R"/>
+    <child link="S"/>
+  </joint>
+</robot>
