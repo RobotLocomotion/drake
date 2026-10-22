@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<robot name="imported_joint_frames">
+  <link name="R"/>
+  <link name="B"/>
+  <link name="C"/>
+  <joint name="bar" type="fixed">
+    <origin xyz="1 0 0"/>
+    <parent link="R"/>
+    <child link="B"/>
+  </joint>
+  <joint name="foo_child" type="fixed">
+    <origin xyz="0 2 0"/>
+    <parent link="R"/>
+    <child link="C"/>
+  </joint>
+  <frame name="Fc" link="C" xyz="0 0 3" rpy="0.1 0.2 0.3"/>
+</robot>

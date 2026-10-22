@@ -36,6 +36,7 @@
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/tree/ball_rpy_joint.h"
 #include "drake/multibody/tree/curvilinear_joint.h"
+#include "drake/multibody/tree/fixed_offset_frame.h"
 #include "drake/multibody/tree/linear_bushing_roll_pitch_yaw.h"
 #include "drake/multibody/tree/planar_joint.h"
 #include "drake/multibody/tree/prismatic_joint.h"
@@ -952,7 +953,7 @@ TEST_F(SdfParserTest, DrakeJointNoNameError) {
       MatchesRegex(".*<drake:joint>: Unable to find the 'name' attribute.*"));
 }
 
-// drake:joint does not support pose tags.
+// drake:joint does not allow pose tags, since its frames are named directly.
 TEST_F(SdfParserTest, DrakeJointPoseError) {
   ParseTestString(R"""(
 <model name='good'>
@@ -962,10 +963,10 @@ TEST_F(SdfParserTest, DrakeJointPoseError) {
   </drake:joint>
 </model>
 )""");
-  EXPECT_THAT(
-      TakeError(),
-      MatchesRegex(
-          ".*<drake:joint> does not yet support the <pose> child tag.*"));
+  EXPECT_THAT(TakeError(),
+              MatchesRegex(".*Joint 'joint_name' cannot have a <pose> because "
+                           "its frames are the ones named by <drake:parent> "
+                           "and <drake:child>.*"));
 }
 
 // Verify that drake:joint yields an error for unrecognized types.
@@ -1047,6 +1048,833 @@ TEST_F(SdfParserTest, DrakeJointNestedChildBad) {
           ".*<drake:joint>: Model instance name 'good::nesQQQted' .*implied by"
           " frame name 'nesQQQted::b' in <drake:child> within model instance"
           " 'good'.* does not exist.*"));
+}
+
+// drake:joint/drake:parent can name the world, and drake:joint/drake:child can
+// name a model, meaning its implicit model frame.
+TEST_F(SdfParserTest, DrakeJointWorldParentModelChild) {
+  ParseTestString(R"""(
+<model name='good'>
+  <model name='nested'>
+    <link name='a'/>
+  </model>
+  <drake:joint type='planar' name='joint_name'>
+    <drake:parent>world</drake:parent>
+    <drake:child>nested</drake:child>
+    <drake:damping>0.1 0.1 0.1</drake:damping>
+  </drake:joint>
+</model>
+)""",
+                  "1.9");
+  const Joint<double>& joint = plant_.GetJointByName("joint_name");
+  EXPECT_EQ(&joint.frame_on_parent(), &plant_.world_frame());
+  EXPECT_EQ(&joint.frame_on_child(),
+            &GetModelFrameByName(plant_, "good::nested"));
+}
+
+// drake:joint always takes its frames from drake:parent and drake:child, so
+// drake:independent_frames is not allowed there.
+TEST_F(SdfParserTest, DrakeJointIndependentFramesError) {
+  ParseTestString(R"""(
+<model name='good'>
+  <link name='a'/>
+  <link name='b'/>
+  <drake:joint type='planar' name='joint_name'>
+    <drake:independent_frames/>
+    <drake:parent>a</drake:parent>
+    <drake:child>b</drake:child>
+    <drake:damping>0.1 0.1 0.1</drake:damping>
+  </drake:joint>
+</model>
+)""");
+  EXPECT_THAT(TakeError(),
+              MatchesRegex(".*Unsupported SDFormat element in drake:joint: "
+                           "drake:independent_frames.*"));
+}
+
+// With <drake:independent_frames/>, the frames named by a joint's <parent> and
+// <child> are the joint's frames Jp and Jc themselves, just as with
+// <drake:joint>. That's so for every joint type that doesn't build its axes
+// into its frames; see IndependentFramesUniversalJoint for one that does. The
+// links' poses don't assemble those frames, so at the zero configuration the
+// child link goes wherever the joint puts it rather than where its <pose> did.
+TEST_F(SdfParserTest, IndependentFramesAreTheJointFrames) {
+  const std::vector<std::string> joint_types{
+      "fixed", "revolute", "continuous", "prismatic", "screw", "ball"};
+  for (const std::string& joint_type : joint_types) {
+    const bool has_axis = joint_type != "fixed" && joint_type != "ball";
+    ParseTestString(
+        fmt::format(R"""(
+<model name='{0}'>
+  <link name='P'>
+    <pose>1 2 3 0.1 0.2 0.3</pose>
+  </link>
+  <link name='C'>
+    <pose>-4 5 -6 0.3 0.2 0.1</pose>
+  </link>
+  <frame name='Fp' attached_to='P'>
+    <pose>0.5 -0.5 0.25 0.4 0.5 0.6</pose>
+  </frame>
+  <frame name='Fc' attached_to='C'>
+    <pose>-0.25 0.75 0.5 0.6 0.5 0.4</pose>
+  </frame>
+  <joint name='joint' type='{0}'>
+    <drake:independent_frames/>
+    <parent>Fp</parent>
+    <child>Fc</child>
+    {1}
+  </joint>
+</model>)""",
+                    joint_type,
+                    has_axis ? "<axis><xyz>0 0 1</xyz></axis>" : ""),
+        "1.9");
+  }
+
+  plant_.Finalize();
+  const auto context = plant_.CreateDefaultContext();
+  for (const std::string& joint_type : joint_types) {
+    SCOPED_TRACE(joint_type);
+    const ModelInstanceIndex model_instance =
+        plant_.GetModelInstanceByName(joint_type);
+    const Joint<double>& joint = plant_.GetJointByName("joint", model_instance);
+    const Frame<double>& frame_Fp = plant_.GetFrameByName("Fp", model_instance);
+    const Frame<double>& frame_Fc = plant_.GetFrameByName("Fc", model_instance);
+    EXPECT_EQ(&joint.frame_on_parent(), &frame_Fp);
+    EXPECT_EQ(&joint.frame_on_child(), &frame_Fc);
+    // No frames were added for the joint.
+    EXPECT_FALSE(plant_.HasFrameNamed("joint_parent", model_instance));
+    EXPECT_FALSE(plant_.HasFrameNamed("joint_child", model_instance));
+
+    const RigidTransformd X_WFp = frame_Fp.CalcPoseInWorld(*context);
+    const RigidTransformd X_WFc = frame_Fc.CalcPoseInWorld(*context);
+    EXPECT_TRUE(X_WFc.IsNearlyEqualTo(X_WFp, 1e-14));
+    const RigidTransformd X_WC_given(RollPitchYawd(0.3, 0.2, 0.1),
+                                     Vector3d(-4, 5, -6));
+    const RigidTransformd X_WC = plant_.GetBodyByName("C", model_instance)
+                                     .body_frame()
+                                     .CalcPoseInWorld(*context);
+    EXPECT_FALSE(X_WC.IsNearlyEqualTo(X_WC_given, 0.1));
+  }
+}
+
+// When <parent> or <child> names a link, that link's own frame is the joint
+// frame.
+TEST_F(SdfParserTest, IndependentFramesOfLinks) {
+  ParseTestString(R"""(
+<model name='m'>
+  <link name='P'/>
+  <link name='C'>
+    <pose>1 2 3 0 0 0</pose>
+  </link>
+  <joint name='joint' type='revolute'>
+    <drake:independent_frames/>
+    <parent>P</parent>
+    <child>C</child>
+    <axis><xyz>0 0 1</xyz></axis>
+  </joint>
+</model>)""",
+                  "1.9");
+  const Joint<double>& joint = plant_.GetJointByName("joint");
+  EXPECT_EQ(&joint.frame_on_parent(), &plant_.GetBodyByName("P").body_frame());
+  EXPECT_EQ(&joint.frame_on_child(), &plant_.GetBodyByName("C").body_frame());
+}
+
+// <parent> and <child> can name the world, a frame in a nested model, or a
+// model, meaning its implicit model frame. Here they also do so in a joint that
+// is inside a <world> rather than a <model>.
+TEST_F(SdfParserTest, IndependentFramesScopedNames) {
+  ParseTestString(R"""(
+<world name='w'>
+  <frame name='Fw'>
+    <pose>1 2 3 0 0 0</pose>
+  </frame>
+  <model name='m'>
+    <model name='nested'>
+      <link name='L'/>
+      <frame name='Fn' attached_to='L'>
+        <pose>4 5 6 0 0 0</pose>
+      </frame>
+    </model>
+    <link name='A'/>
+    <link name='B'/>
+    <joint name='world_A' type='revolute'>
+      <drake:independent_frames/>
+      <parent>world</parent>
+      <child>A</child>
+      <axis><xyz>0 0 1</xyz></axis>
+    </joint>
+    <joint name='A_nested' type='revolute'>
+      <drake:independent_frames/>
+      <parent>A</parent>
+      <child>nested::Fn</child>
+      <axis><xyz>0 0 1</xyz></axis>
+    </joint>
+    <joint name='nested_B' type='revolute'>
+      <drake:independent_frames/>
+      <parent>nested</parent>
+      <child>B</child>
+      <axis><xyz>0 0 1</xyz></axis>
+    </joint>
+  </model>
+  <model name='free'>
+    <link name='L'/>
+  </model>
+  <joint name='world_free' type='fixed'>
+    <drake:independent_frames/>
+    <parent>Fw</parent>
+    <child>free::L</child>
+  </joint>
+</world>)""",
+                  "1.9");
+  const ModelInstanceIndex m = plant_.GetModelInstanceByName("m");
+  const ModelInstanceIndex nested = plant_.GetModelInstanceByName("m::nested");
+  const ModelInstanceIndex free = plant_.GetModelInstanceByName("free");
+
+  const Joint<double>& world_A = plant_.GetJointByName("world_A");
+  EXPECT_EQ(world_A.model_instance(), m);
+  EXPECT_EQ(&world_A.frame_on_parent(), &plant_.world_frame());
+
+  const Joint<double>& A_nested = plant_.GetJointByName("A_nested");
+  EXPECT_EQ(A_nested.model_instance(), nested);
+  EXPECT_EQ(&A_nested.frame_on_child(), &plant_.GetFrameByName("Fn", nested));
+
+  const Joint<double>& nested_B = plant_.GetJointByName("nested_B");
+  EXPECT_EQ(nested_B.model_instance(), m);
+  EXPECT_EQ(&nested_B.frame_on_parent(),
+            &plant_.GetFrameByName("__model__", nested));
+
+  const Joint<double>& world_free = plant_.GetJointByName("world_free");
+  EXPECT_EQ(world_free.model_instance(), free);
+  EXPECT_EQ(&world_free.frame_on_parent(), &plant_.GetFrameByName("Fw"));
+  EXPECT_EQ(&world_free.frame_on_child(),
+            &plant_.GetBodyByName("L", free).body_frame());
+}
+
+// A merge include rewrites __model__ references to the included model's proxy
+// frame. The sdf::Joint names are updated, but its element's text is not.
+TEST_F(SdfParserTest, IndependentFramesMergedInclude) {
+  const std::string full_name = FindResourceOrThrow(
+      "drake/multibody/parsing/test/sdf_parser_test/"
+      "independent_frames_merge_include.sdf");
+  ParseTestString(fmt::format(R"""(
+<model name='m'>
+  <include merge='true'>
+    <uri>{}</uri>
+    <name>renamed</name>
+    <pose>4 5 6 0.2 0.3 0.4</pose>
+  </include>
+</model>)""",
+                              full_name),
+                  "1.9");
+  const ModelInstanceIndex m = plant_.GetModelInstanceByName("m");
+  EXPECT_EQ(plant_.num_model_instances(), 3);
+  const Frame<double>& frame_M = plant_.GetFrameByName(
+      sdf::computeMergedModelProxyFrameName("renamed"), m);
+  const Frame<double>& frame_Fc = plant_.GetFrameByName("Fc", m);
+  const auto& joint = plant_.GetJointByName<RevoluteJoint>("joint", m);
+  EXPECT_EQ(joint.model_instance(), m);
+  EXPECT_EQ(&joint.frame_on_parent(), &frame_M);
+  EXPECT_EQ(&joint.frame_on_child(), &frame_Fc);
+  // The axis is the included model's x axis, expressed in Fc, which is rotated
+  // a quarter turn about z from that model frame.
+  EXPECT_TRUE(
+      CompareMatrices(joint.revolute_axis(), Vector3d(0, -1, 0), 1e-15));
+
+  plant_.Finalize();
+  const auto context = plant_.CreateDefaultContext();
+  EXPECT_TRUE(frame_Fc.CalcPose(*context, frame_M)
+                  .IsNearlyEqualTo(RigidTransformd::Identity(), 1e-14));
+}
+
+// A universal joint builds its axes into its frames: it rotates about Jp's x
+// axis, then Jc's y axis. So Drake fixes the joint's frames to the named ones,
+// rotated to put <axis> along x and <axis2> along y.
+TEST_F(SdfParserTest, IndependentFramesUniversalJoint) {
+  ParseTestString(R"""(
+<model name='m'>
+  <link name='P'/>
+  <link name='C'/>
+  <frame name='Fp' attached_to='P'>
+    <pose>1 2 3 0.1 0.2 0.3</pose>
+  </frame>
+  <frame name='Fc' attached_to='C'>
+    <pose>4 5 6 -0.3 0.2 -0.1</pose>
+  </frame>
+  <joint name='joint' type='universal'>
+    <drake:independent_frames/>
+    <parent>Fp</parent>
+    <child>Fc</child>
+    <axis><xyz>0 1 0</xyz></axis>
+    <axis2><xyz>0 0 1</xyz></axis2>
+  </joint>
+</model>)""",
+                  "1.9");
+  const auto& joint = plant_.GetJointByName<UniversalJoint>("joint");
+  const Frame<double>& frame_Fp = plant_.GetFrameByName("Fp");
+  const Frame<double>& frame_Fc = plant_.GetFrameByName("Fc");
+  const auto* frame_Jp =
+      dynamic_cast<const FixedOffsetFrame<double>*>(&joint.frame_on_parent());
+  const auto* frame_Jc =
+      dynamic_cast<const FixedOffsetFrame<double>*>(&joint.frame_on_child());
+  ASSERT_NE(frame_Jp, nullptr);
+  ASSERT_NE(frame_Jc, nullptr);
+  EXPECT_EQ(&frame_Jp->parent_frame(), &frame_Fp);
+  EXPECT_EQ(&frame_Jc->parent_frame(), &frame_Fc);
+
+  // The columns of R_FJ are <axis>, <axis2>, and their cross product, as
+  // expressed in either named frame F.
+  const math::RotationMatrixd R_FJ =
+      math::RotationMatrixd::MakeFromOrthonormalColumns(
+          Vector3d(0, 1, 0), Vector3d(0, 0, 1), Vector3d(1, 0, 0));
+  const RigidTransformd X_PFp(RollPitchYawd(0.1, 0.2, 0.3), Vector3d(1, 2, 3));
+  const RigidTransformd X_CFc(RollPitchYawd(-0.3, 0.2, -0.1),
+                              Vector3d(4, 5, 6));
+  const RigidTransformd X_PJp_expected = X_PFp * RigidTransformd(R_FJ);
+  const RigidTransformd X_CJc_expected = X_CFc * RigidTransformd(R_FJ);
+  EXPECT_TRUE(frame_Jp->GetFixedPoseInBodyFrame().IsNearlyEqualTo(
+      X_PJp_expected, kEps));
+  EXPECT_TRUE(frame_Jc->GetFixedPoseInBodyFrame().IsNearlyEqualTo(
+      X_CJc_expected, kEps));
+  EXPECT_THAT(
+      TakeWarning(),
+      MatchesRegex(".*effort limits.*universal joint.*not implemented.*"));
+
+  plant_.Finalize();
+  auto context = plant_.CreateDefaultContext();
+  const Vector2d angles(0.4, -0.6);
+  joint.set_angles(context.get(), angles);
+  // In the named frames, the first rotation is about Fp's y axis and the
+  // second about Fc's z axis. Their origins remain coincident.
+  const RigidTransformd X_FpFc_expected(
+      math::RotationMatrixd::MakeYRotation(angles[0]) *
+      math::RotationMatrixd::MakeZRotation(angles[1]));
+  EXPECT_TRUE(frame_Fc.CalcPose(*context, frame_Fp)
+                  .IsNearlyEqualTo(X_FpFc_expected, 1e-14));
+}
+
+// Without a <pose>, SDFormat's single joint frame coincides with the frame
+// named by <child>, which is Jc. So a joint's axis is expressed in Jc unless
+// it says otherwise.
+TEST_F(SdfParserTest, IndependentFramesAxes) {
+  ParseTestString(R"""(
+<model name='m'>
+  <link name='P'/>
+  <link name='C1'/>
+  <link name='C2'/>
+  <frame name='Fc1' attached_to='C1'>
+    <pose>0 0 0 0 0 1.5707963267948966</pose>
+  </frame>
+  <frame name='Fc2' attached_to='C2'>
+    <pose>0 0 0 0 0 1.5707963267948966</pose>
+  </frame>
+  <joint name='joint1' type='revolute'>
+    <drake:independent_frames/>
+    <parent>P</parent>
+    <child>Fc1</child>
+    <axis><xyz>1 0 0</xyz></axis>
+  </joint>
+  <joint name='joint2' type='prismatic'>
+    <drake:independent_frames/>
+    <parent>P</parent>
+    <child>Fc2</child>
+    <axis><xyz expressed_in='__model__'>1 0 0</xyz></axis>
+  </joint>
+</model>)""",
+                  "1.9");
+  EXPECT_TRUE(CompareMatrices(
+      plant_.GetJointByName<RevoluteJoint>("joint1").revolute_axis(),
+      Vector3d(1, 0, 0)));
+  // Fc2 is a quarter turn about z from the model frame, whose x axis is
+  // therefore Fc2's -y axis.
+  EXPECT_TRUE(CompareMatrices(
+      plant_.GetJointByName<PrismaticJoint>("joint2").translation_axis(),
+      Vector3d(0, -1, 0), 1e-15));
+}
+
+TEST_F(SdfParserTest, IndependentFramesPoseError) {
+  ParseTestString(R"""(
+<model name='m'>
+  <link name='P'/>
+  <link name='C'/>
+  <joint name='joint' type='fixed'>
+    <drake:independent_frames/>
+    <parent>P</parent>
+    <child>C</child>
+    <pose>1 2 3 0 0 0</pose>
+  </joint>
+</model>)""",
+                  "1.9");
+  EXPECT_THAT(TakeError(),
+              MatchesRegex(".*Joint 'joint' cannot have a <pose> because its "
+                           "frames are the ones named by <parent> and "
+                           "<child>.*"));
+}
+
+// Only the presence of <drake:independent_frames> matters, so it can't have a
+// value, nested elements, or attributes, any of which might seem to turn it
+// off.
+TEST_F(SdfParserTest, IndependentFramesNonemptyError) {
+  const std::vector<std::string> elements{
+      "<drake:independent_frames>false</drake:independent_frames>",
+      "<drake:independent_frames><drake:disabled/></drake:independent_frames>",
+      "<drake:independent_frames enabled='false'/>"};
+  for (int i = 0; i < ssize(elements); ++i) {
+    ParseTestString(fmt::format(R"""(
+<model name='m{0}'>
+  <link name='P'/>
+  <link name='C'/>
+  <joint name='joint' type='fixed'>
+    {1}
+    <parent>P</parent>
+    <child>C</child>
+  </joint>
+</model>)""",
+                                i, elements[i]),
+                    "1.9");
+    EXPECT_THAT(TakeError(),
+                MatchesRegex(".*<drake:independent_frames> must be empty and "
+                             "have no attributes.*"));
+  }
+}
+
+TEST_F(SdfParserTest, IndependentFramesDuplicateError) {
+  for (const std::string second :
+       {"<drake:independent_frames/>",
+        "<drake:independent_frames enabled='false'/>"}) {
+    ParseTestString(fmt::format(R"""(
+<model name='m{0}'>
+  <link name='P'/>
+  <link name='C'/>
+  <joint name='joint' type='fixed'>
+    <drake:independent_frames/>
+    {1}
+    <parent>P</parent>
+    <child>C</child>
+  </joint>
+</model>)""",
+                                plant_.num_model_instances(), second),
+                    "1.9");
+    EXPECT_THAT(TakeError(),
+                MatchesRegex(".*<drake:independent_frames> may appear only "
+                             "once per joint.*"));
+  }
+}
+
+// Drake has no frame for an SDFormat joint's own frame, so a joint can't name
+// another joint as its <parent> or <child>.
+TEST_F(SdfParserTest, IndependentFramesNamingAJointError) {
+  ParseTestString(R"""(
+<model name='m'>
+  <link name='A'/>
+  <link name='B'/>
+  <link name='C'/>
+  <joint name='A_B' type='fixed'>
+    <parent>A</parent>
+    <child>B</child>
+  </joint>
+  <joint name='joint' type='fixed'>
+    <drake:independent_frames/>
+    <parent>A_B</parent>
+    <child>C</child>
+  </joint>
+</model>)""",
+                  "1.9");
+  EXPECT_THAT(TakeError(),
+              MatchesRegex(".*<parent>A_B</parent> of joint 'joint' names a "
+                           "joint.*"));
+}
+
+// The source joint foo_child can coexist with the frame foo_child that Drake
+// generates for foo. A reference to the source joint must not resolve to the
+// generated frame on a different link; as for any joint, naming it is an
+// error. Check both endpoints in model, nested model, and world scopes.
+TEST_F(SdfParserTest, IndependentFramesGeneratedFrameNameError) {
+  for (const std::string scope : {"model", "nested", "world"}) {
+    for (bool parent : {false, true}) {
+      const std::string model_name = fmt::format("m_{}_{}", scope, parent);
+      SCOPED_TRACE(model_name);
+      std::string prefix;
+      if (scope == "world") {
+        prefix = model_name + "::";
+      } else if (scope == "nested") {
+        prefix = "nested::";
+      }
+      const std::string joint = fmt::format(R"""(
+  <joint name='joint' type='fixed'>
+    <drake:independent_frames/>
+    <parent>{0}{1}</parent>
+    <child>{0}{2}</child>
+  </joint>)""",
+                                            prefix, parent ? "foo_child" : "D",
+                                            parent ? "D" : "foo_child");
+      const std::string model =
+          fmt::format(R"""(
+<model name='{0}'>
+  <link name='A'/>
+  <link name='B'/>
+  <link name='C'/>
+  <link name='D'/>
+  <joint name='foo' type='fixed'>
+    <parent>A</parent>
+    <child>B</child>
+  </joint>
+  <joint name='foo_child' type='fixed'>
+    <parent>A</parent>
+    <child>C</child>
+  </joint>
+  {1}
+</model>)""",
+                      scope == "nested" ? "nested" : model_name,
+                      scope == "model" ? joint : "");
+      std::string contents = model;
+      if (scope == "world") {
+        contents = fmt::format("<world name='w'>{}{}</world>", model, joint);
+      } else if (scope == "nested") {
+        contents = fmt::format("<model name='{}'>{}{}</model>", model_name,
+                               model, joint);
+      }
+      ParseTestString(contents, "1.9");
+      EXPECT_THAT(TakeError(),
+                  MatchesRegex(fmt::format(
+                      ".*<{0}>{1}foo_child</{0}> of joint 'joint' names a "
+                      "joint.*",
+                      parent ? "parent" : "child", prefix)));
+    }
+  }
+}
+
+// The included URDF has a joint foo_child connecting R to C. Adding the native
+// joint foo creates an unrelated frame foo_child on B after the URDF has been
+// exported to SDFormat. References to the imported joint must not find that
+// frame. The URDF also exports frames that independent joints may name.
+std::string MakeModelWithImportedJointFrames(const std::string& model_name,
+                                             const std::string& urdf,
+                                             bool merge,
+                                             const std::string& extra_joints) {
+  return fmt::format(R"""(
+<model name='{0}'>
+  <include merge='{1}'>
+    <uri>{2}</uri>
+    <name>u</name>
+  </include>
+  <link name='A'/>
+  <link name='D'/>
+  <link name='E'/>
+  <joint name='foo' type='fixed'>
+    <parent>A</parent>
+    <child>{3}B</child>
+  </joint>
+  {4}
+</model>)""",
+                     model_name, merge, urdf, merge ? "" : "u::", extra_joints);
+}
+
+TEST_F(SdfParserTest, IndependentFramesImportedJointNameError) {
+  const std::string urdf = FindResourceOrThrow(
+      "drake/multibody/parsing/test/sdf_parser_test/"
+      "imported_joint_frames.urdf");
+  for (const std::string scope : {"model", "world", "single_model"}) {
+    for (bool merge : {false, true}) {
+      for (bool parent : {false, true}) {
+        const std::string model_name =
+            fmt::format("m_{}_{}_{}", scope, merge, parent);
+        SCOPED_TRACE(model_name);
+        const std::string model_prefix =
+            scope == "world" ? model_name + "::" : "";
+        const std::string imported_prefix = merge ? "" : "u::";
+        const std::string joint_name =
+            model_prefix + imported_prefix + "foo_child";
+        const std::string other_name = model_prefix + "D";
+        const std::string joint = fmt::format(R"""(
+<joint name='independent' type='fixed'>
+  <drake:independent_frames/>
+  <parent>{0}</parent>
+  <child>{1}</child>
+</joint>)""",
+                                              parent ? joint_name : other_name,
+                                              parent ? other_name : joint_name);
+        const std::string model = MakeModelWithImportedJointFrames(
+            model_name, urdf, merge, scope == "world" ? "" : joint);
+        const std::string error = fmt::format(
+            ".*<{0}>{1}</{0}> of joint 'independent' names a joint.*",
+            parent ? "parent" : "child", joint_name);
+        if (scope == "single_model") {
+          // Check the single-model entry point as well as AddModelsFromSdf.
+          ThrowErrors();
+          const std::string contents =
+              fmt::format("<sdf version='1.12'>{}</sdf>", model);
+          const DataSource data_source{DataSource::kContents, &contents};
+          internal::CollisionFilterGroupResolver resolver{&plant_};
+          ParsingWorkspace w{options_,     package_map_, diagnostic_policy_,
+                             nullptr,      &plant_,      &resolver,
+                             TestingSelect};
+          DRAKE_EXPECT_THROWS_MESSAGE(AddModelFromSdf(data_source, "", {}, w),
+                                      error);
+          resolver.Resolve(diagnostic_policy_);
+        } else {
+          ParseTestString(
+              scope == "world"
+                  ? fmt::format("<world name='w'>{}{}</world>", model, joint)
+                  : model,
+              "1.12");
+          EXPECT_THAT(TakeError(), MatchesRegex(error));
+        }
+        const ModelInstanceIndex imported = plant_.GetModelInstanceByName(
+            merge ? model_name : model_name + "::u");
+        const auto& imported_joint =
+            plant_.GetJointByName("foo_child", imported);
+        const auto& unrelated_frame =
+            plant_.GetFrameByName("foo_child", imported);
+        EXPECT_NE(&imported_joint.child_body(), &unrelated_frame.body());
+        const ModelInstanceIndex child_instance =
+            parent ? plant_.GetModelInstanceByName(model_name) : imported;
+        EXPECT_FALSE(plant_.HasJointNamed("independent", child_instance));
+      }
+    }
+  }
+}
+
+TEST_F(SdfParserTest, IndependentFramesImportedFrames) {
+  const std::string urdf = FindResourceOrThrow(
+      "drake/multibody/parsing/test/sdf_parser_test/"
+      "imported_joint_frames.urdf");
+  for (bool world : {false, true}) {
+    for (bool merge : {false, true}) {
+      const std::string model_name = fmt::format("m_{}_{}", world, merge);
+      SCOPED_TRACE(model_name);
+      const std::string model_prefix = world ? model_name + "::" : "";
+      const std::string imported_prefix = model_prefix + (merge ? "" : "u::");
+      const std::string joints = fmt::format(R"""(
+<joint name='use_explicit' type='fixed'>
+  <drake:independent_frames/>
+  <parent>{0}Fc</parent>
+  <child>{1}D</child>
+</joint>
+<joint name='use_exported' type='fixed'>
+  <drake:independent_frames/>
+  <parent>{1}E</parent>
+  <child>{0}bar_parent</child>
+</joint>)""",
+                                             imported_prefix, model_prefix);
+      const std::string model = MakeModelWithImportedJointFrames(
+          model_name, urdf, merge, world ? "" : joints);
+      ParseTestString(
+          world ? fmt::format("<world name='w'>{}{}</world>", model, joints)
+                : model,
+          "1.12");
+      const ModelInstanceIndex imported = plant_.GetModelInstanceByName(
+          merge ? model_name : model_name + "::u");
+      const ModelInstanceIndex enclosing =
+          plant_.GetModelInstanceByName(model_name);
+      const auto& explicit_joint =
+          plant_.GetJointByName("use_explicit", enclosing);
+      EXPECT_EQ(&explicit_joint.frame_on_parent(),
+                &plant_.GetFrameByName("Fc", imported));
+      const auto& exported_joint =
+          plant_.GetJointByName("use_exported", imported);
+      EXPECT_EQ(&exported_joint.frame_on_child(),
+                &plant_.GetFrameByName("bar_parent", imported));
+    }
+  }
+  plant_.Finalize();
+}
+
+// A preexisting plant joint must not block a legitimate source frame with the
+// same scoped name. Only joints imported while loading this source count.
+TEST_F(SdfParserTest, IndependentFramesIgnorePreexistingJointNames) {
+  ParseTestString(R"""(
+<world name='w'>
+  <model name='old'>
+    <link name='L'/>
+  </model>
+  <frame name='old_frame' attached_to='old'/>
+  <joint name='F' type='fixed'>
+    <drake:independent_frames/>
+    <parent>world</parent>
+    <child>old_frame</child>
+  </joint>
+</world>)""",
+                  "1.12");
+  ASSERT_TRUE(plant_.HasJointNamed("F", world_model_instance()));
+  ParseTestString(R"""(
+<world name='w'>
+  <model name='new'>
+    <link name='L'/>
+  </model>
+  <frame name='F'/>
+  <joint name='independent' type='fixed'>
+    <drake:independent_frames/>
+    <parent>F</parent>
+    <child>new::L</child>
+  </joint>
+</world>)""",
+                  "1.12");
+  const auto& joint = plant_.GetJointByName("independent");
+  EXPECT_EQ(&joint.frame_on_parent(),
+            &plant_.GetFrameByName("F", world_model_instance()));
+  plant_.Finalize();
+}
+
+// The name "world" always means the world frame. Here a merged URDF brings a
+// joint named "world" into the model's scope, but a joint that names "world"
+// as its parent must still get the world frame rather than be rejected for
+// naming a joint.
+TEST_F(SdfParserTest, IndependentFramesWorldDespiteImportedJointNamedWorld) {
+  const std::string urdf = FindResourceOrThrow(
+      "drake/multibody/parsing/test/sdf_parser_test/joint_named_world.urdf");
+  ParseTestString(fmt::format(R"""(
+<model name='m'>
+  <include merge='true'>
+    <uri>{}</uri>
+    <name>u</name>
+  </include>
+  <link name='A'/>
+  <joint name='independent' type='fixed'>
+    <drake:independent_frames/>
+    <parent>world</parent>
+    <child>A</child>
+  </joint>
+</model>)""",
+                              urdf),
+                  "1.12");
+  const ModelInstanceIndex m = plant_.GetModelInstanceByName("m");
+  ASSERT_TRUE(plant_.HasJointNamed("world", m));
+  const Joint<double>& joint = plant_.GetJointByName("independent", m);
+  EXPECT_EQ(&joint.frame_on_parent(), &plant_.world_frame());
+}
+
+// A frame belongs to the model that declares it even when it is attached to a
+// link in another model, so a joint in the declaring model can name it. Here a
+// joint at world scope names world-scope frames attached to models, and a joint
+// in an outer model names one of its frames attached to a nested model's link.
+TEST_F(SdfParserTest, IndependentFramesAttachedToOtherModels) {
+  ParseTestString(R"""(
+<world name='w'>
+  <model name='M1'>
+    <link name='L1'/>
+  </model>
+  <model name='M2'>
+    <link name='L2'/>
+  </model>
+  <frame name='F1' attached_to='M1'>
+    <pose>1 2 3 0 0 0</pose>
+  </frame>
+  <frame name='F2' attached_to='M2'>
+    <pose>4 5 6 0 0 0</pose>
+  </frame>
+  <joint name='J' type='fixed'>
+    <drake:independent_frames/>
+    <parent>F1</parent>
+    <child>F2</child>
+  </joint>
+  <model name='outer'>
+    <model name='inner'>
+      <link name='A'/>
+    </model>
+    <link name='B'/>
+    <frame name='Fa' attached_to='inner::A'>
+      <pose>0 0 1 0 0 0</pose>
+    </frame>
+    <joint name='K' type='revolute'>
+      <drake:independent_frames/>
+      <parent>Fa</parent>
+      <child>B</child>
+      <axis><xyz>0 0 1</xyz></axis>
+    </joint>
+  </model>
+</world>)""",
+                  "1.9");
+  const Frame<double>& frame_F1 = plant_.GetFrameByName("F1");
+  const Frame<double>& frame_F2 = plant_.GetFrameByName("F2");
+  const Joint<double>& joint_J = plant_.GetJointByName("J");
+  EXPECT_EQ(&joint_J.frame_on_parent(), &frame_F1);
+  EXPECT_EQ(&joint_J.frame_on_child(), &frame_F2);
+
+  const ModelInstanceIndex outer = plant_.GetModelInstanceByName("outer");
+  const Joint<double>& joint_K = plant_.GetJointByName("K");
+  EXPECT_EQ(&joint_K.frame_on_parent(), &plant_.GetFrameByName("Fa", outer));
+
+  // The weld puts M2's frame F2 right on M1's frame F1.
+  plant_.Finalize();
+  const auto context = plant_.CreateDefaultContext();
+  EXPECT_TRUE(frame_F2.CalcPose(*context, frame_F1)
+                  .IsNearlyEqualTo(RigidTransformd::Identity(), 1e-14));
+}
+
+// This is what <drake:independent_frames/> is for: a closed kinematic loop that
+// is not assembled as written. This four-bar is drawn with its rocker 0.5 m
+// too far from the end of the coupler for the loop to close. Without
+// independent frames, the parser quietly builds that gap into the frames of
+// the loop's last joint; with them, the gap survives as a violation of the weld
+// constraint that closes the loop.
+TEST_F(SdfParserTestContinuous, IndependentFramesUnassembledLoop) {
+  static constexpr char kFourBar[] = R"""(
+<model name='{0}'>
+  <link name='driver'>
+    <pose>-1 0 0 0 0 0</pose>
+    <inertial><mass>1</mass></inertial>
+  </link>
+  <frame name='Dc' attached_to='driver'>
+    <pose>0 0 1 0 0 0</pose>
+  </frame>
+  <link name='rocker'>
+    <pose>1.5 0 0 0 0 0</pose>
+    <inertial><mass>1</mass></inertial>
+  </link>
+  <frame name='Rc' attached_to='rocker'>
+    <pose>0 0 1 0 0 0</pose>
+  </frame>
+  <link name='coupler'>
+    <pose>-1 0 1 0 0 0</pose>
+    <inertial><mass>1</mass></inertial>
+  </link>
+  <frame name='Cr' attached_to='coupler'>
+    <pose>2 0 0 0 0 0</pose>
+  </frame>
+  <joint name='world_driver' type='revolute'>
+    <parent>world</parent>
+    <child>driver</child>
+    <axis><xyz>0 1 0</xyz></axis>
+  </joint>
+  <joint name='world_rocker' type='revolute'>
+    <parent>world</parent>
+    <child>rocker</child>
+    <axis><xyz>0 1 0</xyz></axis>
+  </joint>
+  <joint name='driver_coupler' type='revolute'>
+    <parent>Dc</parent>
+    <child>coupler</child>
+    <axis><xyz>0 1 0</xyz></axis>
+  </joint>
+  <joint name='coupler_rocker' type='revolute'>
+    {1}
+    <parent>Cr</parent>
+    <child>Rc</child>
+    <axis><xyz>0 1 0</xyz></axis>
+  </joint>
+</model>)""";
+  ParseTestString(
+      fmt::format(kFourBar, "independent", "<drake:independent_frames/>"),
+      "1.9");
+  ParseTestString(fmt::format(kFourBar, "standard", ""), "1.9");
+  plant_.SetEnableLoopTopology(true);
+  plant_.Finalize();
+  ASSERT_EQ(plant_.num_loop_constraints(), 2);
+
+  // The gap between the frames of each loop-closing weld at q = 0.
+  const auto context = plant_.CreateDefaultContext();
+  std::map<std::string, double> gaps;  // Keyed by model instance name.
+  for (const auto& [id, spec] : plant_.get_weld_constraint_specs()) {
+    if (!spec.is_ephemeral) continue;
+    const Link<double>& link_A = plant_.get_body(spec.body_A);
+    const Link<double>& link_B = plant_.get_body(spec.body_B);
+    const RigidTransformd X_WP = link_A.EvalPoseInWorld(*context) * spec.X_AP;
+    const RigidTransformd X_WQ = link_B.EvalPoseInWorld(*context) * spec.X_BQ;
+    gaps[plant_.GetModelInstanceName(link_A.model_instance())] =
+        (X_WQ.translation() - X_WP.translation()).norm();
+  }
+  EXPECT_NEAR(gaps.at("independent"), 0.5, 1e-14);
+  EXPECT_NEAR(gaps.at("standard"), 0.0, 1e-14);
 }
 
 TEST_F(SdfParserTest, MimicSuccessfulParsing) {
