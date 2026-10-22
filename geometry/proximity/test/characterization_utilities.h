@@ -263,7 +263,7 @@ class DRAKE_NO_EXPORT MakeCharacterizationShape : public ShapeReifier {
 
 /* Reports if the Mesh shape is represented as a convex hull under the hood.
  */
-::testing::AssertionResult MeshIsConvexInFcl();
+::testing::AssertionResult MeshIsConvexInEngine();
 
 /* Creates a transform to align two planes. The planes are defined by a
  (point, normal) pair -- the point lies on the plane and the normal is

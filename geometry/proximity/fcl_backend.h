@@ -67,7 +67,16 @@ namespace internal DRAKE_NO_EXPORT {
  backend-independent proximity code, with no separate base class or interface
  declaration to keep synchronized. */
 struct FclBackend {
+  /* Identifies this policy; see collision_backend.h. */
+  static constexpr CollisionBackend kId = CollisionBackend::kFcl;
+
   using Object = fcl::CollisionObjectd;
+
+  /* The signatures Drake's narrowphase callbacks present to the broadphase
+   (see D5).  */
+  using CollisionFunction = bool (*)(Object*, Object*, void*);
+  using DistanceFunction = bool (*)(Object*, Object*, void*, double&);
+
   using Geometry = fcl::CollisionGeometryd;
   using NodeType = fcl::NODE_TYPE;
   using Transform = Eigen::Isometry3d;
@@ -80,6 +89,10 @@ struct FclBackend {
   using Halfspace = fcl::Halfspaced;
   using Sphere = fcl::Sphered;
 
+  /* The common base of the primitive shape types, which the engine holds
+   while reifying. */
+  using ShapeBase = fcl::ShapeBased;
+
   /* The per-face data a Convex is built from (see D4). FCL consumes Drake's
    PolygonSurfaceMesh encoding -- [count, v0, v1, ..., count, ...] -- as is. */
   using FaceData = std::vector<int>;
@@ -89,6 +102,7 @@ struct FclBackend {
   using DistanceRequest = fcl::DistanceRequestd;
   using DistanceResult = fcl::DistanceResultd;
   using Contact = fcl::Contactd;
+  using Broadphase = fcl::DynamicAABBTreeCollisionManager<double>;
 
   /* The scalar the library's own API is written in. Drake's broadphase
    distance callbacks take their threshold by reference in this type.  */
@@ -151,10 +165,52 @@ struct FclBackend {
     fcl::collide(a, b, request, *result);
   }
 
+  /* @name Broadphase traversal (see D5)
+
+   Drake's narrowphase callbacks are free functions taking an opaque
+   `void* data`, which is FCL's protocol; Coal instead wants a callback
+   object, so its policy adapts. These overloads also absorb the libraries'
+   inconsistent use of `const`: the broadphase structures do not change
+   during a query, but are nevertheless declared non-const.  */
+  //@{
+  static void Collide(const Broadphase& tree, void* data,
+                      CollisionFunction callback) {
+    const_cast<Broadphase&>(tree).collide(data, callback);
+  }
+
+  static void Collide(const Broadphase& tree1, const Broadphase& tree2,
+                      void* data, CollisionFunction callback) {
+    const_cast<Broadphase&>(tree1).collide(const_cast<Broadphase*>(&tree2),
+                                           data, callback);
+  }
+
+  static void Distance(const Broadphase& tree, void* data,
+                       DistanceFunction callback) {
+    const_cast<Broadphase&>(tree).distance(data, callback);
+  }
+
+  static void Distance(const Broadphase& tree, Object* object, void* data,
+                       DistanceFunction callback) {
+    const_cast<Broadphase&>(tree).distance(object, data, callback);
+  }
+
+  static void Distance(const Broadphase& tree1, const Broadphase& tree2,
+                       void* data, DistanceFunction callback) {
+    const_cast<Broadphase&>(tree1).distance(const_cast<Broadphase*>(&tree2),
+                                            data, callback);
+  }
+  //@}
+
   /* Converts a Drake pose into the transform type the library's API consumes.
    */
   static Transform ToTransform(const math::RigidTransformd& X_AB) {
     return X_AB.GetAsIsometry3();
+  }
+
+  /* Converts a transform from the library's API back into a Drake pose; the
+   inverse of ToTransform(). */
+  static math::RigidTransformd FromTransform(const Transform& X_AB) {
+    return math::RigidTransformd(X_AB);
   }
 
   /* Converts the faces of a convex PolygonSurfaceMesh, given in that class's

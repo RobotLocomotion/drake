@@ -370,12 +370,12 @@ void MakeCharacterizationShape::ImplementGeometry(const Sphere& sphere, void*) {
 class ProximityEngineTester {
  public:
   template <typename T>
-  static bool IsFclConvexType(const ProximityEngine<T>& engine, GeometryId id) {
-    return engine.IsFclConvexType(id);
+  static bool IsConvexType(const ProximityEngine<T>& engine, GeometryId id) {
+    return engine.IsConvexType(id);
   }
 };
 
-::testing::AssertionResult MeshIsConvexInFcl() {
+::testing::AssertionResult MeshIsConvexInEngine() {
   // Create a small obj in a temp directory.
   const std::string obj_path = temp_directory() + "/tri.obj";
   {
@@ -397,7 +397,7 @@ class ProximityEngineTester {
   ProximityEngine<double> engine;
   const GeometryId id = GeometryId::get_new_id();
   engine.AddDynamicGeometry(Mesh(obj_path, 1.0), {}, id);
-  if (ProximityEngineTester::IsFclConvexType(engine, id)) {
+  if (ProximityEngineTester::IsConvexType(engine, id)) {
     return ::testing::AssertionSuccess();
   }
   return ::testing::AssertionFailure()
