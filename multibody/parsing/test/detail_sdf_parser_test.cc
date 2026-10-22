@@ -4029,6 +4029,68 @@ TEST_F(SdfParserTest, FramesAsJointParentOrChild) {
   }
 }
 
+// A frame belongs to the model that declares it, even when it is attached to
+// something in another model. Here the outer model's frame F is attached to a
+// link in the inner model, which has a frame F of its own; the two must not
+// collide.
+TEST_F(SdfParserTest, FrameBelongsToDeclaringModel) {
+  ParseTestString(R"""(
+<world name='w'>
+  <model name='outer'>
+    <model name='inner'>
+      <link name='L'/>
+      <frame name='F' attached_to='L'/>
+    </model>
+    <frame name='F' attached_to='inner::L'>
+      <pose>1 2 3 0 0 0</pose>
+    </frame>
+    <frame name='G' attached_to='inner'/>
+  </model>
+  <frame name='W' attached_to='outer'/>
+</world>)""",
+                  "1.9");
+  const ModelInstanceIndex outer = plant_.GetModelInstanceByName("outer");
+  const ModelInstanceIndex inner =
+      plant_.GetModelInstanceByName("outer::inner");
+  const Link<double>& link_L = plant_.GetBodyByName("L", inner);
+
+  const Frame<double>& outer_F = plant_.GetFrameByName("F", outer);
+  const Frame<double>& inner_F = plant_.GetFrameByName("F", inner);
+  EXPECT_NE(&outer_F, &inner_F);
+  EXPECT_EQ(&outer_F.body(), &link_L);
+  EXPECT_EQ(&inner_F.body(), &link_L);
+  EXPECT_TRUE(outer_F.GetFixedPoseInBodyFrame().IsExactlyEqualTo(
+      RigidTransformd(Vector3d(1, 2, 3))));
+
+  // A frame attached to another model (meaning to its implicit frame) also
+  // belongs to the model that declares it, as does a frame declared at world
+  // scope.
+  EXPECT_EQ(plant_.GetFrameByName("G").model_instance(), outer);
+  EXPECT_EQ(plant_.GetFrameByName("W").model_instance(),
+            world_model_instance());
+}
+
+// Since a frame belongs to the model that declares it, it can be referred to by
+// its name in that model even when it is attached to a link in another model.
+TEST_F(SdfParserTest, DrakeJointFrameAttachedToNestedLink) {
+  ParseTestString(R"""(
+<model name='outer'>
+  <model name='inner'>
+    <link name='A'/>
+    <link name='B'/>
+  </model>
+  <frame name='Fa' attached_to='inner::A'/>
+  <drake:joint name='joint' type='planar'>
+    <drake:parent>Fa</drake:parent>
+    <drake:child>inner::B</drake:child>
+    <drake:damping>0 0 0</drake:damping>
+  </drake:joint>
+</model>)""",
+                  "1.9");
+  const Joint<double>& joint = plant_.GetJointByName("joint");
+  EXPECT_EQ(&joint.frame_on_parent(), &plant_.GetFrameByName("Fa"));
+}
+
 // Verifies that URDF files can be loaded into Drake via libsdformat's Interface
 // API which bypasses the URDF->SDFormat conversion. This also verifies that
 // SDFormat files can be forced to be loaded via the Interface API by changing
