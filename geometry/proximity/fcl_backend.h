@@ -88,6 +88,7 @@ struct FclBackend {
   using CollisionResult = fcl::CollisionResultd;
   using DistanceRequest = fcl::DistanceRequestd;
   using DistanceResult = fcl::DistanceResultd;
+  using Contact = fcl::Contactd;
 
   /* The scalar the library's own API is written in. Drake's broadphase
    distance callbacks take their threshold by reference in this type.  */
@@ -106,6 +107,21 @@ struct FclBackend {
     request->enable_contact = false;
     request->gjk_tolerance = 2e-12;
     request->gjk_solver_type = fcl::GJKSolverType::GST_LIBCCD;
+  }
+
+  /* Configures a request for a single contact, with contact data (see D2).
+   See ConfigureHasCollisionRequest() for the note on the GJK solver.  */
+  static void ConfigurePenetrationRequest(CollisionRequest* request) {
+    request->num_max_contacts = 1;
+    request->enable_contact = true;
+    request->gjk_tolerance = 2e-12;
+    request->gjk_solver_type = fcl::GJKSolverType::GST_LIBCCD;
+  }
+
+  /* Returns the contact's penetration depth as Drake defines it: positive
+   when the geometries overlap (see D3). FCL already reports it that way.  */
+  static double ContactDepth(const Contact& contact) {
+    return contact.penetration_depth;
   }
 
   /* Configures a request for a signed-distance query that reports witness
