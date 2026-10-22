@@ -4,6 +4,7 @@
 #include <utility>
 #include <vector>
 
+#include "drake/geometry/proximity/fcl_backend.h"
 #include "drake/geometry/proximity/polygon_surface_mesh.h"
 #include "drake/geometry/proximity/proximity_utilities.h"
 
@@ -62,7 +63,7 @@ std::unique_ptr<fcl::CollisionObjectd> MakeFclObject(
   std::shared_ptr<fcl::CollisionGeometryd> fcl_geometry;
   shape.Reify(&maker, &fcl_geometry);
   auto object = std::make_unique<fcl::CollisionObjectd>(fcl_geometry);
-  EncodedData(id, is_dynamic).write_to(object.get());
+  EncodedData(id, is_dynamic).write_to<FclBackend>(object.get());
   object->setTransform(X_WG.GetAsIsometry3());
   return object;
 }

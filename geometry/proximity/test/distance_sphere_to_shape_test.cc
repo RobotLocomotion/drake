@@ -18,6 +18,7 @@
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/proximity/distance_to_point_callback.h"
 #include "drake/geometry/proximity/distance_to_shape_callback.h"
+#include "drake/geometry/proximity/fcl_backend.h"
 #include "drake/geometry/proximity/proximity_utilities.h"
 #include "drake/geometry/query_results/signed_distance_to_point.h"
 #include "drake/geometry/utilities.h"
@@ -71,8 +72,8 @@ GTEST_TEST(SphereShapeDistance, FallbackSupport) {
   fcl::DistanceRequestd request{};
   const GeometryId id_a = GeometryId::get_new_id();
   const GeometryId id_b = GeometryId::get_new_id();
-  EncodedData(id_a, true).write_to(&obj_a);
-  EncodedData(id_b, true).write_to(&obj_b);
+  EncodedData(id_a, true).write_to<FclBackend>(&obj_a);
+  EncodedData(id_b, true).write_to<FclBackend>(&obj_b);
 
   SignedDistancePair<double> distance_pair_d{};
   DRAKE_EXPECT_NO_THROW(CalcDistanceFallback<double>(
@@ -408,12 +409,12 @@ GTEST_TEST(ComputeNarrowPhaseDistance, OrderInvariance) {
   // Sphere
   CollisionObjectd sphere(make_shared<Sphered>(1));
   const GeometryId sphere_id = GeometryId::get_new_id();
-  EncodedData(sphere_id, true).write_to(&sphere);
+  EncodedData(sphere_id, true).write_to<FclBackend>(&sphere);
 
   // Box
   CollisionObjectd box(make_shared<Boxd>(1, 1, 1));
   const GeometryId box_id = GeometryId::get_new_id();
-  EncodedData(box_id, true).write_to(&box);
+  EncodedData(box_id, true).write_to<FclBackend>(&box);
 
   fcl::DistanceRequestd request{};
   const RigidTransformd X_WS(Vector3d{2, 2, 2});
@@ -449,13 +450,13 @@ GTEST_TEST(ComputeNarrowPhaseDistance, sphere_touches_shape) {
   const double radius = 1;
   CollisionObjectd sphere(make_shared<Sphered>(radius));
   const GeometryId sphere_id = GeometryId::get_new_id();
-  EncodedData(sphere_id, true).write_to(&sphere);
+  EncodedData(sphere_id, true).write_to<FclBackend>(&sphere);
 
   // Box [-1,1]x[-1,1]x[-1,1].
   const double side = 2;
   CollisionObjectd box(make_shared<Boxd>(side, side, side));
   const GeometryId box_id = GeometryId::get_new_id();
-  EncodedData(box_id, true).write_to(&box);
+  EncodedData(box_id, true).write_to<FclBackend>(&box);
   const RigidTransformd X_WB(RigidTransformd::Identity());
   const fcl::DistanceRequestd request{};
 
@@ -494,8 +495,8 @@ class CallbackScalarSupport : public ::testing::Test {
     X_WGs_[id_B] = RigidTransform<T>::Identity();
 
     auto apply_data = [&data_A, &data_B](auto& shapes) {
-      data_A.write_to(&shapes[0]);
-      data_B.write_to(&shapes[1]);
+      data_A.write_to<FclBackend>(&shapes[0]);
+      data_B.write_to<FclBackend>(&shapes[1]);
     };
 
     spheres_.emplace_back(make_shared<Sphered>(0.25));
@@ -645,9 +646,9 @@ GTEST_TEST(Callback, ScalarSupportWithFilters) {
       {id_B, RigidTransform<T>::Identity()}};
 
   CollisionObjectd box_A(make_shared<fcl::Boxd>(0.25, 0.3, 0.4));
-  data_A.write_to(&box_A);
+  data_A.write_to<FclBackend>(&box_A);
   CollisionObjectd box_B(make_shared<fcl::Boxd>(0.4, 0.3, 0.2));
-  data_B.write_to(&box_B);
+  data_B.write_to<FclBackend>(&box_B);
 
   std::vector<SignedDistancePair<T>> results;
   CallbackData<T> data(&collision_filter, &X_WGs, kInf, &results);
@@ -663,8 +664,8 @@ GTEST_TEST(Callback, RespectCollisionFiltering) {
   CollisionObjectd sphere_B(make_shared<Sphered>(0.25));
   EncodedData data_A(id_A, true);
   EncodedData data_B(id_B, true);
-  data_A.write_to(&sphere_A);
-  data_B.write_to(&sphere_B);
+  data_A.write_to<FclBackend>(&sphere_A);
+  data_B.write_to<FclBackend>(&sphere_B);
   const std::unordered_map<GeometryId, RigidTransformd> X_WGs{
       {id_A, RigidTransformd{Vector3d{10, 11, 12}}},
       {id_B, RigidTransformd::Identity()}};
@@ -714,8 +715,8 @@ GTEST_TEST(Callback, ABOrdering) {
   CollisionObjectd sphere_B(make_shared<Sphered>(0.25));
   EncodedData data_A(id_A, true);
   EncodedData data_B(id_B, true);
-  data_A.write_to(&sphere_A);
-  data_B.write_to(&sphere_B);
+  data_A.write_to<FclBackend>(&sphere_A);
+  data_B.write_to<FclBackend>(&sphere_B);
   const std::unordered_map<GeometryId, RigidTransformd> X_WGs{
       {id_A, RigidTransformd{Vector3d{10, 11, 12}}},
       {id_B, RigidTransformd::Identity()}};
@@ -775,9 +776,9 @@ TYPED_TEST(CallbackMaxDistanceTest, MaxDistanceThreshold) {
   const double radius_B = 0.4;
   const double kEps = 2 * std::numeric_limits<double>::epsilon();
   CollisionObjectd sphere_A(make_shared<fcl::Sphered>(radius_A));
-  data_A.write_to(&sphere_A);
+  data_A.write_to<FclBackend>(&sphere_A);
   CollisionObjectd sphere_B(make_shared<fcl::Sphered>(radius_B));
-  data_B.write_to(&sphere_B);
+  data_B.write_to<FclBackend>(&sphere_B);
   const Vector3<T> p_WB = Vector3<T>(2, 3, 4).normalized() *
                           (kMaxDistance + radius_A + radius_B - kEps);
   std::unordered_map<GeometryId, RigidTransform<T>> X_WGs{
