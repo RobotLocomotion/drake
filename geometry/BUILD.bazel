@@ -100,6 +100,7 @@ drake_cc_library(
         "//geometry/proximity:deformable_contact_geometries",
         "//geometry/proximity:distance_to_point_callback",
         "//geometry/proximity:distance_to_shape_callback",
+        "//geometry/proximity:fcl_backend",
         "//geometry/proximity:find_collision_candidates_callback",
         "//geometry/proximity:hydroelastic_calculator",
         "//geometry/proximity:penetration_as_point_pair_callback",

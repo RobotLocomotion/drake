@@ -25,6 +25,7 @@
 #include "drake/geometry/proximity/deformable_contact_internal.h"
 #include "drake/geometry/proximity/distance_to_point_callback.h"
 #include "drake/geometry/proximity/distance_to_shape_callback.h"
+#include "drake/geometry/proximity/fcl_backend.h"
 #include "drake/geometry/proximity/find_collision_candidates_callback.h"
 #include "drake/geometry/proximity/hydroelastic_calculator.h"
 #include "drake/geometry/proximity/hydroelastic_internal.h"
@@ -1365,8 +1366,9 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
             "Requested a contact surface between a pair of geometries without "
             "hydroelastic representation for at least one shape: a {} {} with "
             "id {} and a {} {} with id {}",
-            type_A, GetGeometryName(*object_A_ptr), encoding_a.id(), type_B,
-            GetGeometryName(*object_B_ptr), encoding_b.id()));
+            type_A, GetGeometryName<FclBackend>(*object_A_ptr), encoding_a.id(),
+            type_B, GetGeometryName<FclBackend>(*object_B_ptr),
+            encoding_b.id()));
       case kRigidRigid:
         throw std::logic_error(fmt::format(
             "Requested contact between two rigid objects ({} with id "
@@ -1375,15 +1377,15 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
             "fallback, e.g., QueryObject::ComputeContactSurfacesWithFallback() "
             "or MultibodyPlant::set_contact_model("
             "ContactModel::kHydroelasticWithFallback)",
-            GetGeometryName(*object_A_ptr), encoding_a.id(),
-            GetGeometryName(*object_B_ptr), encoding_b.id()));
+            GetGeometryName<FclBackend>(*object_A_ptr), encoding_a.id(),
+            GetGeometryName<FclBackend>(*object_B_ptr), encoding_b.id()));
       case kCompliantHalfSpaceCompliantMesh:
         throw std::logic_error(fmt::format(
             "Requested hydroelastic contact between two compliant geometries, "
             "one of which is a half space ({} with id {}, {} with id {}); "
             "that is not allowed",
-            GetGeometryName(*object_A_ptr), encoding_a.id(),
-            GetGeometryName(*object_B_ptr), encoding_b.id()));
+            GetGeometryName<FclBackend>(*object_A_ptr), encoding_a.id(),
+            GetGeometryName<FclBackend>(*object_B_ptr), encoding_b.id()));
       case kHalfSpaceHalfSpace:
         throw std::logic_error(fmt::format(
             "Requested contact between two half spaces with ids {} and {}; "

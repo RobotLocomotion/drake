@@ -7,6 +7,7 @@
 #include "drake/common/default_scalars.h"
 #include "drake/geometry/proximity/distance_to_point_callback.h"
 #include "drake/geometry/proximity/distance_to_shape_touching.h"
+#include "drake/geometry/proximity/fcl_backend.h"
 #include "drake/math/rotation_matrix.h"
 
 namespace drake {
@@ -277,8 +278,8 @@ bool Callback(fcl::CollisionObjectd* object_A_ptr,
           "are not supported for scalar type {}. See the documentation for "
           "QueryObject::ComputeSignedDistancePairwiseClosestPoints() for the "
           "full status of supported geometries.",
-          GetGeometryName(*object_A_ptr), GetGeometryName(*object_B_ptr),
-          NiceTypeName::Get<T>()));
+          GetGeometryName<FclBackend>(*object_A_ptr),
+          GetGeometryName<FclBackend>(*object_B_ptr), NiceTypeName::Get<T>()));
     }
   }
   // Returning true would tell the broadphase manager to terminate early. Since

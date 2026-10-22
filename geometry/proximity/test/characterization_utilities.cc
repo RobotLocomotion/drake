@@ -8,6 +8,7 @@
 #include "drake/common/nice_type_name.h"
 #include "drake/common/temp_directory.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/geometry/proximity/fcl_backend.h"
 #include "drake/geometry/proximity/proximity_utilities.h"
 #include "drake/geometry/proximity_engine.h"
 #include "drake/geometry/utilities.h"
@@ -536,15 +537,16 @@ void CharacterizeResultTest<T>::RunCharacterization(
           fcl::CollisionObjectd* obj_B, auto test_config,
           const std::unordered_map<GeometryId, RigidTransform<T>>&
               world_poses) {
-        SCOPED_TRACE(fmt::format(
-            "\n{}-{} (obj {}-obj {}) query:"
-            "\n  {}"
-            "\n  Expected signed distance: {}"
-            "\n  X_AB"
-            "\n{}\n",
-            GetGeometryName(*obj_A), GetGeometryName(*obj_B), first, second,
-            test_config.description, test_config.signed_distance,
-            fmt_eigen(test_config.X_AB.GetAsMatrix34())));
+        SCOPED_TRACE(
+            fmt::format("\n{}-{} (obj {}-obj {}) query:"
+                        "\n  {}"
+                        "\n  Expected signed distance: {}"
+                        "\n  X_AB"
+                        "\n{}\n",
+                        GetGeometryName<FclBackend>(*obj_A),
+                        GetGeometryName<FclBackend>(*obj_B), first, second,
+                        test_config.description, test_config.signed_distance,
+                        fmt_eigen(test_config.X_AB.GetAsMatrix34())));
         RunCallback(query, obj_A, obj_B, &collision_filter_, &world_poses);
         const std::optional<double> error =
             ComputeErrorMaybe(test_config.signed_distance);

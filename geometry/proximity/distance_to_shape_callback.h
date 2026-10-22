@@ -10,6 +10,7 @@
 #include "drake/common/nice_type_name.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/proximity/collision_filter.h"
+#include "drake/geometry/proximity/fcl_backend.h"
 #include "drake/geometry/proximity/proximity_utilities.h"
 #include "drake/geometry/query_results/signed_distance_pair.h"
 #include "drake/math/rigid_transform.h"
@@ -186,7 +187,8 @@ void CalcDistanceFallback(const fcl::CollisionObjectd& a,
       "are not supported for scalar type {}. See the documentation for "
       "QueryObject::ComputeSignedDistancePairwiseClosestPoints() for the "
       "full status of supported geometries.",
-      GetGeometryName(a), GetGeometryName(b), NiceTypeName::Get<T>()));
+      GetGeometryName<FclBackend>(a), GetGeometryName<FclBackend>(b),
+      NiceTypeName::Get<T>()));
 }
 
 /* For the double scalar, computes the signed distance between the two objects.

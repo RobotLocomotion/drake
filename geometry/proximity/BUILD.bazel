@@ -346,6 +346,7 @@ drake_cc_library(
         ":collision_filter",
         ":distance_to_point_callback",
         ":distance_to_shape_touching",
+        ":fcl_backend",
         ":proximity_utilities",
         "//common:default_scalars",
         "//common:drake_export",
@@ -366,6 +367,20 @@ drake_cc_library(
         "//common:drake_export",
         "//common:essential",
         "//math:geometric_transform",
+        "@fcl_internal//:fcl",
+    ],
+)
+
+drake_cc_library(
+    name = "fcl_backend",
+    hdrs = ["fcl_backend.h"],
+    internal = True,
+    visibility = [
+        "//geometry:__pkg__",
+    ],
+    deps = [
+        "//common:drake_export",
+        "//common:essential",
         "@fcl_internal//:fcl",
     ],
 )
@@ -855,6 +870,7 @@ drake_cc_library(
     deps = [
         ":collision_filter",
         ":distance_to_point_callback",
+        ":fcl_backend",
         "//common:default_scalars",
         "//common:drake_export",
         "//common:nice_type_name",
@@ -926,7 +942,6 @@ drake_cc_library(
         "//common:sorted_pair",
         "//geometry:geometry_ids",
         "//geometry:shape_specification",
-        "@fcl_internal//:fcl",
         "@fmt",
     ],
 )
@@ -1171,6 +1186,7 @@ drake_cc_library(
     visibility = ["//visibility:private"],
     deps = [
         ":collision_filter",
+        ":fcl_backend",
         "//common:drake_export",
         "//common:temp_directory",
         "//common/test_utilities:eigen_matrix_compare",
@@ -1819,7 +1835,10 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "proximity_utilities_test",
-    deps = [":proximity_utilities"],
+    deps = [
+        ":proximity_utilities",
+        "@fcl_internal//:fcl",
+    ],
 )
 
 drake_cc_googletest(
