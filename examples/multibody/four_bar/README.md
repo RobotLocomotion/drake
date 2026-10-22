@@ -4,14 +4,15 @@ These three examples model the same kind of mechanism -- a planar four-bar
 linkage -- and illustrate two different ways to deal with the closed kinematic
 loop that a four-bar forms:
 
-* `four_bar` loads the loop from an SDFormat model file and lets MultibodyPlant
-  model it automatically, closing it with a constraint that `Finalize()` adds.
-  Note: this uses a Drake feature that is currently experimental and marked
-  "internal use only".
-* `four_bar_auto` models a loop the same way, but builds an equivalent linkage
-  through the C++ API, which lets it start from an *unassembled* configuration.
-  It draws the machinery Drake used to break the loop so that you can watch it
-  work.
+* `four_bar` loads the already-assembled linkage from a standard SDFormat model 
+  file and lets MultibodyPlant model it automatically, closing it with a 
+  constraint that `Finalize()` adds. Note: this uses a Drake feature that is 
+  currently experimental and marked "internal use only".
+* `four_bar_unassembled` models the linkage the same way, but its model file
+  describes it in an *unassembled* configuration (much simpler to specify)
+  using a Drake extension that gives each joint two independent frames. It 
+  visualizes the machinery Drake used to break the loop so that you can watch
+  it work. It uses the same experimental feature as `four_bar`.
 * `four_bar_with_bushing` leaves one of the four joints out and replaces it
   with a compliant bushing, so the remaining joints form a tree.
 
@@ -33,8 +34,10 @@ enforce one. It runs in discrete mode under SAP by default, and continuous
 under CENIC if requested.
 
 The model file, `four_bar.sdf`, describes the linkage in an **assembled**
-configuration, as is required by SDFormat (see the discussion in the model
-file). Thus the parsed model is already assembled at q = 0.
+configuration, as is required by standard SDFormat (see the discussion in the
+model file). Thus the parsed model is already assembled at q = 0. See
+`four_bar_unassembled` below for the Drake extension that lifts that
+restriction.
 
 ## Running four_bar
 
@@ -76,14 +79,17 @@ such as `--simulator_target_realtime_rate`:
 ```
 bazel run //examples/multibody/four_bar:four_bar -- --help
 ```
-# Watching a loop be modeled: `four_bar_auto`
 
-This example defines a four-bar linkage without having to know its assembled
-configuration. The Drake API allows the links to be defined in convenient
-orientations, with frames attached. Then the joints specify which frames they
-connect. Loops are permitted. The model has to be assembled before it can be
-simulated. The example shows:
+# Watching a loop be modeled: `four_bar_unassembled`
 
+This example loads a four-bar linkage from a model file that was written
+without having to know the linkage's assembled configuration. The links are
+defined in convenient orientations, with frames attached. Then the joints
+specify which frames they connect. Loops are permitted. The model has to be
+assembled before it can be simulated. The example shows:
+
+* How to describe an unassembled linkage in an SDFormat model file, using the
+  `<drake:independent_frames/>` extension; see below.
 * How to opt in to automatic loop modeling with
   `MultibodyPlant::SetEnableLoopTopology()`, and how to visualize what the
   resulting model looks like. `Finalize()` breaks the loop by adding a "shadow"
@@ -101,9 +107,6 @@ Closing the loop takes a constraint, so this model needs a solver that can
 enforce one. It runs in discrete mode with SAP by default, or continuous
 under CENIC if requested.
 
-The linkage is built with the C++ API rather than parsed from an SDF or URDF file
-because neither format can describe an unassembled loop.
-
 Much of what this example does is pedagogical. It goes to considerable trouble
 to show *how* Drake breaks the loop, drawing the shadow link and the frames the
 loop-closing weld holds together, and stopping to let you look. Ordinary use
@@ -118,12 +121,47 @@ what the link was defined with, when there is one shadow. Quantities summed
 over the whole model, such as `CalcTotalMass()`, are unaffected, since each
 link contributes its share and together they add up to the original mass.
 
-## Running four_bar_auto
+## Describing an unassembled loop in SDFormat
+
+A standard SDFormat joint has a single frame, and Drake places both of the
+joint's frames there, one on each link. So every model parsed from a standard
+file is assembled at q = 0, whatever poses its links are given. A Drake joint
+has two frames, Jp on the parent link and Jc on the child link, which coincide
+only when the joint is satisfied. The Drake extension
+`<drake:independent_frames/>` lets a standard `<joint>` name them separately
+in its `<parent>` and `<child>` tags:
+
+```xml
+<joint name="coupler_rocker" type="revolute">
+  <drake:independent_frames/>
+  <parent>Cr</parent> <!-- Jp, fixed to the coupler. -->
+  <child>Rc</child>   <!-- Jc, fixed to the rocker. -->
+  <axis><xyz expressed_in="Rc">0 -1 0</xyz></axis>
+</joint>
+```
+
+Here each names either the link itself or an explicit `<frame>` fixed to it,
+identifying both the joint frame and the connected link. A joint with this
+extension must not have a `<pose>`. Its axis is resolved into Jc; without
+`expressed_in`, the axis is already expressed in Jc. The four revolute joints
+in `four_bar_unassembled.sdf` all use this extension, and so the links' own
+poses play no part in what Drake simulates; they only draw the figure for
+other SDFormat readers, which ignore `drake:` tags.
+
+Standard SDFormat and URDF cannot describe an unassembled loop. The C++ API
+can, since it always takes a joint's two frames separately.
+
+The model file carries all the illustration geometry, except for one piece. A
+model file cannot draw the shadow link, because the shadow does not exist until
+`Finalize()` creates it. So `four_bar_unassembled.cc` draws the shadow, and the
+parent pin of the joint that `Finalize()` moves onto it.
+
+## Running four_bar_unassembled
 
 To run with default flags:
 
 ```
-bazel run //examples/multibody/four_bar:four_bar_auto
+bazel run //examples/multibody/four_bar:four_bar_unassembled
 ```
 You'll see output like this:
 ```
@@ -138,7 +176,7 @@ the two together look like the one solid link they were defined to be.
 
 | As defined: the coupler and its shadow are apart | Assembled: the shadow lies on the coupler |
 | :---: | :---: |
-| ![FourBarAutoAsDefined](images/FourBarAutoAsDefined.png) | ![FourBarAutoAssembled](images/FourBarAutoAssembled.png) |
+| ![FourBarUnassembledAsDefined](images/FourBarUnassembledAsDefined.png) | ![FourBarUnassembledAssembled](images/FourBarUnassembledAssembled.png) |
 | | |
 
 The orange triads mark the coupler's link frame and the shadow's link frame.
@@ -163,7 +201,7 @@ To run the same model continuously with the CENIC integrator instead of the
 default discrete SAP solver:
 
 ```
-bazel run //examples/multibody/four_bar:four_bar_auto -- \
+bazel run //examples/multibody/four_bar:four_bar_unassembled -- \
     --time_step=0 --simulator_integration_scheme=cenic
 ```
 
@@ -175,22 +213,25 @@ To hold the driver at a different angle (in radians) while the rest of the
 linkage assembles around it:
 
 ```
-bazel run //examples/multibody/four_bar:four_bar_auto -- --driver_angle=0.5
+bazel run //examples/multibody/four_bar:four_bar_unassembled -- \
+    --driver_angle=0.5
 ```
 
 To stretch the replay of the assembly out over ten seconds of wall clock time,
 or to skip the replay entirely (though you still have to hit ENTER):
 
 ```
-bazel run //examples/multibody/four_bar:four_bar_auto -- --assembly_playback_time=10
-bazel run //examples/multibody/four_bar:four_bar_auto -- --assembly_playback_time=0
+bazel run //examples/multibody/four_bar:four_bar_unassembled -- \
+    --assembly_playback_time=10
+bazel run //examples/multibody/four_bar:four_bar_unassembled -- \
+    --assembly_playback_time=0
 ```
 
 To drive the linkage with a constant torque rather than letting it swing
 passively, and to run start to finish without stopping for Enter:
 
 ```
-bazel run //examples/multibody/four_bar:four_bar_auto -- \
+bazel run //examples/multibody/four_bar:four_bar_unassembled -- \
     --applied_torque=5 --nointeractive
 ```
 
@@ -198,7 +239,7 @@ Those are the most interesting options; `--help` lists them all, along with the
 standard Drake simulator flags such as `--simulator_target_realtime_rate`:
 
 ```
-bazel run //examples/multibody/four_bar:four_bar_auto -- --help
+bazel run //examples/multibody/four_bar:four_bar_unassembled -- --help
 ```
 
 # Closing the loop with a bushing: `four_bar_with_bushing`

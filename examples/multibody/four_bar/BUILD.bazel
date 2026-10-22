@@ -39,14 +39,16 @@ drake_cc_binary(
 )
 
 drake_cc_binary(
-    name = "four_bar_auto",
-    srcs = ["four_bar_auto.cc"],
+    name = "four_bar_unassembled",
+    srcs = ["four_bar_unassembled.cc"],
+    data = [":models"],
     deps = [
         "//geometry:geometry_instance",
         "//geometry:geometry_roles",
         "//geometry:scene_graph",
         "//geometry:shape_specification",
         "//math:geometric_transform",
+        "//multibody/parsing",
         "//multibody/plant",
         "//multibody/tree",
         "//systems/analysis:simulator",
