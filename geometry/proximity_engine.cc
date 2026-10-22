@@ -849,16 +849,17 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   std::vector<PenetrationAsPointPair<T>> ComputePointPairPenetration(
       const std::unordered_map<GeometryId, RigidTransform<T>>& X_WGs) const {
     std::vector<PenetrationAsPointPair<T>> contacts;
-    penetration_as_point_pair::CallbackData data{&collision_filter_, &X_WGs,
-                                                 &contacts};
+    penetration_as_point_pair::CallbackData<T, FclBackend> data{
+        &collision_filter_, &X_WGs, &contacts};
 
     // Perform a query of the dynamic objects against themselves.
-    dynamic_tree_.collide(&data, penetration_as_point_pair::Callback<T>);
+    dynamic_tree_.collide(&data,
+                          penetration_as_point_pair::Callback<T, FclBackend>);
 
     // Perform a query of the dynamic objects against the anchored. We don't do
     // anchored against anchored because those pairs are implicitly filtered.
     FclCollide(dynamic_tree_, anchored_tree_, &data,
-               penetration_as_point_pair::Callback<T>);
+               penetration_as_point_pair::Callback<T, FclBackend>);
 
     std::sort(contacts.begin(), contacts.end(),
               [](const auto& a, const auto& b) {
@@ -954,8 +955,8 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     // All these quantities are aliased.
     hydroelastic::ContactCalculator<T> calculator{
         &X_WGs, &hydroelastic_geometries_, representation};
-    penetration_as_point_pair::CallbackData<T> point_data{&collision_filter_,
-                                                          &X_WGs, point_pairs};
+    penetration_as_point_pair::CallbackData<T, FclBackend> point_data{
+        &collision_filter_, &X_WGs, point_pairs};
 
     // As a suggestion to future thread parallelizers, make available fully
     // allocated and prepared vectors for results of the parallelizable steps.
@@ -967,8 +968,9 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
       const auto& [id0, id1] = candidates[k];
       auto [result, surface] = calculator.MaybeMakeContactSurface(id0, id1);
       if (ContactSurfaceFailed(result)) {
-        auto penetration = penetration_as_point_pair::MaybeMakePointPair(
-            GetFclPtr(id0), GetFclPtr(id1), point_data);
+        auto penetration =
+            penetration_as_point_pair::MaybeMakePointPair<T, FclBackend>(
+                GetFclPtr(id0), GetFclPtr(id1), point_data);
         if (penetration.has_value()) {
           point_pair_maybes[k] = penetration;
         }

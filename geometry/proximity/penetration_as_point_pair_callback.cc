@@ -6,8 +6,8 @@
 #include "drake/common/default_scalars.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/nice_type_name.h"
+#include "drake/geometry/proximity/collision_backend.h"
 #include "drake/geometry/proximity/distance_to_point_callback.h"
-#include "drake/geometry/proximity/fcl_backend.h"
 #include "drake/geometry/query_results/signed_distance_to_point.h"
 
 namespace drake {
@@ -23,7 +23,7 @@ using Eigen::Vector3d;
  functor's stored poses.
 
  @tparam T  Computation scalar type.  */
-template <typename T>
+template <typename T, typename Backend>
 class PenetrationPairFunctor {
  public:
   /* Constructs the functor caching all parameters that do _not_ depend on
@@ -61,29 +61,32 @@ class PenetrationPairFunctor {
    3. Na = Ao - r * ∇φ_B(Ao)  */
   //@{
 
-  void operator()(const fcl::Sphered& sphere_A, const fcl::Sphered& sphere_B,
+  void operator()(const typename Backend::Sphere& sphere_A,
+                  const typename Backend::Sphere& sphere_B,
                   PenetrationAsPointPair<T>* result) {
     SphereShapePenetration(sphere_A, sphere_B, result);
   }
 
-  void operator()(const fcl::Sphered& sphere_A, const fcl::Boxd& box_B,
+  void operator()(const typename Backend::Sphere& sphere_A,
+                  const typename Backend::Box& box_B,
                   PenetrationAsPointPair<T>* result) {
     SphereShapePenetration(sphere_A, box_B, result);
   }
 
-  void operator()(const fcl::Sphered& sphere_A,
-                  const fcl::Cylinderd& cylinder_B,
+  void operator()(const typename Backend::Sphere& sphere_A,
+                  const typename Backend::Cylinder& cylinder_B,
                   PenetrationAsPointPair<T>* result) {
     SphereShapePenetration(sphere_A, cylinder_B, result);
   }
 
-  void operator()(const fcl::Sphered& sphere_A,
-                  const fcl::Halfspaced& halfspace_B,
+  void operator()(const typename Backend::Sphere& sphere_A,
+                  const typename Backend::Halfspace& halfspace_B,
                   PenetrationAsPointPair<T>* result) {
     SphereShapePenetration(sphere_A, halfspace_B, result);
   }
 
-  void operator()(const fcl::Sphered& sphere_A, const fcl::Capsuled& capsule_B,
+  void operator()(const typename Backend::Sphere& sphere_A,
+                  const typename Backend::Capsule& capsule_B,
                   PenetrationAsPointPair<T>* result) {
     SphereShapePenetration(sphere_A, capsule_B, result);
   }
@@ -94,15 +97,15 @@ class PenetrationPairFunctor {
   // Penetration computation between a sphere A and a generic shape B. We use
   // the overloaded call operators above to limit the kinds of queries, and
   // they all call this private template function to minimize code duplication.
-  template <typename FclShape>
-  void SphereShapePenetration(const fcl::Sphered& sphere_A,
-                              const FclShape& shape_B,
+  template <typename BackendShape>
+  void SphereShapePenetration(const typename Backend::Sphere& sphere_A,
+                              const BackendShape& shape_B,
                               PenetrationAsPointPair<T>* result) {
     DRAKE_ASSERT(result != nullptr);
     const SignedDistanceToPoint<T> shape_B_to_point_Ao =
-        point_distance::DistanceToPoint<T, FclBackend>(
+        point_distance::DistanceToPoint<T, Backend>(
             id_B_, X_WB_, X_WA_.translation())(shape_B);
-    const T depth = sphere_A.radius - shape_B_to_point_Ao.distance;
+    const T depth = Backend::radius(sphere_A) - shape_B_to_point_Ao.distance;
     if (ExtractDoubleOrThrow(depth) >= 0) {
       result->id_A = id_A_;
       result->id_B = id_B_;
@@ -112,8 +115,8 @@ class PenetrationPairFunctor {
       result->p_WCb = X_WB_ * (shape_B_to_point_Ao.p_GN);
       result->nhat_BA_W = shape_B_to_point_Ao.grad_W;
       // p_WCa is the witness point on ∂A measured and expressed in W.
-      result->p_WCa =
-          X_WA_.translation() - sphere_A.radius * shape_B_to_point_Ao.grad_W;
+      result->p_WCa = X_WA_.translation() -
+                      Backend::radius(sphere_A) * shape_B_to_point_Ao.grad_W;
     }
   }
 
@@ -131,8 +134,9 @@ class PenetrationPairFunctor {
  particular geometry pair does not mean we have no recourse for computing
  signed distance. Instead, we have the "fallback" function.
 
- The fallback function is a simple interface that takes two fcl collision
- objects (called `a` and `b`), fcl distance request parameters, and a pointer
+ The fallback function is a simple interface that takes two collision
+ objects (called `a` and `b`), the backend's request parameters, and a
+ pointer
  to the SignedDistancePair which will be populated with the results of the
  query.
 
@@ -141,72 +145,72 @@ class PenetrationPairFunctor {
  there is no fallback for a scalar type unless one is explicitly provided.  */
 //@{
 
-/* For all scalar types T that are not explicitly enumerated, throws an
- exception declaring the unsupported combination of geometry types and scalar
- type.  */
-template <typename T>
-void CalcDistanceFallback(const fcl::CollisionObjectd& a,
-                          const fcl::CollisionObjectd& b,
-                          const fcl::CollisionRequestd&,
-                          PenetrationAsPointPair<T>* /* pair_data */) {
-  // By default, there is no fallback. For every scalar type for which one
-  // actually exists, it should be specialized below.
-  throw std::logic_error(fmt::format(
-      "PenetrationAsPointPair() cannot be evaluated for shapes '{}' and '{}' "
-      "for scalar type {}. See the documentation for "
-      "QueryObject::ComputePointPairPenetration() for the full status of "
-      "supported geometries.",
-      GetGeometryName<FclBackend>(a), GetGeometryName<FclBackend>(b),
-      NiceTypeName::Get<T>()));
-}
+/* Computes the signed distance between the two objects for the double scalar.
+ For every other scalar type there is no fallback, and the call throws,
+ declaring the unsupported combination of geometry types and scalar type.
 
-/* For the double scalar, computes the signed distance between the two objects.
- */
-template <>
-void CalcDistanceFallback<double>(const fcl::CollisionObjectd& a,
-                                  const fcl::CollisionObjectd& b,
-                                  const fcl::CollisionRequestd& request,
-                                  PenetrationAsPointPair<double>* pair_data) {
-  DRAKE_DEMAND(pair_data != nullptr);
-  fcl::CollisionResult<double> result;
+ This was a function template plus an explicit specialization on double.
+ Adding the backend parameter makes that a *partial* specialization, which
+ C++ does not allow for function templates, so the dispatch is now an
+ `if constexpr`.  */
+template <typename T, typename Backend>
+void CalcDistanceFallback(const typename Backend::Object& a,
+                          const typename Backend::Object& b,
+                          const typename Backend::CollisionRequest& request,
+                          PenetrationAsPointPair<T>* pair_data) {
+  if constexpr (!std::is_same_v<T, double>) {
+    unused(request, pair_data);
+    throw std::logic_error(fmt::format(
+        "PenetrationAsPointPair() cannot be evaluated for shapes '{}' and "
+        "'{}' for scalar type {}. See the documentation for "
+        "QueryObject::ComputePointPairPenetration() for the full status of "
+        "supported geometries.",
+        GetGeometryName<Backend>(a), GetGeometryName<Backend>(b),
+        NiceTypeName::Get<T>()));
+  } else {
+    DRAKE_DEMAND(pair_data != nullptr);
+    typename Backend::CollisionResult result;
 
-  // Perform nearphase collision detection
-  collide(&a, &b, request, result);
+    // Perform nearphase collision detection
+    Backend::Collide(&a, &b, request, &result);
 
-  if (!result.isCollision()) return;
+    if (!result.isCollision()) return;
 
-  // Process the contact points
-  // NOTE: This assumes that the request is configured to use a single contact.
-  const fcl::Contact<double>& contact = result.getContact(0);
+    // Process the contact points
+    // NOTE: This assumes that the request is configured to use a single
+    // contact.
+    const typename Backend::Contact& contact = result.getContact(0);
 
-  // Signed distance is negative when penetration depth is positive.
-  const double depth = contact.penetration_depth;
+    // Positive when the geometries overlap; the backends disagree on the sign
+    // convention, so the policy normalizes it (see fcl_backend.h, D3).
+    const double depth = Backend::ContactDepth(contact);
 
-  // TODO(SeanCurtis-TRI): Remove this test when FCL issue 375 is fixed.
-  // FCL returns osculation as contact but doesn't guarantee a non-zero
-  // normal. Drake isn't really in a position to define that normal from the
-  // geometry or contact results so, if the geometry is sufficiently close
-  // to osculation, we consider the geometries to be non-penetrating.
-  if (depth <= std::numeric_limits<double>::epsilon()) return;
-  pair_data->depth = depth;
+    // TODO(SeanCurtis-TRI): Remove this test when FCL issue 375 is fixed.
+    // The solver returns osculation as contact but doesn't guarantee a non-zero
+    // normal. Drake isn't really in a position to define that normal from the
+    // geometry or contact results so, if the geometry is sufficiently close
+    // to osculation, we consider the geometries to be non-penetrating.
+    if (depth <= std::numeric_limits<double>::epsilon()) return;
+    pair_data->depth = depth;
 
-  // By convention, Drake requires the contact normal to point out of B
-  // and into A. FCL uses the opposite convention.
-  pair_data->nhat_BA_W = -contact.normal;
+    // By convention, Drake requires the contact normal to point out of B
+    // and into A. The backends use the opposite convention.
+    pair_data->nhat_BA_W = -contact.normal;
 
-  // FCL returns a single contact point centered between the two
-  // penetrating surfaces. PenetrationAsPointPair expects
-  // two, one on the surface of body A (Ac) and one on the surface of body
-  // B (Bc). Choose points along the line defined by the contact point and
-  // normal, equidistant to the contact point. Recall that depth
-  // is non-negative, so depth * nhat_BA_W points out of A and into B.
-  pair_data->p_WCa =
-      contact.pos - 0.5 * pair_data->depth * pair_data->nhat_BA_W;
-  pair_data->p_WCb =
-      contact.pos + 0.5 * pair_data->depth * pair_data->nhat_BA_W;
+    // The backend returns a single contact point centered between the two
+    // penetrating surfaces. PenetrationAsPointPair expects
+    // two, one on the surface of body A (Ac) and one on the surface of body
+    // B (Bc). Choose points along the line defined by the contact point and
+    // normal, equidistant to the contact point. Recall that depth
+    // is non-negative, so depth * nhat_BA_W points out of A and into B.
+    pair_data->p_WCa =
+        contact.pos - 0.5 * pair_data->depth * pair_data->nhat_BA_W;
+    pair_data->p_WCb =
+        contact.pos + 0.5 * pair_data->depth * pair_data->nhat_BA_W;
 
-  pair_data->id_A = EncodedData(a).id();
-  pair_data->id_B = EncodedData(b).id();
+    pair_data->id_A = EncodedData(a).id();
+    pair_data->id_B = EncodedData(b).id();
+  }
 }
 
 //@}
@@ -223,21 +227,22 @@ void CalcDistanceFallback<double>(const fcl::CollisionObjectd& a,
  @param result          The structure to capture the computation results in.
  @tparam T Computation scalar type.
  @pre The pair should *not* be (Halfspace, X), unless X is Sphere.  */
-template <typename T>
-void ComputeNarrowPhasePenetration(const fcl::CollisionObjectd& a,
-                                   const math::RigidTransform<T>& X_WA,
-                                   const fcl::CollisionObjectd& b,
-                                   const math::RigidTransform<T>& X_WB,
-                                   const fcl::CollisionRequestd& request,
-                                   PenetrationAsPointPair<T>* result) {
+template <typename T, typename Backend>
+void ComputeNarrowPhasePenetration(
+    const typename Backend::Object& a, const math::RigidTransform<T>& X_WA,
+    const typename Backend::Object& b, const math::RigidTransform<T>& X_WB,
+    const typename Backend::CollisionRequest& request,
+    PenetrationAsPointPair<T>* result) {
   DRAKE_DEMAND(result != nullptr);
-  const fcl::CollisionGeometryd* a_geometry = a.collisionGeometry().get();
-  const fcl::CollisionGeometryd* b_geometry = b.collisionGeometry().get();
-  const bool a_is_sphere = a_geometry->getNodeType() == fcl::GEOM_SPHERE;
-  const bool b_is_sphere = b_geometry->getNodeType() == fcl::GEOM_SPHERE;
+  const typename Backend::Geometry* a_geometry = a.collisionGeometry().get();
+  const typename Backend::Geometry* b_geometry = b.collisionGeometry().get();
+  const ShapeKind a_kind = Backend::Classify(a_geometry->getNodeType());
+  const ShapeKind b_kind = Backend::Classify(b_geometry->getNodeType());
+  const bool a_is_sphere = a_kind == ShapeKind::kSphere;
+  const bool b_is_sphere = b_kind == ShapeKind::kSphere;
   const bool no_sphere = !(a_is_sphere || b_is_sphere);
   if (no_sphere) {
-    CalcDistanceFallback<T>(a, b, request, result);
+    CalcDistanceFallback<T, Backend>(a, b, request, result);
     return;
   }
   DRAKE_ASSERT(a_is_sphere || b_is_sphere);
@@ -247,69 +252,62 @@ void ComputeNarrowPhasePenetration(const fcl::CollisionObjectd& a,
   // that takes (sphere, other) but not (other, sphere).  This scheme helps us
   // keep the code compact; however, we might have to re-order the result
   // afterwards.
-  const fcl::CollisionObjectd& s = a_is_sphere ? a : b;
-  const fcl::CollisionObjectd& o = a_is_sphere ? b : a;
-  const fcl::CollisionGeometryd* s_geometry = s.collisionGeometry().get();
-  const fcl::CollisionGeometryd* o_geometry = o.collisionGeometry().get();
+  const typename Backend::Object& s = a_is_sphere ? a : b;
+  const typename Backend::Object& o = a_is_sphere ? b : a;
+  const typename Backend::Geometry* s_geometry = s.collisionGeometry().get();
+  const typename Backend::Geometry* o_geometry = o.collisionGeometry().get();
   const math::RigidTransform<T>& X_WS(a_is_sphere ? X_WA : X_WB);
   const math::RigidTransform<T>& X_WO(a_is_sphere ? X_WB : X_WA);
   const auto id_S = EncodedData(s).id();
   const auto id_O = EncodedData(o).id();
-  PenetrationPairFunctor<T> calc_penetration_pair(id_S, id_O, X_WS, X_WO);
-  const auto& sphere_S = *static_cast<const fcl::Sphered*>(s_geometry);
-  switch (o_geometry->getNodeType()) {
-    case fcl::GEOM_SPHERE: {
+  PenetrationPairFunctor<T, Backend> calc_penetration_pair(id_S, id_O, X_WS,
+                                                           X_WO);
+  const auto& sphere_S =
+      *static_cast<const typename Backend::Sphere*>(s_geometry);
+  switch (a_is_sphere ? b_kind : a_kind) {
+    case ShapeKind::kSphere: {
       // TODO(sean.curtis@tri.global) Here we use signed distance computation
       // but we actually only need to perform penetration query. This could
       // incur unnecessary computation. Depending on the data types, we can
       // potentially use collision query for double type, and signed distance
       // query for autodiff scalar.
-      const auto& sphere_O = *static_cast<const fcl::Sphered*>(o_geometry);
+      const auto& sphere_O =
+          *static_cast<const typename Backend::Sphere*>(o_geometry);
       calc_penetration_pair(sphere_S, sphere_O, result);
       break;
     }
-    case fcl::GEOM_BOX: {
-      const auto& box_O = *static_cast<const fcl::Boxd*>(o_geometry);
+    case ShapeKind::kBox: {
+      const auto& box_O =
+          *static_cast<const typename Backend::Box*>(o_geometry);
       calc_penetration_pair(sphere_S, box_O, result);
       break;
     }
-    case fcl::GEOM_CYLINDER: {
-      const auto& cylinder_O = *static_cast<const fcl::Cylinderd*>(o_geometry);
+    case ShapeKind::kCylinder: {
+      const auto& cylinder_O =
+          *static_cast<const typename Backend::Cylinder*>(o_geometry);
       calc_penetration_pair(sphere_S, cylinder_O, result);
       break;
     }
-    case fcl::GEOM_HALFSPACE: {
+    case ShapeKind::kHalfspace: {
       const auto& halfspace_O =
-          *static_cast<const fcl::Halfspaced*>(o_geometry);
+          *static_cast<const typename Backend::Halfspace*>(o_geometry);
       calc_penetration_pair(sphere_S, halfspace_O, result);
       break;
     }
-    case fcl::GEOM_CAPSULE: {
-      const auto& capsule_O = *static_cast<const fcl::Capsuled*>(o_geometry);
+    case ShapeKind::kCapsule: {
+      const auto& capsule_O =
+          *static_cast<const typename Backend::Capsule*>(o_geometry);
       calc_penetration_pair(sphere_S, capsule_O, result);
       break;
     }
-    case fcl::GEOM_ELLIPSOID:
-    case fcl::GEOM_CONVEX:
+    case ShapeKind::kEllipsoid:
+    case ShapeKind::kConvex:
       // We don't have a closed form solution for these geometries, so we
-      // call FCL.
-      CalcDistanceFallback<T>(a, b, request, result);
+      // defer to the backend's solver.
+      CalcDistanceFallback<T, Backend>(a, b, request, result);
       break;
-    case fcl::GEOM_PLANE:
-    case fcl::BV_AABB:
-    case fcl::BV_OBB:
-    case fcl::BV_RSS:
-    case fcl::BV_kIOS:
-    case fcl::BV_OBBRSS:
-    case fcl::BV_KDOP16:
-    case fcl::BV_KDOP18:
-    case fcl::BV_KDOP24:
-    case fcl::GEOM_CONE:
-    case fcl::GEOM_TRIANGLE:
-    case fcl::GEOM_OCTREE:
-    case fcl::BV_UNKNOWN:
-    case fcl::NODE_COUNT:
-      // Fcl NodeTypes that are *not* currently supported by Drake.
+    case ShapeKind::kUnsupported:
+      // Shape kinds that Drake never registers.
       DRAKE_UNREACHABLE();
   }
   // If needed, re-order the result for (s,o) back to the result for (a,b).
@@ -331,59 +329,59 @@ void ComputeNarrowPhasePenetration(const fcl::CollisionObjectd& a,
 //@{
 template <typename T>
 struct ScalarSupport {
-  static bool is_supported(fcl::NODE_TYPE, fcl::NODE_TYPE) { return false; }
+  static bool is_supported(ShapeKind, ShapeKind) { return false; }
 };
 
 /* Primitive support for double-valued query.  */
 template <>
 struct ScalarSupport<double> {
-  static bool is_supported(fcl::NODE_TYPE node1, fcl::NODE_TYPE node2) {
+  static bool is_supported(ShapeKind kind1, ShapeKind kind2) {
     // Doubles (via its fallback) can support *almost* anything. Here, we
     // enumerate the *very* limited unsupported cases. We can't meaningfully
-    // collide two half spaces, but fcl doesn't have an intelligent response.
-    // So, we simply short circuit at this point.
-    return !(node1 == fcl::GEOM_HALFSPACE && node2 == fcl::GEOM_HALFSPACE);
+    // collide two half spaces, but the backends don't have an intelligent
+    // response. So, we simply short circuit at this point.
+    return !(kind1 == ShapeKind::kHalfspace && kind2 == ShapeKind::kHalfspace);
   }
 };
 
 /* Primitive support for AutoDiff-valued query.  */
 template <>
 struct ScalarSupport<AutoDiffXd> {
-  static bool is_supported(fcl::NODE_TYPE node1, fcl::NODE_TYPE node2) {
+  static bool is_supported(ShapeKind kind1, ShapeKind kind2) {
     // Explicitly permit the following pair types (with ordering permutations):
     //  (sphere, sphere)
     //  (sphere, box)
     //  (sphere, cylinder)
     //  (sphere, halfspace)
     //  (sphere, capsule)
-    return (node1 == fcl::GEOM_SPHERE &&
-            (node2 == fcl::GEOM_SPHERE || node2 == fcl::GEOM_BOX ||
-             node2 == fcl::GEOM_HALFSPACE || node2 == fcl::GEOM_CYLINDER ||
-             node2 == fcl::GEOM_CAPSULE)) ||
-           (node2 == fcl::GEOM_SPHERE &&
-            (node1 == fcl::GEOM_BOX || node1 == fcl::GEOM_HALFSPACE ||
-             node1 == fcl::GEOM_CYLINDER || node1 == fcl::GEOM_CAPSULE));
+    return (kind1 == ShapeKind::kSphere &&
+            (kind2 == ShapeKind::kSphere || kind2 == ShapeKind::kBox ||
+             kind2 == ShapeKind::kHalfspace || kind2 == ShapeKind::kCylinder ||
+             kind2 == ShapeKind::kCapsule)) ||
+           (kind2 == ShapeKind::kSphere &&
+            (kind1 == ShapeKind::kBox || kind1 == ShapeKind::kHalfspace ||
+             kind1 == ShapeKind::kCylinder || kind1 == ShapeKind::kCapsule));
   }
 };
 //@}
 
-template <typename T>
-bool Callback(fcl::CollisionObjectd* fcl_object_A_ptr,
-              fcl::CollisionObjectd* fcl_object_B_ptr, void* callback_data) {
-  auto& data = *static_cast<CallbackData<T>*>(callback_data);
+template <typename T, typename Backend>
+bool Callback(typename Backend::Object* object_A_ptr,
+              typename Backend::Object* object_B_ptr, void* callback_data) {
+  auto& data = *static_cast<CallbackData<T, Backend>*>(callback_data);
 
-  // Extract the collision filter keys from the fcl collision objects. These
-  // keys will also be used to map the fcl collision object back to the Drake
+  // Extract the collision filter keys from the collision objects. These
+  // keys will also be used to map the collision object back to the Drake
   // GeometryId for colliding geometries.
-  EncodedData encoding_A(*fcl_object_A_ptr);
-  EncodedData encoding_B(*fcl_object_B_ptr);
+  EncodedData encoding_A(*object_A_ptr);
+  EncodedData encoding_B(*object_B_ptr);
 
   // Guarantee for geometries A and B, we always evaluate the collision between
   // them in a fixed order (e.g., the first geometry gets transformed into the
   // second geometry's frame for evaluation).
   if (encoding_B.id() < encoding_A.id()) {
     std::swap(encoding_A, encoding_B);
-    std::swap(fcl_object_A_ptr, fcl_object_B_ptr);
+    std::swap(object_A_ptr, object_B_ptr);
   }
 
   const bool can_collide =
@@ -394,7 +392,8 @@ bool Callback(fcl::CollisionObjectd* fcl_object_A_ptr,
   // Since we want *all* collisions, we return false.
   if (!can_collide) return false;
 
-  auto result = MaybeMakePointPair(fcl_object_A_ptr, fcl_object_B_ptr, data);
+  auto result =
+      MaybeMakePointPair<T, Backend>(object_A_ptr, object_B_ptr, data);
   if (result.has_value()) {
     data.point_pairs.push_back(std::move(*result));
   }
@@ -402,44 +401,46 @@ bool Callback(fcl::CollisionObjectd* fcl_object_A_ptr,
   return false;
 }
 
-template <typename T>
+template <typename T, typename Backend>
 std::optional<PenetrationAsPointPair<T>> MaybeMakePointPair(
-    fcl::CollisionObjectd* fcl_object_A_ptr,
-    fcl::CollisionObjectd* fcl_object_B_ptr, const CallbackData<T>& data) {
-  // Extract the collision filter keys from the fcl collision objects. These
-  // keys will also be used to map the fcl collision object back to the Drake
+    typename Backend::Object* object_A_ptr,
+    typename Backend::Object* object_B_ptr,
+    const CallbackData<T, Backend>& data) {
+  // Extract the collision filter keys from the collision objects. These
+  // keys will also be used to map the collision object back to the Drake
   // GeometryId for colliding geometries.
-  EncodedData encoding_A(*fcl_object_A_ptr);
-  EncodedData encoding_B(*fcl_object_B_ptr);
+  EncodedData encoding_A(*object_A_ptr);
+  EncodedData encoding_B(*object_B_ptr);
 
   // Guarantee for geometries A and B, we always evaluate the collision between
   // them in a fixed order (e.g., the first geometry gets transformed into the
   // second geometry's frame for evaluation).
   if (encoding_B.id() < encoding_A.id()) {
     std::swap(encoding_A, encoding_B);
-    std::swap(fcl_object_A_ptr, fcl_object_B_ptr);
+    std::swap(object_A_ptr, object_B_ptr);
   }
 
   // NOTE: Although this function *takes* non-const pointers to satisfy the
-  // fcl api, it should not exploit the non-constness to modify the collision
-  // objects. We ensure this by immediately assigning to a const version and
-  // not directly using the provided parameters.
+  // backend api, it should not exploit the non-constness to modify the
+  // collision objects. We ensure this by immediately assigning to a const
+  // version and not directly using the provided parameters.
   const GeometryId id_A = encoding_A.id();
   const GeometryId id_B = encoding_B.id();
 
   if (ScalarSupport<T>::is_supported(
-          fcl_object_A_ptr->collisionGeometry()->getNodeType(),
-          fcl_object_B_ptr->collisionGeometry()->getNodeType())) {
+          Backend::Classify(object_A_ptr->collisionGeometry()->getNodeType()),
+          Backend::Classify(
+              object_B_ptr->collisionGeometry()->getNodeType()))) {
     // Unpack the callback data
-    const fcl::CollisionRequestd& request = data.request;
+    const typename Backend::CollisionRequest& request = data.request;
 
     // This callback only works for a single contact, this confirms a request
     // hasn't been made for more contacts.
     DRAKE_ASSERT(request.num_max_contacts == 1);
     PenetrationAsPointPair<T> penetration;
-    ComputeNarrowPhasePenetration(*fcl_object_A_ptr, data.X_WGs.at(id_A),
-                                  *fcl_object_B_ptr, data.X_WGs.at(id_B),
-                                  data.request, &penetration);
+    ComputeNarrowPhasePenetration<T, Backend>(
+        *object_A_ptr, data.X_WGs.at(id_A), *object_B_ptr, data.X_WGs.at(id_B),
+        data.request, &penetration);
     if (ExtractDoubleOrThrow(penetration.depth) >= 0) {
       return penetration;
     }
@@ -449,15 +450,14 @@ std::optional<PenetrationAsPointPair<T>> MaybeMakePointPair(
         "are not supported for scalar type {}. See the documentation for "
         "QueryObject::ComputePointPairPenetration() for the full status of "
         "supported geometries.",
-        GetGeometryName<FclBackend>(*fcl_object_A_ptr),
-        GetGeometryName<FclBackend>(*fcl_object_B_ptr),
-        NiceTypeName::Get<T>()));
+        GetGeometryName<Backend>(*object_A_ptr),
+        GetGeometryName<Backend>(*object_B_ptr), NiceTypeName::Get<T>()));
   }
   return {};
 }
 
-DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    (&Callback<T>, &MaybeMakePointPair<T>));
+DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_SCALARS_AND_BACKENDS(
+    (&Callback<T, Backend>, &MaybeMakePointPair<T, Backend>));
 
 }  // namespace penetration_as_point_pair
 }  // namespace internal

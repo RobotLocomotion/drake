@@ -884,9 +884,9 @@ drake_cc_library(
         "//geometry:__pkg__",
     ],
     deps = [
+        ":collision_backend",
         ":collision_filter",
         ":distance_to_point_callback",
-        ":fcl_backend",
         "//common:default_scalars",
         "//common:drake_export",
         "//common:nice_type_name",
