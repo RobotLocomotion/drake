@@ -1648,9 +1648,11 @@ const Frame<double>& AddFrameFromSpecification(
 
   const RigidTransformd X_PF =
       ResolveRigidTransform(diagnostic, frame_spec.SemanticPose(), resolve_to);
+  // The frame belongs to the model that declares it, which need not be the
+  // model of the frame it is attached to.
   const Frame<double>& frame =
       plant->AddFrame(std::make_unique<FixedOffsetFrame<double>>(
-          frame_spec.Name(), *parent_frame, X_PF));
+          frame_spec.Name(), *parent_frame, X_PF, model_instance));
   return frame;
 }
 
