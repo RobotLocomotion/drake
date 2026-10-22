@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<sdf version="1.9">
+  <model name="joint_frames" canonical_link="a">
+    <link name="a"/>
+    <link name="b"/>
+    <frame name="Fa" attached_to="a">
+      <pose>1 2 3 1.5707963267948966 0 0</pose>
+    </frame>
+    <frame name="Fb" attached_to="b">
+      <pose>4 5 6 0 0 1.5707963267948966</pose>
+    </frame>
+  </model>
+</sdf>
