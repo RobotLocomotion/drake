@@ -4,6 +4,7 @@
 #include <concepts>
 #include <cstdint>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include <fmt/format.h>
@@ -16,6 +17,29 @@
 namespace drake {
 namespace geometry {
 namespace internal DRAKE_NO_EXPORT {
+
+/* The geometry kinds Drake registers with a proximity backend, plus a catch-
+ all for everything else the backend's library can represent.
+
+ This exists because the collision libraries' NODE_TYPE enumerations do not
+ agree -- see fcl_backend.h (D6). Code shared across backends switches on
+ ShapeKind, which is exhaustive and stable; each backend policy owns the
+ exhaustive switch that maps its own NODE_TYPE onto this. */
+enum class ShapeKind {
+  kBox,
+  kCapsule,
+  kConvex,
+  kCylinder,
+  kEllipsoid,
+  kHalfspace,
+  kSphere,
+  /* A geometry the backend's library can represent but Drake never registers.
+   */
+  kUnsupported
+};
+
+/* Returns the name Drake uses for the given shape kind. */
+std::string_view to_string(ShapeKind kind);
 
 /* A collision object, as modeled by any of Drake's proximity backends. Used to
  constrain the templates below that need nothing from the object beyond its
@@ -134,7 +158,7 @@ class EncodedData {
 template <typename Backend>
 std::string GetGeometryName(const typename Backend::Object& object) {
   return std::string(
-      Backend::NodeTypeName(object.collisionGeometry()->getNodeType()));
+      to_string(Backend::Classify(object.collisionGeometry()->getNodeType())));
 }
 
 // TODO(joemasterjohn): Move the below mesh testing utilities to a separate

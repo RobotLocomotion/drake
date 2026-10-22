@@ -10,6 +10,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_export.h"
 #include "drake/common/eigen_types.h"
+#include "drake/geometry/proximity/proximity_utilities.h"
 #include "drake/math/rigid_transform.h"
 
 namespace drake {
@@ -59,7 +60,8 @@ namespace internal DRAKE_NO_EXPORT {
  - D6 The NODE_TYPE enumerator sets differ. Coal adds GEOM_CONVEX16, HF_AABB
       and HF_OBBRSS, makes GEOM_CONVEX an alias for GEOM_CONVEX32, and orders
       the enumerators differently. An exhaustive switch therefore cannot be
-      shared. Hence NodeTypeName().
+      shared. Hence Classify(), which maps the library's node type onto the
+      backend-independent ShapeKind that shared code switches on instead.
 
  The policy interface is structural: it contains only the members used by
  backend-independent proximity code, with no separate base class or interface
@@ -84,6 +86,12 @@ struct FclBackend {
 
   using CollisionRequest = fcl::CollisionRequestd;
   using CollisionResult = fcl::CollisionResultd;
+  using DistanceRequest = fcl::DistanceRequestd;
+  using DistanceResult = fcl::DistanceResultd;
+
+  /* The scalar the library's own API is written in. Drake's broadphase
+   distance callbacks take their threshold by reference in this type.  */
+  using Scalar = double;
 
   /* Configures a request asking only whether two geometries are in strict
    penetration -- no contact data (see D2).
@@ -98,6 +106,26 @@ struct FclBackend {
     request->enable_contact = false;
     request->gjk_tolerance = 2e-12;
     request->gjk_solver_type = fcl::GJKSolverType::GST_LIBCCD;
+  }
+
+  /* Configures a request for a signed-distance query that reports witness
+   points, with `tol` governing the accuracy of the separated-distance answer
+   (see D2).  */
+  static void ConfigureSignedDistanceRequest(DistanceRequest* request,
+                                             double tol) {
+    request->enable_nearest_points = true;
+    request->enable_signed_distance = true;
+    request->distance_tolerance = tol;
+    request->gjk_solver_type = fcl::GJKSolverType::GST_LIBCCD;
+  }
+
+  /* Performs a narrowphase distance query between two geometries at the given
+   poses. Results are expressed in whatever frame the poses are measured in.
+   */
+  static void Distance(const Geometry* a, const Transform& X_WA,
+                       const Geometry* b, const Transform& X_WB,
+                       const DistanceRequest& request, DistanceResult* result) {
+    fcl::distance(a, X_WA, b, X_WB, request, *result);
   }
 
   /* Performs narrowphase collision between two objects.  */
@@ -137,29 +165,28 @@ struct FclBackend {
                                     std::move(faces));
   }
 
-  /* Returns the name Drake uses for the given node type (see D6).
-
-   Drake only ever registers the seven geometry types named below; every other
-   node type the library can represent is reported as "Unsupported". Note in
-   particular that Drake's Mesh and Convex shapes are both represented as
-   convex hulls, and so report "Convex" -- GEOM_TRIANGLE (a BVH of triangles)
-   is not something Drake creates.  */
-  static std::string_view NodeTypeName(NodeType node_type) {
+  /* Maps the library's node type onto the backend-independent ShapeKind that
+   shared code switches on (see D6). Everything Drake does not register --
+   cones, planes, octrees, triangle BVHs and the bounding-volume types --
+   reports kUnsupported. Note in particular that Drake's Mesh and Convex
+   shapes are both represented as convex hulls, so GEOM_TRIANGLE (a BVH of
+   triangles) is not something Drake creates.  */
+  static ShapeKind Classify(NodeType node_type) {
     switch (node_type) {
       case fcl::GEOM_BOX:
-        return "Box";
+        return ShapeKind::kBox;
       case fcl::GEOM_CAPSULE:
-        return "Capsule";
+        return ShapeKind::kCapsule;
       case fcl::GEOM_CONVEX:
-        return "Convex";
+        return ShapeKind::kConvex;
       case fcl::GEOM_CYLINDER:
-        return "Cylinder";
+        return ShapeKind::kCylinder;
       case fcl::GEOM_ELLIPSOID:
-        return "Ellipsoid";
+        return ShapeKind::kEllipsoid;
       case fcl::GEOM_HALFSPACE:
-        return "Halfspace";
+        return ShapeKind::kHalfspace;
       case fcl::GEOM_SPHERE:
-        return "Sphere";
+        return ShapeKind::kSphere;
       case fcl::BV_UNKNOWN:
       case fcl::BV_AABB:
       case fcl::BV_OBB:
@@ -174,10 +201,33 @@ struct FclBackend {
       case fcl::GEOM_PLANE:
       case fcl::GEOM_TRIANGLE:
       case fcl::NODE_COUNT:
-        return "Unsupported";
+        return ShapeKind::kUnsupported;
     }
     DRAKE_UNREACHABLE();
   }
+
+  /* @name Shape accessors (see D1)
+
+   The libraries spell these differently -- FCL stores a box's full extent and
+   a capsule's/cylinder's full length, Coal stores the halves -- so shared code
+   goes through these rather than touching members directly.  */
+  //@{
+  static Eigen::Vector3d half_extents(const Box& box) { return box.side / 2.0; }
+  static double radius(const Capsule& capsule) { return capsule.radius; }
+  static double half_length(const Capsule& capsule) { return capsule.lz / 2.0; }
+  static double radius(const Cylinder& cylinder) { return cylinder.radius; }
+  static double half_length(const Cylinder& cylinder) {
+    return cylinder.lz / 2.0;
+  }
+  static double radius(const Sphere& sphere) { return sphere.radius; }
+  static const Eigen::Vector3d& radii(const Ellipsoid& ellipsoid) {
+    return ellipsoid.radii;
+  }
+  static const Eigen::Vector3d& normal(const Halfspace& halfspace) {
+    return halfspace.n;
+  }
+  static double offset(const Halfspace& halfspace) { return halfspace.d; }
+  //@}
 };
 
 // clang-format off

@@ -189,6 +189,8 @@ drake_cc_library(
     ],
     deps = [
         ":fcl_backend",
+        "//common:autodiff",
+        "//common/symbolic:expression",
     ],
 )
 
@@ -326,6 +328,7 @@ drake_cc_library(
     deps = [
         ":bv",
         ":bvh",
+        ":collision_backend",
         ":proximity_utilities",
         ":triangle_surface_mesh",
         ":volume_mesh",
@@ -337,7 +340,6 @@ drake_cc_library(
         "//geometry:shape_specification",
         "//geometry/query_results:signed_distance_to_point",
         "//math:geometric_transform",
-        "@fcl_internal//:fcl",
     ],
     implementation_deps = [
         ":obj_to_surface_mesh",
@@ -659,6 +661,7 @@ drake_cc_library(
     ],
     implementation_deps = [
         ":distance_to_point_callback",
+        ":fcl_backend",
         ":volume_to_surface_mesh",
         "//common:default_scalars",
         "//common:essential",

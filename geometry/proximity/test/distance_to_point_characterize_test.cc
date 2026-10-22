@@ -80,10 +80,11 @@ class PointDistanceCallback : public DistanceCallback<T> {
       mesh_distance_boundary_cache.Register(EncodedData(*obj_B).id(), mesh);
     }
     mesh_distance_boundary_cache.ComputeAll();
-    CallbackData<T> data(obj_A, std::numeric_limits<double>::infinity(), p_WQ,
-                         X_WGs, &mesh_distance_boundary_cache, &results_);
+    CallbackData<T, FclBackend> data(
+        obj_A, std::numeric_limits<double>::infinity(), p_WQ, X_WGs,
+        &mesh_distance_boundary_cache, &results_);
     double max_distance = std::numeric_limits<double>::infinity();
-    return Callback<T>(obj_A, obj_B, &data, max_distance);
+    return Callback<T, FclBackend>(obj_A, obj_B, &data, max_distance);
   }
 
   void ClearResults() override { results_.clear(); }

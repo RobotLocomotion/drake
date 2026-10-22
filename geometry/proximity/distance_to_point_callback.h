@@ -6,8 +6,6 @@
 #include <unordered_map>
 #include <vector>
 
-#include <fcl/fcl.h>
-
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_export.h"
 #include "drake/common/eigen_types.h"
@@ -24,7 +22,7 @@ namespace point_distance DRAKE_NO_EXPORT {
 
 /* Supporting data for the distance-to-point callback (see Callback below).
  It includes:
-    - The fcl collision object representing the query point, Q.
+    - The collision object representing the query point, Q.
     - A distance threshold beyond which distances will not be reported.
     - The query point Q, measured and expressed in the world frame, `p_WQ_W`.
     - The T-valued poses of _all_ geometries in the corresponding SceneGraph
@@ -34,7 +32,7 @@ namespace point_distance DRAKE_NO_EXPORT {
     - A vector of distance results -- one instance of SignedDistanceToPoint for
       every supported geometry which lies within the threshold.
  */
-template <typename T>
+template <typename T, typename Backend>
 struct CallbackData {
   /* Constructs the fully-specified callback data. The values are as described
    above. _Some_ of the parameters are aliased in the data and require the
@@ -50,7 +48,7 @@ struct CallbackData {
    @param distances_in[out] The output results. Aliased.
    */
   CallbackData(
-      fcl::CollisionObjectd* query_in, const double threshold_in,
+      typename Backend::Object* query_in, const double threshold_in,
       const Vector3<T>& p_WQ_W_in,
       const std::unordered_map<GeometryId, math::RigidTransform<T>>* X_WGs_in,
       const MeshDistanceBoundaryCache* mesh_distance_boundary_cache_in,
@@ -68,8 +66,8 @@ struct CallbackData {
     DRAKE_DEMAND(distances_in != nullptr);
   }
 
-  /* The query fcl object.  */
-  const fcl::CollisionObjectd& query_point;
+  /* The query object.  */
+  const typename Backend::Object& query_point;
 
   /* The query threshold.  */
   const double threshold;
@@ -111,28 +109,28 @@ struct CallbackData {
 /* Computes distance from point to sphere with the understanding that all
  quantities are measured and expressed in the sphere's frame, S. Otherwise, the
  semantics of the parameters are as documented as above.  */
-template <typename T>
-void SphereDistanceInSphereFrame(const fcl::Sphered& sphere,
+template <typename T, typename Backend>
+void SphereDistanceInSphereFrame(const typename Backend::Sphere& sphere,
                                  const Vector3<T>& p_SQ, Vector3<T>* p_SN,
                                  T* distance, Vector3<T>* grad_S);
 
 /* Overload of ComputeDistanceToPrimitive() for sphere primitive. */
-template <typename T>
-void ComputeDistanceToPrimitive(const fcl::Sphered& sphere,
+template <typename T, typename Backend>
+void ComputeDistanceToPrimitive(const typename Backend::Sphere& sphere,
                                 const math::RigidTransform<T>& X_WG,
                                 const Vector3<T>& p_WQ, Vector3<T>* p_GN,
                                 T* distance, Vector3<T>* grad_W);
 
 /* Overload of ComputeDistanceToPrimitive() for halfspace primitive. */
-template <typename T>
-void ComputeDistanceToPrimitive(const fcl::Halfspaced& halfspace,
+template <typename T, typename Backend>
+void ComputeDistanceToPrimitive(const typename Backend::Halfspace& halfspace,
                                 const math::RigidTransform<T>& X_WG,
                                 const Vector3<T>& p_WQ, Vector3<T>* p_GN,
                                 T* distance, Vector3<T>* grad_W);
 
 /* Overload of ComputeDistanceToPrimitive() for capsule primitive. */
-template <typename T>
-void ComputeDistanceToPrimitive(const fcl::Capsuled& capsule,
+template <typename T, typename Backend>
+void ComputeDistanceToPrimitive(const typename Backend::Capsule& capsule,
                                 const math::RigidTransform<T>& X_WG,
                                 const Vector3<T>& p_WQ, Vector3<T>* p_GN,
                                 T* distance, Vector3<T>* grad_W);
@@ -141,12 +139,52 @@ void ComputeDistanceToPrimitive(const fcl::Capsuled& capsule,
 
 //@}
 
+/* Reports the "sign" of x with a small modification; Sign(0) --> 1.
+ @tparam U  Templated so that an AutoDiffXd-valued query can still compute
+            Sign<double> or Sign<AutoDiffXd> as needed.  */
+template <typename U>
+U Sign(const U& x) {
+  return (x < U(0.0)) ? U(-1.0) : U(1.0);
+}
+
+/* Picks the axis i whose coordinate p(i) is closest to the boundary value
+ ±bounds(i). If there are ties, we prioritize according to an arbitrary
+ ordering: +x,-x,+y,-y,+z,-z.
+
+ Note: the two vector types can be different scalars, they must be extractable
+ to double.
+
+ @tparam dim The number of rows in the column vector.  */
+template <int dim, typename U>
+int ExtremalAxis(const Vector<U, dim>& p, const Vector<double, dim>& bounds);
+
+/* Calculates the signed distance from a query point Q to a box, G. The box
+ can be either two-dimensional or three-dimensional. It is defined centered
+ on its frame G and aligned with G's axes. We use the 3D version directly
+ for the signed distance from Box and use the 2D version indirectly for the
+ signed distance from Cylinder.
+ @param h        The vector from the center of the box to the positive
+                 corner of the box measured in frame G (the "half" size of
+                 the box).
+                 Mathematically the box is the Cartesian product
+                 [-h(0),h(0)]x[-h(1),h(1)] in 2D or
+                 [-h(0),h(0)]x[-h(1),h(1)]x[-h(2),h(2)] in 3D.
+ @param p_GQ_G   The position of the query point Q in G's frame.
+ @retval {p_GN_G, grad_G, is_Q_on_edge_or_vertex}   The tuple of the position
+                 of the nearest point N in G's frame and the gradient vector
+                 in the same frame G, together with the type of the nearest
+                 feature.
+ @tparam dim     The dimension, must be 2 or 3.  */
+template <int dim, typename T>
+std::tuple<Vector<T, dim>, Vector<T, dim>, bool> ComputeDistanceToBox(
+    const Vector<double, dim>& h, const Vector<T, dim>& p_GQ_G);
+
 /* A functor to compute signed distance between a point and a geometry. By
  design, one instance should be created for each unique pairing of query point Q
  with geometry G. The functor is constructed with all the parameters _except_
  the actual shape. It relies on overloading the () operator and ADL to handle
  specific shape types.  */
-template <typename T>
+template <typename T, typename Backend>
 class DistanceToPoint {
  public:
   /* Constructs the functor DistanceToPoint.
@@ -161,68 +199,29 @@ class DistanceToPoint {
   //  issue: https://github.com/RobotLocomotion/drake/issues/11227
 
   /* Overload to compute distance to a box.  */
-  SignedDistanceToPoint<T> operator()(const fcl::Boxd& box);
+  SignedDistanceToPoint<T> operator()(const typename Backend::Box& box);
 
   /* Overload to compute distance to a capsule.  */
-  SignedDistanceToPoint<T> operator()(const fcl::Capsuled& capsule);
+  SignedDistanceToPoint<T> operator()(const typename Backend::Capsule& capsule);
 
   /* Overload to compute distance to a cylinder.  */
-  SignedDistanceToPoint<T> operator()(const fcl::Cylinderd& cylinder);
+  SignedDistanceToPoint<T> operator()(
+      const typename Backend::Cylinder& cylinder);
 
   /* Overload to compute distance to an ellipsoid.  */
-  SignedDistanceToPoint<T> operator()(const fcl::Ellipsoidd& ellipsoid);
+  SignedDistanceToPoint<T> operator()(
+      const typename Backend::Ellipsoid& ellipsoid);
 
   /* Overload to compute distance to a halfspace.  */
-  SignedDistanceToPoint<T> operator()(const fcl::Halfspaced& halfspace);
+  SignedDistanceToPoint<T> operator()(
+      const typename Backend::Halfspace& halfspace);
 
   /* Overload to compute distance to a sphere.  */
-  SignedDistanceToPoint<T> operator()(const fcl::Sphered& sphere);
+  SignedDistanceToPoint<T> operator()(const typename Backend::Sphere& sphere);
 
   /* Overload to compute distance to a mesh represented as a
    water-tight boundary surface enclosing a volume.  */
   SignedDistanceToPoint<T> operator()(const MeshDistanceBoundary& mesh);
-
-  /* Reports the "sign" of x with a small modification; Sign(0) --> 1.
-   @tparam U  Templated to allow DistanceToPoint<AutoDiffXd> to still compute
-              Sign<double> or Sign<AutoDiffXd> as needed.  */
-  template <typename U = T>
-  static U Sign(const U& x) {
-    return (x < U(0.0)) ? U(-1.0) : U(1.0);
-  }
-
-  /* Picks the axis i whose coordinate p(i) is closest to the boundary value
-   ±bounds(i). If there are ties, we prioritize according to an arbitrary
-   ordering: +x,-x,+y,-y,+z,-z.
-
-   Note: the two vector types can be different scalars, they must be extractable
-   to double.
-
-   @tparam dim The number of rows in the column vector.
-   @tparam U   The scalar type of the point `p`; defaults to T.  */
-  template <int dim, typename U = T>
-  static int ExtremalAxis(const Vector<U, dim>& p,
-                          const Vector<double, dim>& bounds);
-
-  /* Calculates the signed distance from a query point Q to a box, G. The box
-   can be either two-dimensional or three-dimensional. It is defined centered
-   on its frame G and aligned with G's axes. We use the 3D version directly
-   for the signed distance from Box and use the 2D version indirectly for the
-   signed distance from Cylinder.
-   @param h        The vector from the center of the box to the positive
-                   corner of the box measured in frame G (the "half" size of
-                   the box).
-                   Mathematically the box is the Cartesian product
-                   [-h(0),h(0)]x[-h(1),h(1)] in 2D or
-                   [-h(0),h(0)]x[-h(1),h(1)]x[-h(2),h(2)] in 3D.
-   @param p_GQ_G   The position of the query point Q in G's frame.
-   @retval {p_GN_G, grad_G, is_Q_on_edge_or_vertex}   The tuple of the position
-                   of the nearest point N in G's frame and the gradient vector
-                   in the same frame G, together with the type of the nearest
-                   feature.
-   @tparam dim     The dimension, must be 2 or 3.  */
-  template <int dim>
-  static std::tuple<Vector<T, dim>, Vector<T, dim>, bool> ComputeDistanceToBox(
-      const Vector<double, dim>& h, const Vector<T, dim>& p_GQ_G);
 
  private:
   // The id of the geometry G.
@@ -246,42 +245,47 @@ class DistanceToPoint {
 
 template <typename T>
 struct ScalarSupport {
-  static bool is_supported(fcl::NODE_TYPE) { return false; }
+  static bool is_supported(ShapeKind) { return false; }
 };
 
 /* Primitive support for double-valued query.  */
 template <>
 struct ScalarSupport<double> {
-  static bool is_supported(fcl::NODE_TYPE node_type) {
-    switch (node_type) {
-      case fcl::GEOM_BOX:
-      case fcl::GEOM_CAPSULE:
-      // drake::geometry::{Mesh, Convex} use fcl::GEOM_CONVEX.
-      case fcl::GEOM_CONVEX:
-      case fcl::GEOM_CYLINDER:
-      case fcl::GEOM_ELLIPSOID:
-      case fcl::GEOM_HALFSPACE:
-      case fcl::GEOM_SPHERE:
+  static bool is_supported(ShapeKind kind) {
+    switch (kind) {
+      case ShapeKind::kBox:
+      case ShapeKind::kCapsule:
+      // drake::geometry::{Mesh, Convex} are represented as convex hulls.
+      case ShapeKind::kConvex:
+      case ShapeKind::kCylinder:
+      case ShapeKind::kEllipsoid:
+      case ShapeKind::kHalfspace:
+      case ShapeKind::kSphere:
         return true;
-      default:
+      case ShapeKind::kUnsupported:
         return false;
     }
+    DRAKE_UNREACHABLE();
   }
 };
 
 /* Primitive support for AutoDiff-valued query.  */
 template <>
 struct ScalarSupport<AutoDiffXd> {
-  static bool is_supported(fcl::NODE_TYPE node_type) {
-    switch (node_type) {
-      case fcl::GEOM_BOX:
-      case fcl::GEOM_CAPSULE:
-      case fcl::GEOM_HALFSPACE:
-      case fcl::GEOM_SPHERE:
+  static bool is_supported(ShapeKind kind) {
+    switch (kind) {
+      case ShapeKind::kBox:
+      case ShapeKind::kCapsule:
+      case ShapeKind::kHalfspace:
+      case ShapeKind::kSphere:
         return true;
-      default:
+      case ShapeKind::kConvex:
+      case ShapeKind::kCylinder:
+      case ShapeKind::kEllipsoid:
+      case ShapeKind::kUnsupported:
         return false;
     }
+    DRAKE_UNREACHABLE();
   }
 };
 
@@ -296,18 +300,18 @@ struct ScalarSupport<AutoDiffXd> {
                                is the output.
 
  @param[out] threshold_out  An output parameter (pass-by-reference) back to
-                            FCL's BVH culling. It will be set to the
+                            the backend's BVH culling. It will be set to the
                             CallbackData::threshold (or an internal lower
                             bound proportional to the machine epsilon).
 
  @pre The `callback_data` is an instance of point_distance::CallbackData.
- @pre One of the two fcl objects matches the CallbackData.query_point object.
+ @pre One of the two objects matches the CallbackData.query_point object.
  */
-template <typename T>
-bool Callback(fcl::CollisionObjectd* object_A_ptr,
-              fcl::CollisionObjectd* object_B_ptr,
+template <typename T, typename Backend>
+bool Callback(typename Backend::Object* object_A_ptr,
+              typename Backend::Object* object_B_ptr,
               // NOLINTNEXTLINE
-              void* callback_data, double& threshold_out);
+              void* callback_data, typename Backend::Scalar& threshold_out);
 
 // clang-format off
 }  // namespace point_distance

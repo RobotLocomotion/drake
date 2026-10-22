@@ -2,6 +2,8 @@
 
 #include <tuple>
 
+#include "drake/common/autodiff.h"
+#include "drake/common/symbolic/expression.h"
 #include "drake/geometry/proximity/fcl_backend.h"
 
 /* @file
@@ -31,6 +33,17 @@
     SomeType) \
 template SomeType<::drake::geometry::internal::FclBackend>;
 
+/* Defines instantiations for a class template parameterized on a scalar and
+ then the backend policy, in that order. For use in .cc files only. */
+#define DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_SCALARS_AND_BACKENDS( \
+    SomeType) \
+template SomeType<double, \
+    ::drake::geometry::internal::FclBackend>; \
+template SomeType<::drake::AutoDiffXd, \
+    ::drake::geometry::internal::FclBackend>; \
+template SomeType<::drake::symbolic::Expression, \
+    ::drake::geometry::internal::FclBackend>;
+
 /* Defines instantiations for free function templates whose sole parameter is
  the backend policy. The argument is a parenthesized, comma-separated list of
  function pointers written in terms of a template parameter named `Backend`,
@@ -51,6 +64,36 @@ constexpr auto Make_Backend_Function_Pointers() { \
 static constexpr auto Backend_Function_Templates __attribute__((used)) = \
     std::tuple_cat( \
         Make_Backend_Function_Pointers< \
+            ::drake::geometry::internal::FclBackend>());
+
+/* Defines instantiations for free function templates parameterized on a
+ scalar and then the backend policy, in that order. The argument is a
+ parenthesized, comma-separated list of function pointers written in terms of
+ template parameters named `T` and `Backend`, e.g.
+
+   DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_SCALARS_AND_BACKENDS(
+       (&Callback<T, Backend>));
+
+ For use in .cc files only, inside the namespace that declares the
+ functions. */
+#define \
+  DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_SCALARS_AND_BACKENDS( \
+      FunctionPointersTuple) \
+template <typename T, typename Backend> \
+constexpr auto Make_Scalar_Backend_Function_Pointers() { \
+  return std::make_tuple FunctionPointersTuple ; \
+} \
+template <typename Backend> \
+constexpr auto Make_Scalar_Backend_Function_Pointers_Pack() { \
+  return std::tuple_cat( \
+      Make_Scalar_Backend_Function_Pointers<double, Backend>(), \
+      Make_Scalar_Backend_Function_Pointers<::drake::AutoDiffXd, Backend>(), \
+      Make_Scalar_Backend_Function_Pointers< \
+          ::drake::symbolic::Expression, Backend>()); \
+} \
+static constexpr auto Scalar_Backend_Function_Templates \
+    __attribute__((used)) = std::tuple_cat( \
+        Make_Scalar_Backend_Function_Pointers_Pack< \
             ::drake::geometry::internal::FclBackend>());
 
 // clang-format on
