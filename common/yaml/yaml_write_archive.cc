@@ -232,7 +232,7 @@ std::string QuotedJsonString(std::string_view x) {
   result.reserve(x.size() + 2);
   result.push_back('"');
   for (const char ch : x) {
-    if ((ch == '"') || (ch == '\\') || (ch < ' ')) {
+    if ((ch == '"') || (ch == '\\') || (static_cast<uint8_t>(ch) < ' ')) {
       // This character needs escaping.
       result.append(fmt::format("\\u00{:02x}", static_cast<uint8_t>(ch)));
     } else {
