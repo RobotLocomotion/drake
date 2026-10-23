@@ -1,6 +1,7 @@
 #include "drake/multibody/parsing/detail_sdf_parser.h"
 
 #include <cmath>
+#include <functional>
 #include <limits>
 #include <map>
 #include <memory>
@@ -667,40 +668,162 @@ std::optional<std::tuple<double, double, double, double>> ParseJointLimits(
                          acceleration_limit);
 }
 
-// Helper method to add joints to a MultibodyPlant given an sdf::Joint
-// specification object. X_WM should be an identity when adding a world
-// joint (is_model_joint = false) since a world joint doesn't have a
-// containing model, hence M = W.
-// If the diagnostic error policy is not set to throw it returns false
-// when an error occurs.
-bool AddJointFromSpecification(const SDFormatDiagnostic& diagnostic,
-                               const RigidTransformd& X_WM,
-                               const sdf::Joint& joint_spec,
-                               ModelInstanceIndex model_instance,
-                               MultibodyPlant<double>* plant,
-                               std::set<sdf::JointType>* joint_types,
-                               bool is_model_joint = true) {
-  const std::set<std::string> supported_joint_elements{"axis",
-                                                       "axis2",
-                                                       "child",
-                                                       "drake:rotor_inertia",
-                                                       "drake:gear_ratio",
-                                                       "drake:controller_gains",
-                                                       "drake:mimic",
-                                                       "parent",
-                                                       "pose",
-                                                       "screw_thread_pitch"};
-  CheckSupportedElements(diagnostic, joint_spec.Element(),
-                         supported_joint_elements);
+// Returns the frame that `frame_name`, given by the <`element_name`> child of
+// `node`, refers to from within the scope of `model_instance`. That is either
+// "world" or the name of a link, frame, or model (meaning its __model__ frame)
+// in that scope, possibly scoped into a nested model. It must not name a joint:
+// `is_joint_name` tells whether a name, as seen from that scope, is the name of
+// a joint in SDFormat's frame graph, including imported joints. Reports an
+// error and returns nullptr if there is no such frame.
+const Frame<double>* FindFrame(
+    const SDFormatDiagnostic& diagnostic, const sdf::ElementPtr node,
+    const char* element_name, const std::string& frame_name,
+    const std::function<bool(const std::string&)>& is_joint_name,
+    ModelInstanceIndex model_instance, const MultibodyPlant<double>& plant) {
+  if (frame_name == "world") return &plant.world_frame();
 
-  // Axis elements should be fully supported, let sdformat validate those.
+  // Validate and look up the same normalized name, while retaining the
+  // original spelling for diagnostics.
+  const std::string normalized_name = ScopedName::Parse(frame_name).to_string();
+  // Reject empty names before joining scopes; otherwise they would resolve to
+  // the enclosing model's implicit frame.
+  if (normalized_name.empty()) {
+    diagnostic.Error(
+        node, fmt::format("<{}>: Frame name '{}' specified for <{}> must not "
+                          "be empty.",
+                          node->GetName(), frame_name, element_name));
+    return nullptr;
+  }
 
+  // Drake has no frame for an SDFormat joint's own frame. Worse, the plant
+  // might have an unrelated frame by that name that Drake added for some
+  // other joint, such as the frame foo_child for a joint foo. The name
+  // "world" always means the world frame (see above), though, even if a
+  // merged include brought in a joint named "world".
+  if (is_joint_name(normalized_name)) {
+    diagnostic.Error(
+        node, fmt::format("<{0}>: <{1}>{2}</{1}> names a joint; it must name a "
+                          "link, frame, or model.",
+                          node->GetName(), element_name, frame_name));
+    return nullptr;
+  }
+
+  // TODO(rpoyner-tri): In theory, we could use
+  // GetResolvedModelInstanceAndLocalName here. In practice, it doesn't turn
+  // out well, because that function just allows MultibodyPlant code to throw
+  // exceptions, instead of checking for bad inputs and issuing model source
+  // code locatable diagnostics. Consider harmonizing the various
+  // implementations with better checking and diagnostic messages.
+
+  // Support references to frames in nested models. Note: only downward nested
+  // references are permitted.
+  // See http://sdformat.org/tutorials?tut=composition#composition
+  const ScopedName absolute_scoped_name =
+      ScopedName::Join(GetInstanceScopeNameIgnoringWorld(plant, model_instance),
+                       normalized_name);
+
+  const std::string absolute_name = absolute_scoped_name.to_string();
+  if (plant.HasModelInstanceNamed(absolute_name)) {
+    const ModelInstanceIndex named_model_instance =
+        plant.GetModelInstanceByName(absolute_name);
+    if (plant.HasFrameNamed("__model__", named_model_instance)) {
+      return &plant.GetFrameByName("__model__", named_model_instance);
+    }
+  }
+
+  ModelInstanceIndex search_model_instance = world_model_instance();
+  const std::string search_model_name(absolute_scoped_name.get_namespace());
+  if (!search_model_name.empty()) {
+    if (!plant.HasModelInstanceNamed(search_model_name)) {
+      std::string message = fmt::format(
+          "<{}>: Model instance name '{}' (implied by frame name '{}' in <{}>"
+          " within model instance '{}') does not exist in the model.",
+          node->GetName(), search_model_name, frame_name, element_name,
+          plant.GetModelInstanceName(model_instance));
+      diagnostic.Error(node, std::move(message));
+      return nullptr;
+    }
+    search_model_instance = plant.GetModelInstanceByName(search_model_name);
+  }
+
+  const std::string search_frame_name(absolute_scoped_name.get_element());
+  if (!plant.HasFrameNamed(search_frame_name, search_model_instance)) {
+    std::string message = fmt::format(
+        "<{}>: Frame '{}' specified for <{}> does not exist in the model.",
+        node->GetName(), frame_name, element_name);
+    diagnostic.Error(node, std::move(message));
+    return nullptr;
+  }
+
+  return &plant.GetFrameByName(search_frame_name, search_model_instance);
+}
+
+// A joint whose frames Jp and Jc are the ones named by its `parent_tag` and
+// `child_tag` elements has nothing left for a <pose> to locate. Reports an
+// error and returns false if the joint `node` has a <pose> anyway.
+bool CheckJointHasNoPose(const SDFormatDiagnostic& diagnostic,
+                         const sdf::ElementPtr node,
+                         const std::string& joint_name, const char* parent_tag,
+                         const char* child_tag) {
+  if (!node->HasElement("pose")) return true;
+  std::string message = fmt::format(
+      "Joint '{}' cannot have a <pose> because its frames are the ones named "
+      "by <{}> and <{}>.",
+      joint_name, parent_tag, child_tag);
+  diagnostic.Error(node, std::move(message));
+  return false;
+}
+
+// Where a joint's frames Jp and Jc are: Jp is fixed to frame P at pose X_PJp,
+// and Jc is fixed to frame C at pose X_CJc, where P and C are frames already in
+// the plant. A missing pose means that P (or C) itself is the joint frame;
+// otherwise a new frame will be added for it.
+struct JointFrames {
+  const Frame<double>* P{};
+  std::optional<RigidTransformd> X_PJp;
+  const Frame<double>* C{};
+  std::optional<RigidTransformd> X_CJc;
+};
+
+// Adds a joint of type JointType<double>, named `name`, between the frames Jp
+// and Jc described by `frames`, first adding any new frames that requires.
+// Like MultibodyPlant::AddJoint(), it names those after the joint and puts them
+// in the joint's model instance, which is that of `frames.C`.
+template <template <typename> class JointType, typename... Args>
+const JointType<double>& AddJointBetweenFrames(MultibodyPlant<double>* plant,
+                                               const std::string& name,
+                                               const JointFrames& frames,
+                                               Args&&... args) {
+  const ModelInstanceIndex model_instance = frames.C->model_instance();
+  auto get_or_add_frame = [&](const Frame<double>& B,
+                              const std::optional<RigidTransformd>& X_BJ,
+                              const char* suffix) -> const Frame<double>& {
+    if (!X_BJ.has_value()) return B;
+    return plant->AddFrame(std::make_unique<FixedOffsetFrame<double>>(
+        fmt::format("{}_{}", name, suffix), B, *X_BJ, model_instance));
+  };
+  const Frame<double>& frame_Jp =
+      get_or_add_frame(*frames.P, frames.X_PJp, "parent");
+  const Frame<double>& frame_Jc =
+      get_or_add_frame(*frames.C, frames.X_CJc, "child");
+  return plant->AddJoint(std::make_unique<JointType<double>>(
+      name, frame_Jp, frame_Jc, std::forward<Args>(args)...));
+}
+
+// Returns the frames of a standard SDFormat joint, which has a single joint
+// frame J located by its <pose>: Jp and Jc are both placed at J, on the parent
+// and child links. X_WM should be an identity when adding a world joint
+// (is_model_joint = false) since a world joint doesn't have a containing model,
+// hence M = W. Reports an error and returns nullopt if that can't be done.
+std::optional<JointFrames> ResolveJointFramesAtJ(
+    const SDFormatDiagnostic& diagnostic, const RigidTransformd& X_WM,
+    const sdf::Joint& joint_spec, ModelInstanceIndex model_instance,
+    const MultibodyPlant<double>& plant, bool is_model_joint) {
   const RigidBody<double>& parent_body = GetBodyByLinkSpecificationName(
       ResolveJointParentLinkName(diagnostic, joint_spec), model_instance,
-      *plant);
+      plant);
   const RigidBody<double>& child_body = GetBodyByLinkSpecificationName(
-      ResolveJointChildLinkName(diagnostic, joint_spec), model_instance,
-      *plant);
+      ResolveJointChildLinkName(diagnostic, joint_spec), model_instance, plant);
 
   const DiagnosticPolicy policy =
       diagnostic.MakePolicyForNode(*joint_spec.Element());
@@ -709,9 +832,9 @@ bool AddJointFromSpecification(const SDFormatDiagnostic& diagnostic,
   // <joint> <pose> ... </pose></joint>. The default `relative_to` pose of a
   // joint will be the child link.
   const std::optional<std::string> child_relative_name =
-      GetRelativeBodyName(child_body, model_instance, *plant, policy);
+      GetRelativeBodyName(child_body, model_instance, plant, policy);
   if (!child_relative_name.has_value()) {
-    return false;
+    return std::nullopt;
   }
   const RigidTransformd X_CJ = ResolveRigidTransform(
       diagnostic, joint_spec.SemanticPose(), *child_relative_name);
@@ -728,9 +851,9 @@ bool AddJointFromSpecification(const SDFormatDiagnostic& diagnostic,
     X_PJ = X_WM * X_MJ;  // Since P == W.
   } else {
     const std::optional<std::string> parent_relative_name =
-        GetRelativeBodyName(parent_body, model_instance, *plant, policy);
+        GetRelativeBodyName(parent_body, model_instance, plant, policy);
     if (!parent_relative_name.has_value()) {
-      return false;
+      return std::nullopt;
     }
     X_PJ = ResolveRigidTransform(diagnostic, joint_spec.SemanticPose(),
                                  *parent_relative_name);
@@ -740,6 +863,100 @@ bool AddJointFromSpecification(const SDFormatDiagnostic& diagnostic,
   // P directly. We indicate that by passing a nullopt.
   if (X_PJ.value().IsExactlyIdentity()) X_PJ = std::nullopt;
 
+  return JointFrames{.P = &parent_body.body_frame(),
+                     .X_PJp = X_PJ,
+                     .C = &child_body.body_frame(),
+                     .X_CJc = X_CJ};
+}
+
+// Returns the frames of a joint with <drake:independent_frames/>: as for a
+// <drake:joint>, Jp and Jc are the frames named by its <parent> and <child>.
+// `is_joint_name` tells whether a name, as seen from the joint's scope, is the
+// name of a joint in SDFormat's frame graph, including imported joints.
+// Reports an error and returns nullopt if that can't be done.
+std::optional<JointFrames> FindIndependentJointFrames(
+    const SDFormatDiagnostic& diagnostic, const sdf::Joint& joint_spec,
+    const std::function<bool(const std::string&)>& is_joint_name,
+    ModelInstanceIndex model_instance, const MultibodyPlant<double>& plant) {
+  const sdf::ElementPtr node = joint_spec.Element();
+  // Only the element's presence matters, so any text, nested element, or
+  // attribute (such as enabled="false") would be misleading.
+  const sdf::ElementPtr independent_frames =
+      node->FindElement("drake:independent_frames");
+  if (const sdf::ElementPtr duplicate =
+          independent_frames->GetNextElement("drake:independent_frames")) {
+    diagnostic.Error(duplicate,
+                     "<drake:independent_frames> may appear only once per "
+                     "joint.");
+    return std::nullopt;
+  }
+  if (independent_frames->GetValue() != nullptr ||
+      independent_frames->GetFirstElement() != nullptr ||
+      independent_frames->GetAttributeCount() > 0) {
+    diagnostic.Error(independent_frames,
+                     "<drake:independent_frames> must be empty and have no "
+                     "attributes; its presence alone takes the joint's frames "
+                     "from <parent> and <child>.");
+    return std::nullopt;
+  }
+  if (!CheckJointHasNoPose(diagnostic, node, joint_spec.Name(), "parent",
+                           "child")) {
+    return std::nullopt;
+  }
+  // Use the names held by the sdf::Joint, not the text of its elements, which
+  // libsdformat does not update when it merges an included model.
+  auto find_frame = [&](const char* tag,
+                        const std::string& name) -> const Frame<double>* {
+    return FindFrame(diagnostic, node, tag, name, is_joint_name, model_instance,
+                     plant);
+  };
+  const Frame<double>* frame_Jp = find_frame("parent", joint_spec.ParentName());
+  const Frame<double>* frame_Jc = find_frame("child", joint_spec.ChildName());
+  if (frame_Jp == nullptr || frame_Jc == nullptr) return std::nullopt;
+  return JointFrames{.P = frame_Jp, .C = frame_Jc};
+}
+
+// Helper method to add joints to a MultibodyPlant given an sdf::Joint
+// specification object. X_WM should be an identity when adding a world
+// joint (is_model_joint = false) since a world joint doesn't have a
+// containing model, hence M = W. `is_joint_name` tells whether a name, as seen
+// from the joint's scope, is the name of a joint in SDFormat's frame graph,
+// including imported joints.
+// If the diagnostic error policy is not set to throw it returns false
+// when an error occurs.
+bool AddJointFromSpecification(
+    const SDFormatDiagnostic& diagnostic, const RigidTransformd& X_WM,
+    const sdf::Joint& joint_spec,
+    const std::function<bool(const std::string&)>& is_joint_name,
+    ModelInstanceIndex model_instance, MultibodyPlant<double>* plant,
+    std::set<sdf::JointType>* joint_types, bool is_model_joint = true) {
+  const std::set<std::string> supported_joint_elements{
+      "axis",
+      "axis2",
+      "child",
+      "drake:independent_frames",
+      "drake:rotor_inertia",
+      "drake:gear_ratio",
+      "drake:controller_gains",
+      "drake:mimic",
+      "parent",
+      "pose",
+      "screw_thread_pitch"};
+  CheckSupportedElements(diagnostic, joint_spec.Element(),
+                         supported_joint_elements);
+
+  // Axis elements should be fully supported, let sdformat validate those.
+
+  const std::optional<JointFrames> frames =
+      joint_spec.Element()->HasElement("drake:independent_frames")
+          ? FindIndependentJointFrames(diagnostic, joint_spec, is_joint_name,
+                                       model_instance, *plant)
+          : ResolveJointFramesAtJ(diagnostic, X_WM, joint_spec, model_instance,
+                                  *plant, is_model_joint);
+  if (!frames.has_value()) {
+    return false;
+  }
+
   // These will only be populated for prismatic and revolute joints.
   double lower_limit = 0;
   double upper_limit = 0;
@@ -748,9 +965,9 @@ bool AddJointFromSpecification(const SDFormatDiagnostic& diagnostic,
 
   switch (joint_spec.Type()) {
     case sdf::JointType::FIXED: {
-      plant->AddJoint<WeldJoint>(joint_spec.Name(), parent_body, X_PJ,
-                                 child_body, X_CJ,
-                                 RigidTransformd::Identity() /* X_JpJc */);
+      AddJointBetweenFrames<WeldJoint>(
+          plant, joint_spec.Name(), *frames,
+          RigidTransformd::Identity() /* X_JpJc */);
       break;
     }
     case sdf::JointType::PRISMATIC: {
@@ -761,9 +978,9 @@ bool AddJointFromSpecification(const SDFormatDiagnostic& diagnostic,
       if (!joint_limits.has_value()) return false;
       std::tie(lower_limit, upper_limit, velocity_limit, acceleration_limit) =
           *joint_limits;
-      const auto& joint = plant->AddJoint<PrismaticJoint>(
-          joint_spec.Name(), parent_body, X_PJ, child_body, X_CJ, axis_J,
-          lower_limit, upper_limit, damping);
+      const auto& joint = AddJointBetweenFrames<PrismaticJoint>(
+          plant, joint_spec.Name(), *frames, axis_J, lower_limit, upper_limit,
+          damping);
       plant->get_mutable_joint(joint.index())
           .set_velocity_limits(Vector1d(-velocity_limit),
                                Vector1d(velocity_limit));
@@ -782,9 +999,9 @@ bool AddJointFromSpecification(const SDFormatDiagnostic& diagnostic,
       if (!joint_limits.has_value()) return false;
       std::tie(lower_limit, upper_limit, velocity_limit, acceleration_limit) =
           *joint_limits;
-      const auto& joint = plant->AddJoint<RevoluteJoint>(
-          joint_spec.Name(), parent_body, X_PJ, child_body, X_CJ, axis_J,
-          lower_limit, upper_limit, damping);
+      const auto& joint = AddJointBetweenFrames<RevoluteJoint>(
+          plant, joint_spec.Name(), *frames, axis_J, lower_limit, upper_limit,
+          damping);
       plant->get_mutable_joint(joint.index())
           .set_velocity_limits(Vector1d(-velocity_limit),
                                Vector1d(velocity_limit));
@@ -801,13 +1018,13 @@ bool AddJointFromSpecification(const SDFormatDiagnostic& diagnostic,
     case sdf::JointType::UNIVERSAL: {
       const double damping = ParseJointDamping(diagnostic, joint_spec);
       // In Drake's implementation of universal joint, the rotation axes are
-      // built into the frames M and F; the first rotation is about Fx and the
-      // second is about My. Therefore, we can't arbitrarily set M and F to be
-      // J. We have to be more careful on how we define F and M so that the
-      // joint imposes the correct kinematics.
+      // built into the joint frames Jp and Jc; the first rotation is about Jp's
+      // x axis and the second is about Jc's y axis. Therefore, we can't simply
+      // use the joint frames given. We have to be more careful on how we
+      // define Jp and Jc so that the joint imposes the correct kinematics.
 
-      // Construct frame I and find X_PI and X_CI. See definition of frame I in
-      // the class doc of UniversalJoint.
+      // Construct frame I and fix it to the joint frames given. See definition
+      // of frame I in the class doc of UniversalJoint.
       auto [Ix_J, Iy_J] = ExtractJointAxisAndAxis2(diagnostic, joint_spec);
       // Safe to normalize as libsdformat parser would have generated an error
       // if the axes are zero.
@@ -827,15 +1044,13 @@ bool AddJointFromSpecification(const SDFormatDiagnostic& diagnostic,
         diagnostic.Error(joint_spec.Element(), std::move(message));
       } else {
         const RigidTransformd X_JI(math::RotationMatrix<double>{R_JI});
-        // The value of X_PJ is the identity if X_PJ == nullopt.
-        const RigidTransformd X_PI = X_PJ.has_value() ? (*X_PJ) * X_JI : X_JI;
-        const RigidTransformd X_CI = X_CJ * X_JI;
-        // Frames M and F should both coincide with I when rotation angles are
-        // zero.
-        const RigidTransformd& X_PF = X_PI;
-        const RigidTransformd& X_CM = X_CI;
-        const auto& joint = plant->AddJoint<UniversalJoint>(
-            joint_spec.Name(), parent_body, X_PF, child_body, X_CM, damping);
+        // Frames Jp and Jc should both coincide with I when rotation angles are
+        // zero. A missing pose is the identity.
+        JointFrames frames_I = *frames;
+        frames_I.X_PJp = frames->X_PJp.value_or(RigidTransformd()) * X_JI;
+        frames_I.X_CJc = frames->X_CJc.value_or(RigidTransformd()) * X_JI;
+        const auto& joint = AddJointBetweenFrames<UniversalJoint>(
+            plant, joint_spec.Name(), frames_I, damping);
         // At most, this prints a warning (it does not add an actuator).
         AddJointActuatorFromSpecification(diagnostic, joint_spec, joint, plant);
       }
@@ -843,8 +1058,8 @@ bool AddJointFromSpecification(const SDFormatDiagnostic& diagnostic,
     }
     case sdf::JointType::BALL: {
       const double damping = ParseJointDamping(diagnostic, joint_spec);
-      const auto& joint = plant->AddJoint<BallRpyJoint>(
-          joint_spec.Name(), parent_body, X_PJ, child_body, X_CJ, damping);
+      const auto& joint = AddJointBetweenFrames<BallRpyJoint>(
+          plant, joint_spec.Name(), *frames, damping);
       // At most, this prints a warning (it does not add an actuator).
       AddJointActuatorFromSpecification(diagnostic, joint_spec, joint, plant);
       break;
@@ -857,9 +1072,8 @@ bool AddJointFromSpecification(const SDFormatDiagnostic& diagnostic,
       if (!joint_limits.has_value()) return false;
       std::tie(lower_limit, upper_limit, velocity_limit, acceleration_limit) =
           *joint_limits;
-      const auto& joint =
-          plant->AddJoint<RevoluteJoint>(joint_spec.Name(), parent_body, X_PJ,
-                                         child_body, X_CJ, axis_J, damping);
+      const auto& joint = AddJointBetweenFrames<RevoluteJoint>(
+          plant, joint_spec.Name(), *frames, axis_J, damping);
       plant->get_mutable_joint(joint.index())
           .set_velocity_limits(Vector1d(-velocity_limit),
                                Vector1d(velocity_limit));
@@ -879,9 +1093,9 @@ bool AddJointFromSpecification(const SDFormatDiagnostic& diagnostic,
       // Drake's ScrewJoint class (meters / revolution, right-handed).
       const double screw_thread_pitch = joint_spec.ScrewThreadPitch();
       Vector3d axis_J = ExtractJointAxis(diagnostic, joint_spec);
-      const auto& joint = plant->AddJoint<ScrewJoint>(
-          joint_spec.Name(), parent_body, X_PJ, child_body, X_CJ, axis_J,
-          screw_thread_pitch, damping);
+      const auto& joint = AddJointBetweenFrames<ScrewJoint>(
+          plant, joint_spec.Name(), *frames, axis_J, screw_thread_pitch,
+          damping);
       AddJointActuatorFromSpecification(diagnostic, joint_spec, joint, plant);
       break;
     }
@@ -1764,11 +1978,11 @@ bool ParseDrakeCurves(const SDFormatDiagnostic& diagnostic,
   return true;
 }
 
-const Frame<double>* ParseFrame(const SDFormatDiagnostic& diagnostic,
-                                const sdf::ElementPtr node,
-                                ModelInstanceIndex model_instance,
-                                MultibodyPlant<double>* plant,
-                                const char* element_name) {
+const Frame<double>* ParseFrame(
+    const SDFormatDiagnostic& diagnostic, const sdf::ElementPtr node,
+    const std::function<bool(const std::string&)>& is_joint_name,
+    ModelInstanceIndex model_instance, MultibodyPlant<double>* plant,
+    const char* element_name) {
   if (!node->HasElement(element_name)) {
     std::string message =
         fmt::format("<{}>: Unable to find the <{}> child tag.", node->GetName(),
@@ -1777,45 +1991,9 @@ const Frame<double>* ParseFrame(const SDFormatDiagnostic& diagnostic,
     return nullptr;
   }
 
-  // TODO(rpoyner-tri): In theory, we could use
-  // GetResolvedModelInstanceAndLocalName here. In practice, it doesn't turn
-  // out well, because that function just allows MultibodyPlant code to throw
-  // exceptions, instead of checking for bad inputs and issuing model source
-  // code locatable diagnostics. Consider harmonizing the various
-  // implementations with better checking and diagnostic messages.
-
-  // Support references to frames
-  // in nested models. Note: only downward nested references are permitted.
-  // See http://sdformat.org/tutorials?tut=composition#composition
-  const std::string current_model_name =
-      plant->GetModelInstanceName(model_instance);
-  const std::string frame_name = node->Get<std::string>(element_name);
-  auto absolute_scoped_name = ScopedName::Join(current_model_name, frame_name);
-
-  const std::string search_model_name(absolute_scoped_name.get_namespace());
-  if (!plant->HasModelInstanceNamed(search_model_name)) {
-    std::string message = fmt::format(
-        "<{}>: Model instance name '{}' (implied by frame name '{}' in <{}>"
-        " within model instance '{}') does not exist in the model.",
-        node->GetName(), search_model_name, frame_name, element_name,
-        current_model_name);
-    diagnostic.Error(node, std::move(message));
-    return nullptr;
-  }
-
-  ModelInstanceIndex search_model_instance =
-      plant->GetModelInstanceByName(search_model_name);
-  const std::string search_frame_name(absolute_scoped_name.get_element());
-
-  if (!plant->HasFrameNamed(search_frame_name, search_model_instance)) {
-    std::string message = fmt::format(
-        "<{}>: Frame '{}' specified for <{}> does not exist in the model.",
-        node->GetName(), frame_name, element_name);
-    diagnostic.Error(node, std::move(message));
-    return nullptr;
-  }
-
-  return &plant->GetFrameByName(search_frame_name, search_model_instance);
+  return FindFrame(diagnostic, node, element_name,
+                   node->Get<std::string>(element_name), is_joint_name,
+                   model_instance, *plant);
 }
 
 const RigidBody<double>* ParseBody(const SDFormatDiagnostic& diagnostic,
@@ -1847,10 +2025,10 @@ const RigidBody<double>* ParseBody(const SDFormatDiagnostic& diagnostic,
 // TODO(eric.cousineau): Update parsing pending resolution of
 // https://github.com/osrf/sdformat/issues/288
 // When diagnostic policy is not set to throw it returns false on errors.
-bool AddDrakeJointFromSpecification(const SDFormatDiagnostic& diagnostic,
-                                    const sdf::ElementPtr node,
-                                    ModelInstanceIndex model_instance,
-                                    MultibodyPlant<double>* plant) {
+bool AddDrakeJointFromSpecification(
+    const SDFormatDiagnostic& diagnostic, const sdf::ElementPtr node,
+    const std::function<bool(const std::string&)>& is_joint_name,
+    ModelInstanceIndex model_instance, MultibodyPlant<double>* plant) {
   // clang-format off
   const std::set<std::string> supported_joint_elements{
       "drake:parent",
@@ -1882,21 +2060,18 @@ bool AddDrakeJointFromSpecification(const SDFormatDiagnostic& diagnostic,
   }
   const std::string joint_name = node->Get<std::string>("name");
 
-  // TODO(eric.cousineau): Add support for parsing joint pose.
-  if (node->HasElement("pose")) {
-    std::string message =
-        "<drake:joint> does not yet support the <pose> child tag.";
-    diagnostic.Error(node, std::move(message));
+  if (!CheckJointHasNoPose(diagnostic, node, joint_name, "drake:parent",
+                           "drake:child")) {
     return false;
   }
 
-  const Frame<double>* parent_frame =
-      ParseFrame(diagnostic, node, model_instance, plant, "drake:parent");
+  const Frame<double>* parent_frame = ParseFrame(
+      diagnostic, node, is_joint_name, model_instance, plant, "drake:parent");
   if (parent_frame == nullptr) {
     return false;
   }
-  const Frame<double>* child_frame =
-      ParseFrame(diagnostic, node, model_instance, plant, "drake:child");
+  const Frame<double>* child_frame = ParseFrame(
+      diagnostic, node, is_joint_name, model_instance, plant, "drake:child");
   if (child_frame == nullptr) {
     return false;
   }
@@ -1961,6 +2136,7 @@ bool AddDrakeJointFromSpecification(const SDFormatDiagnostic& diagnostic,
 
 const LinearBushingRollPitchYaw<double>* AddBushingFromSpecification(
     const SDFormatDiagnostic& diagnostic, const sdf::ElementPtr node,
+    const std::function<bool(const std::string&)>& is_joint_name,
     ModelInstanceIndex model_instance, MultibodyPlant<double>* plant) {
   const std::set<std::string> supported_bushing_elements{
       "drake:bushing_frameA",         "drake:bushing_frameC",
@@ -1980,9 +2156,10 @@ const LinearBushingRollPitchYaw<double>* AddBushingFromSpecification(
   // frame name, e.g. <element_name>frame_name</element_name>
   // Reports an error if the tag does not exist or if the frame does not exist
   // in the plant.
-  auto read_frame = [&diagnostic, node, model_instance,
+  auto read_frame = [&diagnostic, node, &is_joint_name, model_instance,
                      plant](const char* element_name) -> const Frame<double>* {
-    return ParseFrame(diagnostic, node, model_instance, plant, element_name);
+    return ParseFrame(diagnostic, node, is_joint_name, model_instance, plant,
+                      element_name);
   };
 
   return ParseLinearBushingRollPitchYaw(read_vector, read_frame, plant);
@@ -2386,6 +2563,24 @@ class InterfaceModelHelper {
   bool have_snapshot{false};
 };
 
+// During LoadSdf, custom parsers add joints to the plant and export them via
+// SDFormat's Interface API. Model::JointNameExists and World::JointNameExists
+// don't find these joints, so snapshot their scoped names before adding native
+// SDFormat joints. Exclude any joints that predate this load.
+std::set<std::string> GetImportedJointNames(
+    const MultibodyPlant<double>& plant,
+    const std::vector<JointIndex>& joint_indices_before_load) {
+  std::set<std::string> names;
+  for (JointIndex index : InterfaceModelHelper::GetVectorDiff(
+           plant.GetJointIndices(), joint_indices_before_load)) {
+    const Joint<double>& joint = plant.get_joint(index);
+    const std::string scope =
+        GetInstanceScopeNameIgnoringWorld(plant, joint.model_instance());
+    names.insert(ScopedName::Join(scope, joint.name()).to_string());
+  }
+  return names;
+}
+
 // Helper method to add a model to a MultibodyPlant given an sdf::Model
 // specification object.
 std::vector<ModelInstanceIndex> AddModelsFromSpecification(
@@ -2394,7 +2589,8 @@ std::vector<ModelInstanceIndex> AddModelsFromSpecification(
     MultibodyPlant<double>* plant, CollisionFilterGroupResolver* resolver,
     const PackageMap& package_map, const std::string& root_dir,
     const ModelInstanceIndexRange& reusable_model_instance_range,
-    const sdf::ParserConfig& parser_config) {
+    const sdf::ParserConfig& parser_config,
+    const std::set<std::string>& imported_joint_names) {
   DRAKE_DEMAND(model_ptr != nullptr);
 
   DrakifyModel(diagnostic, parser_config, model_ptr);
@@ -2441,7 +2637,7 @@ std::vector<ModelInstanceIndex> AddModelsFromSpecification(
             diagnostic, nested_model,
             sdf::JoinName(model_name, nested_model->Name()), X_WM, plant,
             resolver, package_map, root_dir, reusable_model_instance_range,
-            parser_config);
+            parser_config, imported_joint_names);
 
     added_model_instances.insert(added_model_instances.end(),
                                  nested_model_instances.begin(),
@@ -2499,16 +2695,31 @@ std::vector<ModelInstanceIndex> AddModelsFromSpecification(
     }
   }();
 
+  drake::log()->trace("sdf_parser: Add explicit frames");
+  // Add frames at root-level of <model>. Joints with
+  // <drake:independent_frames/> use them, so they must be added first.
+  for (uint64_t frame_index = 0; frame_index < model.FrameCount();
+       ++frame_index) {
+    const sdf::Frame& frame = *model.FrameByIndex(frame_index);
+    AddFrameFromSpecification(diagnostic, frame, model_instance, model_frame,
+                              plant);
+  }
+
   drake::log()->trace("sdf_parser: Add joints");
   // Add all the joints
   std::set<sdf::JointType> joint_types;
+  const auto is_joint_name = [&](const std::string& name) {
+    return model.JointNameExists(name) ||
+           imported_joint_names.contains(
+               ScopedName::Join(model_name, name).to_string());
+  };
   // TODO(eric.cousineau): Register frames from SDF once we have a pose graph.
   for (uint64_t joint_index = 0; joint_index < model.JointCount();
        ++joint_index) {
     // Get a pointer to the SDF joint, and the joint axis information.
     const sdf::Joint& joint = *model.JointByIndex(joint_index);
-    if (!AddJointFromSpecification(diagnostic, X_WM, joint, model_instance,
-                                   plant, &joint_types)) {
+    if (!AddJointFromSpecification(diagnostic, X_WM, joint, is_joint_name,
+                                   model_instance, plant, &joint_types)) {
       return {};
     }
   }
@@ -2523,21 +2734,12 @@ std::vector<ModelInstanceIndex> AddModelsFromSpecification(
     }
   }
 
-  drake::log()->trace("sdf_parser: Add explicit frames");
-  // Add frames at root-level of <model>.
-  for (uint64_t frame_index = 0; frame_index < model.FrameCount();
-       ++frame_index) {
-    const sdf::Frame& frame = *model.FrameByIndex(frame_index);
-    AddFrameFromSpecification(diagnostic, frame, model_instance, model_frame,
-                              plant);
-  }
-
   drake::log()->trace("sdf_parser: Add drake custom joints");
   if (model.Element()->HasElement("drake:joint")) {
     for (sdf::ElementPtr joint_node =
              model.Element()->GetElement("drake:joint");
          joint_node; joint_node = joint_node->GetNextElement("drake:joint")) {
-      if (!AddDrakeJointFromSpecification(diagnostic, joint_node,
+      if (!AddDrakeJointFromSpecification(diagnostic, joint_node, is_joint_name,
                                           model_instance, plant)) {
         return {};
       }
@@ -2550,8 +2752,8 @@ std::vector<ModelInstanceIndex> AddModelsFromSpecification(
              model.Element()->GetElement("drake:linear_bushing_rpy");
          bushing_node; bushing_node = bushing_node->GetNextElement(
                            "drake:linear_bushing_rpy")) {
-      if (AddBushingFromSpecification(diagnostic, bushing_node, model_instance,
-                                      plant) == nullptr) {
+      if (AddBushingFromSpecification(diagnostic, bushing_node, is_joint_name,
+                                      model_instance, plant) == nullptr) {
         return {};
       }
     }
@@ -3090,6 +3292,8 @@ std::optional<ModelInstanceIndex> AddModelFromSdf(
 
   const auto model_index_begin =
       static_cast<ModelInstanceIndex>(workspace.plant->num_model_instances());
+  const std::vector<JointIndex> joint_indices_before_load =
+      workspace.plant->GetJointIndices();
   sdf::Errors errors = LoadSdf(diagnostic, &root, data_source, parser_config);
   if (diagnostic.PropagateErrors(errors)) {
     return std::nullopt;
@@ -3113,12 +3317,14 @@ std::optional<ModelInstanceIndex> AddModelFromSdf(
   std::string model_name =
       MakeModelName(local_model_name, parent_model_name, workspace);
 
+  const std::set<std::string> imported_joint_names =
+      GetImportedJointNames(*workspace.plant, joint_indices_before_load);
   std::vector<ModelInstanceIndex> added_model_instances =
-      AddModelsFromSpecification(diagnostic, model_ptr, model_name, {},
-                                 workspace.plant, workspace.collision_resolver,
-                                 workspace.package_map,
-                                 data_source.GetRootDir(),
-                                 reusable_model_instance_range, parser_config);
+      AddModelsFromSpecification(
+          diagnostic, model_ptr, model_name, {}, workspace.plant,
+          workspace.collision_resolver, workspace.package_map,
+          data_source.GetRootDir(), reusable_model_instance_range,
+          parser_config, imported_joint_names);
 
   DRAKE_DEMAND(!added_model_instances.empty());
   return added_model_instances.front();
@@ -3139,6 +3345,8 @@ std::vector<ModelInstanceIndex> AddModelsFromSdf(
 
   const auto model_index_begin =
       static_cast<ModelInstanceIndex>(workspace.plant->num_model_instances());
+  const std::vector<JointIndex> joint_indices_before_load =
+      workspace.plant->GetJointIndices();
   sdf::Errors errors = LoadSdf(diagnostic, &root, data_source, parser_config);
   if (diagnostic.PropagateErrors(errors)) {
     return {};
@@ -3166,6 +3374,8 @@ std::vector<ModelInstanceIndex> AddModelsFromSdf(
   }
 
   std::vector<ModelInstanceIndex> model_instances;
+  const std::set<std::string> imported_joint_names =
+      GetImportedJointNames(*workspace.plant, joint_indices_before_load);
 
   // At this point there should be only Models or a single World at the Root
   // level.
@@ -3184,7 +3394,7 @@ std::vector<ModelInstanceIndex> AddModelsFromSdf(
             diagnostic, model_ptr, model_name, {}, workspace.plant,
             workspace.collision_resolver, workspace.package_map,
             data_source.GetRootDir(), reusable_model_instance_range,
-            parser_config);
+            parser_config, imported_joint_names);
     model_instances.insert(model_instances.end(), added_model_instances.begin(),
                            added_model_instances.end());
   } else {
@@ -3215,7 +3425,7 @@ std::vector<ModelInstanceIndex> AddModelsFromSdf(
               diagnostic, model_ptr, model_name, {}, workspace.plant,
               workspace.collision_resolver, workspace.package_map,
               data_source.GetRootDir(), reusable_model_instance_range,
-              parser_config);
+              parser_config, imported_joint_names);
       model_instances.insert(model_instances.end(),
                              added_model_instances.begin(),
                              added_model_instances.end());
@@ -3231,10 +3441,13 @@ std::vector<ModelInstanceIndex> AddModelsFromSdf(
 
     // Add all the joints
     std::set<sdf::JointType> joint_types;
+    const auto is_joint_name = [&](const std::string& name) {
+      return world.JointNameExists(name) || imported_joint_names.contains(name);
+    };
     for (uint64_t joint_index = 0; joint_index < world.JointCount();
          ++joint_index) {
       const sdf::Joint& joint = *world.JointByIndex(joint_index);
-      if (!AddJointFromSpecification(diagnostic, {}, joint,
+      if (!AddJointFromSpecification(diagnostic, {}, joint, is_joint_name,
                                      world_model_instance(), workspace.plant,
                                      &joint_types, false)) {
         return {};
