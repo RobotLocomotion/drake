@@ -1,6 +1,7 @@
 #include "drake/bindings/pydrake/systems/framework_py_semantics.h"
 
 #include <memory>
+#include <source_location>
 #include <string>
 #include <utility>
 #include <vector>
@@ -14,6 +15,8 @@
 #include "drake/bindings/pydrake/common/wrap_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/systems/builder_life_support_pybind.h"
+#include "drake/bindings/pydrake/systems/event_callback_types.h"
+#include "drake/bindings/pydrake/systems/framework_callback_lifetime.h"
 #include "drake/bindings/pydrake/systems/value_producer_pybind.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/diagram_builder.h"
@@ -32,6 +35,15 @@ namespace {
 // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
 using namespace drake::systems;
 constexpr auto& doc = pydrake_doc_systems_framework.drake.systems;
+
+// Declare callback types that will appear as parameters of bindings, such that
+// automatic documentation has correct type signatures.
+template <typename T>
+using PyPublishSystemCallback = PyEventCallback<const System<T>*,
+    const Context<T>*, const PublishEvent<T>*>;
+template <typename T>
+using PyUnrestrictedUpdateSystemCallback = PyEventCallback<const System<T>*,
+    const Context<T>*, const UnrestrictedUpdateEvent<T>*, State<T>*>;
 
 // Given a vector of (possibly null) pointers, returns a vector formed by
 // calling Clone() elementwise.
@@ -556,73 +568,96 @@ void DefineLeafContext(py::module_ m) {
 template <typename T>
 void DefineEventAndEventSubclasses(py::module_ m) {
   // Event mechanisms.
-  DefineTemplateClassWithDefault<Event<T>>(
-      m, "Event", GetPyParam<T>(), doc.Event.doc)
+  DefineTemplateClassWithDefault<Event<T>>(m, "Event", GetPyParam<T>(),
+      doc.Event.doc, std::nullopt, py::dynamic_attr())
       .def("get_trigger_type", &Event<T>::get_trigger_type,
           doc.Event.get_trigger_type.doc);
   {
     auto cls = DefineTemplateClassWithDefault<PublishEvent<T>, Event<T>>(
         m, "PublishEvent", GetPyParam<T>(), doc.PublishEvent.doc);
-    // Because Python doesn't offer static type checking to help remind the user
-    // to return an EventStatus from an event handler function, we'll bind the
-    // callback as optional<> to allow the user to omit a return statement.
-    //
-    // We'll also keep around both callbacks (with and without a System) because
-    // the C++ rationale for injecting the System doesn't apply to Python so we
-    // might as well not disturb any existing Python users of events.
-    using Callback = std::function<std::optional<EventStatus>(
-        const Context<T>&, const PublishEvent<T>&)>;
-    using SystemCallback = std::function<std::optional<EventStatus>(
-        const System<T>&, const Context<T>&, const PublishEvent<T>&)>;
     cls  // BR
-        .def("__init__",
-            WrapCallbacks([](PublishEvent<T>* self, const Callback& callback) {
-              new (self) PublishEvent<T>(
-                  [callback](const System<T>&, const Context<T>& context,
-                      const PublishEvent<T>& event) {
-                    return callback(context, event)
-                        .value_or(EventStatus::Succeeded());
-                  });
-            }),
+        .def(
+            "__init__",
+            [](PublishEvent<T>* self, PyPublishCallback<T> callback) {
+              PyObject* ptr = callback.ptr();
+              new (self) PublishEvent<T>([ptr](const System<T>&,
+                                             const Context<T>& context,
+                                             const PublishEvent<T>& event) {
+                py::gil_scoped_acquire guard;
+                py::handle py_callback_from_ptr = ptr;
+                auto cpp_callback = py::cast<CppEventCallback<const Context<T>*,
+                    const PublishEvent<T>*>>(py_callback_from_ptr);
+                return cpp_callback(&context, &event)
+                    .value_or(EventStatus::Succeeded());
+              });
+            },
             py::arg("callback"),
+            // Event object keeps callback alive.
+            internal::ensure_callback_lifetime<1, 2>(),
             "Constructs a PublishEvent with the given callback function.")
-        .def("__init__",
-            WrapCallbacks([](PublishEvent<T>* self,
-                              const SystemCallback& system_callback) {
-              new (self) PublishEvent<T>(
-                  [system_callback](const System<T>& system,
-                      const Context<T>& context, const PublishEvent<T>& event) {
-                    return system_callback(system, context, event)
-                        .value_or(EventStatus::Succeeded());
-                  });
-            }),
+        .def(
+            "__init__",
+            [](PublishEvent<T>* self,
+                PyPublishSystemCallback<T> system_callback) {
+              PyObject* ptr = system_callback.ptr();
+              new (self) PublishEvent<T>([ptr](const System<T>& system,
+                                             const Context<T>& context,
+                                             const PublishEvent<T>& event) {
+                py::gil_scoped_acquire guard;
+                py::handle py_callback_from_ptr = ptr;
+                auto cpp_callback = py::cast<CppEventCallback<const System<T>*,
+                    const Context<T>*, const PublishEvent<T>*>>(
+                    py_callback_from_ptr);
+                return cpp_callback(&system, &context, &event)
+                    .value_or(EventStatus::Succeeded());
+              });
+            },
             py::arg("system_callback"),
+            // Event object keeps callback alive.
+            internal::ensure_callback_lifetime<1, 2>(),
             "Constructs a PublishEvent with the given callback function.")
-        .def("__init__",
-            WrapCallbacks(
-                [](PublishEvent<T>* self, const TriggerType& trigger_type,
-                    const Callback& callback) {
-                  new (self) PublishEvent<T>(trigger_type,
-                      [callback](const System<T>&, const Context<T>& context,
-                          const PublishEvent<T>& event) {
-                        return callback(context, event)
-                            .value_or(EventStatus::Succeeded());
-                      });
-                }),
-            py::arg("trigger_type"), py::arg("callback"),
-            "Users should not be calling these")
-        .def("__init__",
-            WrapCallbacks([](PublishEvent<T>* self,
-                              const TriggerType& trigger_type,
-                              const SystemCallback& system_callback) {
+        .def(
+            "__init__",
+            [](PublishEvent<T>* self, const TriggerType& trigger_type,
+                PyPublishCallback<T> callback) {
+              PyObject* ptr = callback.ptr();
               new (self) PublishEvent<T>(trigger_type,
-                  [system_callback](const System<T>& system,
-                      const Context<T>& context, const PublishEvent<T>& event) {
-                    return system_callback(system, context, event)
+                  [ptr](const System<T>&, const Context<T>& context,
+                      const PublishEvent<T>& event) {
+                    py::gil_scoped_acquire guard;
+                    py::handle py_callback_from_ptr = ptr;
+                    auto cpp_callback =
+                        py::cast<CppEventCallback<const Context<T>*,
+                            const PublishEvent<T>*>>(py_callback_from_ptr);
+                    return cpp_callback(&context, &event)
                         .value_or(EventStatus::Succeeded());
                   });
-            }),
+            },
+            py::arg("trigger_type"), py::arg("callback"),
+            // Event object keeps callback alive.
+            internal::ensure_callback_lifetime<1, 3>(),
+            "Users should not be calling these")
+        .def(
+            "__init__",
+            [](PublishEvent<T>* self, const TriggerType& trigger_type,
+                PyPublishSystemCallback<T> system_callback) {
+              PyObject* ptr = system_callback.ptr();
+              new (self) PublishEvent<T>(trigger_type,
+                  [ptr](const System<T>& system, const Context<T>& context,
+                      const PublishEvent<T>& event) {
+                    py::gil_scoped_acquire guard;
+                    py::handle py_callback_from_ptr = ptr;
+                    auto cpp_callback =
+                        py::cast<CppEventCallback<const System<T>*,
+                            const Context<T>*, const PublishEvent<T>*>>(
+                            py_callback_from_ptr);
+                    return cpp_callback(&system, &context, &event)
+                        .value_or(EventStatus::Succeeded());
+                  });
+            },
             py::arg("trigger_type"), py::arg("system_callback"),
+            // Event object keeps callback alive.
+            internal::ensure_callback_lifetime<1, 3>(),
             "Users should not be calling these");
   }
   DefineTemplateClassWithDefault<DiscreteUpdateEvent<T>, Event<T>>(
@@ -632,46 +667,56 @@ void DefineEventAndEventSubclasses(py::module_ m) {
         DefineTemplateClassWithDefault<UnrestrictedUpdateEvent<T>, Event<T>>(m,
             "UnrestrictedUpdateEvent", GetPyParam<T>(),
             doc.UnrestrictedUpdateEvent.doc);
-    // Because Python doesn't offer static type checking to help remind the user
-    // to return an EventStatus from an event handler function, we'll bind the
-    // callback as optional<> to allow the user to omit a return statement.
-    //
-    // We'll also keep around both callbacks (with and without a System) because
-    // the C++ rationale for injecting the System doesn't apply to Python so we
+    // We keep around both callbacks (with and without a System) because the
+    // C++ rationale for injecting the System doesn't apply to Python so we
     // might as well not disturb any existing Python users of events.
-    using Callback = std::function<std::optional<EventStatus>(
-        const Context<T>&, const UnrestrictedUpdateEvent<T>&, State<T>*)>;
-    using SystemCallback =
-        std::function<std::optional<EventStatus>(const System<T>&,
-            const Context<T>&, const UnrestrictedUpdateEvent<T>&, State<T>*)>;
     cls  // BR
-        .def("__init__",
-            WrapCallbacks(
-                [](UnrestrictedUpdateEvent<T>* self, const Callback& callback) {
-                  new (self) UnrestrictedUpdateEvent<T>(
-                      [callback](const System<T>&, const Context<T>& context,
-                          const UnrestrictedUpdateEvent<T>& event,
-                          State<T>* state) {
-                        return callback(context, event, state)
-                            .value_or(EventStatus::Succeeded());
-                      });
-                }),
-            py::arg("callback"),
-            "Constructs an UnrestrictedUpdateEvent with the given callback "
-            "function.")
-        .def("__init__",
-            WrapCallbacks([](UnrestrictedUpdateEvent<T>* self,
-                              const SystemCallback& system_callback) {
+        .def(
+            "__init__",
+            [](UnrestrictedUpdateEvent<T>* self,
+                PyUnrestrictedUpdateCallback<T> callback) {
+              PyObject* ptr = callback.ptr();
               new (self) UnrestrictedUpdateEvent<T>(
-                  [system_callback](const System<T>& system,
-                      const Context<T>& context,
+                  [ptr](const System<T>&, const Context<T>& context,
                       const UnrestrictedUpdateEvent<T>& event,
                       State<T>* state) {
-                    return system_callback(system, context, event, state)
+                    py::gil_scoped_acquire guard;
+                    py::handle py_callback_from_ptr = ptr;
+                    auto cpp_callback =
+                        py::cast<CppEventCallback<const Context<T>*,
+                            const UnrestrictedUpdateEvent<T>*, State<T>*>>(
+                            py_callback_from_ptr);
+                    return cpp_callback(&context, &event, state)
                         .value_or(EventStatus::Succeeded());
                   });
-            }),
+            },
+            py::arg("callback"),
+            // Event object keeps callback alive.
+            internal::ensure_callback_lifetime<1, 2>(),
+            "Constructs an UnrestrictedUpdateEvent with the given callback "
+            "function.")
+        .def(
+            "__init__",
+            [](UnrestrictedUpdateEvent<T>* self,
+                PyUnrestrictedUpdateSystemCallback<T> system_callback) {
+              PyObject* ptr = system_callback.ptr();
+              new (self) UnrestrictedUpdateEvent<T>(  // BR
+                  [ptr](const System<T>& system, const Context<T>& context,
+                      const UnrestrictedUpdateEvent<T>& event,
+                      State<T>* state) {
+                    py::gil_scoped_acquire guard;
+                    py::handle py_callback_from_ptr = ptr;
+                    auto cpp_callback = py::cast<
+                        CppEventCallback<const System<T>*, const Context<T>*,
+                            const UnrestrictedUpdateEvent<T>*, State<T>*>>(
+                        py_callback_from_ptr);
+                    return cpp_callback(&system, &context, &event, state)
+                        .value_or(EventStatus::Succeeded());
+                  });
+            },
             py::arg("system_callback"),
+            // Event object keeps callback alive.
+            internal::ensure_callback_lifetime<1, 2>(),
             "Constructs an UnrestrictedUpdateEvent with the given callback "
             "function.");
   }
