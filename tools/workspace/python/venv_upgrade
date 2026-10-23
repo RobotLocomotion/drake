@@ -45,7 +45,7 @@ done
 check_working_tree() {
     paths_modified=($(
         (git status --untracked-files=no --porcelain=v1 -- . || true) | \
-        (grep -vE '^.. pdm.lock$' || true)))
+        (grep -vE '^.. (.*/)?(pdm\.lock|requirements\.txt)$' || true)))
     if [ ${#paths_modified[@]} != 0 ]; then
         git status --untracked-files=no .
         set +x
@@ -72,7 +72,7 @@ readonly python="${venv_pdm}/bin/python"
 readonly workspace="$(pwd)/tools/workspace/python"
 
 # If committing, check that the working tree is clean (enough). Note that the
-# lock file is ignored.
+# lock files are ignored.
 [ -z "${commit}" ] || check_working_tree
 
 # Ensure venv exists.
