@@ -1,0 +1,35 @@
+<?xml version='1.0' encoding='utf-8'?>
+<sdf xmlns:drake="drake.mit.edu" version="1.7">
+  <model name="paper_towel">
+    <link name="base_link">
+      <inertial>
+        <mass>0.150000</mass>
+        <pose>0.000865 -0.0003035 0.017916 0 0 0</pose>
+        <inertia>
+          <ixx>1.560507e-04</ixx>
+          <iyy>1.534661e-04</iyy>
+          <izz>2.777668e-04</izz>
+          <ixy>1.936667e-07</ixy>
+          <ixz>-1.373144e-06</ixz>
+          <iyz>9.206382e-07</iyz>
+        </inertia>
+      </inertial>
+      <collision name="body_box">
+        <pose>2.7762692e-05 -1.0865859e-05 0.018165478 -0.47172306 1.5691334 -0.47305077</pose>
+        <geometry>
+          <box>
+            <size>0.03398574 0.10262076 0.09902977</size>
+          </box>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:compliant_hydroelastic />
+          <drake:hydroelastic_modulus>33985735.1514</drake:hydroelastic_modulus>
+          <drake:mesh_resolution_hint>0.01699287</drake:mesh_resolution_hint>
+          <drake:mu_dynamic>0.32</drake:mu_dynamic>
+          <drake:mu_static>0.32</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+    </link>
+  </model>
+</sdf>

@@ -1,0 +1,787 @@
+<?xml version='1.0' encoding='utf-8'?>
+<sdf xmlns:drake="drake.mit.edu" version="1.7">
+  <model name="pen_cup">
+    <link name="base_link">
+      <inertial>
+        <mass>0.140000</mass>
+        <pose>0.0004113859 0.0010700137 0.033541801 0 0 0</pose>
+        <inertia>
+          <ixx>2.643578e-04</ixx>
+          <iyy>2.634965e-04</iyy>
+          <izz>1.717099e-04</izz>
+          <ixy>4.108638e-07</ixy>
+          <ixz>2.571288e-06</ixz>
+          <iyz>1.454194e-06</iyz>
+        </inertia>
+      </inertial>
+      <collision name="bottom_cn0">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/pen_cup/assets/pen_cup_cf_0.obj</uri>
+            <drake:declare_convex />
+            <scale>1.02590000 1.02590000 1.02590000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.74</drake:mu_dynamic>
+          <drake:mu_static>0.74</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="bottom_cn1">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/pen_cup/assets/pen_cup_cf_1.obj</uri>
+            <drake:declare_convex />
+            <scale>1.02590000 1.02590000 1.02590000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.74</drake:mu_dynamic>
+          <drake:mu_static>0.74</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="bottom_cn2">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/pen_cup/assets/pen_cup_cf_2.obj</uri>
+            <drake:declare_convex />
+            <scale>1.02590000 1.02590000 1.02590000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.74</drake:mu_dynamic>
+          <drake:mu_static>0.74</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="bottom_cn3">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/pen_cup/assets/pen_cup_cf_3.obj</uri>
+            <drake:declare_convex />
+            <scale>1.02590000 1.02590000 1.02590000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.74</drake:mu_dynamic>
+          <drake:mu_static>0.74</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="bottom_cn4">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/pen_cup/assets/pen_cup_cf_4.obj</uri>
+            <drake:declare_convex />
+            <scale>1.02590000 1.02590000 1.02590000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.74</drake:mu_dynamic>
+          <drake:mu_static>0.74</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="bottom_cn5">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/pen_cup/assets/pen_cup_cf_5.obj</uri>
+            <drake:declare_convex />
+            <scale>1.02590000 1.02590000 1.02590000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.74</drake:mu_dynamic>
+          <drake:mu_static>0.74</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="bottom_cn6">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/pen_cup/assets/pen_cup_cf_6.obj</uri>
+            <drake:declare_convex />
+            <scale>1.02590000 1.02590000 1.02590000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.74</drake:mu_dynamic>
+          <drake:mu_static>0.74</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="bottom_cn7">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/pen_cup/assets/pen_cup_cf_7.obj</uri>
+            <drake:declare_convex />
+            <scale>1.02590000 1.02590000 1.02590000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.74</drake:mu_dynamic>
+          <drake:mu_static>0.74</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="bottom_cn8">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/pen_cup/assets/pen_cup_cf_8.obj</uri>
+            <drake:declare_convex />
+            <scale>1.02590000 1.02590000 1.02590000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.74</drake:mu_dynamic>
+          <drake:mu_static>0.74</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="bottom_cn9">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/pen_cup/assets/pen_cup_cf_9.obj</uri>
+            <drake:declare_convex />
+            <scale>1.02590000 1.02590000 1.02590000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.74</drake:mu_dynamic>
+          <drake:mu_static>0.74</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="bottom_cn10">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/pen_cup/assets/pen_cup_cf_10.obj</uri>
+            <drake:declare_convex />
+            <scale>1.02590000 1.02590000 1.02590000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.74</drake:mu_dynamic>
+          <drake:mu_static>0.74</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="bottom_cn11">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/pen_cup/assets/pen_cup_cf_11.obj</uri>
+            <drake:declare_convex />
+            <scale>1.02590000 1.02590000 1.02590000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.74</drake:mu_dynamic>
+          <drake:mu_static>0.74</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="lower_wall_cn0">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/pen_cup/assets/pen_cup_cf_12.obj</uri>
+            <drake:declare_convex />
+            <scale>1.02590000 1.02590000 1.02590000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.74</drake:mu_dynamic>
+          <drake:mu_static>0.74</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="lower_wall_cn1">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/pen_cup/assets/pen_cup_cf_13.obj</uri>
+            <drake:declare_convex />
+            <scale>1.02590000 1.02590000 1.02590000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.74</drake:mu_dynamic>
+          <drake:mu_static>0.74</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="lower_wall_cn2">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/pen_cup/assets/pen_cup_cf_14.obj</uri>
+            <drake:declare_convex />
+            <scale>1.02590000 1.02590000 1.02590000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.74</drake:mu_dynamic>
+          <drake:mu_static>0.74</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="lower_wall_cn3">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/pen_cup/assets/pen_cup_cf_15.obj</uri>
+            <drake:declare_convex />
+            <scale>1.02590000 1.02590000 1.02590000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.74</drake:mu_dynamic>
+          <drake:mu_static>0.74</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="lower_wall_cn4">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/pen_cup/assets/pen_cup_cf_16.obj</uri>
+            <drake:declare_convex />
+            <scale>1.02590000 1.02590000 1.02590000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.74</drake:mu_dynamic>
+          <drake:mu_static>0.74</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="lower_wall_cn5">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/pen_cup/assets/pen_cup_cf_17.obj</uri>
+            <drake:declare_convex />
+            <scale>1.02590000 1.02590000 1.02590000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.74</drake:mu_dynamic>
+          <drake:mu_static>0.74</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="lower_wall_cn6">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/pen_cup/assets/pen_cup_cf_18.obj</uri>
+            <drake:declare_convex />
+            <scale>1.02590000 1.02590000 1.02590000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.74</drake:mu_dynamic>
+          <drake:mu_static>0.74</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="lower_wall_cn7">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/pen_cup/assets/pen_cup_cf_19.obj</uri>
+            <drake:declare_convex />
+            <scale>1.02590000 1.02590000 1.02590000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.74</drake:mu_dynamic>
+          <drake:mu_static>0.74</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="lower_wall_cn8">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/pen_cup/assets/pen_cup_cf_20.obj</uri>
+            <drake:declare_convex />
+            <scale>1.02590000 1.02590000 1.02590000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.74</drake:mu_dynamic>
+          <drake:mu_static>0.74</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="lower_wall_cn9">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/pen_cup/assets/pen_cup_cf_21.obj</uri>
+            <drake:declare_convex />
+            <scale>1.02590000 1.02590000 1.02590000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.74</drake:mu_dynamic>
+          <drake:mu_static>0.74</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="lower_wall_cn10">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/pen_cup/assets/pen_cup_cf_22.obj</uri>
+            <drake:declare_convex />
+            <scale>1.02590000 1.02590000 1.02590000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.74</drake:mu_dynamic>
+          <drake:mu_static>0.74</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="lower_wall_cn11">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/pen_cup/assets/pen_cup_cf_23.obj</uri>
+            <drake:declare_convex />
+            <scale>1.02590000 1.02590000 1.02590000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.74</drake:mu_dynamic>
+          <drake:mu_static>0.74</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="mid_wall_cn0">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/pen_cup/assets/pen_cup_cf_24.obj</uri>
+            <drake:declare_convex />
+            <scale>1.02590000 1.02590000 1.02590000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.74</drake:mu_dynamic>
+          <drake:mu_static>0.74</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="mid_wall_cn1">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/pen_cup/assets/pen_cup_cf_25.obj</uri>
+            <drake:declare_convex />
+            <scale>1.02590000 1.02590000 1.02590000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.74</drake:mu_dynamic>
+          <drake:mu_static>0.74</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="mid_wall_cn2">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/pen_cup/assets/pen_cup_cf_26.obj</uri>
+            <drake:declare_convex />
+            <scale>1.02590000 1.02590000 1.02590000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.74</drake:mu_dynamic>
+          <drake:mu_static>0.74</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="mid_wall_cn3">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/pen_cup/assets/pen_cup_cf_27.obj</uri>
+            <drake:declare_convex />
+            <scale>1.02590000 1.02590000 1.02590000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.74</drake:mu_dynamic>
+          <drake:mu_static>0.74</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="mid_wall_cn4">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/pen_cup/assets/pen_cup_cf_28.obj</uri>
+            <drake:declare_convex />
+            <scale>1.02590000 1.02590000 1.02590000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.74</drake:mu_dynamic>
+          <drake:mu_static>0.74</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="mid_wall_cn5">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/pen_cup/assets/pen_cup_cf_29.obj</uri>
+            <drake:declare_convex />
+            <scale>1.02590000 1.02590000 1.02590000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.74</drake:mu_dynamic>
+          <drake:mu_static>0.74</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="mid_wall_cn6">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/pen_cup/assets/pen_cup_cf_30.obj</uri>
+            <drake:declare_convex />
+            <scale>1.02590000 1.02590000 1.02590000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.74</drake:mu_dynamic>
+          <drake:mu_static>0.74</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="mid_wall_cn7">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/pen_cup/assets/pen_cup_cf_31.obj</uri>
+            <drake:declare_convex />
+            <scale>1.02590000 1.02590000 1.02590000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.74</drake:mu_dynamic>
+          <drake:mu_static>0.74</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="mid_wall_cn8">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/pen_cup/assets/pen_cup_cf_32.obj</uri>
+            <drake:declare_convex />
+            <scale>1.02590000 1.02590000 1.02590000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.74</drake:mu_dynamic>
+          <drake:mu_static>0.74</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="mid_wall_cn9">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/pen_cup/assets/pen_cup_cf_33.obj</uri>
+            <drake:declare_convex />
+            <scale>1.02590000 1.02590000 1.02590000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.74</drake:mu_dynamic>
+          <drake:mu_static>0.74</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="mid_wall_cn10">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/pen_cup/assets/pen_cup_cf_34.obj</uri>
+            <drake:declare_convex />
+            <scale>1.02590000 1.02590000 1.02590000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.74</drake:mu_dynamic>
+          <drake:mu_static>0.74</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="mid_wall_cn11">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/pen_cup/assets/pen_cup_cf_35.obj</uri>
+            <drake:declare_convex />
+            <scale>1.02590000 1.02590000 1.02590000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.74</drake:mu_dynamic>
+          <drake:mu_static>0.74</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="top_rim_cn0">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/pen_cup/assets/pen_cup_cf_36.obj</uri>
+            <drake:declare_convex />
+            <scale>1.02590000 1.02590000 1.02590000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.74</drake:mu_dynamic>
+          <drake:mu_static>0.74</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="top_rim_cn1">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/pen_cup/assets/pen_cup_cf_37.obj</uri>
+            <drake:declare_convex />
+            <scale>1.02590000 1.02590000 1.02590000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.74</drake:mu_dynamic>
+          <drake:mu_static>0.74</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="top_rim_cn2">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/pen_cup/assets/pen_cup_cf_38.obj</uri>
+            <drake:declare_convex />
+            <scale>1.02590000 1.02590000 1.02590000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.74</drake:mu_dynamic>
+          <drake:mu_static>0.74</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="top_rim_cn3">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/pen_cup/assets/pen_cup_cf_39.obj</uri>
+            <drake:declare_convex />
+            <scale>1.02590000 1.02590000 1.02590000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.74</drake:mu_dynamic>
+          <drake:mu_static>0.74</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="top_rim_cn4">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/pen_cup/assets/pen_cup_cf_40.obj</uri>
+            <drake:declare_convex />
+            <scale>1.02590000 1.02590000 1.02590000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.74</drake:mu_dynamic>
+          <drake:mu_static>0.74</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="top_rim_cn5">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/pen_cup/assets/pen_cup_cf_41.obj</uri>
+            <drake:declare_convex />
+            <scale>1.02590000 1.02590000 1.02590000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.74</drake:mu_dynamic>
+          <drake:mu_static>0.74</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="top_rim_cn6">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/pen_cup/assets/pen_cup_cf_42.obj</uri>
+            <drake:declare_convex />
+            <scale>1.02590000 1.02590000 1.02590000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.74</drake:mu_dynamic>
+          <drake:mu_static>0.74</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="top_rim_cn7">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/pen_cup/assets/pen_cup_cf_43.obj</uri>
+            <drake:declare_convex />
+            <scale>1.02590000 1.02590000 1.02590000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.74</drake:mu_dynamic>
+          <drake:mu_static>0.74</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="top_rim_cn8">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/pen_cup/assets/pen_cup_cf_44.obj</uri>
+            <drake:declare_convex />
+            <scale>1.02590000 1.02590000 1.02590000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.74</drake:mu_dynamic>
+          <drake:mu_static>0.74</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="top_rim_cn9">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/pen_cup/assets/pen_cup_cf_45.obj</uri>
+            <drake:declare_convex />
+            <scale>1.02590000 1.02590000 1.02590000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.74</drake:mu_dynamic>
+          <drake:mu_static>0.74</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="top_rim_cn10">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/pen_cup/assets/pen_cup_cf_46.obj</uri>
+            <drake:declare_convex />
+            <scale>1.02590000 1.02590000 1.02590000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.74</drake:mu_dynamic>
+          <drake:mu_static>0.74</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="top_rim_cn11">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/pen_cup/assets/pen_cup_cf_47.obj</uri>
+            <drake:declare_convex />
+            <scale>1.02590000 1.02590000 1.02590000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.74</drake:mu_dynamic>
+          <drake:mu_static>0.74</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+    </link>
+  </model>
+</sdf>

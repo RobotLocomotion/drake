@@ -1,0 +1,2 @@
+<?xml version='1.0' encoding='utf-8'?>
+<sdf version="1.8"><model name="ceiling_visual"><link name="ceiling_visual_body_link" /></model></sdf>
