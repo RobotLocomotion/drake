@@ -443,6 +443,8 @@ def _setup_user_environment():
     # Compute the bazel rcfile snippet. This is always created, but only needs
     # content for Drake Developers on Linux.
     bazelrc_content = ""
+    if platform.machine().lower() == "x86_64":
+        bazelrc_content += "build --config=x86-64-v2\n"
     if _is_ubuntu():
         developer_txt = (
             _MY_DIR / "ubuntu" / f"packages-{_os_codename()}-developer.txt"
@@ -455,7 +457,7 @@ def _setup_user_environment():
                 break
         else:
             _error("Could not find clang version in developer.txt")
-        bazelrc_content = textwrap.dedent(f"""\
+        bazelrc_content += textwrap.dedent(f"""\
         common:clang --repo_env=CC=clang-{clang_major}
         build:clang --action_env=CC=clang-{clang_major}
         build:clang --host_action_env=CC=clang-{clang_major}

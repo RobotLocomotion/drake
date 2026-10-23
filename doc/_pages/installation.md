@@ -14,7 +14,7 @@ any other citations to it (e.g., in PYTHONPATH). -->
 The following table shows the configurations that Drake
 officially supports:
 
-| Operating System ⁽¹⁾                | Architecture             | Python ⁽²⁾ | Installation method | End of life ⁽³⁾ |
+| Operating System ⁽¹⁾                | Architecture⁽⁵⁾          | Python ⁽²⁾ | Installation method | End of life ⁽³⁾ |
 |-------------------------------------|--------------------------|------------|---------------------|-----------------|
 | Ubuntu 24.04 LTS (Noble Numbat)     | x86-64, arm64            | 3.12       | Pip, Binary, APT    | March 2028      |
 |                                     | x86-64, arm64            | 3.13-3.14  | Pip                 | March 2028      |
@@ -55,6 +55,8 @@ Refer to [OS Support](/stable.html#os-support) for details.
 
 ⁽⁴⁾ macOS Pip support for 3.12 is available in nightly builds, and will reach
 stable release builds as of the 1.58 release.
+
+⁽⁵⁾ x86-64 hardware must support at minimum the x86-64-v2 instruction set.
 
 The following table shows the configurations that *must* be used when
 compiling your own C++ code against Drake's C++ code using one of
