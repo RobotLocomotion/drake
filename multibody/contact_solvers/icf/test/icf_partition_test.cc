@@ -44,16 +44,18 @@ std::vector<std::vector<int>> Islands(const IcfPartition& p) {
 }
 
 GTEST_TEST(IcfPartitionTest, Empty) {
-  IcfPartition p;
-  p.Compute(MakePattern(0, {}));
-  EXPECT_EQ(p.num_cliques(), 0);
-  EXPECT_EQ(p.num_islands(), 0);
+  for (bool use_islands : {false, true}) {
+    IcfPartition p;
+    p.Compute(MakePattern(0, {}), use_islands);
+    EXPECT_EQ(p.num_cliques(), 0);
+    EXPECT_EQ(p.num_islands(), 0);
+  }
 }
 
 GTEST_TEST(IcfPartitionTest, AllSingletons) {
   // Four cliques with no coupling: four singleton islands.
   IcfPartition p;
-  p.Compute(MakePattern(4, {}));
+  p.Compute(MakePattern(4, {}), true);
   EXPECT_EQ(p.num_islands(), 4);
   for (int c = 0; c < 4; ++c) EXPECT_EQ(p.clique_to_island(c), c);
   EXPECT_EQ(Islands(p), (std::vector<std::vector<int>>{{0}, {1}, {2}, {3}}));
@@ -61,31 +63,37 @@ GTEST_TEST(IcfPartitionTest, AllSingletons) {
 
 GTEST_TEST(IcfPartitionTest, FullyCoupled) {
   // 0-1-2 chained into a single island.
-  IcfPartition p;
-  p.Compute(MakePattern(3, {{0, 1}, {1, 2}}));
-  EXPECT_EQ(p.num_islands(), 1);
-  EXPECT_EQ(Islands(p), (std::vector<std::vector<int>>{{0, 1, 2}}));
+  for (bool use_islands : {false, true}) {
+    IcfPartition p;
+    p.Compute(MakePattern(3, {{0, 1}, {1, 2}}), use_islands);
+    EXPECT_EQ(p.num_islands(), 1);
+    EXPECT_EQ(Islands(p), (std::vector<std::vector<int>>{{0, 1, 2}}));
+  }
 }
 
 GTEST_TEST(IcfPartitionTest, ForcePathCompression) {
   // Single island, connected so as to force path compression in `Find()`.
-  IcfPartition p;
-  p.Compute(MakePattern(3, {{0, 2}, {1, 2}}));
-  EXPECT_EQ(Islands(p), (std::vector<std::vector<int>>{{0, 1, 2}}));
+  for (bool use_islands : {false, true}) {
+    IcfPartition p;
+    p.Compute(MakePattern(3, {{0, 2}, {1, 2}}), use_islands);
+    EXPECT_EQ(Islands(p), (std::vector<std::vector<int>>{{0, 1, 2}}));
 
-  // Arbitrary large graph, connected so as to force multiple iterations of
-  // path compression.
-  p.Compute(BlockSparsityPattern(
-      std::vector<int>(7, 1),
-      std::vector<std::vector<int>>{
-          {0, 5, 6}, {1, 5}, {2, 5}, {3, 5}, {4, 5, 6}, {5}, {6}}));
-  EXPECT_EQ(Islands(p), (std::vector<std::vector<int>>{{0, 1, 2, 3, 4, 5, 6}}));
+    // Arbitrary large graph, connected so as to force multiple iterations of
+    // path compression.
+    p.Compute(BlockSparsityPattern(
+                  std::vector<int>(7, 1),
+                  std::vector<std::vector<int>>{
+                      {0, 5, 6}, {1, 5}, {2, 5}, {3, 5}, {4, 5, 6}, {5}, {6}}),
+              use_islands);
+    EXPECT_EQ(Islands(p),
+              (std::vector<std::vector<int>>{{0, 1, 2, 3, 4, 5, 6}}));
+  }
 }
 
 GTEST_TEST(IcfPartitionTest, TwoDisjointPairs) {
   // {0,1} and {2,3} form two islands.
   IcfPartition p;
-  p.Compute(MakePattern(4, {{0, 1}, {2, 3}}));
+  p.Compute(MakePattern(4, {{0, 1}, {2, 3}}), true);
   EXPECT_EQ(p.num_islands(), 2);
   EXPECT_EQ(p.clique_to_island(0), 0);
   EXPECT_EQ(p.clique_to_island(1), 0);
@@ -102,7 +110,7 @@ GTEST_TEST(IcfPartitionTest, MixedAndDeterministicLabeling) {
   // labeled by their smallest clique index, so:
   //   island 0 = {0, 3}, island 1 = {1}, island 2 = {2, 4, 5}.
   IcfPartition p;
-  p.Compute(MakePattern(6, {{3, 0}, {4, 2}, {2, 5}}));
+  p.Compute(MakePattern(6, {{3, 0}, {4, 2}, {2, 5}}), true);
   EXPECT_EQ(p.num_islands(), 3);
   EXPECT_EQ(Islands(p),
             (std::vector<std::vector<int>>{{0, 3}, {1}, {2, 4, 5}}));
@@ -118,7 +126,7 @@ GTEST_TEST(IcfPartitionTest, MixedAndDeterministicLabeling) {
 GTEST_TEST(IcfPartitionTest, CliqueLocalIndex) {
   // island 0 = {0, 3}, island 1 = {1}, island 2 = {2, 4, 5}.
   IcfPartition p;
-  p.Compute(MakePattern(6, {{3, 0}, {4, 2}, {2, 5}}));
+  p.Compute(MakePattern(6, {{3, 0}, {4, 2}, {2, 5}}), true);
   // Local index is the clique's position within its island's ascending list.
   EXPECT_EQ(p.clique_local_index(0), 0);
   EXPECT_EQ(p.clique_local_index(3), 1);
@@ -137,35 +145,39 @@ GTEST_TEST(IcfPartitionTest, MultiDofCliques) {
   std::vector<std::vector<int>> neighbors = {{0, 2}, {1}, {2}, {3}};
   BlockSparsityPattern pattern(std::move(block_sizes), std::move(neighbors));
   IcfPartition p;
-  p.Compute(pattern);
+  p.Compute(pattern, true);
   EXPECT_EQ(p.num_islands(), 3);
   EXPECT_EQ(Islands(p), (std::vector<std::vector<int>>{{0, 2}, {1}, {3}}));
 }
 
 GTEST_TEST(IcfPartitionTest, RecomputeReusesStorageGrowOnly) {
-  IcfPartition p;
-  // Warm up the buffers at the high-water mark for both clique count (6) and
-  // island count (6, all singletons).
-  p.Compute(MakePattern(6, {}));
-  EXPECT_EQ(p.num_islands(), 6);
+  for (bool use_islands : {false, true}) {
+    IcfPartition p;
+    // Warm up the buffers at the high-water mark for both clique count (6) and
+    // island count (6, all singletons).
+    p.Compute(MakePattern(6, {}), use_islands);
+    EXPECT_EQ(p.num_islands(), use_islands ? 6 : 1);
 
-  // A subsequent Compute() on a problem within those bounds must not allocate,
-  // even though the island structure is completely different. Build the pattern
-  // outside the guard so we measure only Compute().
-  const BlockSparsityPattern pattern = MakePattern(6, {{0, 1}, {1, 2}});
-  {
-    drake::test::LimitMalloc guard;
-    p.Compute(pattern);
-  }
-  EXPECT_EQ(p.num_islands(), 4);  // {0,1,2}, {3}, {4}, {5}.
-  EXPECT_EQ(Islands(p),
-            (std::vector<std::vector<int>>{{0, 1, 2}, {3}, {4}, {5}}));
+    // A subsequent Compute() on a problem within those bounds must not
+    // allocate, even though the island structure is completely different. Build
+    // the pattern outside the guard so we measure only Compute().
+    const BlockSparsityPattern pattern = MakePattern(6, {{0, 1}, {1, 2}});
+    {
+      drake::test::LimitMalloc guard;
+      p.Compute(pattern, use_islands);
+    }
+    EXPECT_EQ(p.num_islands(), use_islands ? 4 : 1);
+    EXPECT_EQ(Islands(p),
+              use_islands
+                  ? (std::vector<std::vector<int>>{{0, 1, 2}, {3}, {4}, {5}})
+                  : (std::vector<std::vector<int>>{{0, 1, 2, 3, 4, 5}}));
 
-  // A subsequent Compute() on a smaller problem must not allocate.
-  const BlockSparsityPattern smaller_pattern = MakePattern(4, {{0, 1}});
-  {
-    drake::test::LimitMalloc guard;
-    p.Compute(smaller_pattern);
+    // A subsequent Compute() on a smaller problem must not allocate.
+    const BlockSparsityPattern smaller_pattern = MakePattern(4, {{0, 1}});
+    {
+      drake::test::LimitMalloc guard;
+      p.Compute(smaller_pattern, use_islands);
+    }
   }
 }
 

@@ -27,7 +27,10 @@ class CouplerConstraintsDataPool {
   ~CouplerConstraintsDataPool();
 
   /* Resizes the pool, allocating memory only as necessary. */
-  void Resize(int num_couplers) { gamma_pool_.resize(num_couplers); }
+  void Resize(int num_couplers) {
+    cost_pool_.resize(num_couplers);
+    gamma_pool_.resize(num_couplers);
+  }
 
   /* Returns the number of coupler constraints this data is for. */
   int num_constraints() const { return ssize(gamma_pool_); }
@@ -37,13 +40,16 @@ class CouplerConstraintsDataPool {
   const T& gamma(int k) const { return gamma_pool_[k]; }
   T& mutable_gamma(int k) { return gamma_pool_[k]; }
 
-  /* Returns the total constraint cost ℓ(v) for all coupler constraints in the
-  pool. */
-  const T& cost() const { return cost_; }
-  T& mutable_cost() { return cost_; }
+  /* Returns the total constraint cost ℓ(v) over all constraints in the pool.
+  @pre all cost(k) are valid. */
+  T cost() const { return std::reduce(cost_pool_.begin(), cost_pool_.end()); }
+
+  /* Returns the constraint cost ℓ(v) for the k-th constraint in the pool. */
+  const T& cost(int k) const { return cost_pool_[k]; }
+  T& mutable_cost(int k) { return cost_pool_[k]; }
 
  private:
-  T cost_{NAN};                // Total cost over all coupler constraints.
+  std::vector<T> cost_pool_;   // cost per constraint.
   std::vector<T> gamma_pool_;  // Constraint impulses
 };
 

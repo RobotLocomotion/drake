@@ -54,28 +54,32 @@ void GainConstraintsPool<T>::Set(int index, int clique, const VectorX<T>& K,
 }
 
 template <typename T>
-void GainConstraintsPool<T>::CalcData(
-    const VectorX<T>& v, GainConstraintsDataPool<T>* gain_data) const {
+T GainConstraintsPool<T>::CalcData(
+    const VectorX<T>& v, std::span<const int> constraints,
+    GainConstraintsDataPool<T>* gain_data) const {
   DRAKE_ASSERT(gain_data != nullptr);
 
-  T& cost = gain_data->mutable_cost();
-  cost = 0;
-  for (int k = 0; k < num_constraints(); ++k) {
+  T total_cost = 0;
+  for (int k : constraints) {
     const int c = clique_[k];
     VectorBlock<const VectorX<T>> vk = model().clique_segment(c, v);
     VectorXView gamma_k = gain_data->mutable_gamma(k);
     VectorXView Gk = gain_data->mutable_G(k);
-    cost += Clamp(k, vk, &gamma_k, &Gk);
+    T& cost = gain_data->mutable_cost(k);
+    cost = Clamp(k, vk, &gamma_k, &Gk);
+    total_cost += cost;
   }
+  return total_cost;
 }
 
 template <typename T>
-void GainConstraintsPool<T>::AccumulateGradient(const IcfData<T>& data,
-                                                VectorX<T>* gradient) const {
+void GainConstraintsPool<T>::AccumulateGradient(
+    const IcfData<T>& data, std::span<const int> constraints,
+    VectorX<T>* gradient) const {
   DRAKE_ASSERT(gradient != nullptr);
 
   const GainConstraintsDataPool<T>& gain_data = data.gain_constraints_data();
-  for (int k = 0; k < num_constraints(); ++k) {
+  for (int k : constraints) {
     const int c = clique_[k];
     VectorBlock<VectorX<T>> gradient_c =
         model().mutable_clique_segment(c, gradient);
@@ -85,24 +89,35 @@ void GainConstraintsPool<T>::AccumulateGradient(const IcfData<T>& data,
 }
 
 template <typename T>
-void GainConstraintsPool<T>::AccumulateHessian(const IcfData<T>& data,
-                                               IcfHessian<T>* hessian) const {
+void GainConstraintsPool<T>::AccumulateHessian(
+    const IcfData<T>& data, std::span<const int> constraints,
+    std::span<const int> clique_to_block, int /* island */,
+    IcfHessian<T>* hessian) const {
   DRAKE_ASSERT(hessian != nullptr);
 
+  auto c2b = [&](int clique) {
+    if (ssize(clique_to_block)) {
+      return clique_to_block[clique];
+    }
+    return clique;
+  };
+
   const GainConstraintsDataPool<T>& gain_data = data.gain_constraints_data();
-  for (int k = 0; k < num_constraints(); ++k) {
+  for (int k : constraints) {
     const int c = clique_[k];
+    const int block = c2b(c);
 
     // TODO(vincekurtz): use data.scratch() to avoid allocating Gk here.
     const MatrixX<T> Gk = gain_data.G(k).asDiagonal();
-    hessian->AddToBlock(c, c, Gk);
+    hessian->AddToBlock(block, block, Gk);
   }
 }
 
 template <typename T>
 void GainConstraintsPool<T>::CalcCostAlongLine(
     const GainConstraintsDataPool<T>& gain_data, const VectorX<T>& w,
-    EigenPool<VectorX<T>>* Gw_scratch, T* dcost, T* d2cost) const {
+    std::span<const int> constraints, EigenPool<VectorX<T>>* Gw_scratch,
+    T* dcost, T* d2cost) const {
   DRAKE_ASSERT(Gw_scratch != nullptr);
   DRAKE_ASSERT(dcost != nullptr);
   DRAKE_ASSERT(d2cost != nullptr);
@@ -110,7 +125,7 @@ void GainConstraintsPool<T>::CalcCostAlongLine(
 
   *dcost = 0.0;
   *d2cost = 0.0;
-  for (int k = 0; k < num_constraints(); ++k) {
+  for (int k : constraints) {
     const int c = clique_[k];
     VectorBlock<const VectorX<T>> w_c = model().clique_segment(c, w);
     Gw_pool.Resize(1, model().clique_size(c), 1);
