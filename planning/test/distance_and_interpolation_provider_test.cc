@@ -24,6 +24,14 @@ class BrokenDistanceAndInterpolationProvider final
   ~BrokenDistanceAndInterpolationProvider() final = default;
 
  private:
+  Eigen::VectorXd DoComputeConfigurationDeltas(
+      const Eigen::VectorXd& from, const Eigen::VectorXd& to) const final {
+    unused(to);
+    // Throws because computed deltas must be the same size as the provided from
+    // and to configurations.
+    return Eigen::VectorXd::Zero(from.size() + 1);
+  }
+
   double DoComputeConfigurationDistance(const Eigen::VectorXd& from,
                                         const Eigen::VectorXd& to) const final {
     unused(from);
@@ -54,9 +62,14 @@ class SimpleLinearDistanceAndInterpolationProvider final
   ~SimpleLinearDistanceAndInterpolationProvider() final = default;
 
  private:
+  Eigen::VectorXd DoComputeConfigurationDeltas(
+      const Eigen::VectorXd& from, const Eigen::VectorXd& to) const final {
+    return to - from;
+  }
+
   double DoComputeConfigurationDistance(const Eigen::VectorXd& from,
                                         const Eigen::VectorXd& to) const final {
-    return (to - from).norm();
+    return DoComputeConfigurationDeltas(from, to).norm();
   }
 
   Eigen::VectorXd DoInterpolateBetweenConfigurations(

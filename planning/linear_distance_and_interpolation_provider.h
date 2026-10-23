@@ -60,6 +60,9 @@ class LinearDistanceAndInterpolationProvider final
   }
 
  private:
+  Eigen::VectorXd DoComputeConfigurationDeltas(
+      const Eigen::VectorXd& from, const Eigen::VectorXd& to) const final;
+
   double DoComputeConfigurationDistance(const Eigen::VectorXd& from,
                                         const Eigen::VectorXd& to) const final;
 

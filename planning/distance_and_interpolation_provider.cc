@@ -9,6 +9,16 @@ namespace planning {
 
 DistanceAndInterpolationProvider::~DistanceAndInterpolationProvider() = default;
 
+Eigen::VectorXd DistanceAndInterpolationProvider::ComputeConfigurationDeltas(
+    const Eigen::VectorXd& from, const Eigen::VectorXd& to) const {
+  DRAKE_THROW_UNLESS(from.size() == to.size());
+  DRAKE_THROW_UNLESS(from.allFinite() && to.allFinite());
+  Eigen::VectorXd deltas = DoComputeConfigurationDeltas(from, to);
+  DRAKE_THROW_UNLESS(from.size() == deltas.size());
+  DRAKE_THROW_UNLESS(deltas.allFinite());
+  return deltas;
+}
+
 double DistanceAndInterpolationProvider::ComputeConfigurationDistance(
     const Eigen::VectorXd& from, const Eigen::VectorXd& to) const {
   DRAKE_THROW_UNLESS(from.size() == to.size());

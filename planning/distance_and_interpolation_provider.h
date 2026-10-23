@@ -52,6 +52,13 @@ class DistanceAndInterpolationProvider {
 
   virtual ~DistanceAndInterpolationProvider();
 
+  /** Computes the configuration deltas from the provided configuration `from`
+  to the provided configuration `to`.
+  @pre from.size() == to.size().
+  @throws if `from` or `to` contain non-finite values. */
+  Eigen::VectorXd ComputeConfigurationDeltas(const Eigen::VectorXd& from,
+                                             const Eigen::VectorXd& to) const;
+
   /** Computes the configuration distance from the provided configuration `from`
   to the provided configuration `to`. The returned distance will be strictly
   non-negative.
@@ -71,21 +78,24 @@ class DistanceAndInterpolationProvider {
  protected:
   DistanceAndInterpolationProvider();
 
+  /** Derived distance and interpolation providers must implement deltas
+  computation.
+  DistanceAndInterpolationProvider ensures that `from` and `to` are the same
+  size and contain only finite values. */
+  virtual Eigen::VectorXd DoComputeConfigurationDeltas(
+      const Eigen::VectorXd& from, const Eigen::VectorXd& to) const = 0;
+
   /** Derived distance and interpolation providers must implement distance
   computation. The returned distance must be non-negative.
   DistanceAndInterpolationProvider ensures that `from` and `to` are the same
-  size.
-
-  Base class guarantees that `from` and `to` contain only finite values. */
+  size and contain only finite values. */
   virtual double DoComputeConfigurationDistance(
       const Eigen::VectorXd& from, const Eigen::VectorXd& to) const = 0;
 
   /** Derived distance and interpolation providers must implement interpolation.
   The returned configuration must be the same size as `from` and `to`.
   DistanceAndInterpolationProvider ensures that `from` and `to` are the same
-  size and that `ratio` is in [0, 1].
-
-  Base class guarantees that `from` and `to` contain only finite values. */
+  size and contain only finite values and that `ratio` is in [0, 1]. */
   virtual Eigen::VectorXd DoInterpolateBetweenConfigurations(
       const Eigen::VectorXd& from, const Eigen::VectorXd& to,
       double ratio) const = 0;
