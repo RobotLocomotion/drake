@@ -297,6 +297,7 @@ drake_cc_library(
     deps = [
         ":essential",
         ":hash",
+        ":nice_type_name",
     ],
 )
 
@@ -1108,6 +1109,7 @@ drake_cc_googletest(
         ":identifier",
         ":nice_type_name",
         ":nice_type_name_override_header",
+        ":type_safe_index",
     ],
 )
 
