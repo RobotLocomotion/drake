@@ -40,6 +40,22 @@ extern const char* const kRelaxationTime;  ///< Linear dissipation
                                            ///< property name.
 extern const char* const kPointStiffness;  ///< Point stiffness property
                                            ///< name.
+extern const char* const kPointContactAlgorithm;  ///< Point contact
+                                                  ///< narrowphase algorithm
+                                                  ///< property name.
+
+/* The recognized values of the kPointContactAlgorithm property; see
+ DefaultProximityProperties::point_contact_algorithm for what they select. */
+extern const char* const kSinglePointAlgorithm;
+extern const char* const kMujocoMultipointAlgorithm;
+
+/* Returns the point contact algorithm that `properties` selects: the value of
+ its kPointContactAlgorithm property, or kSinglePointAlgorithm when the
+ property is absent.
+ @throws std::exception if the property is present with a value other than
+ kSinglePointAlgorithm or kMujocoMultipointAlgorithm. */
+std::string GetPointContactAlgorithmOrThrow(
+    const ProximityProperties& properties);
 
 //@}
 

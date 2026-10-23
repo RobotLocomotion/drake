@@ -25,6 +25,7 @@ default_proximity_properties:
   hunt_crossley_dissipation: 7.0
   relaxation_time: 8.0
   point_stiffness: 9.0
+  point_contact_algorithm: mujoco_multipoint
 )""";
 
 GTEST_TEST(SceneGraphConfigTest, YamlTest) {
@@ -39,7 +40,19 @@ GTEST_TEST(SceneGraphConfigTest, YamlTest) {
   EXPECT_EQ(props.hunt_crossley_dissipation, 7);
   EXPECT_EQ(props.relaxation_time, 8);
   EXPECT_EQ(props.point_stiffness, 9);
+  EXPECT_EQ(props.point_contact_algorithm, "mujoco_multipoint");
   EXPECT_EQ("\n" + SaveYamlString(config), kExampleConfig);
+}
+
+GTEST_TEST(SceneGraphConfigTest, ValidatePointContactAlgorithm) {
+  SceneGraphConfig config;
+  auto& props = config.default_proximity_properties;
+  props.point_contact_algorithm = "psychic_guesswork";
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      config.ValidateOrThrow(),
+      "Invalid scene graph configuration: 'point_contact_algorithm'"
+      " \\('psychic_guesswork'\\) must be either 'single_point' or"
+      " 'mujoco_multipoint'.");
 }
 
 GTEST_TEST(SceneGraphConfigTest, ValidDefault) {
