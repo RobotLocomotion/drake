@@ -1,0 +1,206 @@
+[coal] Remove Coal's debug printers, which require Eigen's IO
+
+Coal's disp() methods stream Eigen expressions and build Eigen::IOFormat
+objects. Eigen supports being configured with EIGEN_NO_IO, which omits
+Eigen/src/Core/IO.h entirely; under that configuration these headers do not
+compile, so no consumer who sets EIGEN_NO_IO can include collision_data.h or
+math/transform.h at all.
+
+Drake is such a consumer: it sets -DEIGEN_NO_IO=1 project-wide and formats
+Eigen objects with drake::fmt_eigen instead (see drake/common/fmt_eigen.h), so
+every Drake translation unit that includes any Coal header hits this.
+
+Rather than guard the individual streaming statements, this patch #if 0's out
+each disp() together with the operator<<() that forwards to it.
+
+ - The printers exist to back __str__ and __repr__ on Coal's Python bindings
+   (python/printable.hh binds them via PrintableVisitor) and to print state in
+   Coal's C++ tests. Drake builds neither python/ nor test/ -- see
+   package.BUILD.bazel, which globs only include/ and src/ -- and nothing in
+   include/ or src/ calls disp() or streams these types. So the whole set is
+   dead code in Drake's build.
+
+Reasoning for not upstreaming this patch as written: it is a hack that
+accommodates Drake's usage (we don't build the python bindings). But it is not
+a general solution for Coal.
+
+--- include/coal/collision_data.h
++++ include/coal/collision_data.h
+@@ -215,6 +215,7 @@
+     o2 = new_o1_o2.second;
+   }
+
++#if 0  // Drake: see eigen_no_io.patch.
+   /// \brief Prints the contact to the provided output stream.
+   void disp(std::ostream& os, const std::string& prefix = "") const {
+     using namespace std;
+@@ -242,6 +243,7 @@
+     os << "}" << "\n";
+     return os;
+   }
++#endif
+ };
+
+ struct QueryResult;
+@@ -363,6 +365,7 @@
+     return !(*this == other);
+   }
+
++#if 0  // Drake: see eigen_no_io.patch.
+   /// @brief Prints the query request to the provided output stream.
+   void disp(std::ostream& os, const std::string& prefix = "") const {
+     using namespace std;
+@@ -391,6 +394,7 @@
+        << "  collision_distance_threshold: " << collision_distance_threshold
+        << ",\n";
+   }
++#endif
+ };
+
+ /// @brief base class for all query results
+@@ -420,6 +424,7 @@
+     return true;
+   }
+
++#if 0  // Drake: see eigen_no_io.patch.
+   /// @brief Prints the query result to the provided output stream.
+   void disp(std::ostream& os, const std::string& prefix = "") const {
+     using namespace std;
+@@ -429,6 +434,7 @@
+        << cached_support_func_guess.transpose() << ",\n";
+     os << prefix << "  timings: " << timings.user << ",\n";
+   }
++#endif
+ };
+
+ inline void QueryRequest::updateGuess(const QueryResult& result) const {
+@@ -535,6 +541,7 @@
+     return !(*this == other);
+   }
+
++#if 0  // Drake: see eigen_no_io.patch.
+   /// @brief Prints the collision request to the provided output stream.
+   void disp(std::ostream& os, const std::string& prefix = "") const {
+     using namespace std;
+@@ -554,6 +561,7 @@
+     os << "}" << "\n";
+     return os;
+   }
++#endif
+ };
+
+ inline Scalar Contact::getDistanceToCollision(
+@@ -715,6 +723,7 @@
+   /// during their construction.
+   void swapObjects();
+
++#if 0  // Drake: see eigen_no_io.patch.
+   /// \brief Prints the result to the provided output stream.
+   void disp(std::ostream& os, const std::string& prefix = "") const {
+     using namespace std;
+@@ -743,6 +752,7 @@
+     os << "}" << "\n";
+     return os;
+   }
++#endif
+ };
+
+ /// @brief This structure allows to encode contact patches.
+@@ -975,6 +985,7 @@
+     return true;
+   }
+
++#if 0  // Drake: see eigen_no_io.patch.
+   /// @brief Prints the contact patch to the provided output stream.
+   void disp(std::ostream& os, const std::string& prefix = "") const {
+     using namespace std;
+@@ -1000,6 +1011,7 @@
+     os << "}" << "\n";
+     return os;
+   }
++#endif
+ };
+
+ /// @brief Construct a frame from a `Contact`'s position and normal.
+@@ -1132,6 +1144,7 @@
+     return !(*this == other);
+   }
+
++#if 0  // Drake: see eigen_no_io.patch.
+   /// @brief Prints the contact patch request to the provided output stream.
+   void disp(std::ostream& os, const std::string& prefix = "") const {
+     using namespace std;
+@@ -1150,6 +1163,7 @@
+     os << "}" << "\n";
+     return os;
+   }
++#endif
+ };
+
+ /// @brief Result for a contact patch computation.
+@@ -1368,6 +1382,7 @@
+     }
+   }
+
++#if 0  // Drake: see eigen_no_io.patch.
+   /// @brief Prints the contact patch result to the provided output stream.
+   void disp(std::ostream& os, const std::string& prefix = "") const {
+     using namespace std;
+@@ -1391,6 +1406,7 @@
+     os << "}" << "\n";
+     return os;
+   }
++#endif
+ };
+
+ struct DistanceResult;
+@@ -1473,6 +1489,7 @@
+     return !(*this == other);
+   }
+
++#if 0  // Drake: see eigen_no_io.patch.
+   /// @brief Prints the distance request to the provided output stream.
+   void disp(std::ostream& os, const std::string& prefix = "") const {
+     using namespace std;
+@@ -1491,6 +1508,7 @@
+     os << "}" << "\n";
+     return os;
+   }
++#endif
+ };
+
+ /// @brief distance result
+@@ -1652,6 +1670,7 @@
+     return !(*this == other);
+   }
+
++#if 0  // Drake: see eigen_no_io.patch.
+   /// @brief Prints the distance result to the provided output stream.
+   void disp(std::ostream& os, const std::string& prefix = "") const {
+     using namespace std;
+@@ -1680,6 +1699,7 @@
+     os << "}" << "\n";
+     return os;
+   }
++#endif
+ };
+
+ namespace internal {
+--- include/coal/math/transform.h
++++ include/coal/math/transform.h
+@@ -220,6 +220,7 @@
+   /// @brief Comparison operator
+   bool operator!=(const Transform3s& other) const { return !(*this == other); }
+
++#if 0  // Drake: see eigen_no_io.patch.
+   /// @brief Prints the transform to the provided output stream.
+   void disp(std::ostream& os, const std::string& prefix = "") const {
+     using namespace std;
+@@ -246,6 +247,7 @@
+     os << "}" << "\n";
+     return os;
+   }
++#endif
+
+   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+ };
