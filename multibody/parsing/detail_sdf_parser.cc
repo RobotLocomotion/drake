@@ -668,43 +668,77 @@ std::optional<std::tuple<double, double, double, double>> ParseJointLimits(
                          acceleration_limit);
 }
 
+// Returns the model instance named `scoped_name` if parsing the current
+// SDFormat source added it. Those all come at or after `model_instances_begin`,
+// the plant's model instance count when parsing began. The plant might also
+// have a model instance by that name from elsewhere, such as an earlier parse
+// with a model name prefix, and no name in this source can refer to it.
+std::optional<ModelInstanceIndex> FindSourceModelInstance(
+    const MultibodyPlant<double>& plant, const std::string& scoped_name,
+    ModelInstanceIndex model_instances_begin) {
+  if (!plant.HasModelInstanceNamed(scoped_name)) return std::nullopt;
+  const ModelInstanceIndex result = plant.GetModelInstanceByName(scoped_name);
+  if (result < model_instances_begin) return std::nullopt;
+  return result;
+}
+
+// What a frame name in the SDFormat source being parsed can refer to, as seen
+// from one of its scopes (a model, or the world).
+struct FrameNameScope {
+  // Tells whether a name, as seen from that scope, is the name of a joint in
+  // SDFormat's frame graph, including imported joints.
+  std::function<bool(const std::string&)> is_joint_name;
+  // The plant's model instance count when parsing this source began; see
+  // FindSourceModelInstance().
+  ModelInstanceIndex model_instances_begin;
+};
+
 // Returns the frame that `frame_name`, given by the <`element_name`> child of
 // `node`, refers to from within the scope of `model_instance`. That is either
 // "world" or the name of a link, frame, or model (meaning its __model__ frame)
-// in that scope, possibly scoped into a nested model. It must not name a joint:
-// `is_joint_name` tells whether a name, as seen from that scope, is the name of
-// a joint in SDFormat's frame graph, including imported joints. Reports an
-// error and returns nullptr if there is no such frame.
-const Frame<double>* FindFrame(
-    const SDFormatDiagnostic& diagnostic, const sdf::ElementPtr node,
-    const char* element_name, const std::string& frame_name,
-    const std::function<bool(const std::string&)>& is_joint_name,
-    ModelInstanceIndex model_instance, const MultibodyPlant<double>& plant) {
-  if (frame_name == "world") return &plant.world_frame();
-
+// in that scope, possibly scoped into a nested model. It must not name a joint
+// (see `scope`). Reports an error and returns nullptr if there is no such
+// frame.
+const Frame<double>* FindFrame(const SDFormatDiagnostic& diagnostic,
+                               const sdf::ElementPtr node,
+                               const char* element_name,
+                               const std::string& frame_name,
+                               const FrameNameScope& scope,
+                               ModelInstanceIndex model_instance,
+                               const MultibodyPlant<double>& plant) {
   // Validate and look up the same normalized name, while retaining the
   // original spelling for diagnostics.
   const std::string normalized_name = ScopedName::Parse(frame_name).to_string();
+  // The name "world" always means the world frame, even if a merged include
+  // brought in a joint named "world".
+  if (normalized_name == "world") return &plant.world_frame();
+
+  // Diagnostics identify the referring element: a joint by its name, and a
+  // bushing, which has no name, by its tag alone.
+  const std::string referrer =
+      node->HasAttribute("name")
+          ? fmt::format("<{} name='{}'>", node->GetName(),
+                        node->Get<std::string>("name"))
+          : fmt::format("<{}>", node->GetName());
+
   // Reject empty names before joining scopes; otherwise they would resolve to
   // the enclosing model's implicit frame.
   if (normalized_name.empty()) {
     diagnostic.Error(
-        node, fmt::format("<{}>: Frame name '{}' specified for <{}> must not "
-                          "be empty.",
-                          node->GetName(), frame_name, element_name));
+        node, fmt::format("{}: Frame name '{}' specified for <{}> must not be "
+                          "empty.",
+                          referrer, frame_name, element_name));
     return nullptr;
   }
 
   // Drake has no frame for an SDFormat joint's own frame. Worse, the plant
   // might have an unrelated frame by that name that Drake added for some
-  // other joint, such as the frame foo_child for a joint foo. The name
-  // "world" always means the world frame (see above), though, even if a
-  // merged include brought in a joint named "world".
-  if (is_joint_name(normalized_name)) {
+  // other joint, such as the frame foo_child for a joint foo.
+  if (scope.is_joint_name(normalized_name)) {
     diagnostic.Error(
-        node, fmt::format("<{0}>: <{1}>{2}</{1}> names a joint; it must name a "
+        node, fmt::format("{0}: <{1}>{2}</{1}> names a joint; it must name a "
                           "link, frame, or model.",
-                          node->GetName(), element_name, frame_name));
+                          referrer, element_name, frame_name));
     return nullptr;
   }
 
@@ -722,40 +756,74 @@ const Frame<double>* FindFrame(
       ScopedName::Join(GetInstanceScopeNameIgnoringWorld(plant, model_instance),
                        normalized_name);
 
-  const std::string absolute_name = absolute_scoped_name.to_string();
-  if (plant.HasModelInstanceNamed(absolute_name)) {
-    const ModelInstanceIndex named_model_instance =
-        plant.GetModelInstanceByName(absolute_name);
-    if (plant.HasFrameNamed("__model__", named_model_instance)) {
-      return &plant.GetFrameByName("__model__", named_model_instance);
+  auto find_model_instance = [&](const std::string& name) {
+    return FindSourceModelInstance(plant, name, scope.model_instances_begin);
+  };
+
+  // A model's implicit frame, however it is named, is unusable if Drake fixed
+  // it to the world. Drake does that when it doesn't attach the frame to the
+  // model's canonical link, as when that link is deformable or comes from an
+  // included URDF or MJCF model; the frame isn't where SDFormat puts it then.
+  // (That also rejects the frame of a model with no links, which is right, but
+  // the model's explicit frames can still be named.)
+  // TODO(#25129) Allow the frame once Drake attaches it to a canonical link
+  // that comes from an included URDF or MJCF model.
+  auto check_frame = [&](const Frame<double>& frame) -> const Frame<double>* {
+    if (frame.name() == "__model__" &&
+        frame.model_instance() != world_model_instance() &&
+        &frame.body() == &plant.world_body()) {
+      // A joint can't use those explicit frames either, since SDFormat
+      // attaches them to a model with no links rather than to a link.
+      const char* instead = node->GetName() == "joint"
+                                ? "Name a link instead"
+                                : "Name a link instead, or one of the model's "
+                                  "frames if it has no links";
+      diagnostic.Error(
+          node, fmt::format("{0}: <{1}>{2}</{1}> names the frame of a model "
+                            "that Drake doesn't attach to a link (its "
+                            "canonical link is deformable or from an included "
+                            "URDF or MJCF model, or it has no links). {3}.",
+                            referrer, element_name, frame_name, instead));
+      return nullptr;
     }
+    return &frame;
+  };
+
+  // Every model that parsing this source adds has a __model__ frame.
+  if (const std::optional<ModelInstanceIndex> named_model_instance =
+          find_model_instance(absolute_scoped_name.to_string())) {
+    return check_frame(
+        plant.GetFrameByName("__model__", *named_model_instance));
   }
 
   ModelInstanceIndex search_model_instance = world_model_instance();
   const std::string search_model_name(absolute_scoped_name.get_namespace());
   if (!search_model_name.empty()) {
-    if (!plant.HasModelInstanceNamed(search_model_name)) {
+    const std::optional<ModelInstanceIndex> found_model_instance =
+        find_model_instance(search_model_name);
+    if (!found_model_instance.has_value()) {
       std::string message = fmt::format(
-          "<{}>: Model instance name '{}' (implied by frame name '{}' in <{}>"
+          "{}: Model instance name '{}' (implied by frame name '{}' in <{}>"
           " within model instance '{}') does not exist in the model.",
-          node->GetName(), search_model_name, frame_name, element_name,
+          referrer, search_model_name, frame_name, element_name,
           plant.GetModelInstanceName(model_instance));
       diagnostic.Error(node, std::move(message));
       return nullptr;
     }
-    search_model_instance = plant.GetModelInstanceByName(search_model_name);
+    search_model_instance = *found_model_instance;
   }
 
   const std::string search_frame_name(absolute_scoped_name.get_element());
   if (!plant.HasFrameNamed(search_frame_name, search_model_instance)) {
     std::string message = fmt::format(
-        "<{}>: Frame '{}' specified for <{}> does not exist in the model.",
-        node->GetName(), frame_name, element_name);
+        "{}: Frame '{}' specified for <{}> does not exist in the model.",
+        referrer, frame_name, element_name);
     diagnostic.Error(node, std::move(message));
     return nullptr;
   }
 
-  return &plant.GetFrameByName(search_frame_name, search_model_instance);
+  return check_frame(
+      plant.GetFrameByName(search_frame_name, search_model_instance));
 }
 
 // A joint whose frames Jp and Jc are the ones named by its `parent_tag` and
@@ -870,14 +938,13 @@ std::optional<JointFrames> ResolveJointFramesAtJ(
 }
 
 // Returns the frames of a joint with <drake:independent_frames/>: as for a
-// <drake:joint>, Jp and Jc are the frames named by its <parent> and <child>.
-// `is_joint_name` tells whether a name, as seen from the joint's scope, is the
-// name of a joint in SDFormat's frame graph, including imported joints.
-// Reports an error and returns nullopt if that can't be done.
+// <drake:joint>, Jp and Jc are the frames named by its <parent> and <child>,
+// as seen from the joint's `scope`. Reports an error and returns nullopt if
+// that can't be done.
 std::optional<JointFrames> FindIndependentJointFrames(
     const SDFormatDiagnostic& diagnostic, const sdf::Joint& joint_spec,
-    const std::function<bool(const std::string&)>& is_joint_name,
-    ModelInstanceIndex model_instance, const MultibodyPlant<double>& plant) {
+    const FrameNameScope& scope, ModelInstanceIndex model_instance,
+    const MultibodyPlant<double>& plant) {
   const sdf::ElementPtr node = joint_spec.Element();
   // Only the element's presence matters, so any text, nested element, or
   // attribute (such as enabled="false") would be misleading.
@@ -907,27 +974,48 @@ std::optional<JointFrames> FindIndependentJointFrames(
   // libsdformat does not update when it merges an included model.
   auto find_frame = [&](const char* tag,
                         const std::string& name) -> const Frame<double>* {
-    return FindFrame(diagnostic, node, tag, name, is_joint_name, model_instance,
-                     plant);
+    return FindFrame(diagnostic, node, tag, name, scope, model_instance, plant);
   };
   const Frame<double>* frame_Jp = find_frame("parent", joint_spec.ParentName());
+  if (frame_Jp == nullptr) return std::nullopt;
   const Frame<double>* frame_Jc = find_frame("child", joint_spec.ChildName());
-  if (frame_Jp == nullptr || frame_Jc == nullptr) return std::nullopt;
+  if (frame_Jc == nullptr) return std::nullopt;
+
+  // The named frames change only where the joint's frames are on its links,
+  // not which links it connects. Those are the links that SDFormat resolves,
+  // just as for any other joint, so make sure a lookup that disagrees can't go
+  // unnoticed. One that does today is a frame attached to a model whose
+  // implicit frame Drake fixes to the world (see FindFrame()): Drake's frame
+  // is then on the world, but SDFormat attaches it to the model's canonical
+  // link.
+  const RigidBody<double>& parent_body = GetBodyByLinkSpecificationName(
+      ResolveJointParentLinkName(diagnostic, joint_spec), model_instance,
+      plant);
+  const RigidBody<double>& child_body = GetBodyByLinkSpecificationName(
+      ResolveJointChildLinkName(diagnostic, joint_spec), model_instance, plant);
+  if (&frame_Jp->body() != &parent_body || &frame_Jc->body() != &child_body) {
+    diagnostic.Error(
+        node, fmt::format("<joint name='{}'>: <parent> and <child> name frames "
+                          "on links '{}' and '{}', but SDFormat attaches them "
+                          "to links '{}' and '{}'.",
+                          joint_spec.Name(), frame_Jp->body().name(),
+                          frame_Jc->body().name(), parent_body.name(),
+                          child_body.name()));
+    return std::nullopt;
+  }
   return JointFrames{.P = frame_Jp, .C = frame_Jc};
 }
 
 // Helper method to add joints to a MultibodyPlant given an sdf::Joint
 // specification object. X_WM should be an identity when adding a world
 // joint (is_model_joint = false) since a world joint doesn't have a
-// containing model, hence M = W. `is_joint_name` tells whether a name, as seen
-// from the joint's scope, is the name of a joint in SDFormat's frame graph,
-// including imported joints.
+// containing model, hence M = W. `scope` tells what frame names can refer to,
+// as seen from the joint's scope.
 // If the diagnostic error policy is not set to throw it returns false
 // when an error occurs.
 bool AddJointFromSpecification(
     const SDFormatDiagnostic& diagnostic, const RigidTransformd& X_WM,
-    const sdf::Joint& joint_spec,
-    const std::function<bool(const std::string&)>& is_joint_name,
+    const sdf::Joint& joint_spec, const FrameNameScope& scope,
     ModelInstanceIndex model_instance, MultibodyPlant<double>* plant,
     std::set<sdf::JointType>* joint_types, bool is_model_joint = true) {
   const std::set<std::string> supported_joint_elements{
@@ -949,7 +1037,7 @@ bool AddJointFromSpecification(
 
   const std::optional<JointFrames> frames =
       joint_spec.Element()->HasElement("drake:independent_frames")
-          ? FindIndependentJointFrames(diagnostic, joint_spec, is_joint_name,
+          ? FindIndependentJointFrames(diagnostic, joint_spec, scope,
                                        model_instance, *plant)
           : ResolveJointFramesAtJ(diagnostic, X_WM, joint_spec, model_instance,
                                   *plant, is_model_joint);
@@ -1802,10 +1890,13 @@ std::optional<LinkInfo> AddRigidLinkFromSpecification(
   return link_info;
 }
 
+// Adds the frame that `frame_spec` describes to `model_instance`. A frame with
+// no attached_to is attached to `default_frame`. `model_instances_begin` is as
+// for FindSourceModelInstance().
 const Frame<double>& AddFrameFromSpecification(
     const SDFormatDiagnostic& diagnostic, const sdf::Frame& frame_spec,
     ModelInstanceIndex model_instance, const Frame<double>& default_frame,
-    MultibodyPlant<double>* plant) {
+    ModelInstanceIndex model_instances_begin, MultibodyPlant<double>* plant) {
   const Frame<double>* parent_frame{};
   std::string resolve_to = frame_spec.AttachedTo();
   if (frame_spec.AttachedTo().empty()) {
@@ -1819,11 +1910,11 @@ const Frame<double>& AddFrameFromSpecification(
 
     // If the attached_to refers to a model, we use the `__model__` frame
     // associated with the model.
-    if (plant->HasModelInstanceNamed(attached_to_absolute_name)) {
-      const auto attached_to_model_instance =
-          plant->GetModelInstanceByName(attached_to_absolute_name);
+    if (const std::optional<ModelInstanceIndex> attached_to_model_instance =
+            FindSourceModelInstance(*plant, attached_to_absolute_name,
+                                    model_instances_begin)) {
       parent_frame =
-          &plant->GetFrameByName("__model__", attached_to_model_instance);
+          &plant->GetFrameByName("__model__", *attached_to_model_instance);
     } else {
       const auto [parent_model_instance, local_name] =
           GetResolvedModelInstanceAndLocalName(frame_spec.AttachedTo(),
@@ -1978,11 +2069,12 @@ bool ParseDrakeCurves(const SDFormatDiagnostic& diagnostic,
   return true;
 }
 
-const Frame<double>* ParseFrame(
-    const SDFormatDiagnostic& diagnostic, const sdf::ElementPtr node,
-    const std::function<bool(const std::string&)>& is_joint_name,
-    ModelInstanceIndex model_instance, MultibodyPlant<double>* plant,
-    const char* element_name) {
+const Frame<double>* ParseFrame(const SDFormatDiagnostic& diagnostic,
+                                const sdf::ElementPtr node,
+                                const FrameNameScope& scope,
+                                ModelInstanceIndex model_instance,
+                                MultibodyPlant<double>* plant,
+                                const char* element_name) {
   if (!node->HasElement(element_name)) {
     std::string message =
         fmt::format("<{}>: Unable to find the <{}> child tag.", node->GetName(),
@@ -1992,8 +2084,8 @@ const Frame<double>* ParseFrame(
   }
 
   return FindFrame(diagnostic, node, element_name,
-                   node->Get<std::string>(element_name), is_joint_name,
-                   model_instance, *plant);
+                   node->Get<std::string>(element_name), scope, model_instance,
+                   *plant);
 }
 
 const RigidBody<double>* ParseBody(const SDFormatDiagnostic& diagnostic,
@@ -2025,10 +2117,11 @@ const RigidBody<double>* ParseBody(const SDFormatDiagnostic& diagnostic,
 // TODO(eric.cousineau): Update parsing pending resolution of
 // https://github.com/osrf/sdformat/issues/288
 // When diagnostic policy is not set to throw it returns false on errors.
-bool AddDrakeJointFromSpecification(
-    const SDFormatDiagnostic& diagnostic, const sdf::ElementPtr node,
-    const std::function<bool(const std::string&)>& is_joint_name,
-    ModelInstanceIndex model_instance, MultibodyPlant<double>* plant) {
+bool AddDrakeJointFromSpecification(const SDFormatDiagnostic& diagnostic,
+                                    const sdf::ElementPtr node,
+                                    const FrameNameScope& scope,
+                                    ModelInstanceIndex model_instance,
+                                    MultibodyPlant<double>* plant) {
   // clang-format off
   const std::set<std::string> supported_joint_elements{
       "drake:parent",
@@ -2066,12 +2159,12 @@ bool AddDrakeJointFromSpecification(
   }
 
   const Frame<double>* parent_frame = ParseFrame(
-      diagnostic, node, is_joint_name, model_instance, plant, "drake:parent");
+      diagnostic, node, scope, model_instance, plant, "drake:parent");
   if (parent_frame == nullptr) {
     return false;
   }
-  const Frame<double>* child_frame = ParseFrame(
-      diagnostic, node, is_joint_name, model_instance, plant, "drake:child");
+  const Frame<double>* child_frame =
+      ParseFrame(diagnostic, node, scope, model_instance, plant, "drake:child");
   if (child_frame == nullptr) {
     return false;
   }
@@ -2136,8 +2229,8 @@ bool AddDrakeJointFromSpecification(
 
 const LinearBushingRollPitchYaw<double>* AddBushingFromSpecification(
     const SDFormatDiagnostic& diagnostic, const sdf::ElementPtr node,
-    const std::function<bool(const std::string&)>& is_joint_name,
-    ModelInstanceIndex model_instance, MultibodyPlant<double>* plant) {
+    const FrameNameScope& scope, ModelInstanceIndex model_instance,
+    MultibodyPlant<double>* plant) {
   const std::set<std::string> supported_bushing_elements{
       "drake:bushing_frameA",         "drake:bushing_frameC",
       "drake:bushing_force_damping",  "drake:bushing_force_stiffness",
@@ -2156,9 +2249,9 @@ const LinearBushingRollPitchYaw<double>* AddBushingFromSpecification(
   // frame name, e.g. <element_name>frame_name</element_name>
   // Reports an error if the tag does not exist or if the frame does not exist
   // in the plant.
-  auto read_frame = [&diagnostic, node, &is_joint_name, model_instance,
+  auto read_frame = [&diagnostic, node, &scope, model_instance,
                      plant](const char* element_name) -> const Frame<double>* {
-    return ParseFrame(diagnostic, node, is_joint_name, model_instance, plant,
+    return ParseFrame(diagnostic, node, scope, model_instance, plant,
                       element_name);
   };
 
@@ -2690,10 +2783,19 @@ std::vector<ModelInstanceIndex> AddModelsFromSpecification(
       return plant->AddFrame(std::make_unique<FixedOffsetFrame<double>>(
           sdf_model_frame_name, canonical_link_frame, X_LcM, model_instance));
     } else {
+      // TODO(#25129) When the canonical link comes from an included URDF or
+      // MJCF model, libsdformat gives only its name (canonical_link is null).
+      // Resolve that name in the plant and attach the frame to the link,
+      // rather than fixing it to the world.
       return plant->AddFrame(std::make_unique<FixedOffsetFrame<double>>(
           sdf_model_frame_name, plant->world_frame(), X_WM, model_instance));
     }
   }();
+
+  // The reusable range starts at the plant's model instance count from before
+  // this source was loaded.
+  const ModelInstanceIndex model_instances_begin =
+      reusable_model_instance_range.first;
 
   drake::log()->trace("sdf_parser: Add explicit frames");
   // Add frames at root-level of <model>. Joints with
@@ -2702,23 +2804,26 @@ std::vector<ModelInstanceIndex> AddModelsFromSpecification(
        ++frame_index) {
     const sdf::Frame& frame = *model.FrameByIndex(frame_index);
     AddFrameFromSpecification(diagnostic, frame, model_instance, model_frame,
-                              plant);
+                              model_instances_begin, plant);
   }
 
   drake::log()->trace("sdf_parser: Add joints");
   // Add all the joints
   std::set<sdf::JointType> joint_types;
-  const auto is_joint_name = [&](const std::string& name) {
-    return model.JointNameExists(name) ||
-           imported_joint_names.contains(
-               ScopedName::Join(model_name, name).to_string());
-  };
+  const FrameNameScope frame_name_scope{
+      .is_joint_name =
+          [&](const std::string& name) {
+            return model.JointNameExists(name) ||
+                   imported_joint_names.contains(
+                       ScopedName::Join(model_name, name).to_string());
+          },
+      .model_instances_begin = model_instances_begin};
   // TODO(eric.cousineau): Register frames from SDF once we have a pose graph.
   for (uint64_t joint_index = 0; joint_index < model.JointCount();
        ++joint_index) {
     // Get a pointer to the SDF joint, and the joint axis information.
     const sdf::Joint& joint = *model.JointByIndex(joint_index);
-    if (!AddJointFromSpecification(diagnostic, X_WM, joint, is_joint_name,
+    if (!AddJointFromSpecification(diagnostic, X_WM, joint, frame_name_scope,
                                    model_instance, plant, &joint_types)) {
       return {};
     }
@@ -2739,8 +2844,9 @@ std::vector<ModelInstanceIndex> AddModelsFromSpecification(
     for (sdf::ElementPtr joint_node =
              model.Element()->GetElement("drake:joint");
          joint_node; joint_node = joint_node->GetNextElement("drake:joint")) {
-      if (!AddDrakeJointFromSpecification(diagnostic, joint_node, is_joint_name,
-                                          model_instance, plant)) {
+      if (!AddDrakeJointFromSpecification(diagnostic, joint_node,
+                                          frame_name_scope, model_instance,
+                                          plant)) {
         return {};
       }
     }
@@ -2752,8 +2858,9 @@ std::vector<ModelInstanceIndex> AddModelsFromSpecification(
              model.Element()->GetElement("drake:linear_bushing_rpy");
          bushing_node; bushing_node = bushing_node->GetNextElement(
                            "drake:linear_bushing_rpy")) {
-      if (AddBushingFromSpecification(diagnostic, bushing_node, is_joint_name,
-                                      model_instance, plant) == nullptr) {
+      if (AddBushingFromSpecification(diagnostic, bushing_node,
+                                      frame_name_scope, model_instance,
+                                      plant) == nullptr) {
         return {};
       }
     }
@@ -3431,23 +3538,32 @@ std::vector<ModelInstanceIndex> AddModelsFromSdf(
                              added_model_instances.end());
     }
 
+    // The reusable range starts at the plant's model instance count from before
+    // this source was loaded.
+    const ModelInstanceIndex model_instances_begin =
+        reusable_model_instance_range.first;
+
     for (uint64_t frame_index = 0; frame_index < world.FrameCount();
          ++frame_index) {
       const sdf::Frame& frame = *world.FrameByIndex(frame_index);
       AddFrameFromSpecification(diagnostic, frame, world_model_instance(),
                                 workspace.plant->world_frame(),
-                                workspace.plant);
+                                model_instances_begin, workspace.plant);
     }
 
     // Add all the joints
     std::set<sdf::JointType> joint_types;
-    const auto is_joint_name = [&](const std::string& name) {
-      return world.JointNameExists(name) || imported_joint_names.contains(name);
-    };
+    const FrameNameScope frame_name_scope{
+        .is_joint_name =
+            [&](const std::string& name) {
+              return world.JointNameExists(name) ||
+                     imported_joint_names.contains(name);
+            },
+        .model_instances_begin = model_instances_begin};
     for (uint64_t joint_index = 0; joint_index < world.JointCount();
          ++joint_index) {
       const sdf::Joint& joint = *world.JointByIndex(joint_index);
-      if (!AddJointFromSpecification(diagnostic, {}, joint, is_joint_name,
+      if (!AddJointFromSpecification(diagnostic, {}, joint, frame_name_scope,
                                      world_model_instance(), workspace.plant,
                                      &joint_types, false)) {
         return {};

@@ -167,7 +167,7 @@ tags as Jp and Jc.
 Drake provides some non-standard joints introduced by the `<drake:joint>`
 tag. For those joints, the contained `<drake:parent>` and `<drake:child>`
 tags always specify Jp and Jc directly, so the `<drake:independent_frames/>`
-tag is not needed, and so is not allowed there.
+tag is not needed there, and using it is an error.
 
 @see @ref tag_drake_independent_frames for details.
 
@@ -781,7 +781,11 @@ The string names a frame (expected to already be defined by this model) that
 will be passed to the constructor of
 drake::multibody::LinearBushingRollPitchYaw as the `frameA` parameter. In
 SDFormat, the string may also name a link, a model (meaning its implicit model
-frame), or `world`. It must not name a joint.
+frame), or `world`. It must not name a joint. Nor may it name a model's
+implicit frame, by the model's name or as `__model__`, if Drake doesn't attach
+that frame to a link: if the model's canonical link is deformable or comes from
+an included URDF or MJCF model, or if the model has no links, such as a static
+model with only frames (name one of its frames instead).
 
 @see @ref tag_drake_linear_bushing_rpy, drake::multibody::LinearBushingRollPitchYaw
 
@@ -797,7 +801,11 @@ The string names a frame (expected to already be defined by this model) that
 will be passed to the constructor of
 drake::multibody::LinearBushingRollPitchYaw as the `frameC` parameter. In
 SDFormat, the string may also name a link, a model (meaning its implicit model
-frame), or `world`. It must not name a joint.
+frame), or `world`. It must not name a joint. Nor may it name a model's
+implicit frame, by the model's name or as `__model__`, if Drake doesn't attach
+that frame to a link: if the model's canonical link is deformable or comes from
+an included URDF or MJCF model, or if the model has no links, such as a static
+model with only frames (name one of its frames instead).
 
 @see @ref tag_drake_linear_bushing_rpy, drake::multibody::LinearBushingRollPitchYaw
 
@@ -969,7 +977,11 @@ URDF note: Drake supports both `drake:capsule`, and a non-standard
 The string names a frame (defined elsewhere in the model) that is associated
 with the child link of the joint being defined. That frame is the joint's frame
 Jc. The string may also name a link or a model (meaning its implicit model
-frame). It must not name a joint.
+frame). It must not name a joint. Nor may it name a model's implicit frame, by
+the model's name or as `__model__`, if Drake doesn't attach that frame to a
+link: if the model's canonical link is deformable or comes from an included
+URDF or MJCF model, or if the model has no links, such as a static model with
+only frames (name one of its frames instead).
 
 @see @ref tag_drake_joint, @ref tag_drake_independent_frames
 
@@ -1303,16 +1315,29 @@ frames named by its `<parent>` and `<child>` _be_ Jp and Jc, as with
 @ref tag_drake_joint. Each may name a link, an explicit frame, a model (meaning
 its implicit model frame), or (for `<parent>`) `world`, possibly using a scoped
 name. Neither may name a joint, since Drake has no frame for an SDFormat
-joint's own frame J. Since Jp and Jc are located independently, the links'
-poses don't assemble them: at the zero configuration a child link goes wherever
-the joint puts it, and a closed kinematic loop can be described that is not
-assembled as written (see MultibodyPlant::SetEnableLoopTopology()).
+joint's own frame J, nor a model's implicit frame (by the model's name or as
+`__model__`) that Drake doesn't attach to a link: one whose canonical link is
+deformable or comes from an included URDF or MJCF model, or one with no links,
+such as a static model with only frames. The joint still connects the links to
+which SDFormat attaches the named frames; the element changes only where Jp and
+Jc are on them. Since Jp and Jc are located independently, the links' poses
+don't assemble them: at the zero configuration a child link goes wherever the
+joint puts it, and a closed kinematic loop can be described that is not
+assembled as written (see MultibodyPlant::SetEnableLoopTopology(), currently
+for internal use only).
 
-A joint with `<drake:independent_frames/>` must not have a `<pose>`. Then J
-coincides with Jc, so the joint's axes are expressed in Jc unless they say
-otherwise. A universal joint is the exception to using the named frames as is:
-it builds its axes into its frames, so Drake fixes new frames to the named
-ones, rotated to put `<axis>` along x and `<axis2>` along y.
+A joint with `<drake:independent_frames/>` must not have a `<pose>`, so J
+coincides with the frame named by `<child>`. Except for a universal joint
+(below), that frame is Jc: the joint's axis is resolved into Jc and has the same
+components in Jp. An `expressed_in` frame only says how to read the `<xyz>`
+components; they are converted using the poses as written in the file. A
+universal joint builds its axes into its frames, so Drake adds frames named
+after the joint, `{name}_parent` and `{name}_child`, fixed to the named ones and
+rotated to put `<axis>` along x and `<axis2>` along y.
+
+The joint, and any frames Drake adds for it, belong to the model instance of the
+frame named by `<child>`, which need not be the model declaring the joint: for
+`<child>nested::F</child>` they belong to `nested`.
 
 The element may appear only once per joint and must be empty, with no
 attributes. Its presence alone has this effect.
@@ -1587,7 +1612,11 @@ MultibodyPlant's constructor documentation for details.
 The string names a frame (defined elsewhere in the model) that is associated
 with the parent link of the joint being defined. That frame is the joint's frame
 Jp. The string may also name a link, a model (meaning its implicit model frame),
-or `world`. It must not name a joint.
+or `world`. It must not name a joint. Nor may it name a model's implicit frame,
+by the model's name or as `__model__`, if Drake doesn't attach that frame to a
+link: if the model's canonical link is deformable or comes from an included
+URDF or MJCF model, or if the model has no links, such as a static model with
+only frames (name one of its frames instead).
 
 @see @ref tag_drake_joint, @ref tag_drake_independent_frames
 
