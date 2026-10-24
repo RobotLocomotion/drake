@@ -220,6 +220,33 @@ TEST_F(UniversalMobilizerTest, CalcAcrossMobilizerSpatialAcceleration) {
   EXPECT_TRUE(A_FM.IsApprox(A_FM_expected, kTolerance));
 }
 
+TEST_F(UniversalMobilizerTest, CalcHMatrixPartials) {
+  const Vector2d angles(1, 0.5);
+  mobilizer_->SetAngles(context_.get(), angles);
+  MatrixXd dH_FM_dq =
+      MatrixXd::Constant(12, 2, std::numeric_limits<double>::quiet_NaN());
+  mobilizer_->CalcHMatrixPartials(*context_, &dH_FM_dq);
+
+  // Only My_F = [0, cos(θ₀), sin(θ₀)]ᵀ (second column of Hw) depends on q, and
+  // only on θ₀, so ∂H_FM/∂θ₀ (rows 0-5) has one nonzero column and ∂H_FM/∂θ₁
+  // (rows 6-11) is zero.
+  MatrixXd dH_FM_dq_expected = MatrixXd::Zero(12, 2);
+  dH_FM_dq_expected(1, 1) = -sin(angles[0]);
+  dH_FM_dq_expected(2, 1) = cos(angles[0]);
+  EXPECT_TRUE(CompareMatrices(dH_FM_dq, dH_FM_dq_expected, kTolerance));
+  TestHMatrixPartials(*mobilizer_, context_.get());
+
+  // Consistency with calc_A_FM(): A_FM = Σₖ (∂H_FM/∂qₖ)⋅q̇ₖ⋅v when v̇ = 0.
+  const Vector2d rates(1.5, 2);
+  const Vector2d zero_accelerations = Vector2d::Zero();
+  const SpatialAcceleration<double> A_FM = mobilizer_->calc_A_FM(
+      angles.data(), rates.data(), zero_accelerations.data());
+  const MatrixXd A_FM_expected =
+      (dH_FM_dq.topRows(6) * rates[0] + dH_FM_dq.bottomRows(6) * rates[1]) *
+      rates;
+  EXPECT_TRUE(CompareMatrices(A_FM.get_coeffs(), A_FM_expected, kTolerance));
+}
+
 TEST_F(UniversalMobilizerTest, ProjectSpatialForce) {
   const Vector2d angles(1, 0.5);
   mobilizer_->SetAngles(context_.get(), angles);

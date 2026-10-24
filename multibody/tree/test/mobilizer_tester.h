@@ -6,6 +6,7 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/multibody/tree/mobilizer.h"
 #include "drake/multibody/tree/multibody_tree.h"
 #include "drake/multibody/tree/multibody_tree_system.h"
@@ -108,6 +109,49 @@ void TestApplyR_FM(const math::RigidTransform<T>& X_FM,
   const Eigen::Vector3d v_F = mobilizer.apply_R_FM(R_FM, v_M);
   EXPECT_TRUE(
       CompareMatrices(v_F, expected_v_F, kTol, MatrixCompareType::relative));
+}
+
+// Test that mobilizer.CalcHMatrixPartials() agrees with a central finite
+// difference, in each generalized position, of H_FM(q) whose columns are
+// obtained from CalcAcrossMobilizerSpatialVelocity() with unit vectors v. The
+// positions q are those currently stored in `context`, which is restored on
+// return.
+template <class ConcreteMobilizer>
+void TestHMatrixPartials(const ConcreteMobilizer& mobilizer,
+                         systems::Context<double>* context) {
+  const int nq = mobilizer.num_positions();
+  const int nv = mobilizer.num_velocities();
+  Eigen::MatrixXd dH_FM_dq(6 * nq, nv);
+  mobilizer.CalcHMatrixPartials(*context, &dH_FM_dq);
+
+  auto calc_H_FM = [&]() {
+    Eigen::MatrixXd H_FM(6, nv);
+    for (int j = 0; j < nv; ++j) {
+      H_FM.col(j) = mobilizer
+                        .CalcAcrossMobilizerSpatialVelocity(
+                            *context, Eigen::VectorXd::Unit(nv, j))
+                        .get_coeffs();
+    }
+    return H_FM;
+  };
+
+  const Eigen::VectorXd x =
+      context->get_continuous_state_vector().CopyToVector();
+  const int q_start = mobilizer.position_start_in_q();
+  const double h = 1e-6;
+  for (int k = 0; k < nq; ++k) {
+    Eigen::VectorXd x_plus = x;
+    Eigen::VectorXd x_minus = x;
+    x_plus[q_start + k] += h;
+    x_minus[q_start + k] -= h;
+    context->get_mutable_continuous_state_vector().SetFromVector(x_plus);
+    const Eigen::MatrixXd H_plus = calc_H_FM();
+    context->get_mutable_continuous_state_vector().SetFromVector(x_minus);
+    const Eigen::MatrixXd H_minus = calc_H_FM();
+    EXPECT_TRUE(CompareMatrices(dH_FM_dq.middleRows(6 * k, 6),
+                                (H_plus - H_minus) / (2 * h), 1e-8));
+  }
+  context->get_mutable_continuous_state_vector().SetFromVector(x);
 }
 
 }  // namespace internal

@@ -288,6 +288,15 @@ TEST_F(RpyFloatingMobilizerTest, CalcAcrossMobilizer) {
                               MatrixCompareType::relative));
 }
 
+TEST_F(RpyFloatingMobilizerTest, CalcHMatrixPartials) {
+  SetArbitraryNonZeroState();
+  Eigen::MatrixXd dH_FM_dq = Eigen::MatrixXd::Constant(
+      36, 6, std::numeric_limits<double>::quiet_NaN());
+  mobilizer_->CalcHMatrixPartials(*context_, &dH_FM_dq);
+  EXPECT_TRUE(CompareMatrices(dH_FM_dq, Eigen::MatrixXd::Zero(36, 6)));
+  TestHMatrixPartials(*mobilizer_, context_.get());
+}
+
 TEST_F(RpyFloatingMobilizerTest, MapVelocityToQdotAndBack) {
   EXPECT_FALSE(mobilizer_->is_velocity_equal_to_qdot());
 

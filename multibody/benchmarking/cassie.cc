@@ -1,4 +1,5 @@
 #include <memory>
+#include <vector>
 
 #include <benchmark/benchmark.h>
 #include <gflags/gflags.h>
@@ -152,6 +153,56 @@ class Cassie : public benchmark::Fixture {
       InvalidateState();
       (void)plant_->EvalBlockSystemJacobian(*context_);
     }
+  }
+
+  // Runs the JacobianSpatialVelocity benchmark: the left toe's spatial velocity
+  // Jacobian in the world. With T=AutoDiffXd and gradients in q, the result's
+  // derivatives are ∂(Jv_V_WB_W)/∂qₖ.
+  // NOLINTNEXTLINE(runtime/references)
+  void DoJacobianSpatialVelocity(benchmark::State& state) {
+    DRAKE_DEMAND(want_grad_v(state) == false);
+    DRAKE_DEMAND(want_grad_vdot(state) == false);
+    DRAKE_DEMAND(want_grad_u(state) == false);
+    const Frame<T>& frame_B = plant_->GetFrameByName("toe_left");
+    MatrixX<T> Jv_V_WB_W(6, nv_);
+    for (auto _ : state) {
+      InvalidateState();
+      plant_->CalcJacobianSpatialVelocity(
+          *context_, JacobianWrtVariable::kV, frame_B, Vector3<T>::Zero(),
+          plant_->world_frame(), plant_->world_frame(), &Jv_V_WB_W);
+    }
+  }
+
+  // Runs the HessianSpatialVelocity benchmark: the derivatives Dᵢ(Jv_V_WB_W)
+  // along v = eᵢ of the left toe's spatial velocity Jacobian in the world.
+  // NOLINTNEXTLINE(runtime/references)
+  void DoHessianSpatialVelocity(benchmark::State& state) {
+    DRAKE_DEMAND(want_grad_v(state) == false);
+    DRAKE_DEMAND(want_grad_vdot(state) == false);
+    DRAKE_DEMAND(want_grad_u(state) == false);
+    const Frame<T>& frame_B = plant_->GetFrameByName("toe_left");
+    std::vector<Matrix6X<T>> Hv_V_WB_W;
+    for (auto _ : state) {
+      InvalidateState();
+      plant_->CalcHessianSpatialVelocity(
+          *context_, JacobianWrtVariable::kV, frame_B, Vector3<T>::Zero(),
+          plant_->world_frame(), plant_->world_frame(), &Hv_V_WB_W);
+    }
+  }
+
+  // Runs the HessianSpatialVelocityViaAutoDiff benchmark (T=AutoDiffXd only):
+  // the same Dᵢ(Jv_V_WB_W) as HessianSpatialVelocity, as the derivatives of an
+  // AutoDiffXd Jacobian with q seeded as q̇ = N(q)⋅eᵢ. This case does its own
+  // seeding, so its Arg is kWantNoGrad.
+  // NOLINTNEXTLINE(runtime/references)
+  void DoHessianSpatialVelocityViaAutoDiff(benchmark::State& state) {
+    DRAKE_DEMAND(want_grad_q(state) == false);
+    const VectorX<double> q =
+        math::DiscardGradient(plant_->GetPositions(*context_));
+    const MatrixX<double> N = math::DiscardGradient(
+        MatrixX<T>(plant_->MakeVelocityToQDotMap(*context_)));
+    plant_->SetPositions(context_.get(), math::InitializeAutoDiff(q, N));
+    DoJacobianSpatialVelocity(state);
   }
 
   // Runs the GravityGeneralizedForces benchmark.
@@ -392,6 +443,24 @@ BENCHMARK_REGISTER_F(CassieDouble, BlockSystemJacobian)
     ->Unit(benchmark::kMicrosecond)
     ->Arg(kWantNoGrad);
 
+BENCHMARK_DEFINE_F(CassieDouble, JacobianSpatialVelocity)
+// NOLINTNEXTLINE(runtime/references)
+(benchmark::State& state) {
+  DoJacobianSpatialVelocity(state);
+}
+BENCHMARK_REGISTER_F(CassieDouble, JacobianSpatialVelocity)
+    ->Unit(benchmark::kMicrosecond)
+    ->Arg(kWantNoGrad);
+
+BENCHMARK_DEFINE_F(CassieDouble, HessianSpatialVelocity)
+// NOLINTNEXTLINE(runtime/references)
+(benchmark::State& state) {
+  DoHessianSpatialVelocity(state);
+}
+BENCHMARK_REGISTER_F(CassieDouble, HessianSpatialVelocity)
+    ->Unit(benchmark::kMicrosecond)
+    ->Arg(kWantNoGrad);
+
 BENCHMARK_DEFINE_F(CassieDouble, GravityGeneralizedForces)
 // NOLINTNEXTLINE(runtime/references)
 (benchmark::State& state) {
@@ -450,6 +519,25 @@ BENCHMARK_REGISTER_F(CassieAutoDiff, PositionKinematics)
     ->Unit(benchmark::kMicrosecond)
     ->Arg(kWantNoGrad)
     ->Arg(kWantGradQ);
+
+BENCHMARK_DEFINE_F(CassieAutoDiff, JacobianSpatialVelocity)
+// NOLINTNEXTLINE(runtime/references)
+(benchmark::State& state) {
+  DoJacobianSpatialVelocity(state);
+}
+BENCHMARK_REGISTER_F(CassieAutoDiff, JacobianSpatialVelocity)
+    ->Unit(benchmark::kMicrosecond)
+    ->Arg(kWantNoGrad)
+    ->Arg(kWantGradQ);
+
+BENCHMARK_DEFINE_F(CassieAutoDiff, HessianSpatialVelocityViaAutoDiff)
+// NOLINTNEXTLINE(runtime/references)
+(benchmark::State& state) {
+  DoHessianSpatialVelocityViaAutoDiff(state);
+}
+BENCHMARK_REGISTER_F(CassieAutoDiff, HessianSpatialVelocityViaAutoDiff)
+    ->Unit(benchmark::kMicrosecond)
+    ->Arg(kWantNoGrad);
 
 BENCHMARK_DEFINE_F(CassieAutoDiff, GravityGeneralizedForces)
 // NOLINTNEXTLINE(runtime/references)

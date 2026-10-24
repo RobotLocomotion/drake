@@ -317,6 +317,10 @@ class RpyFloatingMobilizer final : public MobilizerImpl<T, 6, 6> {
   void DoCalcNplusMatrix(const systems::Context<T>& context,
                          EigenPtr<MatrixX<T>> Nplus) const final;
 
+  // H_FM does not depend on q, so ∂H_FM/∂qₖ = 0.
+  void DoCalcHMatrixPartials(const systems::Context<T>& context,
+                             EigenPtr<MatrixX<T>> dH_FM_dq) const final;
+
   // Maps the generalized velocity v to time derivatives of configuration
   // qdot.
   //

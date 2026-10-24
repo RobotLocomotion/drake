@@ -170,6 +170,18 @@ void UniversalMobilizer<T>::DoCalcNplusDotMatrix(
 }
 
 template <typename T>
+void UniversalMobilizer<T>::DoCalcHMatrixPartials(
+    const systems::Context<T>& context, EigenPtr<MatrixX<T>> dH_FM_dq) const {
+  const auto& q = this->get_positions(context);
+  DRAKE_ASSERT(q.size() == kNq);
+  const T s = sin(q[0]);
+  const T c = cos(q[0]);
+  dH_FM_dq->setZero();
+  (*dH_FM_dq)(1, 1) = -s;
+  (*dH_FM_dq)(2, 1) = c;
+}
+
+template <typename T>
 void UniversalMobilizer<T>::DoMapVelocityToQDot(
     const systems::Context<T>&, const Eigen::Ref<const VectorX<T>>& v,
     EigenPtr<VectorX<T>> qdot) const {
