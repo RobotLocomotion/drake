@@ -870,7 +870,7 @@ def _erase_matching_maps(*, node, defaults):
             # '==' because `math.nan` does not compare equal to itself.)
             keys_to_prune.append(key)
             continue
-        if not isinstance(sub_node, dict):
+        if not isinstance(sub_node, dict) or not isinstance(sub_defaults, dict):
             continue
         if sub_node.get("_tag") != sub_defaults.get("_tag"):
             # The maps are tagged differently, so we should not subtract their
