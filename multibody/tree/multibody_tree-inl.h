@@ -235,9 +235,10 @@ const JointType<T>& MultibodyTree<T>::AddJoint(
   // model instance when creating any offset frames needed for the joint.
   const ModelInstanceIndex joint_instance = child.model_instance();
   const Frame<T>& frame_on_parent =
-      this->AddOrGetJointFrame(parent, X_PJp, joint_instance, name, "parent");
-  const Frame<T>& frame_on_child =
-      this->AddOrGetJointFrame(child, X_CJc, joint_instance, name, "child");
+      this->AddOrGetJointFrame(parent.body_frame(), X_PJp, joint_instance, name,
+                               JointFrameSide::kParent);
+  const Frame<T>& frame_on_child = this->AddOrGetJointFrame(
+      child.body_frame(), X_CJc, joint_instance, name, JointFrameSide::kChild);
   const JointType<T>& result = AddJoint(std::make_unique<JointType<T>>(
       name, frame_on_parent, frame_on_child, std::forward<Args>(args)...));
   DRAKE_DEMAND(result.model_instance() == joint_instance);

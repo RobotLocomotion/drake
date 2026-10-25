@@ -88,6 +88,13 @@ class Frame : public MultibodyElement<T> {
     return this->index() == link().link_frame().index();
   }
 
+  /// (Internal use only) Returns the frame to which this %Frame is fixed (a
+  /// FixedOffsetFrame's parent frame, otherwise its link frame), or nullptr for
+  /// a link frame. Following parents from any frame ends at its link frame.
+  const Frame<T>* GetParentFrameIfAny() const {
+    return DoGetParentFrameIfAny();
+  }
+
   /// Returns the name of this frame. The name will never be empty.
   const std::string& name() const { return name_; }
 
@@ -598,6 +605,10 @@ class Frame : public MultibodyElement<T> {
   /// Called by DoSetDefaultParameters(). Derived classes may choose to override
   /// to set their sub-class specific parameters.
   virtual void DoSetDefaultFrameParameters(systems::Parameters<T>*) const {}
+
+  /// NVI for GetParentFrameIfAny(); override in a subclass that could be
+  /// fixed to a non-link frame.
+  virtual const Frame<T>* DoGetParentFrameIfAny() const;
 
   /// @name Methods to make a clone, optionally templated on different scalar
   /// types.

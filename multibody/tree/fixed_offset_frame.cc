@@ -87,6 +87,11 @@ std::unique_ptr<Frame<T>> FixedOffsetFrame<T>::DoShallowClone() const {
 }
 
 template <typename T>
+const Frame<T>* FixedOffsetFrame<T>::DoGetParentFrameIfAny() const {
+  return &parent_frame_;
+}
+
+template <typename T>
 math::RigidTransform<T> FixedOffsetFrame<T>::DoCalcPoseInBodyFrame(
     const systems::Parameters<T>& parameters) const {
   // X_BF = X_BP * X_PF

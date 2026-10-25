@@ -1799,6 +1799,11 @@ R"""(Precondition:
     The parent frame to this frame already has a clone in
     ``tree_clone``.)""";
         } DoCloneToScalar;
+        // Symbol: drake::multibody::FixedOffsetFrame::DoGetParentFrameIfAny
+        struct /* DoGetParentFrameIfAny */ {
+          // Source: drake/multibody/tree/fixed_offset_frame.h
+          const char* doc = R"""()""";
+        } DoGetParentFrameIfAny;
         // Symbol: drake::multibody::FixedOffsetFrame::DoShallowClone
         struct /* DoShallowClone */ {
           // Source: drake/multibody/tree/fixed_offset_frame.h
@@ -2690,6 +2695,13 @@ R"""(Clones this Frame (templated on T) to a frame templated on ``double``.)""";
 R"""(Called by DoDeclareParameters(). Derived classes may choose to
 override to declare their sub-class specific parameters.)""";
         } DoDeclareFrameParameters;
+        // Symbol: drake::multibody::Frame::DoGetParentFrameIfAny
+        struct /* DoGetParentFrameIfAny */ {
+          // Source: drake/multibody/tree/frame.h
+          const char* doc =
+R"""(NVI for GetParentFrameIfAny(); override in a subclass that could be
+fixed to a non-link frame.)""";
+        } DoGetParentFrameIfAny;
         // Symbol: drake::multibody::Frame::DoSetDefaultFrameParameters
         struct /* DoSetDefaultFrameParameters */ {
           // Source: drake/multibody/tree/frame.h
@@ -2793,6 +2805,15 @@ Raises:
     Frame sub-classes that have a constant ``R_LF`` must override this
     method.)""";
         } GetFixedRotationMatrixInBodyFrame;
+        // Symbol: drake::multibody::Frame::GetParentFrameIfAny
+        struct /* GetParentFrameIfAny */ {
+          // Source: drake/multibody/tree/frame.h
+          const char* doc =
+R"""((Internal use only) Returns the frame to which this Frame is fixed (a
+FixedOffsetFrame's parent frame, otherwise its link frame), or nullptr
+for a link frame. Following parents from any frame ends at its link
+frame.)""";
+        } GetParentFrameIfAny;
         // Symbol: drake::multibody::Frame::ShallowClone
         struct /* ShallowClone */ {
           // Source: drake/multibody/tree/frame.h

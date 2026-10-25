@@ -166,6 +166,16 @@ TEST_F(FrameTests, IsBodyFrameMethod) {
   EXPECT_TRUE(bodyB_frame.is_body_frame());
 }
 
+TEST_F(FrameTests, GetParentFrameIfAny) {
+  // Link frames have none; a FixedOffsetFrame's may be a link or offset frame.
+  EXPECT_EQ(tree().world_frame().GetParentFrameIfAny(), nullptr);
+  EXPECT_EQ(frameB_->GetParentFrameIfAny(), nullptr);
+  EXPECT_EQ(frameP_->GetParentFrameIfAny(), frameB_);
+  EXPECT_EQ(frameQ_->GetParentFrameIfAny(), frameP_);
+  EXPECT_EQ(frameS_->GetParentFrameIfAny(), &tree().world_frame());
+  EXPECT_EQ(frameSChild_->GetParentFrameIfAny(), frameS_);
+}
+
 // Create a frame which is not part of a plant. Ensure an exception is thrown if
 // there is a query for information about this frame that needs the associated
 // multibody tree. Check that exceptions are thrown for common public methods.
