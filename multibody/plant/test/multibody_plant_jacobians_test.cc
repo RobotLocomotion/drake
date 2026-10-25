@@ -1238,6 +1238,29 @@ GTEST_TEST(SystemJacobianTransposeTimesF, MultipleTrees) {
       CompareMatrices(math::ExtractValue(tau_ad), tau_expected, kTolerance));
 }
 
+// With no degrees of freedom, the Jacobian is 6 × 0. Run under UBSan, this
+// checks that no row blocks of zero-sized matrices are formed; see drake#17113.
+GTEST_TEST(CalcJacobianSpatialVelocity, NoDegreesOfFreedom) {
+  MultibodyPlant<double> plant(0.0);
+  const RigidBody<double>& body =
+      plant.AddRigidBody("body", SpatialInertia<double>::MakeUnitary());
+  const Frame<double>& frame_W = plant.world_frame();
+  const Frame<double>& frame_B = body.body_frame();
+  plant.WeldFrames(frame_W, frame_B, math::RigidTransformd(Vector3d(1, 2, 3)));
+  plant.Finalize();
+  std::unique_ptr<Context<double>> context = plant.CreateDefaultContext();
+  const Vector3d p_BP(0.1, 0.2, 0.3);
+  for (const JacobianWrtVariable with_respect_to :
+       {JacobianWrtVariable::kQDot, JacobianWrtVariable::kV}) {
+    for (const Frame<double>* frame_E : {&frame_W, &frame_B}) {
+      MatrixXd Js_V_WBp_E(6, 0);
+      plant.CalcJacobianSpatialVelocity(*context, with_respect_to, frame_B,
+                                        p_BP, frame_W, *frame_E, &Js_V_WBp_E);
+      EXPECT_EQ(Js_V_WBp_E.cols(), 0);
+    }
+  }
+}
+
 }  // namespace
 }  // namespace multibody
 }  // namespace drake
