@@ -4,6 +4,7 @@
 
 #include "drake/common/autodiff.h"
 #include "drake/common/symbolic/expression.h"
+#include "drake/geometry/proximity/coal_backend.h"
 #include "drake/geometry/proximity/fcl_backend.h"
 
 /* @file
@@ -26,13 +27,15 @@
  is the backend policy. For use in .h files only. */
 #define DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_BACKENDS( \
     SomeType) \
-extern template SomeType<::drake::geometry::internal::FclBackend>;
+extern template SomeType<::drake::geometry::internal::FclBackend>; \
+extern template SomeType<::drake::geometry::internal::CoalBackend>;
 
 /* Defines instantiations for a class template whose sole parameter is the
  backend policy. For use in .cc files only. */
 #define DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_BACKENDS( \
     SomeType) \
-template SomeType<::drake::geometry::internal::FclBackend>;
+template SomeType<::drake::geometry::internal::FclBackend>; \
+template SomeType<::drake::geometry::internal::CoalBackend>;
 
 /* Declares that instantiations exist for a class template parameterized on a
  nonsymbolic scalar and then the backend policy, in that order. For use in .h
@@ -48,7 +51,11 @@ template SomeType<::drake::geometry::internal::FclBackend>;
 extern template SomeType<double, \
     ::drake::geometry::internal::FclBackend>; \
 extern template SomeType<::drake::AutoDiffXd, \
-    ::drake::geometry::internal::FclBackend>;
+    ::drake::geometry::internal::FclBackend>; \
+extern template SomeType<double, \
+    ::drake::geometry::internal::CoalBackend>; \
+extern template SomeType<::drake::AutoDiffXd, \
+    ::drake::geometry::internal::CoalBackend>;
 
 /* Defines instantiations for a class template parameterized on a scalar and
  then the backend policy, in that order. For use in .cc files only. */
@@ -59,7 +66,13 @@ template SomeType<double, \
 template SomeType<::drake::AutoDiffXd, \
     ::drake::geometry::internal::FclBackend>; \
 template SomeType<::drake::symbolic::Expression, \
-    ::drake::geometry::internal::FclBackend>;
+    ::drake::geometry::internal::FclBackend>; \
+template SomeType<double, \
+    ::drake::geometry::internal::CoalBackend>; \
+template SomeType<::drake::AutoDiffXd, \
+    ::drake::geometry::internal::CoalBackend>; \
+template SomeType<::drake::symbolic::Expression, \
+    ::drake::geometry::internal::CoalBackend>;
 
 /* Defines instantiations for free function templates whose sole parameter is
  the backend policy. The argument is a parenthesized, comma-separated list of
@@ -81,7 +94,9 @@ constexpr auto Make_Backend_Function_Pointers() { \
 static constexpr auto Backend_Function_Templates __attribute__((used)) = \
     std::tuple_cat( \
         Make_Backend_Function_Pointers< \
-            ::drake::geometry::internal::FclBackend>());
+            ::drake::geometry::internal::FclBackend>(), \
+        Make_Backend_Function_Pointers< \
+            ::drake::geometry::internal::CoalBackend>());
 
 /* Defines instantiations for free function templates parameterized on a
  scalar and then the backend policy, in that order. The argument is a
@@ -111,6 +126,8 @@ constexpr auto Make_Scalar_Backend_Function_Pointers_Pack() { \
 static constexpr auto Scalar_Backend_Function_Templates \
     __attribute__((used)) = std::tuple_cat( \
         Make_Scalar_Backend_Function_Pointers_Pack< \
-            ::drake::geometry::internal::FclBackend>());
+            ::drake::geometry::internal::FclBackend>(), \
+        Make_Scalar_Backend_Function_Pointers_Pack< \
+            ::drake::geometry::internal::CoalBackend>());
 
 // clang-format on

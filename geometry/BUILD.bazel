@@ -89,6 +89,7 @@ drake_cc_library(
         "//geometry/proximity:collision_filter",
         "//geometry/proximity:deformable_contact_internal",
         "//geometry/proximity:hydroelastic_internal",
+        "//geometry/proximity:proximity_utilities",
         "//geometry/query_results",
         "//math",
     ],
@@ -984,6 +985,17 @@ drake_cc_googletest(
         ":mesh_source",
         "//common:memory_file",
         "//common:temp_directory",
+    ],
+)
+
+drake_cc_googletest(
+    name = "proximity_engine_coal_test",
+    deps = [
+        ":proximity_engine",
+        ":shape_specification",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//geometry/proximity:proximity_utilities",
+        "//math",
     ],
 )
 

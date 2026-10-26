@@ -1689,9 +1689,31 @@ class ProximityEngine<T>::Impl : public ProximityEngine<T>::ImplBase,
 };
 
 template <typename T>
+typename ProximityEngine<T>::ImplBase* ProximityEngine<T>::MakeImpl(
+    CollisionBackend backend) {
+  switch (backend) {
+    case CollisionBackend::kFcl:
+      return new Impl<FclBackend>();
+    case CollisionBackend::kCoal:
+      return new Impl<CoalBackend>();
+  }
+  DRAKE_UNREACHABLE();
+}
+
+template <typename T>
 typename ProximityEngine<T>::ImplBase* ProximityEngine<T>::MakeImpl() {
-  // FCL is currently the only backend the engine is built against.
-  return new Impl<FclBackend>();
+  // FCL remains the default; there is no way to ask for anything else yet
+  // except through the backend-naming constructor, which only tests use.
+  return MakeImpl(CollisionBackend::kFcl);
+}
+
+template <typename T>
+ProximityEngine<T>::ProximityEngine(CollisionBackend backend)
+    : impl_(MakeImpl(backend)) {}
+
+template <typename T>
+CollisionBackend ProximityEngine<T>::collision_backend() const {
+  return impl_->backend();
 }
 
 template <typename T>

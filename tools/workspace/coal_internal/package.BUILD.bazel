@@ -158,9 +158,7 @@ cc_library_vendored(
     includes = ["drake_vendor/include"],
     isystem = True,
     linkstatic = True,
-    # TODO(SeanCurtis-TRI): Widen to //visibility:public once Drake code
-    # actually depends on Coal; for now only coal_build_test needs it.
-    visibility = ["@drake//tools/workspace/coal_internal:__pkg__"],
+    visibility = ["//visibility:public"],
     deps = [
         "@eigen",
     ],
