@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<sdf version="1.9">
+  <model name="unmerged">
+    <link name="P">
+      <pose>1 2 3 0.1 0.2 0.3</pose>
+    </link>
+    <link name="C">
+      <pose>-4 5 -6 0 0 0</pose>
+    </link>
+    <frame name="Fc" attached_to="C">
+      <pose>0.25 -0.5 0.75 0 0 1.5707963267948966</pose>
+    </frame>
+    <joint name="joint" type="revolute">
+      <drake:independent_frames/>
+      <parent>__model__</parent>
+      <child>Fc</child>
+      <axis>
+        <xyz expressed_in="__model__">1 0 0</xyz>
+      </axis>
+    </joint>
+  </model>
+</sdf>
