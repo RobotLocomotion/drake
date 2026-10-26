@@ -1,7 +1,9 @@
 When changing the set of supported Python versions (or the default Python
 version on macOS), the following files need attention:
 
-- `drake/CMakeLists.txt` near `find_package(Python <min_version> ...)`,
+- `drake/CMakeLists.txt` near `find_package(Python <min_version>...)`,
+    - When increasing the max supported version, the `min...<max` syntax is
+      exclusive of the max.
 - `drake/MODULE.bazel` near `PYTHON_VERSIONS`,
 - `drake/doc/_pages/installation.md` in the support matrix column for `Python`,
 - `drake/doc/_pages/from_source.md` in the support matrix column for `Python`,
