@@ -17,6 +17,7 @@
 #include "drake/geometry/proximity/collision_filter.h"
 #include "drake/geometry/proximity/deformable_contact_internal.h"
 #include "drake/geometry/proximity/hydroelastic_internal.h"
+#include "drake/geometry/proximity/proximity_utilities.h"
 #include "drake/geometry/query_results/contact_surface.h"
 #include "drake/geometry/query_results/deformable_contact.h"
 #include "drake/geometry/query_results/penetration_as_point_pair.h"
@@ -61,6 +62,11 @@ template <typename T>
 class ProximityEngine {
  public:
   ProximityEngine();
+
+  /* (Internal use only) Constructs an engine on an explicitly chosen backend,
+   bypassing the choice made by the default constructor. */
+  explicit ProximityEngine(CollisionBackend backend);
+
   ~ProximityEngine();
 
   /* Construct a deep copy of the provided `other` engine.  */
@@ -422,6 +428,12 @@ class ProximityEngine {
   // Creates an implementation on the backend this engine should use. The
   // single place that decides; run-time selection will land here.
   static ImplBase* MakeImpl();
+
+  // Creates an implementation on the named backend.
+  static ImplBase* MakeImpl(CollisionBackend backend);
+
+  // (Introspection) Reports which backend this engine is running on.
+  CollisionBackend collision_backend() const;
 
   // Private constructor to use for scalar conversion.
   explicit ProximityEngine(ImplBase* impl);

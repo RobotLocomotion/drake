@@ -125,6 +125,7 @@ all of their maintainers, whose work is essential to Drake's success:
   * [zlib](https://zlib.net/)
 
 * Geometry:
+  * [coal](https://github.com/coal-library/coal)
   * [common_robotics_utilities](https://github.com/ToyotaResearchInstitute/common_robotics_utilities)
   * [fcl](https://github.com/flexible-collision-library/fcl)
   * [libccd](https://github.com/danfis/libccd)
