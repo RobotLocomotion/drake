@@ -1285,6 +1285,11 @@ drake_cc_googletest(
     ],
 )
 
+drake_cc_googletest(
+    name = "coal_backend_test",
+    deps = [":coal_backend"],
+)
+
 drake_cc_binary(
     name = "collision_backend_test_bin",
     testonly = True,
