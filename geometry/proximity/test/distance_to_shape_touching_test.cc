@@ -2,10 +2,10 @@
 
 #include <memory>
 
-#include <fcl/fcl.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/geometry/proximity/coal_backend.h"
 #include "drake/geometry/proximity/fcl_backend.h"
 
 namespace drake {
@@ -16,16 +16,24 @@ namespace {
 
 using Eigen::AngleAxisd;
 using Eigen::Vector3d;
-using fcl::Boxd;
 using math::RigidTransformd;
 using math::RollPitchYawd;
 using std::make_shared;
 
-// Tests CalcGradientWhenTouching<FclBackend>() when a sphere touches another
+// Tests CalcGradientWhenTouching<Backend>() when a sphere touches another
 // object. Use the Ellipsoid as indicative. Inspection of the calling code
 // should make it apparent that the correctness of Sphere-X contact doesn't
 // depend on what the X is, so we don't bother testing other, redundant types.
-GTEST_TEST(CalcGradientWhenTouching, SphereTouch) {
+/* The gradients computed here are Drake's own geometry -- the backends supply
+ only the shape types the values are read out of -- so both must agree
+ exactly. */
+template <typename Backend>
+class TouchingTest : public ::testing::Test {};
+using Backends = ::testing::Types<FclBackend, CoalBackend>;
+TYPED_TEST_SUITE(TouchingTest, Backends);
+
+TYPED_TEST(TouchingTest, SphereTouch) {
+  using Backend = TypeParam;
   // Strengthen the test by an arbitrary frame F, so we can use simple poses
   // X_FA and X_FB of the sphere's frame A in F and the ellipsoid's frame B in
   // F in such a way that X_WA and X_WB are complex.
@@ -35,59 +43,61 @@ GTEST_TEST(CalcGradientWhenTouching, SphereTouch) {
   const double radius = 2;
   const RigidTransformd X_FA(Vector3d(-radius, 0, 0));
   const RigidTransformd X_WA = X_WF * X_FA;
-  const fcl::CollisionObjectd a(make_shared<fcl::Sphered>(radius),
-                                X_WA.rotation().matrix(), X_WA.translation());
+  const typename Backend::Object a(
+      make_shared<typename Backend::Sphere>(radius), X_WA.rotation().matrix(),
+      X_WA.translation());
   const double rx = 2;
   const RigidTransformd X_FB(Vector3d(rx, 0, 0));
   const RigidTransformd X_WB = X_WF * X_FB;
-  const fcl::CollisionObjectd b(make_shared<fcl::Ellipsoidd>(rx, 3, 4),
-                                X_WB.rotation().matrix(), X_WB.translation());
+  const typename Backend::Object b(
+      make_shared<typename Backend::Ellipsoid>(rx, 3, 4),
+      X_WB.rotation().matrix(), X_WB.translation());
   const Vector3d p_ACa(radius, 0, 0);
   const Vector3d p_BCb(-rx, 0, 0);
   ASSERT_EQ(X_FA * p_ACa, Vector3d::Zero());
   ASSERT_EQ(X_FB * p_BCb, Vector3d::Zero());
 
   const Vector3d expect_nhat_BA_F = -Vector3d::UnitX();
-  EXPECT_EQ(
-      CalcGradientWhenTouching<FclBackend>(a, X_WA, b, X_WB, p_ACa, p_BCb),
-      X_WF.rotation() * expect_nhat_BA_F);
+  EXPECT_EQ(CalcGradientWhenTouching<Backend>(a, X_WA, b, X_WB, p_ACa, p_BCb),
+            X_WF.rotation() * expect_nhat_BA_F);
   // Switching `a` and `b` flips the gradient.
   const Vector3d expect_nhat_AB_F = Vector3d::UnitX();
-  EXPECT_EQ(
-      CalcGradientWhenTouching<FclBackend>(b, X_WB, a, X_WA, p_BCb, p_ACa),
-      X_WF.rotation() * expect_nhat_AB_F);
+  EXPECT_EQ(CalcGradientWhenTouching<Backend>(b, X_WB, a, X_WA, p_BCb, p_ACa),
+            X_WF.rotation() * expect_nhat_AB_F);
 }
 
-// This is just a simple test for CalcGradientWhenTouching<FclBackend>() when a
+// This is just a simple test for CalcGradientWhenTouching<Backend>() when a
 // box touches a box. There are more comprehensive test cases at the level of
-// BoxBoxGradient<FclBackend>(), which is a subroutine of
-// CalcGradientWhenTouching<FclBackend>().
-GTEST_TEST(CalcGradientWhenTouching, box_touches_box) {
+// BoxBoxGradient<Backend>(), which is a subroutine of
+// CalcGradientWhenTouching<Backend>().
+TYPED_TEST(TouchingTest, box_touches_box) {
+  using Backend = TypeParam;
   // Two boxes touch at their faces passing World's origin.
   const double width = 2;
   const RigidTransformd X_WA(Vector3d(-width / 2, 0, 0));
-  const fcl::CollisionObjectd box_A(make_shared<Boxd>(width, 3, 4),
-                                    X_WA.rotation().matrix(),
-                                    X_WA.translation());
+  const typename Backend::Object box_A(
+      make_shared<typename Backend::Box>(width, 3, 4), X_WA.rotation().matrix(),
+      X_WA.translation());
   const RigidTransformd X_WB(Vector3d(width / 2, 0, 0));
-  const fcl::CollisionObjectd box_B(make_shared<Boxd>(width, 5, 6),
-                                    X_WB.rotation().matrix(),
-                                    X_WB.translation());
+  const typename Backend::Object box_B(
+      make_shared<typename Backend::Box>(width, 5, 6), X_WB.rotation().matrix(),
+      X_WB.translation());
   const Vector3d p_ACa(width / 2, 0, 0);
   const Vector3d p_BCb(-width / 2, 0, 0);
   ASSERT_EQ(X_WA * p_ACa, Vector3d::Zero());
   ASSERT_EQ(X_WB * p_BCb, Vector3d::Zero());
 
-  EXPECT_EQ(CalcGradientWhenTouching<FclBackend>(box_A, X_WA, box_B, X_WB,
-                                                 p_ACa, p_BCb),
-            -Vector3d::UnitX());
+  EXPECT_EQ(
+      CalcGradientWhenTouching<Backend>(box_A, X_WA, box_B, X_WB, p_ACa, p_BCb),
+      -Vector3d::UnitX());
 }
 
+template <typename Backend>
 void PointOnBoxSurfaceHelperTester(
-    const fcl::Boxd& box_B, const Vector3d& p_BCb, int expected_sum,
+    const typename Backend::Box& box_B, const Vector3d& p_BCb, int expected_sum,
     std::optional<int> expected_axis_index,
     std::optional<const Vector3d> expected_normal) {
-  const Vector3d v_B = PointOnBoxSurfaceHelper<FclBackend>(p_BCb, box_B);
+  const Vector3d v_B = PointOnBoxSurfaceHelper<Backend>(p_BCb, box_B);
   double s_B = v_B.sum();
 
   // Check the expected encoding sum.
@@ -108,61 +118,68 @@ void PointOnBoxSurfaceHelperTester(
   }
 }
 
-GTEST_TEST(PointInBox, PointOnBoxSurfaceHelper) {
+TYPED_TEST(TouchingTest, PointOnBoxSurfaceHelper) {
+  using Backend = TypeParam;
   // The box spans [-1,1]x[-2,2]x[-4,4].
-  const fcl::Boxd box_B(2, 4, 8);
+  const typename Backend::Box box_B(2, 4, 8);
   {
     SCOPED_TRACE("This point is in the interior of the box.");
-    PointOnBoxSurfaceHelperTester(box_B, Vector3d(0.01, -0.02, 0.03), 0, {},
-                                  {});
+    PointOnBoxSurfaceHelperTester<Backend>(box_B, Vector3d(0.01, -0.02, 0.03),
+                                           0, {}, {});
   }
   {
     SCOPED_TRACE("This point is outside the box.");
-    PointOnBoxSurfaceHelperTester(box_B, Vector3d(10, 10, 10), 0, {}, {});
+    PointOnBoxSurfaceHelperTester<Backend>(box_B, Vector3d(10, 10, 10), 0, {},
+                                           {});
   }
   {
     SCOPED_TRACE("This point is strictly on -X face of the box.");
-    PointOnBoxSurfaceHelperTester(box_B, Vector3d(-1, 0.02, 0.03), 1, {},
-                                  -Vector3d::UnitX());
+    PointOnBoxSurfaceHelperTester<Backend>(box_B, Vector3d(-1, 0.02, 0.03), 1,
+                                           {}, -Vector3d::UnitX());
   }
   {
     SCOPED_TRACE("This point is strictly on +Y face of the box.");
-    PointOnBoxSurfaceHelperTester(box_B, Vector3d(0.01, 2, -0.03), 1, {},
-                                  Vector3d::UnitY());
+    PointOnBoxSurfaceHelperTester<Backend>(box_B, Vector3d(0.01, 2, -0.03), 1,
+                                           {}, Vector3d::UnitY());
   }
   {
     SCOPED_TRACE("This point is strictly on -Z face of the box.");
-    PointOnBoxSurfaceHelperTester(box_B, Vector3d(0.01, -0.02, -4), 1, {},
-                                  -Vector3d::UnitZ());
+    PointOnBoxSurfaceHelperTester<Backend>(box_B, Vector3d(0.01, -0.02, -4), 1,
+                                           {}, -Vector3d::UnitZ());
   }
   {
     SCOPED_TRACE("This point is on an edge parallel to X-axis of the box.");
-    PointOnBoxSurfaceHelperTester(box_B, Vector3d(0.1, 2, -4), 2, 0, {});
+    PointOnBoxSurfaceHelperTester<Backend>(box_B, Vector3d(0.1, 2, -4), 2, 0,
+                                           {});
   }
   {
     SCOPED_TRACE("This point is on an edge parallel to Y-axis of the box.");
-    PointOnBoxSurfaceHelperTester(box_B, Vector3d(-1, 0.1, 4), 2, 1, {});
+    PointOnBoxSurfaceHelperTester<Backend>(box_B, Vector3d(-1, 0.1, 4), 2, 1,
+                                           {});
   }
   {
     SCOPED_TRACE("This point is on an edge parallel to Z-axis of the box.");
-    PointOnBoxSurfaceHelperTester(box_B, Vector3d(1, -2, 0.1), 2, 2, {});
+    PointOnBoxSurfaceHelperTester<Backend>(box_B, Vector3d(1, -2, 0.1), 2, 2,
+                                           {});
   }
   {
     SCOPED_TRACE("The point is at the +X+Y+Z vertex of the box.");
-    PointOnBoxSurfaceHelperTester(box_B, Vector3d(1, 2, 4), 3, {}, {});
+    PointOnBoxSurfaceHelperTester<Backend>(box_B, Vector3d(1, 2, 4), 3, {}, {});
   }
   {
     SCOPED_TRACE("The point is at the -X+Y-Z vertex of the box.");
-    PointOnBoxSurfaceHelperTester(box_B, Vector3d(-1, 2, -4), 3, {}, {});
+    PointOnBoxSurfaceHelperTester<Backend>(box_B, Vector3d(-1, 2, -4), 3, {},
+                                           {});
   }
 }
 
-// Test corner cases of PointOnBoxSurfaceHelper<FclBackend>() due to numerical
+// Test corner cases of PointOnBoxSurfaceHelper<Backend>() due to numerical
 // errors. It is inspired by issue 21192. This test also shows that we can get
 // incorrect classification due to imperfect numerical precisions.
-GTEST_TEST(PointOnBoxSurfaceHelper, CornerCases) {
-  const fcl::Boxd box_B(0.25, 0.25, 0.25);
-  // See documentation of PointOnBoxSurfaceHelper<FclBackend>() for the meaning
+TYPED_TEST(TouchingTest, CornerCases) {
+  using Backend = TypeParam;
+  const typename Backend::Box box_B(0.25, 0.25, 0.25);
+  // See documentation of PointOnBoxSurfaceHelper<Backend>() for the meaning
   // of these encoding vectors.
   const Vector3d kVertexXYZ(1, 1, 1);
   const Vector3d kEdgeXY(1, 1, 0);
@@ -171,15 +188,15 @@ GTEST_TEST(PointOnBoxSurfaceHelper, CornerCases) {
   {
     // A corner vertex of the box with perfect precisions.
     const Vector3d p_BQ(0.125, 0.125, 0.125);
-    EXPECT_EQ(PointOnBoxSurfaceHelper<FclBackend>(p_BQ, box_B), kVertexXYZ);
+    EXPECT_EQ(PointOnBoxSurfaceHelper<Backend>(p_BQ, box_B), kVertexXYZ);
   }
   {
     // Within an acceptable tolerance, it is still classified as a vertex.
     // The noise 1e-14 is less than the internal tolerance of
-    // PointOnBoxSurfaceHelper<FclBackend>().
+    // PointOnBoxSurfaceHelper<Backend>().
     constexpr double kEps = 1e-14;
     const Vector3d p_BQ(0.125 - kEps, 0.125 - kEps, 0.125 - kEps);
-    EXPECT_EQ(PointOnBoxSurfaceHelper<FclBackend>(p_BQ, box_B), kVertexXYZ);
+    EXPECT_EQ(PointOnBoxSurfaceHelper<Backend>(p_BQ, box_B), kVertexXYZ);
   }
   {
     // However, the noise 1e-13 is larger than the internal tolerance and
@@ -187,19 +204,20 @@ GTEST_TEST(PointOnBoxSurfaceHelper, CornerCases) {
     // classification in various ways.
     constexpr double kNoise = 1e-13;
     const Vector3d p_BQ_edge(0.125, 0.125, 0.125 - kNoise);
-    EXPECT_EQ(PointOnBoxSurfaceHelper<FclBackend>(p_BQ_edge, box_B), kEdgeXY);
+    EXPECT_EQ(PointOnBoxSurfaceHelper<Backend>(p_BQ_edge, box_B), kEdgeXY);
     const Vector3d p_BQ_face(0.125, 0.125 - kNoise, 0.125 - kNoise);
-    EXPECT_EQ(PointOnBoxSurfaceHelper<FclBackend>(p_BQ_face, box_B), kFaceX);
+    EXPECT_EQ(PointOnBoxSurfaceHelper<Backend>(p_BQ_face, box_B), kFaceX);
     const Vector3d p_BQ_none(0.125 - kNoise, 0.125 - kNoise, 0.125 - kNoise);
-    EXPECT_EQ(PointOnBoxSurfaceHelper<FclBackend>(p_BQ_none, box_B), kNone);
+    EXPECT_EQ(PointOnBoxSurfaceHelper<Backend>(p_BQ_none, box_B), kNone);
   }
 }
 
-GTEST_TEST(SeparatingAxis, ProjectedMinMax) {
+TYPED_TEST(TouchingTest, ProjectedMinMax) {
+  using Backend = TypeParam;
   // This box spans [-2,2]x[-3,3]x[-6,6]. Half the length of its diagonal
   // is 7 because 2² + 3² + 6² = 4 + 9 + 36 = 49 = 7². We will use this fact
   // in the test later.
-  const fcl::Boxd box_B(4, 6, 12);
+  const typename Backend::Box box_B(4, 6, 12);
   // Use the unit vector along the diagonal of the box.
   const Vector3d unit_vector_W = Vector3d(2, 3, 6).normalized();
 
@@ -208,7 +226,7 @@ GTEST_TEST(SeparatingAxis, ProjectedMinMax) {
     const RigidTransformd X_WB = RigidTransformd::Identity();
     double min_value, max_value;
     std::tie(min_value, max_value) =
-        ProjectedMinMax<FclBackend>(box_B, X_WB, unit_vector_W);
+        ProjectedMinMax<Backend>(box_B, X_WB, unit_vector_W);
     // The min_value and max_value corresponds to half the length of the
     // diagonal of the box.
     EXPECT_DOUBLE_EQ(min_value, -7);
@@ -221,7 +239,7 @@ GTEST_TEST(SeparatingAxis, ProjectedMinMax) {
     const RigidTransformd X_WB(Vector3d(2, 3, 6));
     double min_value, max_value;
     std::tie(min_value, max_value) =
-        ProjectedMinMax<FclBackend>(box_B, X_WB, unit_vector_W);
+        ProjectedMinMax<Backend>(box_B, X_WB, unit_vector_W);
     // The min_value and max_value change from [-7,7] to [0,14] because the
     // box is shifted by half the diagonal.
     EXPECT_DOUBLE_EQ(min_value, 0);
@@ -229,7 +247,7 @@ GTEST_TEST(SeparatingAxis, ProjectedMinMax) {
   }
 }
 
-// Tests MaybeMakeSeparatingVector<FclBackend>() on two touching boxes with
+// Tests MaybeMakeSeparatingVector<Backend>() on two touching boxes with
 // various candidate directions for the separating axis.
 //
 //        Y
@@ -242,13 +260,14 @@ GTEST_TEST(SeparatingAxis, ProjectedMinMax) {
 //          |              |
 //          +--------------+
 //
-GTEST_TEST(SeparatingAxis, MaybeMakeSeparatingVector) {
+TYPED_TEST(TouchingTest, MaybeMakeSeparatingVector) {
+  using Backend = TypeParam;
   // Fix box_A at World's origin.
   const RigidTransformd X_WA = RigidTransformd::Identity();
   // box_A spans [-0.5,0.5]x[-0.5,0.5]x[-0.5,0.5].
-  const fcl::Boxd box_A(1, 1, 1);
+  const typename Backend::Box box_A(1, 1, 1);
   // box_B spans [-1.5,1.5]x[-1.5,1.5]x[-1.5,1.5].
-  const fcl::Boxd box_B(3, 3, 3);
+  const typename Backend::Box box_B(3, 3, 3);
   // Place box_B so its face passes through a face of box_A.
   const RigidTransformd X_WB(Vector3d(2, 0, 0));
 
@@ -256,34 +275,33 @@ GTEST_TEST(SeparatingAxis, MaybeMakeSeparatingVector) {
   // doesn't have to be a unit vector.
   {
     const std::optional<Vector3d> nhat_BA_W =
-        MaybeMakeSeparatingVector<FclBackend>(box_A, box_B, X_WA, X_WB,
-                                              {Vector3d(0.1, 0, 0)});
+        MaybeMakeSeparatingVector<Backend>(box_A, box_B, X_WA, X_WB,
+                                           {Vector3d(0.1, 0, 0)});
     EXPECT_TRUE(nhat_BA_W.has_value());
     EXPECT_EQ(nhat_BA_W.value(), -Vector3d::UnitX());
   }
   // Switching A and B flips the separating vector.
   {
     const std::optional<Vector3d> nhat_BA_W =
-        MaybeMakeSeparatingVector<FclBackend>(box_B, box_A, X_WB, X_WA,
-                                              {Vector3d(0.1, 0, 0)});
+        MaybeMakeSeparatingVector<Backend>(box_B, box_A, X_WB, X_WA,
+                                           {Vector3d(0.1, 0, 0)});
     EXPECT_TRUE(nhat_BA_W.has_value());
     EXPECT_EQ(nhat_BA_W.value(), Vector3d::UnitX());
   }
   // Non-separating direction gets null.
-  EXPECT_FALSE(MaybeMakeSeparatingVector<FclBackend>(box_B, box_A, X_WB, X_WA,
-                                                     {Vector3d(0, 1, 1)})
+  EXPECT_FALSE(MaybeMakeSeparatingVector<Backend>(box_B, box_A, X_WB, X_WA,
+                                                  {Vector3d(0, 1, 1)})
                    .has_value());
   // Zero vector gets null.
-  EXPECT_FALSE(MaybeMakeSeparatingVector<FclBackend>(box_B, box_A, X_WB, X_WA,
-                                                     {Vector3d::Zero()})
+  EXPECT_FALSE(MaybeMakeSeparatingVector<Backend>(box_B, box_A, X_WB, X_WA,
+                                                  {Vector3d::Zero()})
                    .has_value());
   // An empty list of vectors gets null.
-  EXPECT_FALSE(
-      MaybeMakeSeparatingVector<FclBackend>(box_B, box_A, X_WB, X_WA, {})
-          .has_value());
+  EXPECT_FALSE(MaybeMakeSeparatingVector<Backend>(box_B, box_A, X_WB, X_WA, {})
+                   .has_value());
 }
 
-// Tests BoxBoxGradient<FclBackend>() when two boxes touch on a face. We have
+// Tests BoxBoxGradient<Backend>() when two boxes touch on a face. We have
 // seen FCL set a witness point at a vertex of the touching face of box_A, as
 // shown in this picture.
 //
@@ -297,12 +315,13 @@ GTEST_TEST(SeparatingAxis, MaybeMakeSeparatingVector) {
 //          |              |
 //          +--------------+
 //
-GTEST_TEST(BoxBoxGradient, Face) {
+TYPED_TEST(TouchingTest, Face) {
+  using Backend = TypeParam;
   const RigidTransformd X_WA = RigidTransformd::Identity();
   // box_A spans [-0.5,0.5]x[-0.5,0.5]x[-0.5,0.5].
-  const fcl::Boxd box_A(1, 1, 1);
+  const typename Backend::Box box_A(1, 1, 1);
   // box_B spans [-1.5,1.5]x[-1.5,1.5]x[-1.5,1.5].
-  const fcl::Boxd box_B(3, 3, 3);
+  const typename Backend::Box box_B(3, 3, 3);
   const RigidTransformd X_WB(Vector3d(2, 0, 0));
   // On Box A, the witness point is at a vertex.
   const Vector3d p_ACa(0.5, 0.5, 0.5);
@@ -312,15 +331,15 @@ GTEST_TEST(BoxBoxGradient, Face) {
   ASSERT_TRUE(CompareMatrices(X_WA * p_ACa, X_WB * p_BCb, 1e-14));
 
   EXPECT_TRUE(CompareMatrices(
-      BoxBoxGradient<FclBackend>(box_A, box_B, X_WA, X_WB, p_ACa, p_BCb),
+      BoxBoxGradient<Backend>(box_A, box_B, X_WA, X_WB, p_ACa, p_BCb),
       -Vector3d::UnitX(), 1e-14));
   // Switching A and B flips the gradient.
   EXPECT_TRUE(CompareMatrices(
-      BoxBoxGradient<FclBackend>(box_B, box_A, X_WB, X_WA, p_BCb, p_ACa),
+      BoxBoxGradient<Backend>(box_B, box_A, X_WB, X_WA, p_BCb, p_ACa),
       Vector3d::UnitX(), 1e-14));
 }
 
-// Tests BoxBoxGradient<FclBackend>() when two boxes have their edges cross each
+// Tests BoxBoxGradient<Backend>() when two boxes have their edges cross each
 // other. Use rotation to make the witness points at the middle of the edges.
 //
 //        Y   +
@@ -331,12 +350,13 @@ GTEST_TEST(BoxBoxGradient, Face) {
 //     | A  |\/ --------→ X
 //     +----+
 //
-GTEST_TEST(BoxBoxGradient, EdgeCrossEdge) {
+TYPED_TEST(TouchingTest, EdgeCrossEdge) {
+  using Backend = TypeParam;
   const RigidTransformd X_WA = RigidTransformd::Identity();
   // box_A spans [-1,1]x[-1,1]x[-1,1].
-  const fcl::Boxd box_A(2, 2, 2);
+  const typename Backend::Box box_A(2, 2, 2);
   // box_B spans [-1,1]x[-1,1]x[-1,1].
-  const fcl::Boxd box_B(2, 2, 2);
+  const typename Backend::Box box_B(2, 2, 2);
   // Pose box_B so that each witness point is at the middle of an edge of
   // each box.
   const RigidTransformd X_WB(AngleAxisd(M_PI_2, Vector3d(1, 1, 0)),
@@ -349,15 +369,15 @@ GTEST_TEST(BoxBoxGradient, EdgeCrossEdge) {
   ASSERT_TRUE(CompareMatrices(X_WA * p_ACa, X_WB * p_BCb, 1e-14));
 
   EXPECT_TRUE(CompareMatrices(
-      BoxBoxGradient<FclBackend>(box_A, box_B, X_WA, X_WB, p_ACa, p_BCb),
+      BoxBoxGradient<Backend>(box_A, box_B, X_WA, X_WB, p_ACa, p_BCb),
       Vector3d(-1, -1, 0).normalized(), 1e-14));
   // Switching A and B flips the gradient.
   EXPECT_TRUE(CompareMatrices(
-      BoxBoxGradient<FclBackend>(box_B, box_A, X_WB, X_WA, p_BCb, p_ACa),
+      BoxBoxGradient<Backend>(box_B, box_A, X_WB, X_WA, p_BCb, p_ACa),
       Vector3d(1, 1, 0).normalized(), 1e-14));
 }
 
-// Tests BoxBoxGradient<FclBackend>() when two boxes have their touching edges
+// Tests BoxBoxGradient<Backend>() when two boxes have their touching edges
 // parallel to each other.
 //
 //        Y
@@ -368,14 +388,15 @@ GTEST_TEST(BoxBoxGradient, EdgeCrossEdge) {
 //     | A  |  --------→ X
 //     +----+
 //
-GTEST_TEST(BoxBoxGradient, ParallelEdgeEdge) {
+TYPED_TEST(TouchingTest, ParallelEdgeEdge) {
+  using Backend = TypeParam;
   const RigidTransformd X_WA = RigidTransformd::Identity();
   // box_A spans [-1,1]x[-1,1]x[-1,1].
-  const fcl::Boxd box_A(2, 2, 2);
+  const typename Backend::Box box_A(2, 2, 2);
   // Translate diagonally in X-Y plane
   const RigidTransformd X_WB(Vector3d(2, 2, 0));
   // box_B spans [-1,1]x[-1,1]x[-1,1].
-  const fcl::Boxd box_B(2, 2, 2);
+  const typename Backend::Box box_B(2, 2, 2);
   // The witness point of box_A is in the middle of an edge parallel to Az axis.
   const Vector3d p_ACa(1, 1, 0);
   // The witness point of box_B is in the middle of an edge parallel to Bz axis.
@@ -384,15 +405,15 @@ GTEST_TEST(BoxBoxGradient, ParallelEdgeEdge) {
   ASSERT_TRUE(CompareMatrices(X_WA * p_ACa, X_WB * p_BCb, 1e-14));
 
   EXPECT_TRUE(CompareMatrices(
-      BoxBoxGradient<FclBackend>(box_A, box_B, X_WA, X_WB, p_ACa, p_BCb),
+      BoxBoxGradient<Backend>(box_A, box_B, X_WA, X_WB, p_ACa, p_BCb),
       -Vector3d::UnitX()));
   // Switching A and B flips the gradient.
   EXPECT_TRUE(CompareMatrices(
-      BoxBoxGradient<FclBackend>(box_B, box_A, X_WB, X_WA, p_BCb, p_ACa),
+      BoxBoxGradient<Backend>(box_B, box_A, X_WB, X_WA, p_BCb, p_ACa),
       Vector3d::UnitX()));
 }
 
-// Tests BoxBoxGradient<FclBackend>() when a vertex of a box touches an edge of
+// Tests BoxBoxGradient<Backend>() when a vertex of a box touches an edge of
 // another box.
 //
 //        Y   +
@@ -411,15 +432,16 @@ GTEST_TEST(BoxBoxGradient, ParallelEdgeEdge) {
 //     +--+(*)+--+
 //     | A  | ----------→ X
 //     +----+
-GTEST_TEST(BoxBoxGradient, EdgeVertex) {
+TYPED_TEST(TouchingTest, EdgeVertex) {
+  using Backend = TypeParam;
   const RigidTransformd X_WA = RigidTransformd::Identity();
   // box_A spans [-1,1]x[-1,1]x[-1,1].
-  const fcl::Boxd box_A(2, 2, 2);
+  const typename Backend::Box box_A(2, 2, 2);
   using std::sqrt;
   const RigidTransformd X_WB(AngleAxisd(M_PI_4, Vector3d::UnitZ()),
                              Vector3d(1 + 1 / sqrt(2), 1 + 1 / sqrt(2), 2));
   // box_B spans [-1,1]x[-1,1]x[-1,1].
-  const fcl::Boxd box_B(2, 2, 2);
+  const typename Backend::Box box_B(2, 2, 2);
   // The witness point of box_A is at the most positive +X+Y+Z vertex.
   const Vector3d p_ACa = Vector3d::Ones();
   // The witness point of box_B is in the middle of an edge parallel to By axis.
@@ -428,15 +450,15 @@ GTEST_TEST(BoxBoxGradient, EdgeVertex) {
   ASSERT_TRUE(CompareMatrices(X_WA * p_ACa, X_WB * p_BCb, 1e-14));
 
   EXPECT_TRUE(CompareMatrices(
-      BoxBoxGradient<FclBackend>(box_A, box_B, X_WA, X_WB, p_ACa, p_BCb),
+      BoxBoxGradient<Backend>(box_A, box_B, X_WA, X_WB, p_ACa, p_BCb),
       -Vector3d::UnitZ(), 1e-14));
   // Switching A and B flips the gradient.
   EXPECT_TRUE(CompareMatrices(
-      BoxBoxGradient<FclBackend>(box_B, box_A, X_WB, X_WA, p_BCb, p_ACa),
+      BoxBoxGradient<Backend>(box_B, box_A, X_WB, X_WA, p_BCb, p_ACa),
       Vector3d::UnitZ(), 1e-14));
 }
 
-// Test BoxBoxGradient<FclBackend>() when a vertex of a box touches a vertex of
+// Test BoxBoxGradient<Backend>() when a vertex of a box touches a vertex of
 // another box in such a way that a face normal is a separating axis. In this
 // test case, we translate an identical box by its diagonal vector.
 //
@@ -448,13 +470,14 @@ GTEST_TEST(BoxBoxGradient, EdgeVertex) {
 //     | A  |  --------→ X
 //     +----+
 //
-GTEST_TEST(BoxBoxGradient, VertexVertexUseFaceNormal) {
+TYPED_TEST(TouchingTest, VertexVertexUseFaceNormal) {
+  using Backend = TypeParam;
   const RigidTransformd X_WA = RigidTransformd::Identity();
   // box_A spans [-1,1]x[-1,1]x[-1,1].
-  const fcl::Boxd box_A(2, 2, 2);
+  const typename Backend::Box box_A(2, 2, 2);
   const RigidTransformd X_WB(Vector3d(2, 2, 2));
   // box_A spans [-1,1]x[-1,1]x[-1,1].
-  const fcl::Boxd box_B(2, 2, 2);
+  const typename Backend::Box box_B(2, 2, 2);
   // The witness point of box_A is at the most positive +X+Y+Z vertex.
   const Vector3d p_ACa = Vector3d::Ones();
   // The witness point of box_B is at the most negative -X-Y-Z vertex.
@@ -465,15 +488,15 @@ GTEST_TEST(BoxBoxGradient, VertexVertexUseFaceNormal) {
   // All three axes X, Y, and Z are valid separating axes. The code happens to
   // pick X.
   EXPECT_TRUE(CompareMatrices(
-      BoxBoxGradient<FclBackend>(box_A, box_B, X_WA, X_WB, p_ACa, p_BCb),
+      BoxBoxGradient<Backend>(box_A, box_B, X_WA, X_WB, p_ACa, p_BCb),
       -Vector3d::UnitX(), 1e-14));
   // Switching A and B flips the gradient.
   EXPECT_TRUE(CompareMatrices(
-      BoxBoxGradient<FclBackend>(box_B, box_A, X_WB, X_WA, p_BCb, p_ACa),
+      BoxBoxGradient<Backend>(box_B, box_A, X_WB, X_WA, p_BCb, p_ACa),
       Vector3d::UnitX(), 1e-14));
 }
 
-// This is a special case of testing BoxBoxGradient<FclBackend>() when a vertex
+// This is a special case of testing BoxBoxGradient<Backend>() when a vertex
 // of a box touches a vertex of another box. Two identical boxes touch each
 // other on a face, but FCL can pick a witness point at a vertex of the touching
 // face.
@@ -486,13 +509,14 @@ GTEST_TEST(BoxBoxGradient, VertexVertexUseFaceNormal) {
 //     | A  | B  | -----→ X
 //     +----+----+
 //
-GTEST_TEST(BoxBoxGradient, VertexVetexUseFaceNormalSpecial) {
+TYPED_TEST(TouchingTest, VertexVetexUseFaceNormalSpecial) {
+  using Backend = TypeParam;
   const RigidTransformd X_WA = RigidTransformd::Identity();
   // box_A spans [-1,1]x[-1,1]x[-1,1].
-  const fcl::Boxd box_A(2, 2, 2);
+  const typename Backend::Box box_A(2, 2, 2);
   const RigidTransformd X_WB(Vector3d(2, 0, 0));
   // box_B spans [-1,1]x[-1,1]x[-1,1].
-  const fcl::Boxd box_B(2, 2, 2);
+  const typename Backend::Box box_B(2, 2, 2);
   // Witness points are at vertices.
   const Vector3d p_ACa(1, 1, 1);
   const Vector3d p_BCb(-1, 1, 1);
@@ -501,28 +525,29 @@ GTEST_TEST(BoxBoxGradient, VertexVetexUseFaceNormalSpecial) {
 
   // X-axis is the only separating axis.
   EXPECT_TRUE(CompareMatrices(
-      BoxBoxGradient<FclBackend>(box_A, box_B, X_WA, X_WB, p_ACa, p_BCb),
+      BoxBoxGradient<Backend>(box_A, box_B, X_WA, X_WB, p_ACa, p_BCb),
       -Vector3d::UnitX(), 1e-14));
   // Switching A and B flips the gradient.
   EXPECT_TRUE(CompareMatrices(
-      BoxBoxGradient<FclBackend>(box_B, box_A, X_WB, X_WA, p_BCb, p_ACa),
+      BoxBoxGradient<Backend>(box_B, box_A, X_WB, X_WA, p_BCb, p_ACa),
       Vector3d::UnitX(), 1e-14));
 }
 
-// Tests BoxBoxGradient<FclBackend>() when two boxes touch at their vertices in
+// Tests BoxBoxGradient<Backend>() when two boxes touch at their vertices in
 // such a way that the separating axis is along the cross product of their
 // edges.
-GTEST_TEST(BoxBoxGradient, VertexVertexNeedCrossProduct) {
+TYPED_TEST(TouchingTest, VertexVertexNeedCrossProduct) {
+  using Backend = TypeParam;
   const RigidTransformd X_WA = RigidTransformd::Identity();
   // box_A spans [-1,1]x[-1,1]x[-1,1].
-  const fcl::Boxd box_A(2, 2, 2);
+  const typename Backend::Box box_A(2, 2, 2);
   // Rotation around a diagonal direction of the box preserves the two opposite
   // vertices of the box. Translation by the diagonal vector makes one of
   // such vertices touch the identical box at a vertex.
   const RigidTransformd X_WB(AngleAxisd(M_PI_4, Vector3d::Ones()),
                              Vector3d(2, 2, 2));
   // box_B spans [-1,1]x[-1,1]x[-1,1].
-  const fcl::Boxd box_B(2, 2, 2);
+  const typename Backend::Box box_B(2, 2, 2);
   // Witness points are at vertices.
   const Vector3d p_ACa(1, 1, 1);
   const Vector3d p_BCb(-1, -1, -1);
@@ -534,21 +559,21 @@ GTEST_TEST(BoxBoxGradient, VertexVertexNeedCrossProduct) {
   const Vector3d expect_gradient =
       -X_WA.rotation().col(0).cross(X_WB.rotation().col(0)).normalized();
   EXPECT_TRUE(CompareMatrices(
-      BoxBoxGradient<FclBackend>(box_A, box_B, X_WA, X_WB, p_ACa, p_BCb),
+      BoxBoxGradient<Backend>(box_A, box_B, X_WA, X_WB, p_ACa, p_BCb),
       expect_gradient, 1e-14));
   // Switching A and B flips the gradient.
   EXPECT_TRUE(CompareMatrices(
-      BoxBoxGradient<FclBackend>(box_B, box_A, X_WB, X_WA, p_BCb, p_ACa),
+      BoxBoxGradient<Backend>(box_B, box_A, X_WB, X_WA, p_BCb, p_ACa),
       -expect_gradient, 1e-14));
 }
 
-// This test is inspired by issue 21192: BoxBoxGradient<FclBackend>() got two
+// This test is inspired by issue 21192: BoxBoxGradient<Backend>() got two
 // witness points that passed the co-location test but failed to compute the
-// signed-distance gradient. At that time, PointOnBoxSurfaceHelper<FclBackend>()
+// signed-distance gradient. At that time, PointOnBoxSurfaceHelper<Backend>()
 // classified one of the witness points as being strictly inside the box
 // instead of being on the surface, and an exception was thrown.
-// Now PointOnBoxSurfaceHelper<FclBackend>() does not throw exception, but
-// BoxBoxGradient<FclBackend>() has to support witness points that are not on
+// Now PointOnBoxSurfaceHelper<Backend>() does not throw exception, but
+// BoxBoxGradient<Backend>() has to support witness points that are not on
 // the surfaces of the boxes due to numerical errors.
 //
 //        Y
@@ -559,12 +584,13 @@ GTEST_TEST(BoxBoxGradient, VertexVertexNeedCrossProduct) {
 //     | A  |  --------→ X
 //     +----+
 //
-GTEST_TEST(BoxBoxGradient, InputWithNumericalErrors) {
+TYPED_TEST(TouchingTest, InputWithNumericalErrors) {
+  using Backend = TypeParam;
   const RigidTransformd X_WA = RigidTransformd::Identity();
-  const fcl::Boxd box_A(0.2, 0.2, 0.2);
+  const typename Backend::Box box_A(0.2, 0.2, 0.2);
   // Translate diagonally in X-Y plane
   const RigidTransformd X_WB(Vector3d(0.2, 0.2, 0));
-  const fcl::Boxd box_B(0.2, 0.2, 0.2);
+  const typename Backend::Box box_B(0.2, 0.2, 0.2);
   // The witness point of box_A is in the middle of an edge parallel to Az axis.
   const Vector3d p_ACa(0.1 - 1e-13, 0.1 - 1e-13, 0);
   // The witness point of box_B is in the middle of an edge parallel to Bz axis.
@@ -572,21 +598,19 @@ GTEST_TEST(BoxBoxGradient, InputWithNumericalErrors) {
 
   // Confirm that the witness points co-locate in World's frame.
   ASSERT_TRUE(CompareMatrices(X_WA * p_ACa, X_WB * p_BCb, 1e-14));
-  // Confirm that PointOnBoxSurfaceHelper<FclBackend>() classified the witness
+  // Confirm that PointOnBoxSurfaceHelper<Backend>() classified the witness
   // points as non-surface points.
-  ASSERT_EQ(PointOnBoxSurfaceHelper<FclBackend>(p_ACa, box_A),
-            Vector3d(0, 0, 0));
-  ASSERT_EQ(PointOnBoxSurfaceHelper<FclBackend>(p_BCb, box_B),
-            Vector3d(0, 0, 0));
+  ASSERT_EQ(PointOnBoxSurfaceHelper<Backend>(p_ACa, box_A), Vector3d(0, 0, 0));
+  ASSERT_EQ(PointOnBoxSurfaceHelper<Backend>(p_BCb, box_B), Vector3d(0, 0, 0));
 
   // Non-surface witness points go to the catch-all case in
-  // BoxBoxGradient<FclBackend>(). It searches all the fifteen possible
+  // BoxBoxGradient<Backend>(). It searches all the fifteen possible
   // directions of Ax, Ay, Az, Bx, By, Bz, Ax.cross(Bx), Ax.cross(By),
   // Ax.cross(Bz), Ay.cross(Bx), Ay.cross(By), Ay.cross(Bz), Az.cross(Bx),
   // Az.cross(By), and Az.cross(Bz). The solution is not unique, and Ax happened
   // to be the first one that we found.
   EXPECT_TRUE(CompareMatrices(
-      BoxBoxGradient<FclBackend>(box_A, box_B, X_WA, X_WB, p_ACa, p_BCb),
+      BoxBoxGradient<Backend>(box_A, box_B, X_WA, X_WB, p_ACa, p_BCb),
       -Vector3d::UnitX()));
 }
 

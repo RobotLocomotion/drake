@@ -989,6 +989,17 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "proximity_engine_backend_agreement_test",
+    deps = [
+        ":proximity_engine",
+        ":shape_specification",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//geometry/proximity:proximity_utilities",
+        "//math",
+    ],
+)
+
+drake_cc_googletest(
     name = "proximity_engine_coal_test",
     deps = [
         ":proximity_engine",
