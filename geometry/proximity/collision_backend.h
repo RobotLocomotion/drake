@@ -4,6 +4,7 @@
 
 #include "drake/common/autodiff.h"
 #include "drake/common/symbolic/expression.h"
+#include "drake/geometry/collision_backend.h"
 #include "drake/geometry/proximity/coal_backend.h"
 #include "drake/geometry/proximity/fcl_backend.h"
 
@@ -25,6 +26,22 @@
  this way defines its members in a .cc alongside the explicit instantiation,
  so a caller cannot implicitly instantiate one anyway, and a declaration would
  pull a concrete backend -- and its collision library -- into a header. */
+
+namespace drake {
+namespace geometry {
+namespace internal {
+
+/* Returns the backend that newly-constructed ProximityEngine instances will
+ be built on.
+
+ On the first call this is initialized from the DRAKE_PROXIMITY_BACKEND
+ environment variable; an unset or empty variable selects FCL, and an
+ unrecognized value logs a warning once and selects FCL. */
+CollisionBackend GetDefaultCollisionBackend();
+
+}  // namespace internal
+}  // namespace geometry
+}  // namespace drake
 
 // clang-format off
 

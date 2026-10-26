@@ -339,7 +339,10 @@ class SceneGraph final : public systems::LeafSystem<T> {
    */
   //@{
 
-  /** Sets the configuration. */
+  /** Sets the configuration.
+
+   @throws std::exception if this would change the collision backend after
+   proximity geometry has been registered. */
   void set_config(const SceneGraphConfig& config);
 
   /** @returns the current configuration. */

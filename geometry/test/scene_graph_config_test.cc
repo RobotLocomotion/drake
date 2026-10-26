@@ -1,6 +1,7 @@
 #include "drake/geometry/scene_graph_config.h"
 
 #include <limits>
+#include <string>
 
 #include <gtest/gtest.h>
 
@@ -18,6 +19,7 @@ constexpr double kInf = std::numeric_limits<double>::infinity();
 constexpr double kNan = std::numeric_limits<double>::quiet_NaN();
 
 const char* const kExampleConfig = R"""(
+collision_backend: coal
 default_proximity_properties:
   compliance_type: compliant
   hydroelastic_modulus: 2.0
@@ -32,6 +34,8 @@ default_proximity_properties:
 
 GTEST_TEST(SceneGraphConfigTest, YamlTest) {
   const auto config = LoadYamlString<SceneGraphConfig>(kExampleConfig);
+  EXPECT_EQ(config.collision_backend, "coal");
+  EXPECT_NO_THROW(config.ValidateOrThrow());
   const auto& props = config.default_proximity_properties;
   EXPECT_EQ(props.compliance_type, "compliant");
   EXPECT_EQ(props.hydroelastic_modulus, 2);
@@ -43,6 +47,18 @@ GTEST_TEST(SceneGraphConfigTest, YamlTest) {
   EXPECT_EQ(props.relaxation_time, 8);
   EXPECT_EQ(props.point_stiffness, 9);
   EXPECT_EQ("\n" + SaveYamlString(config), kExampleConfig);
+}
+
+GTEST_TEST(SceneGraphConfigTest, YamlBackendDefaultAndInvalid) {
+  const SceneGraphConfig default_config;
+  EXPECT_TRUE(default_config.collision_backend.empty());
+  EXPECT_NE(SaveYamlString(default_config).find("collision_backend: ''"),
+            std::string::npos);
+
+  const auto invalid_config = LoadYamlString<SceneGraphConfig>(
+      "collision_backend: nope", std::nullopt, SceneGraphConfig{});
+  DRAKE_EXPECT_THROWS_MESSAGE(invalid_config.ValidateOrThrow(),
+                              "Unknown collision backend: 'nope'.*");
 }
 
 GTEST_TEST(SceneGraphConfigTest, ValidDefault) {

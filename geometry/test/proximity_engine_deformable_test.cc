@@ -191,7 +191,9 @@ class ProximityEngineDeformableContactTest : public testing::Test {
     }
   }
 
-  ProximityEngine<double> engine_;
+  // Keep this suite on the same backend as the FCL-specific engine tests from
+  // which it was split.
+  ProximityEngine<double> engine_{CollisionBackend::kFcl};
   internal::DrivenMeshData driven_mesh_data_;
 };
 

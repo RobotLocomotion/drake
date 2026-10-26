@@ -213,6 +213,9 @@ class GeometryState {
   /** Default constructor.  */
   GeometryState();
 
+  /** Reports which collision backend answers proximity queries. */
+  CollisionBackend collision_backend() const;
+
   /** Allow assignment from a %GeometryState<double> to a %GeometryState<T>.
    @internal The SFINAE is required to prevent collision with the default
    defined assignment operator where T is double.  */
@@ -803,6 +806,10 @@ class GeometryState {
   // Scalar-converting copy constructor.
   template <typename U>
   explicit GeometryState(const GeometryState<U>& source);
+
+  // Selects a backend while the state has no proximity geometry. A null value
+  // selects the process-wide default.
+  void SetCollisionBackend(std::optional<CollisionBackend> backend);
 
   // Allow SceneGraph unique access to the state members to perform queries.
   friend class SceneGraph<T>;
