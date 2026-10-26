@@ -29,34 +29,6 @@ drake_py_experiment_binary(
 )
 
 drake_cc_googlebench_binary(
-    name = "autodiff_extract",
-    srcs = ["autodiff_extract.cc"],
-    data = [
-        "@drake_models//:iiwa_description",
-    ],
-    deps = [
-        "//math:autodiff",
-        "//math:geometric_transform",
-        "//math:gradient",
-        "//multibody/inverse_kinematics:kinematic_evaluators",
-        "//multibody/parsing",
-        "//multibody/plant",
-        "//solvers:cost",
-        "//tools/performance:fixture_common",
-    ],
-    add_test_rule = True,
-    test_rule_args = [
-        # When testing, only run the smallest tests.
-        "--benchmark_filter=/7/1$$|Fixture/[A-Za-z]*/1$$",
-    ],
-)
-
-drake_py_experiment_binary(
-    name = "autodiff_extract_experiment",
-    googlebench_binary = ":autodiff_extract",
-)
-
-drake_cc_googlebench_binary(
     name = "cassie",
     srcs = ["cassie.cc"],
     data = ["cassie_v2.urdf"],
