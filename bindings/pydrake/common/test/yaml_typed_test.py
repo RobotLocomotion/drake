@@ -1635,6 +1635,21 @@ class TestYamlTypedWriteDefaults(unittest.TestCase):
         """),
         )
 
+    def test_dump_default_different_variant_kind(self):
+        # Variants differing by kind (map vs scalar) are not erased.
+        defaults = VariantStruct()
+        data = VariantStruct()
+        data.value = FloatStruct(1.0)
+
+        self.assertEqual(
+            self._save(data, defaults),
+            dedent("""\
+        doc:
+          value: !FloatStruct
+            value: 1.0
+        """),
+        )
+
     def test_dump_default_different_map_keys(self):
         # Maps differing in key only (same value) are not erased.
         defaults = MapStruct()
