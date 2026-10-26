@@ -3456,6 +3456,8 @@ void MultibodyTree<T>::CalcJacobianSpatialVelocity(
                               ? num_positions()
                               : num_velocities();
   DRAKE_THROW_UNLESS(Js_V_ABp_E->cols() == num_columns);
+  // N.B. This avoids working with zero sized Eigen blocks; see drake#17113.
+  if (num_columns == 0) return;
 
   // The spatial velocity V_WBp can be obtained by composing the spatial
   // velocities V_WAp and V_ABp. Expressed in the world frame W this
