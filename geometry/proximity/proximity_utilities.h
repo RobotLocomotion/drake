@@ -26,7 +26,7 @@ namespace internal DRAKE_NO_EXPORT {
  backend-spanning machinery lives, because the policies themselves need it:
  collision_backend.h includes each policy header to enumerate them, so a
  policy cannot include it back. */
-enum class CollisionBackend { kFcl };
+enum class CollisionBackend { kFcl, kCoal };
 
 /* The geometry kinds Drake registers with a proximity backend, plus a catch-
  all for everything else the backend's library can represent.

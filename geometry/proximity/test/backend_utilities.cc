@@ -4,6 +4,7 @@
 #include <utility>
 #include <vector>
 
+#include "drake/geometry/proximity/coal_backend.h"
 #include "drake/geometry/proximity/fcl_backend.h"
 #include "drake/geometry/proximity/polygon_surface_mesh.h"
 #include "drake/geometry/proximity/proximity_utilities.h"
@@ -74,6 +75,8 @@ std::unique_ptr<typename Backend::Object> MakeBackendObject(
 }
 
 template std::unique_ptr<FclBackend::Object> MakeBackendObject<FclBackend>(
+    const Shape&, GeometryId, bool, const math::RigidTransformd&);
+template std::unique_ptr<CoalBackend::Object> MakeBackendObject<CoalBackend>(
     const Shape&, GeometryId, bool, const math::RigidTransformd&);
 
 }  // namespace internal

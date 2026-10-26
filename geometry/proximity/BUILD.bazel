@@ -181,6 +181,23 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "coal_backend",
+    srcs = ["coal_backend.cc"],
+    hdrs = ["coal_backend.h"],
+    internal = True,
+    visibility = [
+        "//geometry:__pkg__",
+    ],
+    deps = [
+        ":proximity_utilities",
+        "//common:drake_export",
+        "//common:essential",
+        "//math:geometric_transform",
+        "@coal_internal//:coal",
+    ],
+)
+
+drake_cc_library(
     name = "collision_backend",
     hdrs = ["collision_backend.h"],
     internal = True,
@@ -188,6 +205,7 @@ drake_cc_library(
         "//geometry:__pkg__",
     ],
     deps = [
+        ":coal_backend",
         ":fcl_backend",
         "//common:autodiff",
         "//common/symbolic:expression",
@@ -1148,6 +1166,7 @@ drake_cc_library(
     hdrs = ["test/backend_utilities.h"],
     visibility = ["//visibility:private"],
     deps = [
+        ":coal_backend",
         ":fcl_backend",
         ":polygon_surface_mesh",
         ":proximity_utilities",
@@ -1155,6 +1174,15 @@ drake_cc_library(
         "//geometry:shape_specification",
         "//math:geometric_transform",
         "@fcl_internal//:fcl",
+    ],
+)
+
+drake_cc_googletest(
+    name = "backend_utilities_test",
+    deps = [
+        ":backend_utilities",
+        ":coal_backend",
+        ":fcl_backend",
     ],
 )
 
