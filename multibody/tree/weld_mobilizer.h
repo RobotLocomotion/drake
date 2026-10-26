@@ -133,6 +133,10 @@ class WeldMobilizer final : public MobilizerImpl<T, 0, 0> {
   void DoCalcNplusDotMatrix(const systems::Context<T>& context,
                             EigenPtr<MatrixX<T>> NplusDot) const final;
 
+  // This mobilizer has no generalized positions, so there are no partials.
+  void DoCalcHMatrixPartials(const systems::Context<T>& context,
+                             EigenPtr<MatrixX<T>> dH_FM_dq) const final;
+
   // This override is a no-op since this mobilizer has no generalized
   // velocities associated with it.
   void DoMapVelocityToQDot(const systems::Context<T>& context,

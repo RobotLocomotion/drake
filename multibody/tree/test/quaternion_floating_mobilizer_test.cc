@@ -165,6 +165,17 @@ TEST_F(QuaternionFloatingMobilizerTest, SetGetSpatialVelocity) {
   EXPECT_EQ(after.get_coeffs(), set_V.get_coeffs());
 }
 
+TEST_F(QuaternionFloatingMobilizerTest, CalcHMatrixPartials) {
+  mobilizer_->SetQuaternion(context_.get(),
+                            RollPitchYawd(1, 2, 3).ToQuaternion());
+  mobilizer_->SetTranslation(context_.get(), Vector3d(1, 2, 3));
+  Eigen::MatrixXd dH_FM_dq = Eigen::MatrixXd::Constant(
+      42, 6, std::numeric_limits<double>::quiet_NaN());
+  mobilizer_->CalcHMatrixPartials(*context_, &dH_FM_dq);
+  EXPECT_TRUE(CompareMatrices(dH_FM_dq, Eigen::MatrixXd::Zero(42, 6)));
+  TestHMatrixPartials(*mobilizer_, context_.get());
+}
+
 TEST_F(QuaternionFloatingMobilizerTest, RandomState) {
   RandomGenerator generator;
   std::uniform_real_distribution<symbolic::Expression> uniform;

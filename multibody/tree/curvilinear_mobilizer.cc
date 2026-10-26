@@ -204,6 +204,16 @@ void CurvilinearMobilizer<T>::DoCalcNplusDotMatrix(
 }
 
 template <typename T>
+void CurvilinearMobilizer<T>::DoCalcHMatrixPartials(
+    const systems::Context<T>& context, EigenPtr<MatrixX<T>> dH_FM_dq) const {
+  const auto& q = this->get_positions(context);
+  DRAKE_ASSERT(q.size() == kNq);
+  const T v(1.0);
+  const T vdot(0.0);
+  dH_FM_dq->col(0) = calc_A_FM(q.data(), &v, &vdot).get_coeffs();
+}
+
+template <typename T>
 void CurvilinearMobilizer<T>::DoMapVelocityToQDot(
     const systems::Context<T>&, const Eigen::Ref<const VectorX<T>>& v,
     EigenPtr<VectorX<T>> qdot) const {

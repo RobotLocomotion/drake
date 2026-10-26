@@ -92,6 +92,16 @@ TEST_F(RpyBallMobilizerTest, CalcAcrossMobilizerTransform) {
   TestPrePostMultiplyByX_FM(X_FM, *mobilizer_);
 }
 
+TEST_F(RpyBallMobilizerTest, CalcHMatrixPartials) {
+  mobilizer_->SetAngles(context_.get(),
+                        Vector3d(M_PI / 3, -M_PI / 3, M_PI / 5));
+  Eigen::MatrixXd dH_FM_dq = Eigen::MatrixXd::Constant(
+      18, 3, std::numeric_limits<double>::quiet_NaN());
+  mobilizer_->CalcHMatrixPartials(*context_, &dH_FM_dq);
+  EXPECT_TRUE(CompareMatrices(dH_FM_dq, Eigen::MatrixXd::Zero(18, 3)));
+  TestHMatrixPartials(*mobilizer_, context_.get());
+}
+
 TEST_F(RpyBallMobilizerTest, ZeroState) {
   // Set an arbitrary "non-zero" state.
   const Vector3d rpy_value(M_PI / 3, -M_PI / 3, M_PI / 5);

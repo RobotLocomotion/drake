@@ -469,6 +469,7 @@ drake_cc_library(
     hdrs = ["test/mobilizer_tester.h"],
     deps = [
         ":tree",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 

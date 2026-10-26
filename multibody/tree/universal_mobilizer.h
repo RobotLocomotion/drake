@@ -229,6 +229,11 @@ class UniversalMobilizer final : public MobilizerImpl<T, 2, 2> {
   void DoCalcNplusDotMatrix(const systems::Context<T>& context,
                             EigenPtr<MatrixX<T>> NplusDot) const final;
 
+  // Only My_F (the second column of Hw) depends on q, via q₀; see the
+  // structure of H above calc_A_FM().
+  void DoCalcHMatrixPartials(const systems::Context<T>& context,
+                             EigenPtr<MatrixX<T>> dH_FM_dq) const final;
+
   // Maps v to qdot, which for this mobilizer is q̇ = v.
   void DoMapVelocityToQDot(const systems::Context<T>& context,
                            const Eigen::Ref<const VectorX<T>>& v,
