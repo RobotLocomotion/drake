@@ -182,8 +182,32 @@ struct SceneGraphConfig {
   Refer to @ref yaml_serialization "YAML Serialization" for background. */
   template <typename Archive>
   void Serialize(Archive* a) {
+    a->Visit(DRAKE_NVP(collision_backend));
     a->Visit(DRAKE_NVP(default_proximity_properties));
   }
+
+  /** Selects the collision library used for proximity queries. The selection
+  is local to this SceneGraph. The supported values are:
+
+  - `"fcl"` selects the Flexible Collision Library, Drake's current default.
+  - `"coal"` selects the Coal collision library.
+  - `""` selects the process-wide default.
+
+  The process-wide default is initialized once, when first needed, from the
+  `DRAKE_PROXIMITY_BACKEND` environment variable. The environment variable
+  accepts `"fcl"` or `"coal"` case-insensitively. If it is unset, empty, or
+  unrecognized, the default is FCL (an unrecognized value also produces a
+  warning). A non-empty value here takes precedence over the process-wide
+  default.
+
+  Both backends provide the same proximity-query API, but their floating-point
+  results are not necessarily identical; callers should not expect bitwise
+  equivalence when changing backends.
+
+  The backend can be changed with SceneGraph::set_config() only while no
+  proximity geometry is registered. Once proximity geometry has been
+  registered, attempting to select a different backend throws an exception. */
+  std::string collision_backend;
 
   /** Provides SceneGraph-wide contact material values to use when none have
   been otherwise specified. */

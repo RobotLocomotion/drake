@@ -5,6 +5,7 @@
 #include "drake/geometry/proximity/coal_backend.h"
 #include "drake/geometry/proximity/fcl_backend.h"
 #include "drake/geometry/proximity/proximity_utilities.h"
+#include "drake/geometry/proximity/test/backend_test_utilities.h"
 #include "drake/math/roll_pitch_yaw.h"
 
 namespace drake {
@@ -12,14 +13,7 @@ namespace geometry {
 namespace internal {
 namespace {
 
-template <typename Backend>
-class BackendUtilitiesTest : public ::testing::Test {};
-
-using Backends = ::testing::Types<FclBackend, CoalBackend>;
-TYPED_TEST_SUITE(BackendUtilitiesTest, Backends);
-
-TYPED_TEST(BackendUtilitiesTest, MakeBackendObject) {
-  using Backend = TypeParam;
+DRAKE_BACKEND_GTEST(BackendUtilitiesTest, MakeBackendObject) {
   const GeometryId id = GeometryId::get_new_id();
   const math::RigidTransformd X_WG(math::RollPitchYawd(0.1, 0.2, 0.3),
                                    Eigen::Vector3d(1.0, 2.0, 3.0));

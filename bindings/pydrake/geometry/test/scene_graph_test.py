@@ -460,11 +460,14 @@ class TestGeometrySceneGraph(unittest.TestCase):
     def test_scene_graph_config(self):
         mut.DefaultProximityProperties()
         scene_graph_config = mut.SceneGraphConfig()
+        self.assertEqual(scene_graph_config.collision_backend, "")
+        scene_graph_config.collision_backend = "coal"
         scene_graph = mut.SceneGraph(config=scene_graph_config)
         got_config = scene_graph.get_config()
         self.assertEqual(
             got_config.default_proximity_properties.compliance_type, "undefined"
         )
+        self.assertEqual(got_config.collision_backend, "coal")
         scene_graph_config.default_proximity_properties.compliance_type = (
             "compliant"
         )
@@ -487,7 +490,12 @@ class TestGeometrySceneGraph(unittest.TestCase):
             point_stiffness=9,
         )
         param_init_scene_graph = mut.SceneGraphConfig(
-            default_proximity_properties=param_init_props
+            collision_backend="coal",
+            default_proximity_properties=param_init_props,
+        )
+        self.assertEqual(
+            param_init_scene_graph.collision_backend,
+            "coal",
         )
         # Spot-check that at least some value got passed through.
         got_props = param_init_scene_graph.default_proximity_properties

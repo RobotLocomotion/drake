@@ -29,6 +29,7 @@ drake_cc_package_library(
     name = "geometry",
     visibility = ["//visibility:public"],
     deps = [
+        ":collision_backend",
         ":collision_filter_declaration",
         ":collision_filter_manager",
         ":deformable_mesh_with_bvh",
@@ -68,6 +69,13 @@ drake_cc_package_library(
         ":shape_specification",
         ":utilities",
     ],
+)
+
+drake_cc_library(
+    name = "collision_backend",
+    srcs = ["collision_backend.cc"],
+    hdrs = ["collision_backend.h"],
+    deps = ["//common:essential"],
 )
 
 drake_cc_library(
@@ -1039,6 +1047,7 @@ drake_cc_googletest(
         ":proximity_engine",
         ":shape_specification",
         "//common/test_utilities:eigen_matrix_compare",
+        "//geometry/proximity:collision_backend",
         "//geometry/proximity:proximity_utilities",
         "//math",
     ],
@@ -1239,6 +1248,7 @@ drake_cc_googletest(
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:expect_throws_message",
+        "//geometry/proximity:collision_backend",
         "//geometry/test_utilities:dummy_render_engine",
     ],
 )

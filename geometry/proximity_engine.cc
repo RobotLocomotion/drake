@@ -1859,9 +1859,7 @@ typename ProximityEngine<T>::ImplBase* ProximityEngine<T>::MakeImpl(
 
 template <typename T>
 typename ProximityEngine<T>::ImplBase* ProximityEngine<T>::MakeImpl() {
-  // FCL remains the default; there is no way to ask for anything else yet
-  // except through the backend-naming constructor, which only tests use.
-  return MakeImpl(CollisionBackend::kFcl);
+  return MakeImpl(GetDefaultCollisionBackend());
 }
 
 template <typename T>

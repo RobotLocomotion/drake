@@ -10,6 +10,7 @@
 #include <fmt/format.h>
 
 #include "drake/common/drake_export.h"
+#include "drake/geometry/collision_backend.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/proximity/volume_mesh.h"
 #include "drake/geometry/shape_specification.h"
@@ -17,16 +18,6 @@
 namespace drake {
 namespace geometry {
 namespace internal DRAKE_NO_EXPORT {
-
-/* Identifies which backend policy an object is built on. Policies carry this
- as their `kId`; it lets code that holds a backend-erased handle -- notably
- ProximityEngine's ImplBase -- report and compare backends.
-
- This lives here, rather than in collision_backend.h where the rest of the
- backend-spanning machinery lives, because the policies themselves need it:
- collision_backend.h includes each policy header to enumerate them, so a
- policy cannot include it back. */
-enum class CollisionBackend { kFcl, kCoal };
 
 /* The geometry kinds Drake registers with a proximity backend, plus a catch-
  all for everything else the backend's library can represent.

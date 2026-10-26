@@ -9,6 +9,7 @@
 #include "drake/geometry/proximity/coal_backend.h"
 #include "drake/geometry/proximity/fcl_backend.h"
 #include "drake/geometry/proximity/proximity_utilities.h"
+#include "drake/geometry/proximity/test/backend_test_utilities.h"
 
 namespace drake {
 namespace geometry {
@@ -17,14 +18,6 @@ namespace has_collisions {
 namespace {
 
 using std::make_shared;
-
-/* These tests exercise bookkeeping -- the collision filter and the
- "did anything touch" flag -- not numerics, so both backends must agree
- exactly. */
-template <typename Backend>
-class CollisionsExistCallbackTest : public ::testing::Test {};
-using Backends = ::testing::Types<FclBackend, CoalBackend>;
-TYPED_TEST_SUITE(CollisionsExistCallbackTest, Backends);
 
 // TODO(tehbelinda - #10227): Add a test to ensure broad-phase culling exits
 // early after finding the first contact. Ideally there's a nice way to
@@ -52,8 +45,7 @@ TYPED_TEST_SUITE(CollisionsExistCallbackTest, Backends);
 //                  ┆        ┆
 //                  └┄┄┄┄┄┄┄┄┘
 //
-TYPED_TEST(CollisionsExistCallbackTest, Exist) {
-  using Backend = TypeParam;
+DRAKE_BACKEND_GTEST(CollisionsExistCallbackTest, Exist) {
   CollisionFilter collision_filter;
 
   const EncodedData data_A(GeometryId::get_new_id(), true);
@@ -98,8 +90,7 @@ TYPED_TEST(CollisionsExistCallbackTest, Exist) {
 //    ┃   ┃
 //    ┗━━━┛
 //
-TYPED_TEST(CollisionsExistCallbackTest, RespectsCollisionFilter) {
-  using Backend = TypeParam;
+DRAKE_BACKEND_GTEST(CollisionsExistCallbackTest, RespectsCollisionFilter) {
   CollisionFilter collision_filter;
 
   EncodedData data_A(GeometryId::get_new_id(), true);

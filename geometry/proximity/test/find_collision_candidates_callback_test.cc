@@ -10,6 +10,7 @@
 #include "drake/geometry/proximity/coal_backend.h"
 #include "drake/geometry/proximity/fcl_backend.h"
 #include "drake/geometry/proximity/proximity_utilities.h"
+#include "drake/geometry/proximity/test/backend_test_utilities.h"
 
 namespace drake {
 namespace geometry {
@@ -17,19 +18,12 @@ namespace internal {
 namespace find_collision_candidates {
 namespace {
 
-/* This callback only reports candidate pairs; it runs no narrowphase, so
- both backends must agree exactly. */
-template <typename Backend>
-class FindCollisionCandidatesTest : public ::testing::Test {};
-using Backends = ::testing::Types<FclBackend, CoalBackend>;
-TYPED_TEST_SUITE(FindCollisionCandidatesTest, Backends);
 using std::make_shared;
 using std::vector;
 
 // Confirms that the callback properly returns a sorted pair for the
 // corresponding geometry ids.
-TYPED_TEST(FindCollisionCandidatesTest, PairsProperlyFormed) {
-  using Backend = TypeParam;
+DRAKE_BACKEND_GTEST(FindCollisionCandidatesTest, PairsProperlyFormed) {
   const GeometryId id_A = GeometryId::get_new_id();
   const GeometryId id_B = GeometryId::get_new_id();
   CollisionFilter collision_filter;
@@ -62,8 +56,7 @@ TYPED_TEST(FindCollisionCandidatesTest, PairsProperlyFormed) {
 }
 
 // This test verifies that the broad-phase callback respects filtering.
-TYPED_TEST(FindCollisionCandidatesTest, RespectsCollisionFilter) {
-  using Backend = TypeParam;
+DRAKE_BACKEND_GTEST(FindCollisionCandidatesTest, RespectsCollisionFilter) {
   CollisionFilter collision_filter;
 
   EncodedData data_A(GeometryId::get_new_id(), true);

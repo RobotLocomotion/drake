@@ -5,6 +5,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/geometry/proximity/collision_backend.h"
 #include "drake/geometry/proximity/proximity_utilities.h"
 #include "drake/geometry/proximity_engine.h"
 #include "drake/math/rigid_transform.h"
@@ -69,9 +70,12 @@ class CoalEngineTest : public ::testing::Test {
 
 TEST_F(CoalEngineTest, ReportsItsBackend) {
   EXPECT_EQ(ProximityEngineTester::backend(engine_), CollisionBackend::kCoal);
+  // The default-constructed engine follows the selector, which in turn
+  // follows DRAKE_PROXIMITY_BACKEND; assert against the selector rather than
+  // against a hard-coded FCL, so this test is correct under either setting.
   const ProximityEngine<double> default_engine;
   EXPECT_EQ(ProximityEngineTester::backend(default_engine),
-            CollisionBackend::kFcl);
+            GetDefaultCollisionBackend());
 }
 
 TEST_F(CoalEngineTest, RegistersGeometry) {
