@@ -199,6 +199,7 @@ drake_cc_library(
 
 drake_cc_library(
     name = "collision_backend",
+    srcs = ["collision_backend.cc"],
     hdrs = ["collision_backend.h"],
     internal = True,
     visibility = [
@@ -208,6 +209,7 @@ drake_cc_library(
         ":coal_backend",
         ":fcl_backend",
         "//common:autodiff",
+        "//common:essential",
         "//common/symbolic:expression",
     ],
 )
@@ -1255,6 +1257,27 @@ drake_cc_library(
 drake_cc_googletest(
     name = "characterization_utilities_test",
     deps = [":characterization_utilities"],
+)
+
+drake_cc_googletest(
+    name = "collision_backend_test",
+    deps = [
+        ":collision_backend",
+        "//geometry:proximity_engine",
+    ],
+)
+
+# Re-run collision_backend_test with the environment variable set, which is
+# the only way to exercise the environment read: it happens once per process,
+# on first use.
+drake_cc_googletest(
+    name = "collision_backend_coal_env_test",
+    srcs = ["test/collision_backend_test.cc"],
+    env = {"DRAKE_PROXIMITY_BACKEND": "coal"},
+    deps = [
+        ":collision_backend",
+        "//geometry:proximity_engine",
+    ],
 )
 
 drake_cc_googletest(

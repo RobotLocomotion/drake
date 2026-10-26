@@ -1005,6 +1005,7 @@ drake_cc_googletest(
         ":proximity_engine",
         ":shape_specification",
         "//common/test_utilities:eigen_matrix_compare",
+        "//geometry/proximity:collision_backend",
         "//geometry/proximity:proximity_utilities",
         "//math",
     ],

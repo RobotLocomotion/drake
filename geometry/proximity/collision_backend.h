@@ -1,5 +1,8 @@
 #pragma once
 
+#include <optional>
+#include <string>
+#include <string_view>
 #include <tuple>
 
 #include "drake/common/autodiff.h"
@@ -20,6 +23,36 @@
  Note that none of the proximity targets set `compile_once_per_scalar`, so --
  unlike default_scalars.h -- these macros need no DRAKE_ONCE_PER_SCALAR_PHASE
  branch. If a target ever opts in, these will need one too. */
+
+namespace drake {
+namespace geometry {
+namespace internal {
+
+/* Returns the name the DRAKE_PROXIMITY_BACKEND environment variable uses for
+ the given backend. */
+std::string_view to_string(CollisionBackend backend);
+
+/* Parses a backend name as DRAKE_PROXIMITY_BACKEND spells it, case
+ insensitively. Returns nullopt if `name` names no backend. */
+std::optional<CollisionBackend> ParseCollisionBackend(std::string_view name);
+
+/* Returns the backend that newly-constructed ProximityEngine instances will
+ be built on.
+
+ On the first call this is initialized from the DRAKE_PROXIMITY_BACKEND
+ environment variable; an unset or empty variable selects FCL, and an
+ unrecognized value logs a warning once and selects FCL. */
+CollisionBackend GetDefaultCollisionBackend();
+
+/* Overrides the backend that *subsequently*-constructed ProximityEngine
+ instances will be built on. Engines that already exist keep the backend they
+ were built with -- an engine latches its backend at construction, so a
+ simulation in progress cannot be perturbed by a late call to this. */
+void SetDefaultCollisionBackend(CollisionBackend backend);
+
+}  // namespace internal
+}  // namespace geometry
+}  // namespace drake
 
 // clang-format off
 
