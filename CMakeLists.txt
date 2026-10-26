@@ -26,6 +26,10 @@ foreach(_config IN LISTS SUPPORTED_BUILD_TYPES)
   endif()
 endforeach()
 
+# Target minimum x86-64-v2 microarchitecture. Later flags (e.g. -march=native)
+# specified by users will override this flag.
+set(CMAKE_C_FLAGS_INIT -march=x86-64-v2)
+
 project(drake
   DESCRIPTION "Model-based design and verification for robotics"
   LANGUAGES C
