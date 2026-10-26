@@ -220,8 +220,12 @@ struct CoalBackend {
   /* Triangulates the faces of a convex PolygonSurfaceMesh -- given in that
    class's flat [count, v0, v1, ..., count, ...] encoding -- into the triangle
    list a Convex requires (see D4). Each n-gon becomes a fan of n - 2
-   triangles around its first vertex, which preserves the winding (and
-   therefore the outward normal) of the original face.
+   triangles around its first vertex, preserving the polygon's vertex order.
+
+   Note that Coal stores this list but, as Drake constructs a Convex, derives
+   nothing from it -- the support function reads the vertex array -- so no
+   proximity query observes whether this is right. It is tested directly in
+   coal_backend_test.cc rather than through the engine.
 
    @pre `face_data` is the face_data() of a PolygonSurfaceMesh whose faces are
         all planar and convex (which is true of a convex hull).  */

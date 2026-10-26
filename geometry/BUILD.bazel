@@ -1043,9 +1043,11 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "proximity_engine_coal_test",
+    data = [":test_obj_files"],
     deps = [
         ":proximity_engine",
         ":shape_specification",
+        "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
         "//geometry/proximity:collision_backend",
         "//geometry/proximity:proximity_utilities",

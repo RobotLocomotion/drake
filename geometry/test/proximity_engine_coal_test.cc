@@ -1,9 +1,11 @@
 #include <limits>
+#include <string>
 #include <unordered_map>
 #include <vector>
 
 #include <gtest/gtest.h>
 
+#include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/geometry/proximity/collision_backend.h"
 #include "drake/geometry/proximity/proximity_utilities.h"
@@ -126,29 +128,67 @@ TEST_F(CoalEngineTest, CollisionCandidatesAndHasCollisions) {
   EXPECT_EQ(engine_.ComputePointPairPenetration(X_WGs_).size(), 0);
 }
 
-/* A convex hull exercises D4: Drake's polygon face encoding has to be
- fan-triangulated for Coal, and a mistake there would mis-shape the geometry
- rather than fail to compile. A box convex hull of half-extent 1, centered 1.5
- from the unit sphere, overlaps it by 0.5 just as the sphere pair did. */
+/* Drives the convex hull construction path, which a primitive Box does not:
+ the engine represents Box as a Box, and only Mesh and Convex go through
+ ImplementFromConvexHull(). quad_cube.obj is a 2x2x2 cube of six quad faces.
+
+ What this pins down is the hull's *geometry* -- the vertices and, crucially,
+ the vertex count, which is a real D4 difference: Coal's Convex constructor
+ takes the count where FCL's infers it, so a transposed or wrong argument
+ here is a hard crash rather than a slightly wrong number.
+
+ It does not test the fan-triangulation. Coal stores the polygon list but
+ derives nothing from it as Drake constructs it -- the support function reads
+ the vertex array -- so these assertions are unchanged by a triangle list
+ that is wound backwards or empty. MakeFaces() is tested directly instead;
+ see geometry/proximity/test/coal_backend_test.cc.  */
 TEST_F(CoalEngineTest, ConvexHullGeometry) {
+  const std::string path =
+      FindResourceOrThrow("drake/geometry/test/quad_cube.obj");
+
   ProximityEngine<double> engine{CollisionBackend::kCoal};
   const GeometryId id_sphere = GeometryId::get_new_id();
   const GeometryId id_convex = GeometryId::get_new_id();
-  ProximityProperties props;
-  engine.AddDynamicGeometry(Sphere(1.0), RigidTransformd{}, id_sphere, props);
-  engine.AddDynamicGeometry(Box(2.0, 2.0, 2.0), RigidTransformd{}, id_convex,
+  const ProximityProperties props;
+  engine.AddDynamicGeometry(Sphere(0.1), RigidTransformd{}, id_sphere, props);
+  engine.AddDynamicGeometry(Convex(path, 1.0), RigidTransformd{}, id_convex,
                             props);
 
-  const unordered_map<GeometryId, RigidTransformd> X_WGs{
-      {id_sphere, RigidTransformd{}},
-      {id_convex, RigidTransformd{Vector3d{2.5, 0, 0}}}};
-  engine.UpdateWorldPoses(X_WGs);
+  // The hull is the cube [-1, 1]^3. Probe it along each axis in turn, so a
+  // single mis-wound face cannot hide behind the symmetry of one direction.
+  for (int axis = 0; axis < 3; ++axis) {
+    for (const double sign : {1.0, -1.0}) {
+      SCOPED_TRACE(fmt::format("axis {} sign {}", axis, sign));
+      Vector3d p_WS = Vector3d::Zero();
+      p_WS[axis] = sign * 1.5;
+      const unordered_map<GeometryId, RigidTransformd> X_WGs{
+          {id_convex, RigidTransformd{}}, {id_sphere, RigidTransformd{p_WS}}};
+      engine.UpdateWorldPoses(X_WGs);
 
-  const vector<SignedDistancePair<double>> pairs =
-      engine.ComputeSignedDistancePairwiseClosestPoints(X_WGs, kInf);
+      const vector<SignedDistancePair<double>> pairs =
+          engine.ComputeSignedDistancePairwiseClosestPoints(X_WGs, kInf);
+      ASSERT_EQ(pairs.size(), 1);
+      // Cube face at 1.0, sphere surface at 1.5 - 0.1 = 1.4.
+      EXPECT_NEAR(pairs[0].distance, 0.4, 1e-6);
+
+      // The witness point on the cube must lie on the face we approached.
+      const bool convex_is_A = pairs[0].id_A == id_convex;
+      const Vector3d& p_on_cube = convex_is_A ? pairs[0].p_ACa : pairs[0].p_BCb;
+      EXPECT_NEAR(p_on_cube[axis], sign * 1.0, 1e-6);
+    }
+  }
+
+  // And a penetrating configuration, which is where a bad hull shows up as a
+  // wrong depth rather than a wrong distance.
+  const unordered_map<GeometryId, RigidTransformd> X_WGs{
+      {id_convex, RigidTransformd{}},
+      {id_sphere, RigidTransformd{Vector3d{1.05, 0, 0}}}};
+  engine.UpdateWorldPoses(X_WGs);
+  const vector<PenetrationAsPointPair<double>> pairs =
+      engine.ComputePointPairPenetration(X_WGs);
   ASSERT_EQ(pairs.size(), 1);
-  // Sphere surface at x = 1, box face at x = 1.5.
-  EXPECT_NEAR(pairs[0].distance, 0.5, 1e-9);
+  // Sphere centre 0.05 outside the face, radius 0.1, so 0.05 of overlap.
+  EXPECT_NEAR(pairs[0].depth, 0.05, 1e-6);
 }
 
 /* Copying and scalar conversion must stay on the backend they started on. */
