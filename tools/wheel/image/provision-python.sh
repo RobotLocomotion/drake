@@ -19,8 +19,8 @@ fi
 readonly PYTHON="python${PYTHON_VERSION%.*}"
 
 wget -qO- https://astral.sh/uv/install.sh | sh
-${HOME}/.local/bin/uv venv --allow-existing /usr/local --python ${PYTHON}
-readonly PREFIX=$(realpath $(dirname $(${HOME}/.local/bin/uv python find ${PYTHON}))/../)
+${HOME}/.local/bin/uv venv --allow-existing /usr/local --python ${PYTHON_VERSION}
+readonly PREFIX=$(realpath $(dirname $(${HOME}/.local/bin/uv python find ${PYTHON_VERSION}))/../)
 
 ln -s ${PREFIX}/bin/${PYTHON}-config /usr/bin/python3-config
 ln -s ${PREFIX}/bin/${PYTHON}-config /usr/local/bin/python-config

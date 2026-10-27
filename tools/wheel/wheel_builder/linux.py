@@ -68,7 +68,7 @@ targets = {
         Target(
             python_binder=PythonBinder.NANOBIND,
             build_platform=Platform("amd64/almalinux", "9", "almalinux9"),
-            build_python=PythonTarget(3, 12, 13),
+            build_python=PythonTarget(3, 12, 16),
             test_platforms=_TEST_PLATFORMS,
             test_pythons=(
                 PythonTarget(3, 12),
@@ -79,21 +79,21 @@ targets = {
         Target(
             python_binder=PythonBinder.PYBIND11,
             build_platform=Platform("amd64/almalinux", "9", "almalinux9"),
-            build_python=PythonTarget(3, 12, 13),
+            build_python=PythonTarget(3, 12, 16),
             test_platforms=_TEST_PLATFORMS,
             test_pythons=(PythonTarget(3, 12),),
         ),
         Target(
             python_binder=PythonBinder.PYBIND11,
             build_platform=Platform("amd64/almalinux", "9", "almalinux9"),
-            build_python=PythonTarget(3, 13, 15),
+            build_python=PythonTarget(3, 13, 18),
             test_platforms=_TEST_PLATFORMS,
             test_pythons=(PythonTarget(3, 13),),
         ),
         Target(
             python_binder=PythonBinder.PYBIND11,
             build_platform=Platform("amd64/almalinux", "9", "almalinux9"),
-            build_python=PythonTarget(3, 14, 7),
+            build_python=PythonTarget(3, 14, 10),
             test_platforms=_TEST_PLATFORMS,
             test_pythons=(PythonTarget(3, 14),),
         ),
@@ -102,7 +102,7 @@ targets = {
         Target(
             python_binder=PythonBinder.NANOBIND,
             build_platform=Platform("arm64v8/almalinux", "9", "almalinux9"),
-            build_python=PythonTarget(3, 12, 13),
+            build_python=PythonTarget(3, 12, 16),
             test_platforms=_TEST_PLATFORMS,
             test_pythons=(
                 PythonTarget(3, 12),
@@ -113,21 +113,21 @@ targets = {
         Target(
             python_binder=PythonBinder.PYBIND11,
             build_platform=Platform("arm64v8/almalinux", "9", "almalinux9"),
-            build_python=PythonTarget(3, 12, 13),
+            build_python=PythonTarget(3, 12, 16),
             test_platforms=_TEST_PLATFORMS,
             test_pythons=(PythonTarget(3, 12),),
         ),
         Target(
             python_binder=PythonBinder.PYBIND11,
             build_platform=Platform("arm64v8/almalinux", "9", "almalinux9"),
-            build_python=PythonTarget(3, 13, 15),
+            build_python=PythonTarget(3, 13, 18),
             test_platforms=_TEST_PLATFORMS,
             test_pythons=(PythonTarget(3, 13),),
         ),
         Target(
             python_binder=PythonBinder.PYBIND11,
             build_platform=Platform("arm64v8/almalinux", "9", "almalinux9"),
-            build_python=PythonTarget(3, 14, 7),
+            build_python=PythonTarget(3, 14, 10),
             test_platforms=_TEST_PLATFORMS,
             test_pythons=(PythonTarget(3, 14),),
         ),
