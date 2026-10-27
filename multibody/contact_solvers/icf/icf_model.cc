@@ -202,19 +202,19 @@ void IcfModel<T>::UpdateHessian(int island, const IcfData<T>& data,
 
   // Add constraints' contributions for the island's constraints.
   ball_constraints_pool_.AccumulateHessian(data, island_balls_.items(island),
-                                           clique_to_block, island, hessian);
+                                           clique_to_block, hessian);
   coupler_constraints_pool_.AccumulateHessian(
-      data, island_couplers_.items(island), clique_to_block, island, hessian);
+      data, island_couplers_.items(island), clique_to_block, hessian);
   distance_constraints_pool_.AccumulateHessian(
-      data, island_distances_.items(island), clique_to_block, island, hessian);
+      data, island_distances_.items(island), clique_to_block, hessian);
   gain_constraints_pool_.AccumulateHessian(data, island_gains_.items(island),
-                                           clique_to_block, island, hessian);
+                                           clique_to_block, hessian);
   limit_constraints_pool_.AccumulateHessian(data, island_limits_.items(island),
-                                            clique_to_block, island, hessian);
+                                            clique_to_block, hessian);
   patch_constraints_pool_.AccumulateHessian(data, island_patches_.items(island),
-                                            clique_to_block, island, hessian);
+                                            clique_to_block, hessian);
   weld_constraints_pool_.AccumulateHessian(data, island_welds_.items(island),
-                                           clique_to_block, island, hessian);
+                                           clique_to_block, hessian);
 }
 
 template <typename T>
@@ -265,7 +265,7 @@ T IcfModel<T>::CalcCostAlongLine(
   const T& b = search_direction.b;
   const T& c = search_direction.c;
 
-  typename IcfData<T>::Scratch& scratch = data.scratch(island);
+  typename IcfData<T>::Scratch& scratch = data.scratch();
 
   // v_alpha = v + α⋅w, computed only on the island's clique segments (the only
   // place w is nonzero); other segments are not read by the island's pools.

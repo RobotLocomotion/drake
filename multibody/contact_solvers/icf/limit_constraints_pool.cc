@@ -163,8 +163,7 @@ void LimitConstraintsPool<T>::AccumulateGradient(
 template <typename T>
 void LimitConstraintsPool<T>::AccumulateHessian(
     const IcfData<T>& data, std::span<const int> constraints,
-    std::span<const int> clique_to_block, int /* island */,
-    IcfHessian<T>* hessian) const {
+    std::span<const int> clique_to_block, IcfHessian<T>* hessian) const {
   DRAKE_ASSERT(hessian != nullptr);
 
   const LimitConstraintsDataPool<T>& limit_data = data.limit_constraints_data();

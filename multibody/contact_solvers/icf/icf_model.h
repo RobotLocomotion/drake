@@ -406,7 +406,8 @@ class IcfModel {
 
   /* Resizes `data` to fit this model.
   No allocations are required if `data`'s capacity is already enough.
-  @pre Sparsity pattern must be valid. */
+  @pre SetSparsityPattern() has been called, since `data`'s per-island cost
+       storage is sized by partition().num_islands(). */
   void ResizeData(IcfData<T>* data) const;
 
   /* Updates `data` as a function of v. Performs no heap allocations.  Computes
@@ -414,8 +415,8 @@ class IcfModel {
   writing into the island's clique/body segments of `data` (other segments are
   left untouched). The island cost is stored via data->set_island_cost(island,
   ...) and also returned. The caller must have set data's velocities
-  (data->set_v(v)) beforehand; this method does not, so that multiple islands
-  may write disjoint regions of `data` concurrently.
+  (data->set_v(v)) beforehand; this method does not, so that evaluating one
+  island leaves the other islands' regions of `data` intact.
 
   @pre `data` has been resized to fit this model via ResizeData(). */
   T CalcData(const VectorX<T>& v, int island, IcfData<T>* data) const;
@@ -484,8 +485,8 @@ class IcfModel {
       IcfSearchDirectionData<T>* search_direction_data) const;
 
   /* Computes ℓ̃ (α) = ℓ(v + α⋅w) along w at α, along with first and second
-  derivatives of ℓ̃ (α), for `island` only, using the island's per-island
-  scratch (data.scratch(island)).
+  derivatives of ℓ̃ (α), for `island` only, using the shared scratch
+  (data.scratch()).
 
   @param alpha The value of α.
   @param data Stores velocity v along with cached quantities. See CalcData().

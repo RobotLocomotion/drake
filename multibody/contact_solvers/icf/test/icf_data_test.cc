@@ -51,9 +51,6 @@ GTEST_TEST(IcfData, ResizeAndAccessors) {
   // Main data elements.
   EXPECT_EQ(data.num_velocities(), num_velocities);
   EXPECT_EQ(data.num_islands(), num_islands);
-  // Per-island scratch is sized to the full problem.
-  EXPECT_EQ(data.scratch(0).V_WB_alpha.size(), num_bodies);
-  EXPECT_EQ(data.scratch(num_islands - 1).U_AbB_W.size(), 4);
   EXPECT_EQ(data.v().size(), num_velocities);
   EXPECT_EQ(data.V_WB().size(), num_bodies);
   EXPECT_EQ(data.Av().size(), num_velocities);
@@ -61,41 +58,37 @@ GTEST_TEST(IcfData, ResizeAndAccessors) {
   // N.B. scalar cost terms (cost, momentum cost) are considered undefined until
   // set explicitly.
 
-  // Scratch space.
-  for (int i = 0; i < num_islands; ++i) {
-    EXPECT_EQ(data.scratch(i).Av_minus_r[0].size(), num_velocities);
-    EXPECT_EQ(data.scratch(i).V_WB_alpha.size(), num_bodies);
-    EXPECT_EQ(data.scratch(i).U_AbB_W.size(), 4);  // num_patches()
-    EXPECT_EQ(data.scratch(i).v_alpha[0].size(), num_velocities);
-    EXPECT_EQ(data.scratch(i).Gw_gain[0].size(), max_clique_size);
-    EXPECT_EQ(data.scratch(i).Gw_limit[0].size(), max_clique_size);
-    EXPECT_EQ(data.scratch(i).ball_constraints_data.num_constraints(),
-              num_ball_constraints);
-    EXPECT_EQ(data.scratch(i).coupler_constraints_data.num_constraints(),
-              num_couplers);
-    EXPECT_EQ(data.scratch(i).distance_constraints_data.num_constraints(),
-              num_distance_constraints);
-    EXPECT_EQ(data.scratch(i).gain_constraints_data.num_constraints(),
-              ssize(gain_sizes));
-    EXPECT_EQ(data.scratch(i).limit_constraints_data.num_constraints(),
-              ssize(limit_sizes));
-    EXPECT_EQ(data.scratch(i).patch_constraints_data.num_constraints(),
-              ssize(patch_sizes));
-    EXPECT_EQ(data.scratch(i).weld_constraints_data.num_constraints(),
-              num_welds);
-    EXPECT_EQ(data.scratch(i).H_cc_pool[0].rows(), max_clique_size);
-    EXPECT_EQ(data.scratch(i).H_cc_pool[0].cols(), max_clique_size);
-    EXPECT_EQ(data.scratch(i).H_BB_pool[0].rows(), max_clique_size);
-    EXPECT_EQ(data.scratch(i).H_BB_pool[0].cols(), max_clique_size);
-    EXPECT_EQ(data.scratch(i).H_AA_pool[0].rows(), max_clique_size);
-    EXPECT_EQ(data.scratch(i).H_AA_pool[0].cols(), max_clique_size);
-    EXPECT_EQ(data.scratch(i).H_AB_pool[0].rows(), max_clique_size);
-    EXPECT_EQ(data.scratch(i).H_AB_pool[0].cols(), max_clique_size);
-    EXPECT_EQ(data.scratch(i).H_BA_pool[0].rows(), max_clique_size);
-    EXPECT_EQ(data.scratch(i).H_BA_pool[0].cols(), max_clique_size);
-    EXPECT_EQ(data.scratch(i).GJa_pool[0].cols(), max_clique_size);
-    EXPECT_EQ(data.scratch(i).GJb_pool[0].cols(), max_clique_size);
-  }
+  // Scratch space, shared by all islands and sized to the full problem.
+  EXPECT_EQ(data.scratch().V_WB_alpha.size(), num_bodies);
+  EXPECT_EQ(data.scratch().U_AbB_W.size(), 4);  // num_patches()
+  EXPECT_EQ(data.scratch().v_alpha[0].size(), num_velocities);
+  EXPECT_EQ(data.scratch().Gw_gain[0].size(), max_clique_size);
+  EXPECT_EQ(data.scratch().Gw_limit[0].size(), max_clique_size);
+  EXPECT_EQ(data.scratch().ball_constraints_data.num_constraints(),
+            num_ball_constraints);
+  EXPECT_EQ(data.scratch().coupler_constraints_data.num_constraints(),
+            num_couplers);
+  EXPECT_EQ(data.scratch().distance_constraints_data.num_constraints(),
+            num_distance_constraints);
+  EXPECT_EQ(data.scratch().gain_constraints_data.num_constraints(),
+            ssize(gain_sizes));
+  EXPECT_EQ(data.scratch().limit_constraints_data.num_constraints(),
+            ssize(limit_sizes));
+  EXPECT_EQ(data.scratch().patch_constraints_data.num_constraints(),
+            ssize(patch_sizes));
+  EXPECT_EQ(data.scratch().weld_constraints_data.num_constraints(), num_welds);
+  EXPECT_EQ(data.scratch().H_cc_pool[0].rows(), max_clique_size);
+  EXPECT_EQ(data.scratch().H_cc_pool[0].cols(), max_clique_size);
+  EXPECT_EQ(data.scratch().H_BB_pool[0].rows(), max_clique_size);
+  EXPECT_EQ(data.scratch().H_BB_pool[0].cols(), max_clique_size);
+  EXPECT_EQ(data.scratch().H_AA_pool[0].rows(), max_clique_size);
+  EXPECT_EQ(data.scratch().H_AA_pool[0].cols(), max_clique_size);
+  EXPECT_EQ(data.scratch().H_AB_pool[0].rows(), max_clique_size);
+  EXPECT_EQ(data.scratch().H_AB_pool[0].cols(), max_clique_size);
+  EXPECT_EQ(data.scratch().H_BA_pool[0].rows(), max_clique_size);
+  EXPECT_EQ(data.scratch().H_BA_pool[0].cols(), max_clique_size);
+  EXPECT_EQ(data.scratch().GJa_pool[0].cols(), max_clique_size);
+  EXPECT_EQ(data.scratch().GJb_pool[0].cols(), max_clique_size);
 }
 
 /* Checks that calling Resize doesn't cost heap allocations when the new size is
@@ -127,13 +120,11 @@ GTEST_TEST(IcfData, LimitMallocOnResize) {
                .num_islands = num_islands});
 
   // Clearing pools changes size but shouldn't change capacity.
-  for (int i = 0; i < num_islands; ++i) {
-    EXPECT_EQ(data.scratch(i).V_WB_alpha.size(), num_bodies);
-    data.scratch(i).Resize({.gain_sizes = gain_sizes,
-                            .limit_sizes = limit_sizes,
-                            .patch_sizes = patch_sizes});
-    EXPECT_EQ(data.scratch(i).V_WB_alpha.size(), 0);
-  }
+  EXPECT_EQ(data.scratch().V_WB_alpha.size(), num_bodies);
+  data.scratch().Resize({.gain_sizes = gain_sizes,
+                         .limit_sizes = limit_sizes,
+                         .patch_sizes = patch_sizes});
+  EXPECT_EQ(data.scratch().V_WB_alpha.size(), 0);
 
   VectorX<double> v = VectorX<double>::LinSpaced(num_velocities, 1.0, 11.0);
   {
@@ -153,9 +144,32 @@ GTEST_TEST(IcfData, LimitMallocOnResize) {
                  .num_islands = num_islands});
     data.set_v(v);
   }
-  for (int i = 0; i < num_islands; ++i) {
-    EXPECT_EQ(data.scratch(i).V_WB_alpha.size(), num_bodies);
-  }
+  EXPECT_EQ(data.scratch().V_WB_alpha.size(), num_bodies);
+}
+
+/* Checks that the memory needed for data does not grow with the number of
+islands, since all islands share the full-size scratch. */
+GTEST_TEST(IcfData, AllocationsIndependentOfNumIslands) {
+  const std::vector<int> gain_sizes = {3};
+  const std::vector<int> limit_sizes = {4};
+  const std::vector<int> patch_sizes = {5};
+  auto count_allocations = [&](int num_islands) {
+    IcfData<double> data;
+    drake::test::LimitMalloc guard({.max_num_allocations = -1});
+    data.Resize({.num_bodies = 100,
+                 .num_velocities = 600,
+                 .max_clique_size = 6,
+                 .num_ball_constraints = 2,
+                 .num_couplers = 2,
+                 .num_distance_constraints = 3,
+                 .num_welds = 1,
+                 .gain_sizes = gain_sizes,
+                 .limit_sizes = limit_sizes,
+                 .patch_sizes = patch_sizes,
+                 .num_islands = num_islands});
+    return guard.num_allocations();
+  };
+  EXPECT_EQ(count_allocations(2), count_allocations(100));
 }
 
 }  // namespace internal

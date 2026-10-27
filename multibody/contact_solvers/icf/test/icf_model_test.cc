@@ -397,7 +397,7 @@ GTEST_TEST(IcfModel, IslandSpatialVelocities) {
     IcfData<double> data;
     model.ResizeData(&data);
     IcfSearchDirectionData<double> search_data;
-    EigenPool<Vector6d>& V_WB_alpha = data.scratch(island).V_WB_alpha;
+    EigenPool<Vector6d>& V_WB_alpha = data.scratch().V_WB_alpha;
     fill_with_garbage(&data.mutable_V_WB());
     fill_with_garbage(&search_data.U);
     fill_with_garbage(&V_WB_alpha);

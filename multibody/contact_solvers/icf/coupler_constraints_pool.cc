@@ -152,8 +152,7 @@ void CouplerConstraintsPool<T>::AccumulateGradient(
 template <typename T>
 void CouplerConstraintsPool<T>::AccumulateHessian(
     const IcfData<T>& data, std::span<const int> constraints,
-    std::span<const int> clique_to_block, int island,
-    IcfHessian<T>* hessian) const {
+    std::span<const int> clique_to_block, IcfHessian<T>* hessian) const {
   DRAKE_ASSERT(hessian != nullptr);
 
   auto c2b = [&](int clique) {
@@ -181,7 +180,7 @@ void CouplerConstraintsPool<T>::AccumulateHessian(
     //  R_fragment_[k] = β²·w / (4π²)
     const T R = R_fragment_[k] * R_time_step_factor;
 
-    EigenPool<MatrixX<T>>& H_cc_pool = data.scratch(island).H_cc_pool;
+    EigenPool<MatrixX<T>>& H_cc_pool = data.scratch().H_cc_pool;
     H_cc_pool.Resize(1, model().clique_size(c), model().clique_size(c));
     typename EigenPool<MatrixX<T>>::MatrixView Hc = H_cc_pool[0];
     Hc.setZero();
