@@ -416,8 +416,7 @@ void PatchConstraintsPool<T>::AccumulateGradient(const IcfData<T>& data,
 template <typename T>
 void PatchConstraintsPool<T>::AccumulateHessian(
     const IcfData<T>& data, std::span<const int> patches,
-    std::span<const int> clique_to_block, int island,
-    IcfHessian<T>* hessian) const {
+    std::span<const int> clique_to_block, IcfHessian<T>* hessian) const {
   DRAKE_ASSERT(hessian != nullptr);
 
   auto c2b = [&](int clique) {
@@ -430,7 +429,7 @@ void PatchConstraintsPool<T>::AccumulateHessian(
   const PatchConstraintsDataPool<T>& patch_data = data.patch_constraints_data();
 
   typename IcfData<T>::Scratch* scratch{};
-  scratch = &data.scratch(island);
+  scratch = &data.scratch();
   auto& H_BB_pool = scratch->H_BB_pool;
   auto& H_AA_pool = scratch->H_AA_pool;
   auto& H_AB_pool = scratch->H_AB_pool;

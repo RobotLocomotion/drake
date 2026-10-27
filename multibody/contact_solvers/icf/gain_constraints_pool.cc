@@ -91,8 +91,7 @@ void GainConstraintsPool<T>::AccumulateGradient(
 template <typename T>
 void GainConstraintsPool<T>::AccumulateHessian(
     const IcfData<T>& data, std::span<const int> constraints,
-    std::span<const int> clique_to_block, int /* island */,
-    IcfHessian<T>* hessian) const {
+    std::span<const int> clique_to_block, IcfHessian<T>* hessian) const {
   DRAKE_ASSERT(hessian != nullptr);
 
   auto c2b = [&](int clique) {

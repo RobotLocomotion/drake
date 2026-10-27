@@ -33,46 +33,45 @@ static_assert(IsAbstractConstraintsPool<MyConstraintsPool>);
 @endcode
 */
 template <template <typename> typename Pool>
-concept IsAbstractConstraintsPool = requires(
-    Pool<double> pool, const IcfData<double>& data, VectorX<double>* gradient,
-    std::span<const int> constraints, std::span<const int> clique_to_block,
-    int island, IcfHessian<double>* hessian, const ReducedMapping& mapping,
-    Pool<double>* reduced_pool) {
-  /* Returns a reference to the parent model. */
-  { pool.model() } -> std::same_as<const IcfModel<double>&>;
+concept IsAbstractConstraintsPool =
+    requires(Pool<double> pool, const IcfData<double>& data,
+             VectorX<double>* gradient, std::span<const int> constraints,
+             std::span<const int> clique_to_block, IcfHessian<double>* hessian,
+             const ReducedMapping& mapping, Pool<double>* reduced_pool) {
+      /* Returns a reference to the parent model. */
+      { pool.model() } -> std::same_as<const IcfModel<double>&>;
 
-  /* Returns the total number of constraints stored in this pool. */
-  { pool.num_constraints() } -> std::same_as<int>;
+      /* Returns the total number of constraints stored in this pool. */
+      { pool.num_constraints() } -> std::same_as<int>;
 
-  /* Adds the gradient contribution of this constraint type, ∇ℓ(v) = −γ, from
-  only the listed constraints to the model-wide gradient. */
-  pool.AccumulateGradient(data, constraints, gradient);
+      /* Adds the gradient contribution of this constraint type, ∇ℓ(v) = −γ,
+      from only the listed constraints to the model-wide gradient. */
+      pool.AccumulateGradient(data, constraints, gradient);
 
-  /* Accumulates the Hessian for only the listed constraints into the island's
-  local sub-Hessian. `clique_to_block` maps a global clique index to its block
-  index in the island's sub-Hessian, and `island` selects the per-island
-  scratch space. */
-  pool.AccumulateHessian(data, constraints, clique_to_block, island, hessian);
+      /* Accumulates the Hessian for only the listed constraints into the
+      island's local sub-Hessian. `clique_to_block` maps a global clique index
+      to its block index in the island's sub-Hessian. */
+      pool.AccumulateHessian(data, constraints, clique_to_block, hessian);
 
-  /* Makes a "reduced" constraints pool in `reduced_pool`, guided by the
-  `mapping`.
+      /* Makes a "reduced" constraints pool in `reduced_pool`, guided by the
+      `mapping`.
 
-  The mapping indicates that certain DOFs are locked; that is, their
-  prescribed velocity is 0. The semantics of the reduced pool will be
-  equivalent to that of a full pool, iff the full input velocity (not used
-  here, see IcfData) is 0 in all the DOFs that would have been locked.
+      The mapping indicates that certain DOFs are locked; that is, their
+      prescribed velocity is 0. The semantics of the reduced pool will be
+      equivalent to that of a full pool, iff the full input velocity (not used
+      here, see IcfData) is 0 in all the DOFs that would have been locked.
 
-  @param mapping the mapping computed by `this->model().ReduceInto()`, or
-                 equivalent.
+      @param mapping the mapping computed by `this->model().ReduceInto()`, or
+                     equivalent.
 
-  @param[in,out] reduced_pool the pool to write the reduced constraints
-                 into. The result of `reduced_pool.model()` is assumed to be
-                 valid and remains unchanged; all the rest of the object is
-                 rewritten.
+      @param[in,out] reduced_pool the pool to write the reduced constraints
+                     into. The result of `reduced_pool.model()` is assumed to be
+                     valid and remains unchanged; all the rest of the object is
+                     rewritten.
 
-  @pre reduced_pool != nullptr.  */
-  pool.ReduceInto(mapping, reduced_pool);
-};
+      @pre reduced_pool != nullptr.  */
+      pool.ReduceInto(mapping, reduced_pool);
+    };
 
 template <template <typename> typename Pool,
           template <typename> typename DataPool>

@@ -77,7 +77,7 @@ class PatchConstraintsPool {
   void AccumulateGradient(const IcfData<T>& data, std::span<const int> patches,
                           VectorX<T>* gradient) const;
   void AccumulateHessian(const IcfData<T>& data, std::span<const int> patches,
-                         std::span<const int> clique_to_block, int island,
+                         std::span<const int> clique_to_block,
                          IcfHessian<T>* hessian) const;
   void ReduceInto(const ReducedMapping& mapping,
                   PatchConstraintsPool<T>* reduced_pool) const;

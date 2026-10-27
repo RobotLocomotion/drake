@@ -273,8 +273,7 @@ void HolonomicConstraintsPool<T, N, Derived>::PrecomputeHessianBlocks() {
 template <typename T, int N, typename Derived>
 void HolonomicConstraintsPool<T, N, Derived>::AccumulateHessian(
     const IcfData<T>&, std::span<const int> constraints,
-    std::span<const int> clique_to_block, int /* island */,
-    IcfHessian<T>* hessian) const {
+    std::span<const int> clique_to_block, IcfHessian<T>* hessian) const {
   DRAKE_ASSERT(hessian != nullptr);
 
   auto c2b = [&](int clique) {
