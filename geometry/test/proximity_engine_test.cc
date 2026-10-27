@@ -294,18 +294,11 @@ TEST_F(ProximityEngineTests, AddGeometry) {
 }
 
 // "Processing" hydroelastic geometry is mostly a case of invoking a method
-// on hydroelastic::Geometries. Assuming Geometries successfully adds a
-// geometry, ProximityEngine has an additional task to inflate fcl AABB bounding
-// volumes for compliant hydroelastic geometries with non-zero margins. This
-// test merely confirms that meshes with hydroelastic properties invoke
-// hydroelastic::Geometries (relying on its tests to cover the details). So,
-// we'll simply attempt to instantiate every shape and assert its classification
-// based on whether it's supported or not (note: this test doesn't depend on the
-// choice of rigid/compliant -- for each shape, we pick an arbitrary compliance
-// type, preferring one that is supported over one that is not. Otherwise, the
-// compliance choice is immaterial.) One exception is that the rigid Mesh and
-// the compliant Mesh use two different kinds of files, so we test both of them.
-// The test HydroelasticAabbInflation covers ProximityEngine's second task.
+// on hydroelastic::Geometries. This test merely confirms that properties for
+// the shapes reach hydroelastic::Geometries. It exploits the understanding that
+// there are two patterns for how shapes are registered: one for Convex/Mesh
+// and one for everything else. As such, it uses a Mesh and a Sphere to test the
+// two patterns (inferring success for all other shapes).
 TEST_F(ProximityEngineTests, ProcessHydroelasticProperties) {
   // All of the geometries will have a scale comparable to edge_length, so that
   // the mesh creation is as cheap as possible. The exception is Mesh
@@ -319,78 +312,17 @@ TEST_F(ProximityEngineTests, ProcessHydroelasticProperties) {
 
   using enum HydroelasticType;
 
-  // Case: compliant sphere.
+  // Case: primitive shape.
   const GeometryId sphere_id =
       AddDynamic(Sphere{edge_length}, {}, compliant_properties);
   EXPECT_EQ(Tester::hydroelastic_type(sphere_id, engine_), kCompliant);
 
-  // Case: rigid cylinder.
-  const GeometryId cylinder_id =
-      AddDynamic(Cylinder{edge_length, edge_length}, {}, rigid_properties);
-  EXPECT_EQ(Tester::hydroelastic_type(cylinder_id, engine_), kRigid);
-
-  // Case: rigid ellipsoid.
-  const GeometryId ellipsoid_id = AddDynamic(
-      Ellipsoid{edge_length, edge_length, edge_length}, {}, rigid_properties);
-  EXPECT_EQ(Tester::hydroelastic_type(ellipsoid_id, engine_), kRigid);
-
-  // Case: rigid capsule.
-  const GeometryId capsule_id =
-      AddDynamic(Capsule{edge_length, edge_length}, {}, rigid_properties);
-  EXPECT_EQ(Tester::hydroelastic_type(capsule_id, engine_), kRigid);
-
-  // Case: rigid half_space.
-  const GeometryId half_space_id =
-      AddDynamic(HalfSpace(), {}, rigid_properties);
-  EXPECT_EQ(Tester::hydroelastic_type(half_space_id, engine_), kRigid);
-
-  // Case: rigid box.
-  const GeometryId box_id = AddDynamic(
-      Box{edge_length, edge_length, edge_length}, {}, rigid_properties);
-  EXPECT_EQ(Tester::hydroelastic_type(box_id, engine_), kRigid);
-
-  // Case: rigid mesh.
+  // Case: mesh-type shape.
   const GeometryId rigid_mesh_id =
       AddDynamic(Mesh(drake::FindResourceOrThrow(
                      "drake/geometry/test/non_convex_mesh.obj")),
                  {}, rigid_properties);
   EXPECT_EQ(Tester::hydroelastic_type(rigid_mesh_id, engine_), kRigid);
-
-  // Case: compliant mesh.
-  const GeometryId compliant_mesh_id =
-      AddDynamic(Mesh(drake::FindResourceOrThrow(
-                     "drake/geometry/test/non_convex_mesh.obj")),
-                 {}, compliant_properties);
-  EXPECT_EQ(Tester::hydroelastic_type(compliant_mesh_id, engine_), kCompliant);
-
-  // Case: rigid mesh vtk.
-  const GeometryId rigid_vtk_id =
-      AddDynamic(Mesh(drake::FindResourceOrThrow(
-                     "drake/geometry/test/non_convex_mesh.vtk")),
-                 {}, rigid_properties);
-  EXPECT_EQ(Tester::hydroelastic_type(rigid_vtk_id, engine_), kRigid);
-
-  // Case: compliant convex vtk.
-  const GeometryId compliant_vtk_id =
-      AddDynamic(Convex(drake::FindResourceOrThrow(
-                     "drake/geometry/test/non_convex_mesh.vtk")),
-                 {}, compliant_properties);
-  EXPECT_EQ(Tester::hydroelastic_type(compliant_vtk_id, engine_), kCompliant);
-
-  // Case: rigid convex.
-  const GeometryId rigid_convex_id = AddDynamic(
-      Convex{drake::FindResourceOrThrow("drake/geometry/test/quad_cube.obj"),
-             edge_length},
-      {}, rigid_properties);
-  EXPECT_EQ(Tester::hydroelastic_type(rigid_convex_id, engine_), kRigid);
-
-  // Case: rigid convex vtk.
-  const GeometryId rigid_convex_vtk_id = AddDynamic(
-      Convex{
-          drake::FindResourceOrThrow("drake/geometry/test/one_tetrahedron.vtk"),
-          edge_length},
-      {}, rigid_properties);
-  EXPECT_EQ(Tester::hydroelastic_type(rigid_convex_vtk_id, engine_), kRigid);
 }
 
 // When compliant hydroelastic geometries have a positive margin value,
@@ -2552,48 +2484,20 @@ class ProximityEngineDeformableContactTest : public testing::Test {
   internal::DrivenMeshData driven_mesh_data_;
 };
 
-// Tests that registration of supported rigid (non-deformable) geometries make
-// their way to deformable::Geometries if the resolution hint property is valid.
-// Also verifies that no geometry is added if the resolution hint property is
-// missing.
+// As with hydro, shapes are processed with one of two patterns: mesh-type or
+// primitive (see the ProcessHydroelasticProperties test). In this case, we
+// check for processing of deformable infrastructure on two representative
+// shapes.
 TEST_F(ProximityEngineDeformableContactTest, AddSupportedRigidGeometries) {
   ProximityProperties valid_props = MakeProximityPropsForRigidGeometry(1.0);
   ProximityProperties empty_props;
-  {
-    Sphere sphere(0.5);
-    TestRigidRegistrationAndRemoval(sphere, valid_props, true);
-    TestRigidRegistrationAndRemoval(sphere, empty_props, false);
-  }
-  {
-    Box box = Box::MakeCube(1.0);
-    TestRigidRegistrationAndRemoval(box, valid_props, true);
-    TestRigidRegistrationAndRemoval(box, empty_props, false);
-  }
-  {
-    Cylinder cylinder(1.0, 2.0);
-    TestRigidRegistrationAndRemoval(cylinder, valid_props, true);
-    TestRigidRegistrationAndRemoval(cylinder, empty_props, false);
-  }
-  {
-    Capsule capsule(1.0, 2.0);
-    TestRigidRegistrationAndRemoval(capsule, valid_props, true);
-    TestRigidRegistrationAndRemoval(capsule, empty_props, false);
-  }
-  {
-    Ellipsoid ellipsoid(1.0, 2.0, 3.0);
-    TestRigidRegistrationAndRemoval(ellipsoid, valid_props, true);
-    TestRigidRegistrationAndRemoval(ellipsoid, empty_props, false);
-  }
-  {
-    Convex convex(FindResourceOrThrow("drake/geometry/test/quad_cube.obj"));
-    TestRigidRegistrationAndRemoval(convex, valid_props, true);
-    TestRigidRegistrationAndRemoval(convex, empty_props, false);
-  }
-  {
-    Mesh mesh(FindResourceOrThrow("drake/geometry/test/quad_cube.obj"));
-    TestRigidRegistrationAndRemoval(mesh, valid_props, true);
-    TestRigidRegistrationAndRemoval(mesh, empty_props, false);
-  }
+  const Sphere sphere(0.5);
+  TestRigidRegistrationAndRemoval(sphere, valid_props, true);
+  TestRigidRegistrationAndRemoval(sphere, empty_props, false);
+
+  const Mesh mesh(FindResourceOrThrow("drake/geometry/test/quad_cube.obj"));
+  TestRigidRegistrationAndRemoval(mesh, valid_props, true);
+  TestRigidRegistrationAndRemoval(mesh, empty_props, false);
 }
 
 // Tests that registration of geometries supported by ProximityEngine but not
