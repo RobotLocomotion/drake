@@ -89,13 +89,11 @@ def _get_commit_from_version(*, filename):
 
 
 def _download_with_sha(*, base_url, filename):
-    """Downloads {base_url}/{filename} along with its sha512 sum, checks the
-    sha512 sum, and generates a sha256 sum as well.
+    """Downloads {base_url}/{filename} along with its sha256 sum and checks the
+    sha256 sum
     """
-    _run(["wget", f"{base_url}/{filename}.sha512"])
+    _run(["wget", f"{base_url}/{filename}.sha256"])
     _run(["wget", f"{base_url}/{filename}"])
-    _run(["sha512sum", "-c", f"{filename}.sha512"])
-    _run(f"sha256sum {filename} > {filename}.sha256", shell=True)
     _run(["sha256sum", "-c", f"{filename}.sha256"])
 
 
@@ -246,14 +244,9 @@ def _create_tar_gz(*, git_sha, tmp_dir: str, version: str):
         cwd=drake_root,
     )
 
-    # Write checksum files.
+    # Write checksum file.
     _run(
         f"sha256sum {output_name} > {output_name}.sha256",
-        shell=True,
-        cwd=tmp_dir,
-    )
-    _run(
-        f"sha512sum {output_name} > {output_name}.sha512",
         shell=True,
         cwd=tmp_dir,
     )
