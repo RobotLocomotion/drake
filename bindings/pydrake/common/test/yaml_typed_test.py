@@ -631,8 +631,43 @@ class TestYamlTypedRead(unittest.TestCase, metaclass=ValueParameterizedTest):
     # TODO(jwnimmer-tri) Add test cases similar to StdMapWithMergeKeys
     # and StdMapWithBadMergeKey from the C++ YAML test suite.
 
-    # TODO(jwnimmer-tri) Add test cases similar to StdMapDirectly and
-    # StdMapDirectlyWithDefaults from the C++ YAML test suite.
+    @run_with_multiple_values(_all_typed_read_options())
+    def test_read_map_directly(self, *, options):
+        data = dedent("""
+        key_1:
+          value: 1.0
+        key_2:
+          value: 2.0
+        """)
+        schema = dict[str, FloatStruct]
+        x = yaml_load_typed(schema=schema, data=data, **options)
+        expected = dict(key_1=FloatStruct(1.0), key_2=FloatStruct(2.0))
+        self.assertEqual(x, expected)
+
+    @run_with_multiple_values(_all_typed_read_options())
+    def test_read_map_directly_with_defaults(self, *, options):
+        data = dedent("""
+        key_1:
+          value: 1.0
+        key_with_defaulted_value: {}
+        """)
+        schema = dict[str, FloatStruct]
+        defaults = dict(pre_existing_default=FloatStruct(0.0))
+        if options["allow_schema_with_no_yaml"]:
+            x = yaml_load_typed(
+                schema=schema, data=data, defaults=defaults, **options
+            )
+            expected = dict(
+                key_1=FloatStruct(1.0), key_with_defaulted_value=FloatStruct()
+            )
+            if options["retain_map_defaults"]:
+                expected.update(pre_existing_default=FloatStruct(0.0))
+            self.assertEqual(x, expected)
+        else:
+            with self.assertRaisesRegex(RuntimeError, ".*missing.*"):
+                yaml_load_typed(
+                    schema=schema, data=data, defaults=defaults, **options
+                )
 
     @run_with_multiple_values(_all_typed_read_options())
     def test_read_optional(self, *, options):
