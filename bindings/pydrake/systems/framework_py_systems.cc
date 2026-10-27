@@ -12,7 +12,6 @@
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/eigen_pybind.h"
 #include "drake/bindings/pydrake/common/ref_cycle_pybind.h"
-#include "drake/bindings/pydrake/common/wrap_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/systems/event_callback_types.h"
 #include "drake/bindings/pydrake/systems/framework_callback_lifetime.h"
@@ -139,8 +138,7 @@ PublishEvent<T> MakePublishEvent(
                         const PublishEvent<T>&) {
         py::gil_scoped_acquire guard;
         py::handle py_callback_from_ptr = callback_ptr;
-        auto callback =
-            py::cast<CppEventCallback<const Context<T>*>>(py_callback_from_ptr);
+        auto callback = py::cast<CppPublishCallback<T>>(py_callback_from_ptr);
         return callback(&context).value_or(EventStatus::Succeeded());
       });
 }
@@ -158,8 +156,7 @@ DiscreteUpdateEvent<T> MakeDiscreteUpdateEvent(
         py::gil_scoped_acquire guard;
         py::handle py_callback_from_ptr = callback_ptr;
         auto callback =
-            py::cast<CppEventCallback<const Context<T>*, DiscreteValues<T>*>>(
-                py_callback_from_ptr);
+            py::cast<CppDiscreteUpdateCallback<T>>(py_callback_from_ptr);
         return callback(&context, &*xd).value_or(EventStatus::Succeeded());
       });
 }
@@ -177,10 +174,43 @@ UnrestrictedUpdateEvent<T> MakeUnrestrictedUpdateEvent(
         py::gil_scoped_acquire guard;
         py::handle py_callback_from_ptr = callback_ptr;
         auto callback =
-            py::cast<CppEventCallback<const Context<T>*, State<T>*>>(
-                py_callback_from_ptr);
+            py::cast<CppUnrestrictedUpdateCallback<T>>(py_callback_from_ptr);
         return callback(&context, &*x).value_or(EventStatus::Succeeded());
       });
+}
+
+#ifdef PYDRAKE_USE_PYBIND11
+template <typename T>
+using PyWitnessCalcCallback =
+    py::typing::Callable<std::optional<T>(const Context<T>*)>;
+#else   // PYDRAKE_USE_NANOBIND
+template <typename T>
+using PyWitnessCalcCallback =
+    py::typed<py::callable, std::optional<T>(const Context<T>*)>;
+#endif  // PYDRAKE_USE_PYBIND11
+
+// Constructs a witness function calculation callback for bound
+// MakeWitnessFunction methods.
+// @param callback_ptr a callable expecting a context. Aliased; its lifetime
+// must be guaranteed elsewhere.
+template <typename T>
+std::function<T(const Context<T>&)> MakeWitnessCalcCallback(
+    PyObject* callback_ptr) {
+  return [callback_ptr](const Context<T>& context) -> T {
+    py::gil_scoped_acquire guard;
+    py::handle py_callback_from_ptr = callback_ptr;
+    auto callback =
+        py::cast<std::function<std::optional<T>(const Context<T>*)>>(
+            py_callback_from_ptr);
+    const std::optional<T> result = callback(&context);
+    if (!result.has_value()) {
+      // Give a good error message in case the user forgot to return anything.
+      throw py::type_error(
+          "The MakeWitnessFunction() calc callback must return a floating "
+          "point value, not NoneType.");
+    }
+    return *result;
+  };
 }
 
 class SystemBasePublic : public SystemBase {
@@ -1027,38 +1057,35 @@ Note: The above is for the C++ documentation. For Python, use
             },
             py::arg("update"), internal::ensure_callback_lifetime<1, 2>(),
             doc.LeafSystem.DeclareForcedUnrestrictedUpdateEvent.doc)
-        .def("MakeWitnessFunction",
-            WrapCallbacks([](Class* self, const std::string& description,
-                              const WitnessFunctionDirection& direction_type,
-                              std::function<std::optional<T>(const Context<T>&)>
-                                  calc) -> std::unique_ptr<WitnessFunction<T>> {
+        .def(
+            "MakeWitnessFunction",
+            [](Class* self, const std::string& description,
+                const WitnessFunctionDirection& direction_type,
+                PyWitnessCalcCallback<T> py_calc)
+                -> std::unique_ptr<WitnessFunction<T>> {
               return GetAlias<PyClass>(self)->MakeWitnessFunction(description,
-                  direction_type, [calc](const Context<T>& context) -> T {
-                    const std::optional<T> result = calc(context);
-                    if (!result.has_value()) {
-                      // Give a good error message in case the user forgot to
-                      // return anything.
-                      throw py::type_error(
-                          "The MakeWitnessFunction() calc callback must return "
-                          "a floating point value, not NoneType.");
-                    }
-                    return *result;
-                  });
-            }),
+                  direction_type, MakeWitnessCalcCallback<T>(py_calc.ptr()));
+            },
             py_rvp::reference_internal, py::arg("description"),
             py::arg("direction_type"), py::arg("calc"),
+            internal::ensure_callback_lifetime<1, 4>(),
             doc.LeafSystem.MakeWitnessFunction.doc_3args)
-        .def("MakeWitnessFunction",
-            WrapCallbacks(
-                [](Class* self, const std::string& description,
-                    const WitnessFunctionDirection& direction_type,
-                    std::function<T(const Context<T>&)> calc,
-                    const Event<T>& e) -> std::unique_ptr<WitnessFunction<T>> {
-                  return GetAlias<PyClass>(self)->MakeWitnessFunction(
-                      description, direction_type, calc, e);
-                }),
+        .def(
+            "MakeWitnessFunction",
+            [](Class* self, const std::string& description,
+                const WitnessFunctionDirection& direction_type,
+                PyWitnessCalcCallback<T> py_calc,
+                const Event<T>& e) -> std::unique_ptr<WitnessFunction<T>> {
+              return GetAlias<PyClass>(self)->MakeWitnessFunction(description,
+                  direction_type, MakeWitnessCalcCallback<T>(py_calc.ptr()), e);
+            },
             py_rvp::reference_internal, py::arg("description"),
             py::arg("direction_type"), py::arg("calc"), py::arg("e"),
+            // The system keeps the calc function alive (via the callback
+            // lifetime mechanism) and the event object alive (via ref_cycle).
+            // The witness function holds a clone of the event, which in turn
+            // borrows the event's callback.
+            internal::ensure_callback_lifetime<1, 4>(),
             internal::ref_cycle<1, 5>(),
             doc.LeafSystem.MakeWitnessFunction.doc_4args)
         // Continuous state.

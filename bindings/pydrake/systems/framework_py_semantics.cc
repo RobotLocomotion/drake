@@ -36,15 +36,6 @@ namespace {
 using namespace drake::systems;
 constexpr auto& doc = pydrake_doc_systems_framework.drake.systems;
 
-// Declare callback types that will appear as parameters of bindings, such that
-// automatic documentation has correct type signatures.
-template <typename T>
-using PyPublishSystemCallback = PyEventCallback<const System<T>*,
-    const Context<T>*, const PublishEvent<T>*>;
-template <typename T>
-using PyUnrestrictedUpdateSystemCallback = PyEventCallback<const System<T>*,
-    const Context<T>*, const UnrestrictedUpdateEvent<T>*, State<T>*>;
-
 // Given a vector of (possibly null) pointers, returns a vector formed by
 // calling Clone() elementwise.
 template <typename T>
@@ -578,15 +569,15 @@ void DefineEventAndEventSubclasses(py::module_ m) {
     cls  // BR
         .def(
             "__init__",
-            [](PublishEvent<T>* self, PyPublishCallback<T> callback) {
+            [](PublishEvent<T>* self, PyPublishEventCallback<T> callback) {
               PyObject* ptr = callback.ptr();
               new (self) PublishEvent<T>([ptr](const System<T>&,
                                              const Context<T>& context,
                                              const PublishEvent<T>& event) {
                 py::gil_scoped_acquire guard;
                 py::handle py_callback_from_ptr = ptr;
-                auto cpp_callback = py::cast<CppEventCallback<const Context<T>*,
-                    const PublishEvent<T>*>>(py_callback_from_ptr);
+                auto cpp_callback =
+                    py::cast<CppPublishEventCallback<T>>(py_callback_from_ptr);
                 return cpp_callback(&context, &event)
                     .value_or(EventStatus::Succeeded());
               });
@@ -598,15 +589,14 @@ void DefineEventAndEventSubclasses(py::module_ m) {
         .def(
             "__init__",
             [](PublishEvent<T>* self,
-                PyPublishSystemCallback<T> system_callback) {
+                PyPublishEventSystemCallback<T> system_callback) {
               PyObject* ptr = system_callback.ptr();
               new (self) PublishEvent<T>([ptr](const System<T>& system,
                                              const Context<T>& context,
                                              const PublishEvent<T>& event) {
                 py::gil_scoped_acquire guard;
                 py::handle py_callback_from_ptr = ptr;
-                auto cpp_callback = py::cast<CppEventCallback<const System<T>*,
-                    const Context<T>*, const PublishEvent<T>*>>(
+                auto cpp_callback = py::cast<CppPublishEventSystemCallback<T>>(
                     py_callback_from_ptr);
                 return cpp_callback(&system, &context, &event)
                     .value_or(EventStatus::Succeeded());
@@ -619,16 +609,15 @@ void DefineEventAndEventSubclasses(py::module_ m) {
         .def(
             "__init__",
             [](PublishEvent<T>* self, const TriggerType& trigger_type,
-                PyPublishCallback<T> callback) {
+                PyPublishEventCallback<T> callback) {
               PyObject* ptr = callback.ptr();
               new (self) PublishEvent<T>(trigger_type,
                   [ptr](const System<T>&, const Context<T>& context,
                       const PublishEvent<T>& event) {
                     py::gil_scoped_acquire guard;
                     py::handle py_callback_from_ptr = ptr;
-                    auto cpp_callback =
-                        py::cast<CppEventCallback<const Context<T>*,
-                            const PublishEvent<T>*>>(py_callback_from_ptr);
+                    auto cpp_callback = py::cast<CppPublishEventCallback<T>>(
+                        py_callback_from_ptr);
                     return cpp_callback(&context, &event)
                         .value_or(EventStatus::Succeeded());
                   });
@@ -640,7 +629,7 @@ void DefineEventAndEventSubclasses(py::module_ m) {
         .def(
             "__init__",
             [](PublishEvent<T>* self, const TriggerType& trigger_type,
-                PyPublishSystemCallback<T> system_callback) {
+                PyPublishEventSystemCallback<T> system_callback) {
               PyObject* ptr = system_callback.ptr();
               new (self) PublishEvent<T>(trigger_type,
                   [ptr](const System<T>& system, const Context<T>& context,
@@ -648,8 +637,7 @@ void DefineEventAndEventSubclasses(py::module_ m) {
                     py::gil_scoped_acquire guard;
                     py::handle py_callback_from_ptr = ptr;
                     auto cpp_callback =
-                        py::cast<CppEventCallback<const System<T>*,
-                            const Context<T>*, const PublishEvent<T>*>>(
+                        py::cast<CppPublishEventSystemCallback<T>>(
                             py_callback_from_ptr);
                     return cpp_callback(&system, &context, &event)
                         .value_or(EventStatus::Succeeded());
@@ -674,7 +662,7 @@ void DefineEventAndEventSubclasses(py::module_ m) {
         .def(
             "__init__",
             [](UnrestrictedUpdateEvent<T>* self,
-                PyUnrestrictedUpdateCallback<T> callback) {
+                PyUnrestrictedUpdateEventCallback<T> callback) {
               PyObject* ptr = callback.ptr();
               new (self) UnrestrictedUpdateEvent<T>(
                   [ptr](const System<T>&, const Context<T>& context,
@@ -683,8 +671,7 @@ void DefineEventAndEventSubclasses(py::module_ m) {
                     py::gil_scoped_acquire guard;
                     py::handle py_callback_from_ptr = ptr;
                     auto cpp_callback =
-                        py::cast<CppEventCallback<const Context<T>*,
-                            const UnrestrictedUpdateEvent<T>*, State<T>*>>(
+                        py::cast<CppUnrestrictedUpdateEventCallback<T>>(
                             py_callback_from_ptr);
                     return cpp_callback(&context, &event, state)
                         .value_or(EventStatus::Succeeded());
@@ -698,7 +685,7 @@ void DefineEventAndEventSubclasses(py::module_ m) {
         .def(
             "__init__",
             [](UnrestrictedUpdateEvent<T>* self,
-                PyUnrestrictedUpdateSystemCallback<T> system_callback) {
+                PyUnrestrictedUpdateEventSystemCallback<T> system_callback) {
               PyObject* ptr = system_callback.ptr();
               new (self) UnrestrictedUpdateEvent<T>(  // BR
                   [ptr](const System<T>& system, const Context<T>& context,
@@ -706,10 +693,9 @@ void DefineEventAndEventSubclasses(py::module_ m) {
                       State<T>* state) {
                     py::gil_scoped_acquire guard;
                     py::handle py_callback_from_ptr = ptr;
-                    auto cpp_callback = py::cast<
-                        CppEventCallback<const System<T>*, const Context<T>*,
-                            const UnrestrictedUpdateEvent<T>*, State<T>*>>(
-                        py_callback_from_ptr);
+                    auto cpp_callback =
+                        py::cast<CppUnrestrictedUpdateEventSystemCallback<T>>(
+                            py_callback_from_ptr);
                     return cpp_callback(&system, &context, &event, state)
                         .value_or(EventStatus::Succeeded());
                   });

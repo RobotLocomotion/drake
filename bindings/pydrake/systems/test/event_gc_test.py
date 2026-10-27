@@ -15,66 +15,60 @@ from pydrake.systems.framework import (
     PublishEvent,
     TriggerType,
     UnrestrictedUpdateEvent,
+    WitnessFunctionDirection,
 )
 
 
-def DeclareAllEvents(system, callback):
-    system.DeclareInitializationEvent(PublishEvent(callback))
-    system.DeclareInitializationEvent(PublishEvent(system_callback=callback))
-    system.DeclareInitializationEvent(
-        PublishEvent(TriggerType.kUnknown, callback)
-    )
-    system.DeclareInitializationEvent(
-        PublishEvent(TriggerType.kUnknown, system_callback=callback)
-    )
-    system.DeclareInitializationEvent(UnrestrictedUpdateEvent(callback))
-    system.DeclareInitializationEvent(
-        UnrestrictedUpdateEvent(system_callback=callback)
-    )
+def DeclareAllEvents(system, get_callback):
+    """Declares one of every kind of event on the given system. Calls
+    get_callback() anew for every declaration to obtain the callback; see
+    MethodLeafSystem for why that matters.
+    """
 
-    system.DeclareInitializationPublishEvent(callback)
-    system.DeclareInitializationDiscreteUpdateEvent(callback)
-    system.DeclareInitializationUnrestrictedUpdateEvent(callback)
+    def make_event_objects():
+        # Always returns new objects, so that no event object is ever passed
+        # to more than one declaration.
+        return [
+            PublishEvent(get_callback()),
+            PublishEvent(system_callback=get_callback()),
+            PublishEvent(TriggerType.kUnknown, get_callback()),
+            PublishEvent(TriggerType.kUnknown, system_callback=get_callback()),
+            UnrestrictedUpdateEvent(get_callback()),
+            UnrestrictedUpdateEvent(system_callback=get_callback()),
+        ]
 
-    system.DeclarePeriodicEvent(1.0, 0.5, PublishEvent(callback))
-    system.DeclarePeriodicEvent(
-        1.0, 0.5, PublishEvent(system_callback=callback)
-    )
-    system.DeclarePeriodicEvent(
-        1.0, 0.5, PublishEvent(TriggerType.kUnknown, callback)
-    )
-    system.DeclarePeriodicEvent(
-        1.0,
-        0.5,
-        PublishEvent(TriggerType.kUnknown, system_callback=callback),
-    )
-    system.DeclarePeriodicEvent(1.0, 0.5, UnrestrictedUpdateEvent(callback))
-    system.DeclarePeriodicEvent(
-        1.0, 0.5, UnrestrictedUpdateEvent(system_callback=callback)
-    )
+    for event in make_event_objects():
+        system.DeclareInitializationEvent(event)
+    system.DeclareInitializationPublishEvent(get_callback())
+    system.DeclareInitializationDiscreteUpdateEvent(get_callback())
+    system.DeclareInitializationUnrestrictedUpdateEvent(get_callback())
 
-    system.DeclarePeriodicPublishEvent(1.0, 0.5, callback)
-    system.DeclarePeriodicDiscreteUpdateEvent(1.0, 0.5, callback)
-    system.DeclarePeriodicUnrestrictedUpdateEvent(1.0, 0.5, callback)
+    for event in make_event_objects():
+        system.DeclarePeriodicEvent(1.0, 0.5, event)
+    system.DeclarePeriodicPublishEvent(1.0, 0.5, get_callback())
+    system.DeclarePeriodicDiscreteUpdateEvent(1.0, 0.5, get_callback())
+    system.DeclarePeriodicUnrestrictedUpdateEvent(1.0, 0.5, get_callback())
 
-    system.DeclarePerStepEvent(PublishEvent(callback))
-    system.DeclarePerStepEvent(PublishEvent(system_callback=callback))
-    system.DeclarePerStepEvent(PublishEvent(TriggerType.kUnknown, callback))
-    system.DeclarePerStepEvent(
-        PublishEvent(TriggerType.kUnknown, system_callback=callback)
-    )
-    system.DeclarePerStepEvent(UnrestrictedUpdateEvent(callback))
-    system.DeclarePerStepEvent(
-        UnrestrictedUpdateEvent(system_callback=callback)
-    )
+    for event in make_event_objects():
+        system.DeclarePerStepEvent(event)
+    system.DeclarePerStepPublishEvent(get_callback())
+    system.DeclarePerStepDiscreteUpdateEvent(get_callback())
+    system.DeclarePerStepUnrestrictedUpdateEvent(get_callback())
 
-    system.DeclarePerStepPublishEvent(callback)
-    system.DeclarePerStepDiscreteUpdateEvent(callback)
-    system.DeclarePerStepUnrestrictedUpdateEvent(callback)
+    system.DeclareForcedPublishEvent(get_callback())
+    system.DeclareForcedDiscreteUpdateEvent(get_callback())
+    system.DeclareForcedUnrestrictedUpdateEvent(get_callback())
 
-    system.DeclareForcedPublishEvent(callback)
-    system.DeclareForcedDiscreteUpdateEvent(callback)
-    system.DeclareForcedUnrestrictedUpdateEvent(callback)
+    # Witness functions are never evaluated by these tests (the system does
+    # not report them via DoGetWitnessFunctions), but storing them on the
+    # system forms the reference cycles we want to check.
+    direction = WitnessFunctionDirection.kCrossesZero
+    system._witnesses = [
+        system.MakeWitnessFunction("calc", direction, get_callback()),
+    ] + [
+        system.MakeWitnessFunction("event", direction, get_callback(), event)
+        for event in make_event_objects()
+    ]
 
 
 class MethodLeafSystem(LeafSystem):
@@ -83,75 +77,11 @@ class MethodLeafSystem(LeafSystem):
     def __init__(self):
         super().__init__()
         self._count = 0
-        # These declarations are spelled out on purpose. It turns out that
-        # evaluating `self._callback` multiple times triggers unusual pybind11
-        # memory behavior that needs to be tested. See UniquelyWrapCallback()
-        # in framework_callback_lifetime.cc.
-
-        self.DeclareInitializationEvent(PublishEvent(self._callback))
-        self.DeclareInitializationEvent(
-            PublishEvent(system_callback=self._callback)
-        )
-        self.DeclareInitializationEvent(
-            PublishEvent(TriggerType.kUnknown, self._callback)
-        )
-        self.DeclareInitializationEvent(
-            PublishEvent(TriggerType.kUnknown, system_callback=self._callback)
-        )
-        self.DeclareInitializationEvent(UnrestrictedUpdateEvent(self._callback))
-        self.DeclareInitializationEvent(
-            UnrestrictedUpdateEvent(system_callback=self._callback)
-        )
-
-        self.DeclareInitializationPublishEvent(self._callback)
-        self.DeclareInitializationDiscreteUpdateEvent(self._callback)
-        self.DeclareInitializationUnrestrictedUpdateEvent(self._callback)
-
-        self.DeclarePeriodicEvent(1.0, 0.5, PublishEvent(self._callback))
-        self.DeclarePeriodicEvent(
-            1.0, 0.5, PublishEvent(system_callback=self._callback)
-        )
-        self.DeclarePeriodicEvent(
-            1.0, 0.5, PublishEvent(TriggerType.kUnknown, self._callback)
-        )
-        self.DeclarePeriodicEvent(
-            1.0,
-            0.5,
-            PublishEvent(TriggerType.kUnknown, system_callback=self._callback),
-        )
-        self.DeclarePeriodicEvent(
-            1.0, 0.5, UnrestrictedUpdateEvent(self._callback)
-        )
-        self.DeclarePeriodicEvent(
-            1.0,
-            0.5,
-            UnrestrictedUpdateEvent(system_callback=self._callback),
-        )
-
-        self.DeclarePeriodicPublishEvent(1.0, 0.5, self._callback)
-        self.DeclarePeriodicDiscreteUpdateEvent(1.0, 0.5, self._callback)
-        self.DeclarePeriodicUnrestrictedUpdateEvent(1.0, 0.5, self._callback)
-
-        self.DeclarePerStepEvent(PublishEvent(self._callback))
-        self.DeclarePerStepEvent(PublishEvent(system_callback=self._callback))
-        self.DeclarePerStepEvent(
-            PublishEvent(TriggerType.kUnknown, self._callback)
-        )
-        self.DeclarePerStepEvent(
-            PublishEvent(TriggerType.kUnknown, system_callback=self._callback)
-        )
-        self.DeclarePerStepEvent(UnrestrictedUpdateEvent(self._callback))
-        self.DeclarePerStepEvent(
-            UnrestrictedUpdateEvent(system_callback=self._callback)
-        )
-
-        self.DeclarePerStepPublishEvent(self._callback)
-        self.DeclarePerStepDiscreteUpdateEvent(self._callback)
-        self.DeclarePerStepUnrestrictedUpdateEvent(self._callback)
-
-        self.DeclareForcedPublishEvent(self._callback)
-        self.DeclareForcedDiscreteUpdateEvent(self._callback)
-        self.DeclareForcedUnrestrictedUpdateEvent(self._callback)
+        # It turns out that evaluating `self._callback` multiple times (which
+        # creates a new bound method object each time) triggers unusual
+        # pybind11 memory behavior that needs to be tested. See
+        # UniquelyWrapCallback() in framework_callback_lifetime.cc.
+        DeclareAllEvents(self, lambda: self._callback)
 
     def _callback(self, *args, **kwargs):
         self._count += 1
@@ -173,7 +103,7 @@ class FunctionCallbackLeafSystem(LeafSystem):
 
     def __init__(self):
         super().__init__()
-        DeclareAllEvents(self, a_global_callback)
+        DeclareAllEvents(self, lambda: a_global_callback)
 
     def count(self):
         return a_global_count
@@ -185,12 +115,11 @@ class ClosureCallbackLeafSystem(LeafSystem):
     def __init__(self):
         super().__init__()
         self._count = 0
-        self._spies = []
 
         def handler(*args, **kwargs):
             self._count += 1
 
-        DeclareAllEvents(self, handler)
+        DeclareAllEvents(self, lambda: handler)
 
     def count(self):
         return self._count
