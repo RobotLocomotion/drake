@@ -1,6 +1,5 @@
 #pragma once
 
-#include <cstdint>
 #include <memory>
 #include <utility>
 #include <vector>
@@ -166,9 +165,7 @@ class IcfSolver {
         previous_sparsity_pattern;
 
     // Flag for Hessian factorization re-use (changes between iterations).
-    // Stored as uint8_t (not bool) so it can be a per-island element without
-    // the std::vector<bool> bit-packing surprises.
-    std::uint8_t hessian_factorization_is_fresh_enough{0};
+    bool hessian_factorization_is_fresh_enough{false};
 
     // Island-local (gathered) scratch for the search-direction solve: the
     // right-hand side −g and, after solving, the search direction w, laid out

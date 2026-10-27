@@ -371,6 +371,59 @@ GTEST_TEST(IcfModel, PerBodyElements) {
   EXPECT_EQ(num_anchored, 1);
 }
 
+/* Checks that per-island evaluation zeroes the spatial velocities of anchored
+bodies, and leaves those of other islands' bodies untouched, even when the
+buffers start out filled with garbage. */
+GTEST_TEST(IcfModel, IslandSpatialVelocities) {
+  IcfModel<double> model;
+  MakeUnconstrainedModel(&model);
+  model.SetSparsityPattern();
+  const int num_islands = model.partition().num_islands();
+  ASSERT_GT(num_islands, 1);
+  ASSERT_TRUE(model.is_anchored(0));
+
+  const int nv = model.num_velocities();
+  const VectorXd v = VectorXd::LinSpaced(nv, -1.0, 1.0);
+  const VectorXd w = VectorXd::LinSpaced(nv, 0.1, -0.2);
+  const Vector6d kGarbage =
+      Vector6d::Constant(std::numeric_limits<double>::quiet_NaN());
+  auto fill_with_garbage = [&](EigenPool<Vector6d>* pool) {
+    pool->Resize(model.num_bodies(), 6, 1);
+    for (int b = 0; b < pool->size(); ++b) (*pool)[b] = kGarbage;
+  };
+
+  for (int island = 0; island < num_islands; ++island) {
+    SCOPED_TRACE(fmt::format("island = {}", island));
+    IcfData<double> data;
+    model.ResizeData(&data);
+    IcfSearchDirectionData<double> search_data;
+    EigenPool<Vector6d>& V_WB_alpha = data.scratch(island).V_WB_alpha;
+    fill_with_garbage(&data.mutable_V_WB());
+    fill_with_garbage(&search_data.U);
+    fill_with_garbage(&V_WB_alpha);
+
+    // Evaluate only this island: data, search direction, and line search.
+    model.CalcData(v, island, &data);
+    model.CalcSearchDirectionData(data, w, island, &search_data);
+    double dcost, d2cost;
+    model.CalcCostAlongLine(0.5, data, island, search_data, &dcost, &d2cost);
+
+    for (int b = 0; b < model.num_bodies(); ++b) {
+      SCOPED_TRACE(fmt::format("body = {}", b));
+      if (model.is_anchored(b)) {
+        EXPECT_EQ(data.V_WB()[b], Vector6d::Zero());
+        EXPECT_EQ(search_data.U[b], Vector6d::Zero());
+        EXPECT_EQ(V_WB_alpha[b], Vector6d::Zero());
+      } else if (model.partition().clique_to_island(model.body_to_clique(b)) !=
+                 island) {
+        EXPECT_TRUE(data.V_WB()[b].array().isNaN().all());
+        EXPECT_TRUE(search_data.U[b].array().isNaN().all());
+        EXPECT_TRUE(V_WB_alpha[b].array().isNaN().all());
+      }
+    }
+  }
+}
+
 /* Checks that gradients are computed correctly, even in the presence of
 constraints. */
 GTEST_TEST(IcfModel, CalcGradients) {

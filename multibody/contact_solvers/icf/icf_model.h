@@ -565,7 +565,8 @@ class IcfModel {
   void CalcBodySpatialVelocities(const VectorX<T>& v,
                                  EigenPool<Vector6<T>>* V_WB) const;
 
-  /* Per-island overload: writes V_WB only for the island's bodies. */
+  /* Per-island overload: writes V_WB for the island's bodies, and zeroes V_WB
+  for all anchored bodies. Entries for other islands' bodies are untouched. */
   void CalcBodySpatialVelocities(const VectorX<T>& v, int island,
                                  EigenPool<Vector6<T>>* V_WB) const;
 
@@ -619,6 +620,7 @@ class IcfModel {
   IslandItemMap island_patches_;
   IslandItemMap island_welds_;
   IslandItemMap island_bodies_;
+  std::vector<int> anchored_bodies_;  // Recomputed by BuildIslandMaps().
   std::vector<int> island_keys_;  // Scratch for BuildIslandMaps(), grow-only.
 
   // Fixed set of constraints.
