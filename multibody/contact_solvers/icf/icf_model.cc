@@ -549,6 +549,11 @@ void IcfModel<T>::BuildIslandMaps() {
   build(&island_bodies_, num_bodies_, [&](int b) {
     return is_anchored(b) ? -1 : island_of_clique(body_to_clique(b));
   });
+
+  anchored_bodies_.clear();
+  for (int b = 0; b < num_bodies_; ++b) {
+    if (is_anchored(b)) anchored_bodies_.push_back(b);
+  }
 }
 
 template <typename T>
@@ -847,6 +852,12 @@ void IcfModel<T>::CalcBodySpatialVelocities(
     } else {
       V_WB = J_WB(b) * v_clique;
     }
+  }
+  // Anchored bodies are shared by all islands and always have zero velocity.
+  // Zero them here too, so that V_WB is fully initialized no matter which
+  // islands have been evaluated.
+  for (int b : anchored_bodies_) {
+    spatial_velocities[b].setZero();
   }
 }
 
