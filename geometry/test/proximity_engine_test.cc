@@ -84,11 +84,6 @@ class ProximityEngineTester {
   }
 
   template <typename T>
-  static bool IsFclConvexType(const ProximityEngine<T>& engine, GeometryId id) {
-    return engine.IsFclConvexType(id);
-  }
-
-  template <typename T>
   static const fcl::CollisionObjectd* GetCollisionObject(
       const ProximityEngine<T>& engine, GeometryId id) {
     void* erase_ptr = engine.GetCollisionObject(id);
@@ -576,14 +571,14 @@ TEST_F(ProximityEngineTests, MarginAfterEngineClone) {
   const double kDistance = 2 * (kRadius + kMarginValue) - 0.5 * kMarginValue;
 
   const Sphere sphere(kRadius);
-  const RigidTransformd X_WA(Vector3d(kDistance, 0, 0));
+  const Vector3d p_WA(kDistance, 0, 0);
 
   ProximityProperties compliant_properties;
   compliant_properties.AddProperty(kHydroGroup, kMargin, kMarginValue);
   AddCompliantHydroelasticProperties(kResHint, kE, &compliant_properties);
 
   // Both shapes have margin.
-  AddDynamic(sphere, {}, compliant_properties);
+  AddDynamic(sphere, p_WA, compliant_properties);
   AddAnchored(sphere, {}, compliant_properties);
 
   engine_.UpdateWorldPoses(X_WGs_);
@@ -724,9 +719,6 @@ TEST_F(ProximityEngineTests, ConvexHullCacheScaleIsRespected) {
   EXPECT_NEAR(dist_by_id.at(id_B), 8.0, kTol);  // confirms y-scale of Box B
   EXPECT_NEAR(dist_by_id.at(id_C), 8.0, kTol);  // confirms z-scale of Box C
 }
-
-// TODO(SeanCurtis-TRI): Confirm that SDF data gets computed for Mesh(vtk) and
-// all Convex().
 
 // Tests that Convex shapes sourced from the same file but registered with
 // different margins receive distinct fcl::Convexd objects (as each Convexd
@@ -1153,7 +1145,7 @@ TEST_F(ProximityEngineTests, MoveSemantics) {
 
   ProximityEngine<double> move_assign;
   move_assign = std::move(move_construct);
-  Tester::IsDeepCopy(move_construct, engine_);
+  Tester::IsDeepCopy(move_assign, engine_);
   EXPECT_EQ(move_construct.num_geometries(), 0);
   EXPECT_EQ(move_construct.num_anchored(), 0);
   EXPECT_EQ(move_construct.num_dynamic(), 0);
@@ -1418,7 +1410,7 @@ TEST_F(ProximityEngineTests, ComputeSignedDistanceToPoint) {
   EXPECT_EQ(extract_ids(eval_dut(p_WQ1)), expected1);
 
   // (7) - Collision filters are ignored.
-  ExcludeCollisionsWithin({dynamic1, anchored2, dynamic1});
+  ExcludeCollisionsWithin({dynamic1, anchored2});
   EXPECT_EQ(extract_ids(eval_dut(p_WQ1)), expected1);
   EXPECT_EQ(extract_ids(eval_dut(p_WQ2)), expected2);
 
