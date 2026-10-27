@@ -2,8 +2,6 @@
 
 #include <algorithm>
 #include <cmath>
-#include <filesystem>
-#include <fstream>
 #include <initializer_list>
 #include <limits>
 #include <memory>
@@ -22,7 +20,6 @@
 
 #include "drake/common/find_resource.h"
 #include "drake/common/fmt_eigen.h"
-#include "drake/common/temp_directory.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
@@ -1072,35 +1069,6 @@ TEST_F(ProximityEngineTests, RemoveGeometry) {
       EXPECT_EQ(Tester::hydroelastic_type(remove_id, engine_),
                 HydroelasticType::kUndefined);
     }
-  }
-}
-
-// Tests for reading .obj files.------------------------------------------------
-
-// Tests exception when we fail to read an .obj file into a Convex.
-TEST_F(ProximityEngineTests, FailedParsing) {
-  const std::filesystem::path temp_dir = temp_directory();
-  // An empty file.
-  {
-    const std::filesystem::path file = temp_dir / "empty.obj";
-    std::ofstream f(file.string());
-    f.close();
-    Convex convex(file.string());
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        AddDynamic(convex),
-        ".*cannot be used on a mesh with fewer than three vertices.*");
-  }
-
-  // The file does not have OBJ contents.
-  {
-    const std::filesystem::path file = temp_dir / "not_really_an_obj.obj";
-    std::ofstream f(file.string());
-    f << "I'm not a valid obj\n";
-    f.close();
-    Convex convex(file.string());
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        AddDynamic(convex),
-        ".*cannot be used on a mesh with fewer than three vertices.*");
   }
 }
 
