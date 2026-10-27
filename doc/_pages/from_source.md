@@ -15,7 +15,7 @@ Drake's source code is available on [GitHub](https://github.com/RobotLocomotion/
 In addition to the code on `master`, the source code archives
 for each release are published at
 `https://github.com/RobotLocomotion/drake/releases/download/v<version>/drake-<version>-src.tar.gz`
-with corresponding .sha256 and .sha512 checksums.
+with corresponding .sha256 checksums.
 
 # Supported Configurations
 
