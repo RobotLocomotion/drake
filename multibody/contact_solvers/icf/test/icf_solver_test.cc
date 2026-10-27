@@ -1,5 +1,6 @@
 #include "drake/multibody/contact_solvers/icf/icf_solver.h"
 
+#include <functional>
 #include <memory>
 #include <utility>
 #include <vector>
@@ -298,6 +299,49 @@ TEST_P(IcfSolverParamTest, AnalyticalSolution) {
 
 INSTANTIATE_TEST_SUITE_P(FlipIslands, IcfSolverParamTest, ::testing::Bool());
 
+/* Makes a model whose cliques are coupled by constraints into two independent
+islands (when use_islands is true), each with contact, so that both islands are
+nonlinear. When `with_contact` is false, the patches are omitted and the model
+splits into three (quadratic) islands. */
+void MakeMultiIslandModel(IcfModel<double>* model, bool use_islands,
+                          bool with_contact = true) {
+  MakeUnconstrainedModel(model);
+  auto params = model->ReleaseParameters();
+  params->use_islands = use_islands;
+  model->ResetParameters(std::move(params));
+  AddCouplerConstraint(model);
+  AddGainConstraints(model);
+  AddLimitConstraints(model);
+  if (with_contact) {
+    AddPatchConstraints(model);
+  }
+  model->SetSparsityPattern();
+}
+
+/* Returns a solver with the given use_islands setting and otherwise default
+parameters, modified by `edit`. */
+std::unique_ptr<IcfSolver> MakeSolver(
+    bool use_islands,
+    const std::function<void(IcfSolverParameters*)>& edit = nullptr) {
+  auto solver = std::make_unique<IcfSolver>();
+  IcfSolverParameters params = solver->get_parameters();
+  params.use_islands = use_islands;
+  if (edit != nullptr) edit(&params);
+  solver->SetParameters(params);
+  return solver;
+}
+
+/* Solves `model` from `v_guess` with a fresh solver and data, returning v. */
+VectorXd SolveFresh(const IcfModel<double>& model, const VectorXd& v_guess,
+                    bool use_islands, double tolerance) {
+  IcfData<double> data;
+  model.ResizeData(&data);
+  data.set_v(v_guess);
+  std::unique_ptr<IcfSolver> solver = MakeSolver(use_islands);
+  EXPECT_TRUE(solver->SolveWithGuess(model, tolerance, &data));
+  return data.v();
+}
+
 /* With islands disabled (use_islands = false), the solver optimizes the full
 problem across all cliques as a single Newton solve. On a multi-island problem
 it must still reach the same minimizer as the island-decomposed solve. */
@@ -305,35 +349,121 @@ GTEST_TEST(IcfSolver, NoIslandsMatchesIslands) {
   std::vector<VectorXd> solutions{2};
   for (bool use_islands : {false, true}) {
     IcfModel<double> model;
-    MakeUnconstrainedModel(&model);
-    auto params = model.ReleaseParameters();
-    params->use_islands = use_islands;
-    model.ResetParameters(std::move(params));
-    AddCouplerConstraint(&model);
-    AddGainConstraints(&model);
-    AddLimitConstraints(&model);
-    AddPatchConstraints(&model);
-    model.SetSparsityPattern();
+    MakeMultiIslandModel(&model, use_islands);
     ASSERT_EQ(model.partition().num_islands(), use_islands ? 2 : 1);
-
-    IcfData<double> data;
-    model.ResizeData(&data);
-    const int nv = model.num_velocities();
-    const VectorXd v_guess = VectorXd::LinSpaced(nv, -0.5, 0.7);
-
-    IcfSolver solver;
-    auto solver_params = solver.get_parameters();
-    solver_params.use_islands = use_islands;
-    solver.SetParameters(solver_params);
-    data.set_v(v_guess);
-    EXPECT_TRUE(solver.SolveWithGuess(model, kConvergenceTolerance, &data));
-    solutions[use_islands] = data.v();
+    const VectorXd v_guess =
+        VectorXd::LinSpaced(model.num_velocities(), -0.5, 0.7);
+    solutions[use_islands] =
+        SolveFresh(model, v_guess, use_islands, kConvergenceTolerance);
   }
 
   // Both reach the same minimizer, up to the convergence tolerance.
   EXPECT_TRUE(CompareMatrices(solutions[false], solutions[true],
                               kConvergenceTolerance,
                               MatrixCompareType::relative));
+}
+
+/* Fixture for nonlinear multi-island solves where one island starts at its
+solution and the other is perturbed away from it. */
+class IcfSolverPerturbedIslandTest : public ::testing::Test {
+ protected:
+  void SetUp() override {
+    MakeMultiIslandModel(&model_, /* use_islands = */ true);
+    ASSERT_EQ(model_.partition().num_islands(), 2);
+    model_.ResizeData(&data_);
+
+    // Solve tightly, so that the unperturbed island is converged at its
+    // initial guess for the looser re-solves below.
+    std::unique_ptr<IcfSolver> tight_solver =
+        MakeSolver(true, [](IcfSolverParameters* p) {
+          p->min_tolerance = 1e-12;
+        });
+    data_.set_v(VectorXd::LinSpaced(model_.num_velocities(), -0.5, 0.7));
+    ASSERT_TRUE(tight_solver->SolveWithGuess(model_, 1e-12, &data_));
+
+    // Perturb every clique of one island. The direction and size are chosen so
+    // that the island's contact stays engaged, which makes it nonlinear (other
+    // perturbations can leave it quadratic, solved in a single iteration).
+    converged_island_ = model_.partition().clique_to_island(0);
+    perturbed_island_ = 1 - converged_island_;
+    v_guess_ = data_.v();
+    for (int c : model_.partition().island_cliques(perturbed_island_)) {
+      model_.mutable_clique_segment(c, &v_guess_).array() -= 1.0;
+    }
+    data_.set_v(v_guess_);
+  }
+
+  IcfModel<double> model_;
+  IcfData<double> data_;
+  VectorXd v_guess_;
+  int converged_island_{-1};
+  int perturbed_island_{-1};
+};
+
+/* Islands take different numbers of (nonlinear) iterations, one converging at
+its initial guess, and the assembled solution matches the islands-off solve. */
+TEST_F(IcfSolverPerturbedIslandTest, DifferentIterationCounts) {
+  std::unique_ptr<IcfSolver> solver = MakeSolver(true);
+  ASSERT_TRUE(solver->SolveWithGuess(model_, kConvergenceTolerance, &data_));
+  EXPECT_EQ(solver->island_stats(converged_island_).num_iterations, 0);
+  const int perturbed_iterations =
+      solver->island_stats(perturbed_island_).num_iterations;
+  EXPECT_GT(perturbed_iterations, 1);
+  EXPECT_EQ(solver->stats().num_iterations, perturbed_iterations);
+
+  // The islands-off solve of the same problem (one island holding all cliques)
+  // reaches the same minimizer.
+  IcfModel<double> model_off;
+  MakeMultiIslandModel(&model_off, /* use_islands = */ false);
+  ASSERT_EQ(model_off.partition().num_islands(), 1);
+  const VectorXd v_off =
+      SolveFresh(model_off, v_guess_, false, kConvergenceTolerance);
+  EXPECT_TRUE(CompareMatrices(data_.v(), v_off, kConvergenceTolerance,
+                              MatrixCompareType::relative));
+}
+
+/* When one island fails to converge, the solve reports failure, while the
+other (already converged) island's velocities are left exactly as they were. */
+TEST_F(IcfSolverPerturbedIslandTest, OneIslandFails) {
+  std::unique_ptr<IcfSolver> solver =
+      MakeSolver(true, [](IcfSolverParameters* p) {
+        p->max_iterations = 1;
+      });
+  EXPECT_FALSE(solver->SolveWithGuess(model_, kConvergenceTolerance, &data_));
+  EXPECT_EQ(solver->island_stats(converged_island_).num_iterations, 0);
+  EXPECT_EQ(solver->island_stats(perturbed_island_).num_iterations, 1);
+  for (int c : model_.partition().island_cliques(converged_island_)) {
+    EXPECT_EQ(model_.clique_segment(c, data_.v()),
+              model_.clique_segment(c, v_guess_));
+  }
+}
+
+/* A single solver and data, with Hessian reuse, stay correct while constraints
+merge islands and later split them again. */
+GTEST_TEST(IcfSolver, ReuseAcrossIslandMergeAndSplit) {
+  std::unique_ptr<IcfSolver> solver =
+      MakeSolver(true, [](IcfSolverParameters* p) {
+        p->enable_hessian_reuse = true;
+      });
+  IcfData<double> data;
+  for (bool with_contact : {false, true, true, false}) {
+    SCOPED_TRACE(fmt::format("with_contact = {}", with_contact));
+    IcfModel<double> model;
+    MakeMultiIslandModel(&model, /* use_islands = */ true, with_contact);
+    ASSERT_EQ(model.partition().num_islands(), with_contact ? 2 : 3);
+    const VectorXd v_guess =
+        VectorXd::LinSpaced(model.num_velocities(), -0.5, 0.7);
+
+    model.ResizeData(&data);
+    data.set_v(v_guess);
+    ASSERT_TRUE(solver->SolveWithGuess(model, kConvergenceTolerance, &data));
+    EXPECT_EQ(solver->num_islands(), model.partition().num_islands());
+
+    const VectorXd v_fresh =
+        SolveFresh(model, v_guess, true, kConvergenceTolerance);
+    EXPECT_TRUE(CompareMatrices(data.v(), v_fresh, kConvergenceTolerance,
+                                MatrixCompareType::relative));
+  }
 }
 
 /* Checks the aggregation of per-island statistics when the islands take
