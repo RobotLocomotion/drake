@@ -424,6 +424,97 @@ GTEST_TEST(IcfModel, IslandSpatialVelocities) {
   }
 }
 
+/* Checks that evaluating one island writes exactly that island's entries of the
+data: they match a reference evaluation of all islands, while every entry owned
+by another (not yet evaluated) island keeps a sentinel value. The islands are
+evaluated one at a time, in both orders. */
+GTEST_TEST(IcfModel, IslandCalcDataLeavesOtherIslandsUntouched) {
+  IcfModel<double> model;
+  MakeUnconstrainedModel(&model);
+  AddCouplerConstraint(&model);
+  AddGainConstraints(&model);
+  AddLimitConstraints(&model);
+  AddPatchConstraints(&model);
+  model.SetSparsityPattern();
+  const int num_islands = model.partition().num_islands();
+  ASSERT_EQ(num_islands, 2);
+  ASSERT_GT(model.island_patches().items(0).size(), 0);
+  ASSERT_GT(model.island_patches().items(1).size(), 0);
+
+  const int nv = model.num_velocities();
+  const VectorXd v = VectorXd::LinSpaced(nv, -0.5, 0.7);
+  IcfData<double> reference;
+  model.ResizeData(&reference);
+  model.CalcAllData(v, &reference);
+
+  constexpr double kSentinel = 1234.5;
+  for (const std::vector<int>& order :
+       {std::vector<int>{0, 1}, std::vector<int>{1, 0}}) {
+    SCOPED_TRACE(fmt::format("order = {}", fmt::join(order, ", ")));
+    IcfData<double> data;
+    model.ResizeData(&data);
+    data.set_v(v);
+    data.mutable_gradient().setConstant(kSentinel);
+    data.mutable_Av().setConstant(kSentinel);
+    for (int b = 0; b < model.num_bodies(); ++b) {
+      data.mutable_V_WB()[b].setConstant(kSentinel);
+    }
+    PatchConstraintsDataPool<double>& patch_data =
+        data.mutable_patch_constraints_data();
+    std::ranges::fill(patch_data.mutable_cost_pool(), kSentinel);
+    for (int i = 0; i < num_islands; ++i) {
+      data.set_island_cost(i, kSentinel);
+      data.set_island_momentum_cost(i, kSentinel);
+    }
+
+    std::vector<bool> evaluated(num_islands, false);
+    for (int active : order) {
+      SCOPED_TRACE(fmt::format("after evaluating island {}", active));
+      model.CalcData(v, active, &data);
+      evaluated[active] = true;
+
+      for (int i = 0; i < num_islands; ++i) {
+        if (evaluated[i]) {
+          EXPECT_EQ(data.island_cost(i), reference.island_cost(i));
+          EXPECT_EQ(data.island_momentum_cost(i),
+                    reference.island_momentum_cost(i));
+        } else {
+          EXPECT_EQ(data.island_cost(i), kSentinel);
+          EXPECT_EQ(data.island_momentum_cost(i), kSentinel);
+        }
+      }
+      for (int c = 0; c < model.num_cliques(); ++c) {
+        const bool done = evaluated[model.partition().clique_to_island(c)];
+        const VectorXd sentinel =
+            VectorXd::Constant(model.clique_size(c), kSentinel);
+        EXPECT_EQ(
+            model.clique_segment(c, data.gradient()),
+            done ? model.clique_segment(c, reference.gradient()) : sentinel);
+        EXPECT_EQ(model.clique_segment(c, data.Av()),
+                  done ? model.clique_segment(c, reference.Av()) : sentinel);
+      }
+      for (int b = 0; b < model.num_bodies(); ++b) {
+        if (model.is_anchored(b)) {
+          EXPECT_EQ(data.V_WB()[b], Vector6d::Zero());
+          continue;
+        }
+        const bool done = evaluated[model.partition().clique_to_island(
+            model.body_to_clique(b))];
+        EXPECT_EQ(data.V_WB()[b], done ? Vector6d(reference.V_WB()[b])
+                                       : Vector6d::Constant(kSentinel));
+      }
+      for (int i = 0; i < num_islands; ++i) {
+        for (int p : model.island_patches().items(i)) {
+          EXPECT_EQ(patch_data.cost_pool()[p],
+                    evaluated[i]
+                        ? reference.patch_constraints_data().cost_pool()[p]
+                        : kSentinel);
+        }
+      }
+    }
+  }
+}
+
 /* Checks that gradients are computed correctly, even in the presence of
 constraints. */
 GTEST_TEST(IcfModel, CalcGradients) {

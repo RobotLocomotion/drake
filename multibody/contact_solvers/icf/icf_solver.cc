@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <exception>
 #include <limits>
+#include <span>
 
 #include "drake/common/text_logging.h"
 #include "drake/multibody/contact_solvers/newton_with_bisection.h"
@@ -297,6 +298,9 @@ bool IcfSolver::SolveIsland(const IcfModel<double>& model, const int island,
     if (!reuse_sparsity_pattern) {
       state->previous_sparsity_pattern = std::make_unique<BlockSparsityPattern>(
           model.island_sparsity_pattern(island));
+      const std::span<const int> cliques =
+          model.partition().island_cliques(island);
+      state->previous_cliques.assign(cliques.begin(), cliques.end());
     }
 
     // Compute the optimal step size alpha_k = min_alpha l_i(v_k + alpha*w_k).
@@ -528,6 +532,10 @@ bool IcfSolver::IslandSparsityChanged(const IcfModel<double>& model,
                                       const IslandSolverState& state) const {
   if (state.previous_sparsity_pattern == nullptr) {
     return true;  // No previous sparsity pattern to compare against.
+  }
+  if (!std::ranges::equal(model.partition().island_cliques(island),
+                          state.previous_cliques)) {
+    return true;  // Same island index, but different cliques.
   }
   const BlockSparsityPattern& current = model.island_sparsity_pattern(island);
   return (current.neighbors() !=
