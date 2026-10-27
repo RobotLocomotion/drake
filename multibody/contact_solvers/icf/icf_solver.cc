@@ -265,7 +265,7 @@ bool IcfSolver::SolveIsland(const IcfModel<double>& model, const int island,
       if (anticipated_residual > scaled_tolerance) {
         // We likely won't converge in time at this (linear) rate, so we should
         // recompute the Hessian in hopes of faster (quadratic) convergence.
-        state->hessian_factorization_is_fresh_enough = 0;
+        state->hessian_factorization_is_fresh_enough = false;
       }
     }
 
@@ -479,7 +479,7 @@ void IcfSolver::ComputeIslandSearchDirection(
       state->stats.num_factorizations++;
 
       // The factorization is now fresh, so we should try to reuse it next time.
-      state->hessian_factorization_is_fresh_enough = 1;
+      state->hessian_factorization_is_fresh_enough = true;
     }
 
     // Compute the island search direction w = -H^{-1}*g with dense algebra,
@@ -508,7 +508,7 @@ void IcfSolver::ComputeIslandSearchDirection(
       state->stats.num_factorizations++;
 
       // The factorization is now fresh, so we should try to reuse it next time.
-      state->hessian_factorization_is_fresh_enough = 1;
+      state->hessian_factorization_is_fresh_enough = true;
     }
 
     // Compute the island search direction w = -H^{-1}*g with sparse algebra,
