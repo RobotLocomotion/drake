@@ -1,5 +1,6 @@
 #include "drake/geometry/proximity/distance_to_shape_touching.h"
 
+#include <cmath>
 #include <memory>
 
 #include <fcl/fcl.h>
@@ -574,6 +575,107 @@ GTEST_TEST(BoxBoxGradient, InputWithNumericalErrors) {
   EXPECT_TRUE(
       CompareMatrices(BoxBoxGradient(box_A, box_B, X_WA, X_WB, p_ACa, p_BCb),
                       -Vector3d::UnitX()));
+}
+
+// Regression test for #21675: the caller classifies boxes as touching when
+// |distance| < 1e-14, but the witness points it passes are apart by |distance|
+// plus rounding from frame changes, which can exceed 1e-14. A penetration of
+// 2e-14 stands in for that gap here.
+GTEST_TEST(BoxBoxGradient, SlightPenetration) {
+  const fcl::Boxd box_A(0.2, 0.2, 0.2);
+  const fcl::Boxd box_B(0.2, 0.2, 0.2);
+  const RigidTransformd X_WA = RigidTransformd::Identity();
+  const RigidTransformd X_WB(Vector3d(0.2 - 2e-14, 0, 0));
+  const Vector3d p_ACa(0.1, 0, 0);
+  const Vector3d p_BCb(-0.1, 0, 0);
+
+  EXPECT_TRUE(
+      CompareMatrices(BoxBoxGradient(box_A, box_B, X_WA, X_WB, p_ACa, p_BCb),
+                      -Vector3d::UnitX()));
+  EXPECT_TRUE(
+      CompareMatrices(BoxBoxGradient(box_B, box_A, X_WB, X_WA, p_BCb, p_ACa),
+                      Vector3d::UnitX()));
+}
+
+// When the witness points don't identify a touching feature, e.g., witness
+// points at the centers of overlapping boxes as FCL once reported (#21947),
+// the gradient is the axis of minimum overlap.
+GTEST_TEST(BoxBoxGradient, DeepPenetration) {
+  const fcl::Boxd box_A(0.4, 0.2, 0.6);
+  const fcl::Boxd box_B(0.2, 0.2, 0.2);
+  const RigidTransformd X_WA = RigidTransformd::Identity();
+  const RigidTransformd X_WB(Vector3d(0, 0.01, 0));
+  const Vector3d p_ACa(0, 0, 0);
+  const Vector3d p_BCb(0, 0, 0);
+
+  // Moving A by 0.19 along -y separates the boxes; every other direction
+  // needs at least 0.21.
+  EXPECT_TRUE(
+      CompareMatrices(BoxBoxGradient(box_A, box_B, X_WA, X_WB, p_ACa, p_BCb),
+                      -Vector3d::UnitY()));
+  EXPECT_TRUE(
+      CompareMatrices(BoxBoxGradient(box_B, box_A, X_WB, X_WA, p_BCb, p_ACa),
+                      Vector3d::UnitY()));
+
+  // The configuration reported in #21947: concentric boxes, so the sign of the
+  // gradient is arbitrary.
+  const fcl::Boxd box_C(0.05, 0.55, 0.3);
+  const fcl::Boxd box_D(0.25, 0.2, 0.15);
+  const RigidTransformd X_WC(
+      RollPitchYawd(0, 0, 1.570000000000001),
+      Vector3d(1.2500000000000009, -2.9878953394393027e-16, 0.15));
+  const RigidTransformd X_WD(RollPitchYawd(3.141592653589793, 0, 0),
+                             Vector3d(1.25, 0, 0.15));
+  const Vector3d p_CCc(1.71304e-17, 6.66134e-16, 8.32667e-17);
+  const Vector3d p_DCd(2.22045e-16, 6.93889e-17, 8.32667e-17);
+  const Vector3d nhat_DC_W =
+      BoxBoxGradient(box_C, box_D, X_WC, X_WD, p_CCc, p_DCd);
+  EXPECT_NEAR(std::abs(nhat_DC_W.dot(X_WC.rotation().col(0))), 1, 1e-14);
+}
+
+// Same as DeepPenetration, but the axis of minimum overlap is the cross
+// product of two edges. The boxes are posed as in EdgeCrossEdge, with box_B
+// moved 1e-3 toward box_A.
+GTEST_TEST(BoxBoxGradient, DeepPenetrationEdgeCrossEdge) {
+  const fcl::Boxd box_A(2, 2, 2);
+  const fcl::Boxd box_B(2, 2, 2);
+  const RigidTransformd X_WA = RigidTransformd::Identity();
+  const RigidTransformd X_WB(
+      AngleAxisd(M_PI_2, Vector3d(1, 1, 0).normalized()),
+      Vector3d(2, 2, 0) - 1e-3 * Vector3d(1, 1, 0).normalized());
+  const Vector3d p_ACa(0, 0, 0);
+  const Vector3d p_BCb(0, 0, 0);
+
+  EXPECT_TRUE(
+      CompareMatrices(BoxBoxGradient(box_A, box_B, X_WA, X_WB, p_ACa, p_BCb),
+                      Vector3d(-1, -1, 0).normalized(), 1e-14));
+  EXPECT_TRUE(
+      CompareMatrices(BoxBoxGradient(box_B, box_A, X_WB, X_WA, p_BCb, p_ACa),
+                      Vector3d(1, 1, 0).normalized(), 1e-14));
+}
+
+// Far from the origin, rounding in the witness points can exceed the
+// tolerances that identify the touching feature, and the gradient may come
+// from the axis of minimum overlap, depending on rounding. Every path gives
+// the same gradient.
+GTEST_TEST(BoxBoxGradient, TouchingFarFromOrigin) {
+  const fcl::Boxd box_A(0.2, 0.2, 0.2);
+  const fcl::Boxd box_B(0.2, 0.2, 0.2);
+  const math::RotationMatrixd R_WA(RollPitchYawd(0.1, 0.2, 0.3));
+  const Vector3d p_WAo(1e4, 1e4, 1e4);
+  const RigidTransformd X_WA(R_WA, p_WAo);
+  // Box B touches the +x face of box A.
+  const RigidTransformd X_WB(R_WA, p_WAo + R_WA * Vector3d(0.2, 0, 0));
+  const Vector3d p_WC = X_WA * Vector3d(0.1, 0.03, 0.02);
+  const Vector3d p_ACa = X_WA.inverse() * p_WC;
+  const Vector3d p_BCb = X_WB.inverse() * p_WC;
+
+  EXPECT_TRUE(
+      CompareMatrices(BoxBoxGradient(box_A, box_B, X_WA, X_WB, p_ACa, p_BCb),
+                      -R_WA.col(0), 1e-14));
+  EXPECT_TRUE(
+      CompareMatrices(BoxBoxGradient(box_B, box_A, X_WB, X_WA, p_BCb, p_ACa),
+                      R_WA.col(0), 1e-14));
 }
 
 }  // namespace
