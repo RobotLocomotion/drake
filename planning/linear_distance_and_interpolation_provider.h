@@ -14,6 +14,8 @@ namespace planning {
 /** This class represents a basic "linear" implementation of
 DistanceAndInterpolationProvider.
 
+- Configuration deltas are (angle, 0, 0, 0) for quaternion DoF and (to - from)
+for all other positions. Quaternion angle deltas are not signed.
 - Configuration distance is computed as difference.cwiseProduct(weights).norm(),
 where difference is computed as the angle between quaternion DoF and difference
 between all other positions. Default weights are (1, 0, 0, 0) for quaternion

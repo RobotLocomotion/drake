@@ -72,8 +72,7 @@ void DefinePlanningCollisionCheckerInterfaceTypes(py::module_ m) {
     class_<Class, std::shared_ptr<Class>> cls(
         m, "DistanceAndInterpolationProvider", cls_doc.doc);
     cls  // BR
-        .def("ComputeConfigurationDeltas",
-            &Class::ComputeConfigurationDeltas,
+        .def("ComputeConfigurationDeltas", &Class::ComputeConfigurationDeltas,
             cls_doc.ComputeConfigurationDeltas.doc)
         .def("ComputeConfigurationDistance",
             &Class::ComputeConfigurationDistance,
