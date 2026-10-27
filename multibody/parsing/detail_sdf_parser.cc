@@ -691,6 +691,9 @@ struct FrameNameScope {
   // The plant's model instance count when parsing this source began; see
   // FindSourceModelInstance().
   ModelInstanceIndex model_instances_begin;
+  // The __model__ frames, added while parsing this source, that Drake fixed to
+  // the world rather than attach them to their models' canonical links.
+  const std::set<FrameIndex>* misplaced_model_frames{};
 };
 
 // Returns the frame that `frame_name`, given by the <`element_name`> child of
@@ -731,9 +734,10 @@ const Frame<double>* FindFrame(const SDFormatDiagnostic& diagnostic,
     return nullptr;
   }
 
-  // Drake has no frame for an SDFormat joint's own frame. Worse, the plant
-  // might have an unrelated frame by that name that Drake added for some
-  // other joint, such as the frame foo_child for a joint foo.
+  // No frame in the plant has a joint's name; the frames Drake adds for a
+  // joint foo, if any, are named foo_parent and foo_child. Worse, the plant
+  // might have a frame by that name that Drake added for some other joint, as
+  // when a joint is named foo_child, and that frame is on a different link.
   if (scope.is_joint_name(normalized_name)) {
     diagnostic.Error(
         node, fmt::format("{0}: <{1}>{2}</{1}> names a joint; it must name a "
@@ -761,26 +765,31 @@ const Frame<double>* FindFrame(const SDFormatDiagnostic& diagnostic,
   };
 
   // A model's implicit frame, however it is named, is unusable if Drake fixed
-  // it to the world. Drake does that when it doesn't attach the frame to the
-  // model's canonical link, as when that link is deformable or comes from an
-  // included URDF or MJCF model; the frame isn't where SDFormat puts it then.
-  // (That also rejects the frame of a model with no links, which is right, but
-  // the model's explicit frames can still be named.)
-  // TODO(#25129) Allow the frame once Drake attaches it to a canonical link
-  // that comes from an included URDF or MJCF model.
+  // it to the world rather than attach it to the model's canonical link, as
+  // when that link is deformable or comes from an included URDF or MJCF model;
+  // the frame isn't where SDFormat puts it then, and neither is any frame
+  // attached to it. (A model with no links has its frame fixed to the world
+  // rightly.)
+  // TODO(#25129) Allow those frames once Drake attaches the model's frame to a
+  // canonical link that comes from an included URDF or MJCF model.
   auto check_frame = [&](const Frame<double>& frame) -> const Frame<double>* {
-    if (frame.name() == "__model__" &&
-        frame.model_instance() != world_model_instance() &&
-        &frame.body() == &plant.world_body()) {
-      diagnostic.Error(
-          node, fmt::format("{0}: <{1}>{2}</{1}> names the frame of a model "
-                            "that Drake doesn't attach to a link (its "
-                            "canonical link is deformable or from an included "
-                            "URDF or MJCF model, or it has no links). Name a "
-                            "link instead, or one of the model's frames if it "
-                            "has no links.",
-                            referrer, element_name, frame_name));
-      return nullptr;
+    for (const Frame<double>* f = &frame; f != nullptr;) {
+      if (scope.misplaced_model_frames->contains(f->index())) {
+        diagnostic.Error(
+            node,
+            fmt::format(
+                "{0}: <{1}>{2}</{1}> names {3} of model '{4}', which "
+                "Drake fixes to the world rather than to the model's "
+                "canonical link (it is deformable or from an included "
+                "URDF or MJCF model). Name a link instead.",
+                referrer, element_name, frame_name,
+                f == &frame ? "the frame" : "a frame attached to the frame",
+                plant.GetModelInstanceName(f->model_instance())));
+        return nullptr;
+      }
+      const auto* offset_frame =
+          dynamic_cast<const FixedOffsetFrame<double>*>(f);
+      f = offset_frame != nullptr ? &offset_frame->parent_frame() : nullptr;
     }
     return &frame;
   };
@@ -2024,6 +2033,23 @@ bool AddDrakeJointFromSpecification(const SDFormatDiagnostic& diagnostic,
   if (child_frame == nullptr) {
     return false;
   }
+  // As for an SDFormat <joint>, the child must not be the world. (Drake puts a
+  // joint in its child frame's model instance, so the joint would also leave
+  // this model.) Nor may a joint connect a link to itself.
+  if (child_frame == &plant->world_frame()) {
+    diagnostic.Error(node, fmt::format("<drake:joint name='{}'>: <drake:child> "
+                                       "must not be world.",
+                                       joint_name));
+    return false;
+  }
+  if (&parent_frame->body() == &child_frame->body()) {
+    diagnostic.Error(
+        node, fmt::format("<drake:joint name='{}'>: <drake:parent> and "
+                          "<drake:child> are both on link '{}'; a joint must "
+                          "connect two different links.",
+                          joint_name, child_frame->body().name()));
+    return false;
+  }
 
   if (joint_type == "planar") {
     // TODO(eric.cousineau): Error out when there are unused tags.
@@ -2531,7 +2557,9 @@ std::set<std::string> GetImportedJointNames(
 }
 
 // Helper method to add a model to a MultibodyPlant given an sdf::Model
-// specification object.
+// specification object. Adds the model's __model__ frame, and those of its
+// nested models, to `misplaced_model_frames` if Drake fixes them to the world
+// rather than attach them to their canonical links.
 std::vector<ModelInstanceIndex> AddModelsFromSpecification(
     const SDFormatDiagnostic& diagnostic, sdf::Model* model_ptr,
     const std::string& model_name, const RigidTransformd& X_WP,
@@ -2539,8 +2567,10 @@ std::vector<ModelInstanceIndex> AddModelsFromSpecification(
     const PackageMap& package_map, const std::string& root_dir,
     const ModelInstanceIndexRange& reusable_model_instance_range,
     const sdf::ParserConfig& parser_config,
-    const std::set<std::string>& imported_joint_names) {
+    const std::set<std::string>& imported_joint_names,
+    std::set<FrameIndex>* misplaced_model_frames) {
   DRAKE_DEMAND(model_ptr != nullptr);
+  DRAKE_DEMAND(misplaced_model_frames != nullptr);
 
   DrakifyModel(diagnostic, parser_config, model_ptr);
 
@@ -2586,7 +2616,7 @@ std::vector<ModelInstanceIndex> AddModelsFromSpecification(
             diagnostic, nested_model,
             sdf::JoinName(model_name, nested_model->Name()), X_WM, plant,
             resolver, package_map, root_dir, reusable_model_instance_range,
-            parser_config, imported_joint_names);
+            parser_config, imported_joint_names, misplaced_model_frames);
 
     added_model_instances.insert(added_model_instances.end(),
                                  nested_model_instances.begin(),
@@ -2643,8 +2673,16 @@ std::vector<ModelInstanceIndex> AddModelsFromSpecification(
       // MJCF model, libsdformat gives only its name (canonical_link is null).
       // Resolve that name in the plant and attach the frame to the link,
       // rather than fixing it to the world.
-      return plant->AddFrame(std::make_unique<FixedOffsetFrame<double>>(
-          sdf_model_frame_name, plant->world_frame(), X_WM, model_instance));
+      const Frame<double>& frame =
+          plant->AddFrame(std::make_unique<FixedOffsetFrame<double>>(
+              sdf_model_frame_name, plant->world_frame(), X_WM,
+              model_instance));
+      // That is where SDFormat puts the frame only if the model has no links,
+      // in which case it has no canonical link name.
+      if (!canonical_link_name.empty()) {
+        misplaced_model_frames->insert(frame.index());
+      }
+      return frame;
     }
   }();
 
@@ -2693,7 +2731,8 @@ std::vector<ModelInstanceIndex> AddModelsFromSpecification(
                    imported_joint_names.contains(
                        ScopedName::Join(model_name, name).to_string());
           },
-      .model_instances_begin = model_instances_begin};
+      .model_instances_begin = model_instances_begin,
+      .misplaced_model_frames = misplaced_model_frames};
 
   drake::log()->trace("sdf_parser: Add drake custom joints");
   if (model.Element()->HasElement("drake:joint")) {
@@ -3282,12 +3321,13 @@ std::optional<ModelInstanceIndex> AddModelFromSdf(
 
   const std::set<std::string> imported_joint_names =
       GetImportedJointNames(*workspace.plant, joint_indices_before_load);
+  std::set<FrameIndex> misplaced_model_frames;
   std::vector<ModelInstanceIndex> added_model_instances =
       AddModelsFromSpecification(
           diagnostic, model_ptr, model_name, {}, workspace.plant,
           workspace.collision_resolver, workspace.package_map,
           data_source.GetRootDir(), reusable_model_instance_range,
-          parser_config, imported_joint_names);
+          parser_config, imported_joint_names, &misplaced_model_frames);
 
   DRAKE_DEMAND(!added_model_instances.empty());
   return added_model_instances.front();
@@ -3339,6 +3379,7 @@ std::vector<ModelInstanceIndex> AddModelsFromSdf(
   std::vector<ModelInstanceIndex> model_instances;
   const std::set<std::string> imported_joint_names =
       GetImportedJointNames(*workspace.plant, joint_indices_before_load);
+  std::set<FrameIndex> misplaced_model_frames;
 
   // At this point there should be only Models or a single World at the Root
   // level.
@@ -3357,7 +3398,7 @@ std::vector<ModelInstanceIndex> AddModelsFromSdf(
             diagnostic, model_ptr, model_name, {}, workspace.plant,
             workspace.collision_resolver, workspace.package_map,
             data_source.GetRootDir(), reusable_model_instance_range,
-            parser_config, imported_joint_names);
+            parser_config, imported_joint_names, &misplaced_model_frames);
     model_instances.insert(model_instances.end(), added_model_instances.begin(),
                            added_model_instances.end());
   } else {
@@ -3388,7 +3429,7 @@ std::vector<ModelInstanceIndex> AddModelsFromSdf(
               diagnostic, model_ptr, model_name, {}, workspace.plant,
               workspace.collision_resolver, workspace.package_map,
               data_source.GetRootDir(), reusable_model_instance_range,
-              parser_config, imported_joint_names);
+              parser_config, imported_joint_names, &misplaced_model_frames);
       model_instances.insert(model_instances.end(),
                              added_model_instances.begin(),
                              added_model_instances.end());
