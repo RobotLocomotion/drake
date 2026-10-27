@@ -4,6 +4,7 @@
 #include <limits>
 #include <map>
 #include <memory>
+#include <numeric>
 #include <string>
 #include <utility>
 
@@ -1119,6 +1120,44 @@ IcfBuilder<T>::PlantFacts::PlantFacts(const MultibodyPlant<T>& plant) {
     for (int k = 0; k < mobod.nv(); ++k) {
       velocity_to_clique[mobod.v_start() + k] = clique;
     }
+  }
+
+  // Couplers are only supported within a single clique (see TODO(#23992) in
+  // AddCouplerConstraints()), but a coupler can join two branches of one tree
+  // that the walk above placed in separate cliques. Merge such cliques back
+  // together. Cliques are numbered in ascending velocity order, so merging the
+  // whole range [c0, c1] keeps each clique's DOFs contiguous; since c0 and c1
+  // are in the same tree, so is every clique in between. We merge regardless
+  // of whether the coupler is active, so that cliques depend only on the plant.
+  // Couplers between different trees are left alone, and are still rejected
+  // by AddCouplerConstraints().
+  const int num_unmerged_cliques = ssize(clique_sizes);
+  std::vector<int> merge_through(num_unmerged_cliques);
+  std::iota(merge_through.begin(), merge_through.end(), 0);
+  for (const auto& [_, spec] : plant.get_coupler_constraint_specs()) {
+    const int v0 = plant.get_joint(spec.joint0_index).velocity_start();
+    const int v1 = plant.get_joint(spec.joint1_index).velocity_start();
+    if (forest.v_to_tree_index(v0) != forest.v_to_tree_index(v1)) continue;
+    const auto [c0, c1] =
+        std::minmax(velocity_to_clique[v0], velocity_to_clique[v1]);
+    merge_through[c0] = std::max(merge_through[c0], c1);
+  }
+  std::vector<int> merged_clique(num_unmerged_cliques);
+  std::vector<int> merged_sizes;
+  for (int c = 0, end = -1; c < num_unmerged_cliques; ++c) {
+    if (c > end) merged_sizes.push_back(0);
+    end = std::max(end, merge_through[c]);
+    merged_clique[c] = ssize(merged_sizes) - 1;
+    merged_sizes.back() += clique_sizes[c];
+  }
+  if (ssize(merged_sizes) < num_unmerged_cliques) {
+    for (int& clique : mobod_to_clique) {
+      if (clique >= 0) clique = merged_clique[clique];
+    }
+    for (int& clique : velocity_to_clique) {
+      clique = merged_clique[clique];
+    }
+    clique_sizes = std::move(merged_sizes);
   }
 
   // Prefix-summed clique velocity starts. This matches the global velocity
