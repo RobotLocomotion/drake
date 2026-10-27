@@ -701,7 +701,7 @@ def yaml_load_typed(
     if defaults is not None:
         result = copy.deepcopy(defaults)
     else:
-        result = schema()
+        result = _create_from_schema(schema=schema, forthcoming_value=None)
 
     # Parse the YAML document.
     document = yaml_load(data=data, filename=filename)
@@ -715,6 +715,18 @@ def yaml_load_typed(
         )
 
     # Merge the document into the result.
+    generic_base = typing.get_origin(schema)
+    if generic_base in (dict, collections.abc.Mapping):
+        # Parse the root like a Mapping field (akin to C++ VisitMapDirectly).
+        target = {"_": result}
+        _merge_yaml_dict_item_into_target(
+            options=options,
+            name="_",
+            yaml_value=root_node,
+            target=target,
+            value_schema=schema,
+        )
+        return target["_"]
     _merge_yaml_dict_into_target(
         options=options,
         yaml_dict=root_node,
