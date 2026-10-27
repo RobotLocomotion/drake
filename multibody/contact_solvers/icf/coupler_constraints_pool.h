@@ -54,7 +54,7 @@ class CouplerConstraintsPool {
                           VectorX<T>* gradient) const;
   void AccumulateHessian(const IcfData<T>& data,
                          std::span<const int> constraints,
-                         std::span<const int> clique_to_block, int island,
+                         std::span<const int> clique_to_block,
                          IcfHessian<T>* hessian) const;
   void ReduceInto(const ReducedMapping& mapping,
                   CouplerConstraintsPool<T>* reduced_pool) const;

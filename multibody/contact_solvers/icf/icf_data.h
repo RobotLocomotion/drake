@@ -1,6 +1,6 @@
 #pragma once
 
-#include <memory>
+#include <numeric>
 #include <span>
 #include <vector>
 
@@ -74,10 +74,6 @@ class IcfData {
   struct Scratch {
     /* Resizes the scratch space, allocating memory as needed. */
     void Resize(const ResizeParams& params);
-
-    // Scratch space for CalcMomentumTerms. Holds at most one vector of size
-    // IcfModel::num_velocities().
-    EigenPool<VectorX<T>> Av_minus_r;
 
     // Scratch space for CalcCostAlongLine.
     // Body spatial velocities at v + α⋅w. Holds at most IcfModel::num_bodies()
@@ -262,12 +258,11 @@ class IcfData {
     return weld_constraints_data_;
   }
 
-  /* Returns the mutable scratch space dedicated to island `island`. Per-island
-  scratch lets islands be solved concurrently without sharing scratch memory. */
-  Scratch& scratch(int island) const {
-    DRAKE_ASSERT(0 <= island && island < num_islands());
-    return *island_scratch_[island];
-  }
+  /* Returns a mutable scratch space for intermediate computations. We allow
+  IcfModel to write on the scratch as needed. The scratch is sized for the full
+  problem and shared by all islands, so islands must be evaluated one at a
+  time. */
+  Scratch& scratch() const { return scratch_; }
 
  private:
   VectorX<T> v_;                // Generalized velocities v
@@ -290,11 +285,7 @@ class IcfData {
   PatchConstraintsDataPool<T> patch_constraints_data_;
   WeldConstraintsDataPool<T> weld_constraints_data_;
 
-  // Per-island scratch, indexed by island. Each island writes only its own
-  // scratch, so islands may be solved concurrently. Held by pointer because
-  // Scratch is neither copyable nor movable (its constraint-data pools are
-  // not).
-  mutable std::vector<std::unique_ptr<Scratch>> island_scratch_;
+  mutable Scratch scratch_;
 };
 
 }  // namespace internal

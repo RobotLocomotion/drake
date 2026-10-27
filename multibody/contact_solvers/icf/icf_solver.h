@@ -156,9 +156,6 @@ class IcfSolver {
         hessian_factorization;
     Eigen::LDLT<Eigen::MatrixXd> dense_hessian_factorization;
 
-    // Data used during this island's linesearch.
-    IcfSearchDirectionData<double> search_direction_data;
-
     // The island's sub-Hessian sparsity pattern from the last time the Hessian
     // was computed, for triggering Hessian reuse.
     std::unique_ptr<contact_solvers::internal::BlockSparsityPattern>
@@ -196,7 +193,7 @@ class IcfSolver {
   of linesearch iterations taken. */
   std::pair<double, int> PerformExactLineSearchIsland(
       const IcfModel<double>& model, int island, const IcfData<double>& data,
-      const Eigen::VectorXd& w, IslandSolverState* state);
+      const Eigen::VectorXd& w);
 
   /* Returns the root of the quadratic equation ax² + bx + c = 0, x ∈ (0, 1).
   @pre The equation in question must have one exactly real root in (0, 1),
@@ -245,6 +242,10 @@ class IcfSolver {
   // island writes only its own clique segments.
   Eigen::VectorXd decision_variables_;
   Eigen::VectorXd search_direction_;
+
+  // Data used during linesearch. Islands are solved one at a time, so they all
+  // share this (full-size) storage.
+  IcfSearchDirectionData<double> search_direction_data_;
 };
 
 }  // namespace internal

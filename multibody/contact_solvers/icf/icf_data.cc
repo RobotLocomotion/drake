@@ -2,7 +2,6 @@
 
 #include <iterator>
 #include <limits>
-#include <memory>
 
 namespace drake {
 namespace multibody {
@@ -12,8 +11,6 @@ namespace internal {
 
 template <typename T>
 void IcfData<T>::Scratch::Resize(const ResizeParams& params) {
-  Av_minus_r.Resize(1, params.num_velocities, 1);
-
   V_WB_alpha.Resize(params.num_bodies, 6, 1);
   U_AbB_W.Resize(ssize(params.patch_sizes), 6, 1);
   v_alpha.Resize(1, params.num_velocities, 1);
@@ -56,18 +53,10 @@ void IcfData<T>::Resize(const ResizeParams& params) {
   patch_constraints_data_.Resize(params.patch_sizes);
   weld_constraints_data_.Resize(params.num_welds);
 
-  // Per-island storage. Grow-only: keep prior capacity (and any prior scratch
-  // allocations) and only extend when the island count grows.
   DRAKE_DEMAND(params.num_islands > 0 || params.num_velocities == 0);
   island_cost_.resize(params.num_islands);
   island_momentum_cost_.resize(params.num_islands);
-  island_scratch_.reserve(params.num_islands);
-  while (std::ssize(island_scratch_) < params.num_islands) {
-    island_scratch_.push_back(std::make_unique<Scratch>());
-  }
-  for (int i = 0; i < params.num_islands; ++i) {
-    island_scratch_[i]->Resize(params);
-  }
+  scratch_.Resize(params);
 }
 
 template <typename T>

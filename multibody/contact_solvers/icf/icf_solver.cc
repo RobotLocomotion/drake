@@ -298,7 +298,7 @@ bool IcfSolver::SolveIsland(const IcfModel<double>& model, const int island,
 
     // Compute the optimal step size alpha_k = min_alpha l_i(v_k + alpha*w_k).
     std::tie(alpha, ls_iterations) =
-        PerformExactLineSearchIsland(model, island, *data, dv, state);
+        PerformExactLineSearchIsland(model, island, *data, dv);
 
     // Update the decision variables v_{k+1} = v_k + alpha_k*w_k on the island's
     // clique segments only, mirroring the change into data->v() for linesearch.
@@ -342,12 +342,12 @@ void IcfSolver::SetParameters(const IcfSolverParameters& parameters) {
 
 std::pair<double, int> IcfSolver::PerformExactLineSearchIsland(
     const IcfModel<double>& model, const int island,
-    const IcfData<double>& data, const VectorXd& w, IslandSolverState* state) {
+    const IcfData<double>& data, const VectorXd& w) {
   const double alpha_max = parameters_.alpha_max;
 
   // Set up prerequisites for efficiently computing l~_i(alpha) and its
   // derivatives. Only the island's clique segments of w are read.
-  IcfSearchDirectionData<double>& search_data = state->search_direction_data;
+  IcfSearchDirectionData<double>& search_data = search_direction_data_;
   model.CalcSearchDirectionData(data, w, island, &search_data);
 
   // First we'll evaluate dl~/dalpha at alpha = 0. This should be strictly
