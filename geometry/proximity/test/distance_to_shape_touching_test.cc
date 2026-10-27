@@ -1,5 +1,6 @@
 #include "drake/geometry/proximity/distance_to_shape_touching.h"
 
+#include <cmath>
 #include <memory>
 
 #include <fcl/fcl.h>
@@ -574,6 +575,110 @@ GTEST_TEST(BoxBoxGradient, InputWithNumericalErrors) {
   EXPECT_TRUE(
       CompareMatrices(BoxBoxGradient(box_A, box_B, X_WA, X_WB, p_ACa, p_BCb),
                       -Vector3d::UnitX()));
+}
+
+// Confirm BoxBoxGradient can handle the case where there is much more
+// penetration than expected. The fallback produces appropriate gradients.
+GTEST_TEST(BoxBoxGradient, DeepPenetration) {
+  const fcl::Boxd box_A(0.4, 0.2, 0.6);
+  const fcl::Boxd box_B(0.2, 0.2, 0.2);
+  const RigidTransformd X_WA = RigidTransformd::Identity();
+  const RigidTransformd X_WB(Vector3d(0, 0.01, 0));
+  const Vector3d p_ACa(0, 0, 0);
+  const Vector3d p_BCb(0, 0, 0);
+
+  // Moving A by 0.19 along -y separates the boxes; every other direction
+  // needs at least 0.21.
+  EXPECT_TRUE(
+      CompareMatrices(BoxBoxGradient(box_A, box_B, X_WA, X_WB, p_ACa, p_BCb),
+                      -Vector3d::UnitY()));
+  EXPECT_TRUE(
+      CompareMatrices(BoxBoxGradient(box_B, box_A, X_WB, X_WA, p_BCb, p_ACa),
+                      Vector3d::UnitY()));
+
+  // The configuration reported in #21947: concentric boxes, so the sign of the
+  // gradient is arbitrary.
+  const fcl::Boxd box_C(0.05, 0.55, 0.3);
+  const fcl::Boxd box_D(0.25, 0.2, 0.15);
+  const RigidTransformd X_WC(
+      RollPitchYawd(0, 0, 1.570000000000001),
+      Vector3d(1.2500000000000009, -2.9878953394393027e-16, 0.15));
+  const RigidTransformd X_WD(RollPitchYawd(3.141592653589793, 0, 0),
+                             Vector3d(1.25, 0, 0.15));
+  const Vector3d p_CCc(1.71304e-17, 6.66134e-16, 8.32667e-17);
+  const Vector3d p_DCd(2.22045e-16, 6.93889e-17, 8.32667e-17);
+  const Vector3d nhat_DC_W =
+      BoxBoxGradient(box_C, box_D, X_WC, X_WD, p_CCc, p_DCd);
+  EXPECT_NEAR(std::abs(nhat_DC_W.dot(X_WC.rotation().col(0))), 1, 1e-14);
+}
+
+// Same as DeepPenetration, but the axis of minimum overlap is the cross
+// product of two edges. The boxes are posed as in EdgeCrossEdge, with box_B
+// moved 1e-3 toward box_A.
+GTEST_TEST(BoxBoxGradient, DeepPenetrationEdgeCrossEdge) {
+  const fcl::Boxd box_A(2, 2, 2);
+  const fcl::Boxd box_B(2, 2, 2);
+  const RigidTransformd X_WA = RigidTransformd::Identity();
+  const RigidTransformd X_WB(
+      AngleAxisd(M_PI_2, Vector3d(1, 1, 0).normalized()),
+      Vector3d(2, 2, 0) - 1e-3 * Vector3d(1, 1, 0).normalized());
+  const Vector3d p_ACa(0, 0, 0);
+  const Vector3d p_BCb(0, 0, 0);
+
+  EXPECT_TRUE(
+      CompareMatrices(BoxBoxGradient(box_A, box_B, X_WA, X_WB, p_ACa, p_BCb),
+                      Vector3d(-1, -1, 0).normalized(), 1e-14));
+  EXPECT_TRUE(
+      CompareMatrices(BoxBoxGradient(box_B, box_A, X_WB, X_WA, p_BCb, p_ACa),
+                      Vector3d(1, 1, 0).normalized(), 1e-14));
+}
+
+// Far from the origin, a vertex of box_B touches the interior of the -y face of
+// box_A, so the gradient is uniquely Ay. The witness points were computed by
+// mapping the same World point into frames A and B; the rounding is comparable
+// to the absolute tolerances that classify points as being on a box's
+// features. Ca is no longer classified as being on a face, and only one
+// coordinate of Cb remains on its face, so Cb looks like it's on the interior
+// of a face of B, whose normal is the wrong gradient.
+//
+// The witness points still coincide within 1e-14 in World frame, so this
+// misclassification produces the wrong gradient even for witness points that
+// satisfy BoxBoxGradient()'s former co-location requirement.
+//
+// The magical numbers come from an effort to capture this far-from-origin bug
+// by randomly sampling configurations. There may be cleaner *looking* values
+// that would reproduce the bug, but that is not the priority.
+GTEST_TEST(BoxBoxGradient, FarFromOriginMisclassifiedVertex) {
+  const fcl::Boxd box_A(1.7428835848528512, 1.1927829844323814,
+                        1.5458908186856606);
+  const fcl::Boxd box_B(0.19952432636392728, 0.1560634743408148,
+                        0.3894663476175827);
+  Eigen::Matrix3d R_WA;
+  R_WA << -0.35813227900739153, 0.85742326564896598, -0.36954920410797065,
+      -0.93124850999092934, -0.29953972237113868, 0.20749016208363946,
+      0.067212226362810656, 0.41845107031250839, 0.90574898199317366;
+  Eigen::Matrix3d R_WB;
+  R_WB << 0.30841435968006126, -0.59408427776283856, -0.74292964246834603,
+      0.76109644709916213, -0.31438726048128018, 0.56735601579617356,
+      -0.57062490390463161, -0.74042185364971658, 0.35519388744986558;
+  const RigidTransformd X_WA(
+      math::RotationMatrixd(R_WA),
+      Vector3d(-2336.1088225313861, 6719.5213557689685, -7027.8466345428878));
+  const RigidTransformd X_WB(
+      math::RotationMatrixd(R_WB),
+      Vector3d(-2336.8797013372509, 6719.7402034793577, -7028.0254481735892));
+  const Vector3d p_ACa(0.15667192599448754, -0.59639149221584375,
+                       0.11675630437002837);
+  const Vector3d p_BCb(-0.099762163181367214, -0.078031737170931592,
+                       -0.19473317380879962);
+  ASSERT_LT((X_WA * p_ACa - X_WB * p_BCb).norm(), 1e-14);
+
+  EXPECT_TRUE(
+      CompareMatrices(BoxBoxGradient(box_A, box_B, X_WA, X_WB, p_ACa, p_BCb),
+                      R_WA.col(1), 1e-14));
+  EXPECT_TRUE(
+      CompareMatrices(BoxBoxGradient(box_B, box_A, X_WB, X_WA, p_BCb, p_ACa),
+                      -R_WA.col(1), 1e-14));
 }
 
 }  // namespace
