@@ -1,5 +1,6 @@
 #include "drake/multibody/contact_solvers/icf/icf_builder.h"
 
+#include <algorithm>
 #include <limits>
 #include <memory>
 #include <utility>
@@ -311,6 +312,68 @@ GTEST_TEST(IcfBuilder, MultipleCliquesPerTree) {
   EXPECT_GE(c1, 0);
   EXPECT_GE(c2, 0);
   EXPECT_NE(c1, c2);
+}
+
+// A coupler between two branches of the same tree (which would otherwise be
+// split into separate cliques, see MultipleCliquesPerTree) is supported: the
+// coupled branches share a clique, while an uncoupled branch keeps its own.
+GTEST_TEST(IcfBuilder, CouplerAcrossBranchesOfOneTree) {
+  systems::DiagramBuilder<double> diagram_builder;
+  multibody::MultibodyPlantConfig plant_config{.time_step = 0.0};
+
+  MultibodyPlant<double>& plant =
+      multibody::AddMultibodyPlant(plant_config, &diagram_builder);
+  const auto M_B = SpatialInertia<double>::MakeUnitary();
+
+  const RigidBody<double>& table = plant.AddRigidBody("table", M_B);
+  const RigidBody<double>& p1 = plant.AddRigidBody("p1", M_B);
+  const RigidBody<double>& p2 = plant.AddRigidBody("p2", M_B);
+  const RigidBody<double>& p3 = plant.AddRigidBody("p3", M_B);
+  plant.AddJoint<WeldJoint>("weld_table", plant.world_body(), RigidTransformd(),
+                            table, RigidTransformd(), RigidTransformd());
+  const auto& j1 = plant.AddJoint<RevoluteJoint>(
+      "j1", table, RigidTransformd(), p1, RigidTransformd(), Vector3d::UnitY());
+  const auto& j2 = plant.AddJoint<RevoluteJoint>(
+      "j2", table, RigidTransformd(), p2, RigidTransformd(), Vector3d::UnitY());
+  plant.AddJoint<RevoluteJoint>("j3", table, RigidTransformd(), p3,
+                                RigidTransformd(), Vector3d::UnitY());
+  plant.AddCouplerConstraint(j1, j2, 0.8);
+  plant.Finalize();
+
+  auto diagram = diagram_builder.Build();
+  auto diagram_context = diagram->CreateDefaultContext();
+  const auto& plant_context = plant.GetMyContextFromRoot(*diagram_context);
+
+  IcfBuilder<double> builder(&plant);
+  IcfSolverParameters solver_params;
+  IcfModel<double> model;
+  for (bool use_islands : {false, true}) {
+    SCOPED_TRACE(fmt::format("use_islands = {}", use_islands));
+    solver_params.use_islands = use_islands;
+    builder.SetSolverParameters(solver_params);
+    builder.UpdateModel(plant_context, 0.01, nullptr, nullptr, &model);
+
+    EXPECT_EQ(model.num_cliques(), 2);
+    EXPECT_EQ(model.num_velocities(), plant.num_velocities());
+    const int c1 = model.body_to_clique(p1.index());
+    const int c2 = model.body_to_clique(p2.index());
+    const int c3 = model.body_to_clique(p3.index());
+    EXPECT_EQ(c1, c2);
+    EXPECT_NE(c1, c3);
+    EXPECT_EQ(model.clique_size(c1), 2);
+    EXPECT_EQ(model.clique_size(c3), 1);
+    EXPECT_EQ(model.partition().num_islands(), use_islands ? 2 : 1);
+
+    // The coupler's DOFs are local to the merged clique.
+    ASSERT_EQ(model.num_coupler_constraints(), 1);
+    const auto& pool = model.coupler_constraints_pool();
+    EXPECT_EQ(pool.constraint_to_clique()[0], c1);
+    const int dof0 = pool.dofs()[0].first;
+    const int dof1 = pool.dofs()[0].second;
+    EXPECT_NE(dof0, dof1);
+    EXPECT_GE(std::min(dof0, dof1), 0);
+    EXPECT_LT(std::max(dof0, dof1), 2);
+  }
 }
 
 GTEST_TEST(IcfBuilder, NoWeldBetweenAnchoredBodies) {
