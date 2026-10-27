@@ -201,7 +201,8 @@ GTEST_TEST(MeshDistanceBoundaryCacheTesterTest, Register) {
   const GeometryId id_convex_vtk = RegisterShape(MakeVtk<Convex>(), &cache);
   EXPECT_EQ(cache.num_geometries(), 4);
 
-  // We don't actually reference these ids anymore.
+  // TODO(SeanCurtis-TRI): Confirm that SDF data gets computed for Mesh(vtk)
+  // and all Convex().
   unused(id_mesh_vtk, id_convex_obj, id_convex_vtk);
 
   // Repeated registrations of same id throw, regardless of mesh type.
