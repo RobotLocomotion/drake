@@ -85,6 +85,7 @@ void ScatterIsland(const IcfModel<double>& model, int island,
 
 void IcfSolverStats::Clear() {
   num_iterations = 0;
+  max_island_iterations = 0;
   num_factorizations = 0;
   cost.clear();
   gradient_norm.clear();
@@ -131,6 +132,7 @@ bool IcfSolver::SolveWithGuess(const IcfModel<double>& model,
   }
 
   stats_.Clear();
+  num_islands_ = num_islands;
 
   if (parameters_.print_solver_stats) {
     drake::log()->info("IcfSolver starting convex solve over {} island(s):",
@@ -146,18 +148,19 @@ bool IcfSolver::SolveWithGuess(const IcfModel<double>& model,
     state.converged = SolveIsland(model, island, tolerance, data, &state);
   }
 
-  // Aggregate stats in island order: total iterations are the max over islands,
-  // factorizations sum, the per-iteration vectors are concatenated, and
-  // convergence is the AND over all islands. For a single island this is
-  // exactly the per-island record.
+  // Aggregate stats in island order: iterations and factorizations sum, the
+  // per-iteration vectors are concatenated (so their sizes match the total
+  // iterations), and convergence is the AND over all islands. For a single
+  // island this is exactly the per-island record.
   bool all_converged = true;
   for (int island = 0; island < num_islands; ++island) {
     const IslandSolverState& state = *island_states_[island];
     all_converged = all_converged && state.converged;
 
     const IcfSolverStats& island_stats = state.stats;
-    stats_.num_iterations =
-        std::max(stats_.num_iterations, island_stats.num_iterations);
+    stats_.num_iterations += island_stats.num_iterations;
+    stats_.max_island_iterations =
+        std::max(stats_.max_island_iterations, island_stats.num_iterations);
     stats_.num_factorizations += island_stats.num_factorizations;
     stats_.cost.insert(stats_.cost.end(), island_stats.cost.begin(),
                        island_stats.cost.end());
@@ -317,6 +320,7 @@ bool IcfSolver::SolveIsland(const IcfModel<double>& model, const int island,
 
     // Finalize per-island stats now that we've finished the iteration.
     stats.num_iterations++;
+    stats.max_island_iterations = stats.num_iterations;
     stats.cost.push_back(data->island_cost(island));
     stats.gradient_norm.push_back(grad_norm);
     stats.ls_iterations.push_back(ls_iterations);

@@ -108,9 +108,16 @@ TEST_P(IcfSolverParamTest, UnconstrainedProblem) {
   EXPECT_TRUE(solver_.SolveWithGuess(model_, kConvergenceTolerance, &data_));
   const IcfSolverStats& stats = solver_.stats();
 
-  EXPECT_GT(stats.step_norm[0], 0.0);
-  EXPECT_EQ(stats.num_iterations, 1);
-  EXPECT_EQ(stats.ls_iterations[0], 0);
+  // Each island converges in a single iteration. With islands, the two cliques
+  // are solved separately, so the total is one iteration per island.
+  const int num_islands = use_islands_ ? 2 : 1;
+  ASSERT_EQ(solver_.num_islands(), num_islands);
+  EXPECT_EQ(stats.num_iterations, num_islands);
+  EXPECT_EQ(stats.max_island_iterations, 1);
+  for (int k = 0; k < num_islands; ++k) {
+    EXPECT_GT(stats.step_norm[k], 0.0);
+    EXPECT_EQ(stats.ls_iterations[k], 0);
+  }
 }
 
 /* Solves a typical problem with patch constraints.*/
@@ -327,6 +334,54 @@ GTEST_TEST(IcfSolver, NoIslandsMatchesIslands) {
   EXPECT_TRUE(CompareMatrices(solutions[false], solutions[true],
                               kConvergenceTolerance,
                               MatrixCompareType::relative));
+}
+
+/* Checks the aggregation of per-island statistics when the islands take
+different numbers of iterations, including an island that converges at its
+initial guess. */
+class IcfSolverIslandStatsTest : public IcfSolverBaseTest {
+ protected:
+  IcfSolverIslandStatsTest() : IcfSolverBaseTest(/* use_islands = */ true) {}
+};
+
+TEST_F(IcfSolverIslandStatsTest, DifferentIterationCounts) {
+  // Remove patch constraints, leaving two independent (quadratic) islands.
+  const std::vector<int> empty;
+  model_.patch_constraints_pool().Resize(empty);
+  model_.SetSparsityPattern();
+  model_.ResizeData(&data_);
+  ASSERT_EQ(model_.partition().num_islands(), 2);
+
+  // Find the solution, then perturb only the second clique's velocities so
+  // that its island must iterate while the other is already converged.
+  ASSERT_TRUE(solver_.SolveWithGuess(model_, kConvergenceTolerance, &data_));
+  VectorXd v_guess = data_.v();
+  model_.mutable_clique_segment(1, &v_guess).array() += 0.3;
+  data_.set_v(v_guess);
+  ASSERT_TRUE(solver_.SolveWithGuess(model_, kConvergenceTolerance, &data_));
+
+  ASSERT_EQ(solver_.num_islands(), 2);
+  const int converged_island = model_.partition().clique_to_island(0);
+  const int perturbed_island = model_.partition().clique_to_island(1);
+  const IcfSolverStats& converged = solver_.island_stats(converged_island);
+  const IcfSolverStats& perturbed = solver_.island_stats(perturbed_island);
+  EXPECT_EQ(converged.num_iterations, 0);
+  EXPECT_TRUE(converged.cost.empty());
+  EXPECT_EQ(perturbed.num_iterations, 1);
+  EXPECT_EQ(perturbed.max_island_iterations, 1);
+
+  // The aggregate stats are totals over islands, and every per-iteration
+  // history is the concatenation of the islands' histories.
+  const IcfSolverStats& stats = solver_.stats();
+  EXPECT_EQ(stats.num_iterations, 1);
+  EXPECT_EQ(stats.max_island_iterations, 1);
+  EXPECT_EQ(stats.num_factorizations,
+            converged.num_factorizations + perturbed.num_factorizations);
+  EXPECT_EQ(stats.cost, perturbed.cost);
+  EXPECT_EQ(stats.gradient_norm.size(), stats.num_iterations);
+  EXPECT_EQ(stats.ls_iterations.size(), stats.num_iterations);
+  EXPECT_EQ(stats.alpha.size(), stats.num_iterations);
+  EXPECT_EQ(stats.step_norm.size(), stats.num_iterations);
 }
 
 }  // namespace

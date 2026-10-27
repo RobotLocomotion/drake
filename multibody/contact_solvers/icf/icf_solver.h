@@ -22,7 +22,13 @@ namespace internal {
 For quantities that are recorded at each iteration, we count k = 0 as the first
 iteration so vectors have size() == num_iterations. If the solver exits
 early (e.g., the initial guess solves the problem to tolerances), then we have
-`num_iterations = 0` and vector elements are empty. */
+`num_iterations = 0` and vector elements are empty.
+
+When a solve is split into islands (see IcfSolver::SolveWithGuess()), the
+aggregate statistics are totals over islands: num_iterations and
+num_factorizations are sums, and each per-iteration vector is the concatenation
+of the islands' vectors in island order, so size() == num_iterations still
+holds. The per-island records are available via IcfSolver::island_stats(). */
 struct IcfSolverStats {
   /* Resets the stats to start a new solve. */
   void Clear();
@@ -30,8 +36,13 @@ struct IcfSolverStats {
   /* Reserves space for the vectors to avoid reallocations. */
   void Reserve(int max_iterations);
 
-  /* The number of solver iterations. */
+  /* The number of solver iterations. For an aggregate over islands, this is the
+  total over all islands. */
   int num_iterations{0};
+
+  /* The largest number of iterations taken by any single island. For a single
+  island, this equals num_iterations. */
+  int max_island_iterations{0};
 
   /* The total number of Hessian factorizations. */
   int num_factorizations{0};
@@ -118,9 +129,8 @@ class IcfSolver {
   graph) and the gradient is block-disjoint across them, the problem decomposes
   into one independent convex subproblem per island. This method runs a separate
   Newton solve for each island, each writing only its own clique segments of
-  `data`. Their statistics are aggregated deterministically: the reported
-  num_iterations is the max over islands, num_factorizations is the sum, and the
-  solve converges iff every island converges.
+  `data`. Their statistics are aggregated as totals over islands (see
+  IcfSolverStats), and the solve converges iff every island converges.
 
   @param model The ICF model defining the optimization problem.
   @param tolerance The convergence tolerance ε to be used for this solve. See
@@ -133,8 +143,19 @@ class IcfSolver {
   bool SolveWithGuess(const IcfModel<double>& model, const double tolerance,
                       IcfData<double>* data);
 
-  /* Returns solver statistics from the most recent solve. */
+  /* Returns solver statistics from the most recent solve, aggregated over all
+  islands. */
   const IcfSolverStats& stats() const { return stats_; }
+
+  /* Returns the number of islands in the most recent solve. */
+  int num_islands() const { return num_islands_; }
+
+  /* Returns the statistics of `island` alone from the most recent solve.
+  @pre 0 <= island < num_islands(). */
+  const IcfSolverStats& island_stats(int island) const {
+    DRAKE_ASSERT(0 <= island && island < num_islands_);
+    return island_states_[island]->stats;
+  }
 
   /* Sets solver parameters, reallocating space for statistics as needed. */
   void SetParameters(const IcfSolverParameters& parameters);
@@ -237,6 +258,9 @@ class IcfSolver {
   // Aggregate statistics for logging and tracking convergence, combined from
   // the per-island statistics after each solve.
   IcfSolverStats stats_;
+
+  // The number of islands in the most recent solve.
+  int num_islands_{0};
 
   // Pre-allocated decision variables v and search direction w. Full size; each
   // island writes only its own clique segments.
