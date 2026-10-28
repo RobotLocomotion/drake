@@ -2,12 +2,14 @@
 
 #include <cstdint>
 #include <string>
+#include <string_view>
 #include <utility>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/fmt.h"
 #include "drake/common/hash.h"
+#include "drake/common/nice_type_name.h"
 
 namespace drake {
 
@@ -132,6 +134,15 @@ int64_t get_new_identifier();
  of the object. Combined with its immutability, it would serve well as a element
  of a public API.
 
+ __Formatting__
+
+ Identifiers may be formatted with `fmt` (e.g., `fmt::format`,
+ `fmt::to_string`). The default format (`{}`) prints the underlying integer
+ (and throws in Debug builds if the identifier is invalid). The `{:r:}`
+ (repr) format prints a typed representation that includes the identifier
+ type name, e.g., `<FooId(1)>`, or `<invalid FooId>` when invalid. Further
+ specs after `r:` are applied to that string (e.g., `{:r:>10}`).
+
  @sa TypeSafeIndex
 
  @tparam Tag              The name of the tag that uniquely segregates one
@@ -247,4 +258,38 @@ struct hash<drake::Identifier<Tag>> : public drake::DefaultHash {};
 
 }  // namespace std
 
-DRAKE_FORMATTER_AS(typename Tag, drake, Identifier<Tag>, x, drake::to_string(x))
+// Provide fmt support where "{}" is the underlying integer and "{:r:}" is a
+// typed representation such as "<FooId(1)>" (or "<invalid FooId>"). After the
+// "r:" prefix, any remaining format spec is applied to that representation
+// string (e.g., "{:r:>10}"). Specifiers that do not start with "r:" are
+// forwarded to fmt unchanged (so "{:r>8}" remains a valid integer fill).
+namespace fmt {
+template <typename Tag>
+struct formatter<drake::Identifier<Tag>> {
+  template <typename FormatParseContext>
+  constexpr auto parse(FormatParseContext& ctx) {
+    repr = drake::internal::ConsumeReprFormatPrefix(ctx);
+    return string_formatter.parse(ctx);
+  }
+
+  template <typename FormatContext>
+  auto format(const drake::Identifier<Tag>& id,
+              // NOLINTNEXTLINE(runtime/references) To match fmt API.
+              FormatContext& ctx) const {
+    if (repr) {
+      const auto type_name = drake::NiceTypeName::RemoveNamespaces(
+          drake::NiceTypeName::Get<drake::Identifier<Tag>>());
+      const auto text =
+          id.is_valid()
+              ? fmt::format("<{}({})>", type_name, id.get_value())
+              : fmt::format("<invalid {}>", type_name);
+      return string_formatter.format(text, ctx);
+    }
+    return string_formatter.format(fmt::to_string(id.get_value()), ctx);
+  }
+
+ private:
+  bool repr{false};
+  formatter<std::string_view> string_formatter;
+};
+}  // namespace fmt

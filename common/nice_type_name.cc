@@ -96,6 +96,11 @@ string NiceTypeName::Canonicalize(const string& demangled) {
       // Change e.g., "drake::Identifier<drake::package::FooTag>" to
       // "drake::package::FooId".
       SPair(std::regex("\\bdrake::Identifier<([^>]*)Tag>"), "$1Id"),
+
+      // Recognize TypeSafeIndex ...
+      // Change e.g., "drake::TypeSafeIndex<drake::package::FooTag>" to
+      // "drake::package::FooIndex".
+      SPair(std::regex("\\bdrake::TypeSafeIndex<([^>]*)Tag>"), "$1Index"),
   }};
 
   string canonical(demangled);
