@@ -228,7 +228,13 @@ void CenicIntegrator<T>::Scratch::Resize(const MultibodyPlant<T>& plant,
     generalized_forces.resize(nv);
     tau_contact.resize(nv);
     net_actuation.resize(plant.num_actuated_dofs());
-    actuation_matrix = plant.MakeActuationMatrix();
+    actuated_dofs.resize(plant.num_actuated_dofs());
+    for (JointActuatorIndex i : plant.GetJointActuatorIndices()) {
+      const JointActuator<T>& actuator = plant.get_joint_actuator(i);
+      // As with MakeActuationMatrix(), this assumes single-dof joints.
+      DRAKE_DEMAND(actuator.joint().num_velocities() == 1);
+      actuated_dofs[actuator.input_start()] = actuator.joint().velocity_start();
+    }
   }
 
   // Allocate intermediate states for error control.
@@ -591,12 +597,17 @@ void CenicIntegrator<T>::RecordStepMemory(const IcfModel<T>& model,
           gain_data.gamma(k) / dt;
     }
     // IcfBuilder rejects actuators that share a joint, so each actuated dof
-    // has exactly one actuator and Bᵀ maps the per-dof force to it.
-    net_actuation = scratch_.actuation_matrix.transpose() * tau_u;
+    // has exactly one actuator; gather the per-dof force for each input.
+    for (int i = 0; i < std::ssize(scratch_.actuated_dofs); ++i) {
+      net_actuation[i] = tau_u[scratch_.actuated_dofs[i]];
+    }
   } else {
     net_actuation = MultibodyPlantIcfAttorney<T>::EvalActuationInput(
         mbp, context, /* apply_effort_limit = */ true);
-    tau_u = scratch_.actuation_matrix * net_actuation;
+    tau_u.setZero();
+    for (int i = 0; i < std::ssize(scratch_.actuated_dofs); ++i) {
+      tau_u[scratch_.actuated_dofs[i]] = net_actuation[i];
+    }
   }
   tau += tau_u;
 
