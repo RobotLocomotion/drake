@@ -4619,6 +4619,7 @@ void MultibodyTree<T>::CalcArticulatedBodyAccelerations(
   const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
   const std::vector<Vector6<T>>& H_PB_W_cache =
       EvalAcrossNodeJacobianWrtVExpressedInWorld(context);
+  const VelocityKinematicsCache<T>& vc = EvalVelocityKinematics(context);
   const std::vector<SpatialAcceleration<T>>& Ab_WB_cache =
       EvalSpatialAccelerationBiasCache(context);
 
@@ -4634,7 +4635,7 @@ void MultibodyTree<T>::CalcArticulatedBodyAccelerations(
           node.GetJacobianFromArray(H_PB_W_cache);
 
       node.CalcArticulatedBodyAccelerations_BaseToTip(
-          context, pc, abic, aba_force_cache, H_PB_W, Ab_WB, ac);
+          context, pc, abic, aba_force_cache, H_PB_W, vc, Ab_WB, ac);
     }
   }
 }
