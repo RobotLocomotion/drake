@@ -10,6 +10,9 @@ common --announce_rc
 # Inherit Drake's default options.
 @BAZELRC_IMPORT@
 
+# Set the target microarchitecture (if necessary).
+build @BAZEL_MICROARCHITECTURE_CONFIG@
+
 # Switch to using internal dependencies (not pkg-config). If the user sets one
 # of the CMake options for WITH_USER_... then BAZEL_REPO_ENV below will override
 # the module or repository path to refer to what the user provided.
