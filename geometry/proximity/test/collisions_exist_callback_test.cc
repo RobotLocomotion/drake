@@ -51,9 +51,9 @@ GTEST_TEST(CollisionsExistCallback, Exist) {
   const EncodedData data_A(GeometryId::get_new_id(), true);
   const EncodedData data_B(GeometryId::get_new_id(), true);
   const EncodedData data_C(GeometryId::get_new_id(), true);
-  collision_filter.AddGeometry(data_A.id());
-  collision_filter.AddGeometry(data_B.id());
-  collision_filter.AddGeometry(data_C.id());
+  collision_filter.AddGeometry(data_A.id(), /* is_anchored = */ false);
+  collision_filter.AddGeometry(data_B.id(), /* is_anchored = */ false);
+  collision_filter.AddGeometry(data_C.id(), /* is_anchored = */ false);
 
   CollisionObjectd box_A(make_shared<Boxd>(0.25, 0.3, 0.4));
   data_A.write_to(&box_A);
@@ -92,8 +92,8 @@ GTEST_TEST(CollisionsExistCallback, RespectsCollisionFilter) {
 
   EncodedData data_A(GeometryId::get_new_id(), true);
   EncodedData data_B(GeometryId::get_new_id(), true);
-  collision_filter.AddGeometry(data_A.id());
-  collision_filter.AddGeometry(data_B.id());
+  collision_filter.AddGeometry(data_A.id(), /* is_anchored = */ false);
+  collision_filter.AddGeometry(data_B.id(), /* is_anchored = */ false);
 
   CollisionObjectd box_A(make_shared<Boxd>(0.25, 0.3, 0.4));
   data_A.write_to(&box_A);

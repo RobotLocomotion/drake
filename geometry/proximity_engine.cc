@@ -378,7 +378,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     // frame, if the collision filter isn't aware of the geometry, we will
     // trigger an assertion when adding geometries whose collision with
     // world-framed geometries are filtered out.
-    collision_filter_.AddGeometry(id);
+    collision_filter_.AddGeometry(id, /* is_anchored = */ false);
   }
 
   bool NeedsConvexHull(const InternalGeometry& geometry) const {
@@ -1239,7 +1239,9 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     tree->update();
     (*objects)[id] = std::move(data.fcl_object);
 
-    collision_filter_.AddGeometry(id);
+    // Remember: this only applies to dynamic *rigid* geometries (deformable
+    // geometries take the AddDeformableGeometry() path.
+    collision_filter_.AddGeometry(id, /* is_anchored = */ !is_dynamic);
   }
 
   // Removes the geometry with the given id from the given tree.

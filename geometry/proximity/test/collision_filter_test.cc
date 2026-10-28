@@ -65,7 +65,7 @@ class CollisionFilterTest : public ::testing::Test {
     vector<GeometryId> ids{GeometryId::get_new_id(), GeometryId::get_new_id(),
                            GeometryId::get_new_id()};
     for (auto id : ids) {
-      filter->AddGeometry(id);
+      filter->AddGeometry(id, /* is_anchored = */ false);
       EXPECT_TRUE(filter->HasGeometry(id));
     }
     return std::make_tuple(ids[0], ids[1], ids[2]);
@@ -92,6 +92,20 @@ class CollisionFilterTest : public ::testing::Test {
 
   static CollisionFilter ClearCopy(const CollisionFilter& filter) {
     return filter.MakeClearCopy();
+  }
+
+  /* The number of geometry pairs materialized in the filter's composite state.
+   Pairs blocked by predicate (i.e., two anchored geometries) must never appear
+   here. */
+  static int NumStoredPairs(const CollisionFilter& filter) {
+    return std::ssize(filter.filter_state_.filtered) +
+           std::ssize(filter.filter_state_.invariant);
+  }
+
+  /* As NumStoredPairs(), but for the persistent base configuration. */
+  static int NumStoredPairsInBase(const CollisionFilter& filter) {
+    return std::ssize(filter.persistent_base_.filtered) +
+           std::ssize(filter.persistent_base_.invariant);
   }
 };
 
@@ -164,7 +178,7 @@ TEST_F(CollisionFilterTest, ExcludeWithin) {
   CollisionFilter filters;
   auto [id_A, id_B, id_C] = this->InitIds(&filters);
   const GeometryId id_D = GeometryId::get_new_id();
-  filters.AddGeometry(id_D);
+  filters.AddGeometry(id_D, /* is_anchored = */ false);
 
   /* Initial condition: everything can collide. */
   EXPECT_TRUE(ExpectCanCollide(filters, id_A, id_B, kCanCollide));
@@ -249,7 +263,7 @@ TEST_F(CollisionFilterTest, TransientDeclarations) {
   /* Five geometry ids give us ten possible pairs to play with. */
   auto new_id = [&filter]() {
     const GeometryId id = GeometryId::get_new_id();
-    filter.AddGeometry(id);
+    filter.AddGeometry(id, /* is_anchored = */ false);
     return id;
   };
   const GeometryId A = new_id();
@@ -389,7 +403,7 @@ TEST_F(CollisionFilterTest, TransientDeclarations) {
    filters:
     P(D, E), (A, B), (B, C), (C, D) */
   const GeometryId F = GeometryId::get_new_id();
-  filter.AddGeometry(F);
+  filter.AddGeometry(F, /* is_anchored = */ false);
   ASSERT_TRUE(is_expected(filter, expected_filter_pairs));
 
   /* Prop. G: Removing a geometry does the right thing. We'll remove a geometry
@@ -434,16 +448,16 @@ TEST_F(CollisionFilterTest, Equivalency) {
 
   /* Filters with different registered geometries are unequal. */
   /* Disjoint sets of geometries. */
-  filters1.AddGeometry(id_A);
-  filters2.AddGeometry(id_B);
+  filters1.AddGeometry(id_A, /* is_anchored = */ false);
+  filters2.AddGeometry(id_B, /* is_anchored = */ false);
   EXPECT_FALSE(filters1.IsEquivalent(filters2));
   /* Sets have non-zero intersection, but are still not equal. */
-  filters1.AddGeometry(id_C);
-  filters2.AddGeometry(id_C);
+  filters1.AddGeometry(id_C, /* is_anchored = */ false);
+  filters2.AddGeometry(id_C, /* is_anchored = */ false);
   EXPECT_FALSE(filters1.IsEquivalent(filters2));
   /* Sets have equal, non-empty sets of registered geometry and *no* filters. */
-  filters1.AddGeometry(id_B);
-  filters2.AddGeometry(id_A);
+  filters1.AddGeometry(id_B, /* is_anchored = */ false);
+  filters2.AddGeometry(id_A, /* is_anchored = */ false);
   EXPECT_TRUE(filters1.IsEquivalent(filters2));
 
   /* Various forms of matched/mismatched filters. The correctness of this test
@@ -541,7 +555,7 @@ TEST_F(CollisionFilterTest, Activation) {
 
   /* (2) A doesn't collide with geometries added after its deactivation. */
   const GeometryId id_D = GeometryId::get_new_id();
-  filters.AddGeometry(id_D);
+  filters.AddGeometry(id_D, /* is_anchored = */ false);
   EXPECT_TRUE(ExpectCanCollide(filters, id_A, id_D, !kCanCollide));
   EXPECT_TRUE(ExpectCanCollide(filters, id_B, id_D, kCanCollide));
 
@@ -635,9 +649,9 @@ TEST_F(CollisionFilterTest, EquivalencyWithInactive) {
   CollisionFilter filters2;
   CollisionFilter filters3;
   for (auto* f : {&filters1, &filters2, &filters3}) {
-    f->AddGeometry(id_A);
-    f->AddGeometry(id_B);
-    f->AddGeometry(id_C);
+    f->AddGeometry(id_A, /* is_anchored = */ false);
+    f->AddGeometry(id_B, /* is_anchored = */ false);
+    f->AddGeometry(id_C, /* is_anchored = */ false);
   }
 
   /* Deactivate A in filter 1; emulate it pairwise in filter 2. Every *current*
@@ -651,6 +665,180 @@ TEST_F(CollisionFilterTest, EquivalencyWithInactive) {
 
   /* Matching inactive sets (and matching pairwise states) are equivalent. */
   SetActiveStatus(&filters3, GeometrySet(id_A), /* active= */ false, extract);
+  EXPECT_TRUE(filters1.IsEquivalent(filters3));
+}
+
+/* Tests the semantics of the anchored set:
+  1. Two anchored geometries never collide.
+  2. An anchored geometry collides with a non-anchored one.
+  3. The filter applies to geometries added after the fact, in either order.
+  4. Allow* statements cannot unfilter an anchored pair -- neither persistent
+     nor transient. (This matches the pre-existing behavior of the *invariant*
+     pairs this predicate replaces.)
+  5. Removing a geometry drops it from the anchored set.
+  6. MakeClearCopy() *retains* the anchored set, unlike the inactive set,
+     because being anchored is a declared property of the geometry rather than
+     a filter configuration. */
+TEST_F(CollisionFilterTest, Anchored) {
+  CollisionFilter filters;
+  const GeometryId id_A = GeometryId::get_new_id();
+  const GeometryId id_B = GeometryId::get_new_id();
+  const GeometryId id_D = GeometryId::get_new_id();
+  filters.AddGeometry(id_A, /* is_anchored = */ true);
+  filters.AddGeometry(id_B, /* is_anchored = */ true);
+  filters.AddGeometry(id_D, /* is_anchored = */ false);
+  const auto& extract = this->get_extract_ids_functor();
+  using Decl = CollisionFilterDeclaration;
+
+  EXPECT_TRUE(filters.IsAnchored(id_A));
+  EXPECT_TRUE(filters.IsAnchored(id_B));
+  EXPECT_FALSE(filters.IsAnchored(id_D));
+  /* An id that isn't part of the filter system is not anchored. */
+  EXPECT_FALSE(filters.IsAnchored(GeometryId::get_new_id()));
+
+  /* (1) and (2). */
+  EXPECT_TRUE(ExpectCanCollide(filters, id_A, id_B, !kCanCollide));
+  EXPECT_TRUE(ExpectCanCollide(filters, id_A, id_D, kCanCollide));
+  EXPECT_TRUE(ExpectCanCollide(filters, id_B, id_D, kCanCollide));
+
+  /* (3) A geometry anchored later is filtered against the existing anchored
+   geometries immediately, with no declaration required. */
+  const GeometryId id_C = GeometryId::get_new_id();
+  filters.AddGeometry(id_C, /* is_anchored = */ true);
+  EXPECT_TRUE(ExpectCanCollide(filters, id_A, id_C, !kCanCollide));
+  EXPECT_TRUE(ExpectCanCollide(filters, id_C, id_D, kCanCollide));
+
+  /* (4) Allow* cannot unfilter an anchored pair. */
+  filters.Apply(Decl().AllowBetween(GeometrySet(id_A), GeometrySet(id_B)),
+                extract, false);
+  EXPECT_TRUE(ExpectCanCollide(filters, id_A, id_B, !kCanCollide));
+  filters.Apply(Decl().AllowWithin(GeometrySet({id_A, id_B, id_C})), extract,
+                false);
+  EXPECT_TRUE(ExpectCanCollide(filters, id_A, id_B, !kCanCollide));
+  EXPECT_TRUE(ExpectCanCollide(filters, id_A, id_C, !kCanCollide));
+
+  /* Likewise for a transient declaration; and removing it changes nothing. */
+  const FilterId transient_id = filters.ApplyTransient(
+      Decl().AllowBetween(GeometrySet(id_A), GeometrySet(id_B)), extract);
+  EXPECT_TRUE(ExpectCanCollide(filters, id_A, id_B, !kCanCollide));
+  EXPECT_TRUE(filters.RemoveDeclaration(transient_id));
+  EXPECT_TRUE(ExpectCanCollide(filters, id_A, id_B, !kCanCollide));
+
+  /* (6) MakeClearCopy retains the anchored set. */
+  const CollisionFilter clear = this->ClearCopy(filters);
+  EXPECT_TRUE(clear.IsAnchored(id_A));
+  EXPECT_TRUE(clear.IsAnchored(id_B));
+  EXPECT_FALSE(clear.IsAnchored(id_D));
+  EXPECT_TRUE(ExpectCanCollide(clear, id_A, id_B, !kCanCollide));
+  EXPECT_TRUE(ExpectCanCollide(clear, id_A, id_D, kCanCollide));
+
+  /* (5) Removing B drops it from the anchored set; re-adding it as
+   non-anchored makes it collidable with A again. */
+  filters.RemoveGeometry(id_B);
+  EXPECT_FALSE(filters.IsAnchored(id_B));
+  filters.AddGeometry(id_B, /* is_anchored = */ false);
+  EXPECT_FALSE(filters.IsAnchored(id_B));
+  EXPECT_TRUE(ExpectCanCollide(filters, id_A, id_B, kCanCollide));
+}
+
+/* Declaring a filter between two anchored geometries must not materialize the
+ pair. CanCollideWith() already blocks it, so an entry would change nothing and
+ cost memory -- precisely the cost the anchored set exists to avoid. Pairs the
+ predicate does *not* cover are still stored. */
+TEST_F(CollisionFilterTest, AnchoredPairsAreNotMaterialized) {
+  CollisionFilter filters;
+  const GeometryId id_A = GeometryId::get_new_id();
+  const GeometryId id_B = GeometryId::get_new_id();
+  const GeometryId id_C = GeometryId::get_new_id();
+  filters.AddGeometry(id_A, /* is_anchored = */ true);
+  filters.AddGeometry(id_B, /* is_anchored = */ true);
+  filters.AddGeometry(id_C, /* is_anchored = */ false);
+  const auto& extract = this->get_extract_ids_functor();
+  using Decl = CollisionFilterDeclaration;
+  ASSERT_EQ(NumStoredPairs(filters), 0);
+
+  /* Both anchored: nothing is stored, for either flavor of statement or
+   either invariance. */
+  filters.Apply(Decl().ExcludeBetween(GeometrySet(id_A), GeometrySet(id_B)),
+                extract, false);
+  EXPECT_EQ(NumStoredPairs(filters), 0);
+  EXPECT_EQ(NumStoredPairsInBase(filters), 0);
+  filters.Apply(Decl().ExcludeWithin(GeometrySet({id_A, id_B})), extract, true);
+  EXPECT_EQ(NumStoredPairs(filters), 0);
+  EXPECT_EQ(NumStoredPairsInBase(filters), 0);
+
+  /* Spanning the anchored set and outside it: (A, C) and (B, C) are stored,
+   (A, B) is not. */
+  filters.Apply(Decl().ExcludeWithin(GeometrySet({id_A, id_B, id_C})), extract,
+                false);
+  EXPECT_EQ(NumStoredPairs(filters), 2);
+  EXPECT_EQ(NumStoredPairsInBase(filters), 2);
+  EXPECT_TRUE(ExpectCanCollide(filters, id_A, id_C, !kCanCollide));
+  EXPECT_TRUE(ExpectCanCollide(filters, id_B, id_C, !kCanCollide));
+
+  /* The transient path resolves statements through the same code. */
+  filters.ApplyTransient(Decl().ExcludeWithin(GeometrySet({id_A, id_B})),
+                         extract);
+  EXPECT_EQ(NumStoredPairs(filters), 2);
+}
+
+/* The anchored and inactive sets are independent; either one alone is enough
+ to filter a pair. */
+TEST_F(CollisionFilterTest, AnchoredAndInactive) {
+  CollisionFilter filters;
+  const GeometryId id_A = GeometryId::get_new_id();
+  const GeometryId id_B = GeometryId::get_new_id();
+  const GeometryId id_C = GeometryId::get_new_id();
+  filters.AddGeometry(id_A, /* is_anchored = */ true);
+  filters.AddGeometry(id_B, /* is_anchored = */ true);
+  filters.AddGeometry(id_C, /* is_anchored = */ false);
+  const auto& extract = this->get_extract_ids_functor();
+
+  /* Deactivating an anchored geometry filters it against *everything*, not
+   just the other anchored geometries. */
+  SetActiveStatus(&filters, GeometrySet(id_A), /* active= */ false, extract);
+  EXPECT_TRUE(ExpectCanCollide(filters, id_A, id_B, !kCanCollide));
+  EXPECT_TRUE(ExpectCanCollide(filters, id_A, id_C, !kCanCollide));
+
+  /* Reactivating it restores only the non-anchored pair; A-B remains filtered
+   because both are still anchored. */
+  SetActiveStatus(&filters, GeometrySet(id_A), /* active= */ true, extract);
+  EXPECT_TRUE(ExpectCanCollide(filters, id_A, id_B, !kCanCollide));
+  EXPECT_TRUE(ExpectCanCollide(filters, id_A, id_C, kCanCollide));
+}
+
+/* The anchored set participates in equivalence: anchoring a geometry is not
+ the same as the pairwise closure over the anchored geometries, because it also
+ governs geometries added later. */
+TEST_F(CollisionFilterTest, EquivalencyWithAnchored) {
+  const GeometryId id_A = GeometryId::get_new_id();
+  const GeometryId id_B = GeometryId::get_new_id();
+  const GeometryId id_C = GeometryId::get_new_id();
+  const auto& extract = this->get_extract_ids_functor();
+  using Decl = CollisionFilterDeclaration;
+
+  /* filters1 and filters3 anchor A and B; filters2 emulates it pairwise. */
+  CollisionFilter filters1;
+  CollisionFilter filters2;
+  CollisionFilter filters3;
+  for (auto* f : {&filters1, &filters3}) {
+    f->AddGeometry(id_A, /* is_anchored = */ true);
+    f->AddGeometry(id_B, /* is_anchored = */ true);
+    f->AddGeometry(id_C, /* is_anchored = */ false);
+  }
+  filters2.AddGeometry(id_A, /* is_anchored = */ false);
+  filters2.AddGeometry(id_B, /* is_anchored = */ false);
+  filters2.AddGeometry(id_C, /* is_anchored = */ false);
+  filters2.Apply(Decl().ExcludeWithin(GeometrySet({id_A, id_B})), extract,
+                 true);
+
+  /* Every current pair agrees, but the filters are not equivalent: a geometry
+   anchored later would be filtered in filters1 and not in filters2. */
+  EXPECT_TRUE(ExpectCanCollide(filters1, id_A, id_B, !kCanCollide));
+  EXPECT_TRUE(ExpectCanCollide(filters2, id_A, id_B, !kCanCollide));
+  EXPECT_FALSE(filters1.IsEquivalent(filters2));
+
+  /* Matching anchored sets (and matching pairwise states) are equivalent. */
   EXPECT_TRUE(filters1.IsEquivalent(filters3));
 }
 
