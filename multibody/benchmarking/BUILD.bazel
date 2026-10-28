@@ -29,6 +29,29 @@ drake_py_experiment_binary(
 )
 
 drake_cc_googlebench_binary(
+    name = "anchored_geometry",
+    srcs = ["anchored_geometry.cc"],
+    deps = [
+        "//geometry:scene_graph",
+        "//multibody/plant",
+        "//systems/analysis:simulator",
+        "//systems/framework:diagram_builder",
+        "//tools/performance:fixture_common",
+    ],
+    add_test_rule = True,
+    test_rule_args = [
+        # When testing, only run the smallest grid; the larger grids cost
+        # tens of seconds apiece in debug builds.
+        "--benchmark_filter=.*/10/.*",
+    ],
+)
+
+drake_py_experiment_binary(
+    name = "anchored_geometry_experiment",
+    googlebench_binary = ":anchored_geometry",
+)
+
+drake_cc_googlebench_binary(
     name = "cassie",
     srcs = ["cassie.cc"],
     data = ["cassie_v2.urdf"],
