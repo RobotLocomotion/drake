@@ -2770,6 +2770,48 @@ TEST_F(GeometryStateTest, DeactivateReachesProximityEngine) {
   EXPECT_EQ(engine.num_inactive_dynamic(), 0);
 }
 
+// Only dynamic geometry participates in the engine's broadphase culling, but
+// *any* geometry can be deactivated -- the filter's inactive set is what makes
+// the query results correct. Deactivating anchored or deformable geometry must
+// therefore filter it without disturbing the dynamic partition.
+TEST_F(GeometryStateTest, DeactivateNonDynamicGeometry) {
+  SetUpSingleSourceTree(Assign::kProximity);
+  const ProximityEngine<double>& engine = gs_tester_.proximity_engine();
+
+  auto instance = make_unique<GeometryInstance>(
+      RigidTransformd::Identity(), make_unique<Sphere>(1.0), "deformable");
+  instance->set_proximity_properties(ProximityProperties());
+  const GeometryId deformable_id = geometry_state_.RegisterDeformableGeometry(
+      source_id_, InternalFrame::world_frame_id(), std::move(instance), 2.0);
+
+  ASSERT_EQ(engine.num_inactive_dynamic(), 0);
+
+  for (const GeometryId id : {anchored_geometry_, deformable_id}) {
+    geometry_state_.collision_filter_manager().Deactivate(GeometrySet(id));
+    // The geometry is filtered against everything...
+    EXPECT_TRUE(geometry_state_.CollisionFiltered(id, geometries_[0]));
+    // ... but the dynamic partition is untouched.
+    EXPECT_EQ(engine.num_inactive_dynamic(), 0);
+    EXPECT_FALSE(engine.IsInactiveDynamic(id));
+
+    geometry_state_.collision_filter_manager().Activate(GeometrySet(id));
+    EXPECT_FALSE(geometry_state_.CollisionFiltered(id, geometries_[0]));
+    EXPECT_EQ(engine.num_inactive_dynamic(), 0);
+  }
+
+  // A mixed set still culls the dynamic member.
+  geometry_state_.collision_filter_manager().Deactivate(
+      GeometrySet({anchored_geometry_, geometries_[0]}));
+  EXPECT_EQ(engine.num_inactive_dynamic(), 1);
+  EXPECT_TRUE(engine.IsInactiveDynamic(geometries_[0]));
+  EXPECT_TRUE(
+      geometry_state_.CollisionFiltered(anchored_geometry_, geometries_[1]));
+
+  geometry_state_.collision_filter_manager().Activate(
+      GeometrySet({anchored_geometry_, geometries_[0]}));
+  EXPECT_EQ(engine.num_inactive_dynamic(), 0);
+}
+
 // Tests two aspects of GeometryState collision filter behavior:
 //
 //   1. No collision filters are applied to a deformable geometry (it and the

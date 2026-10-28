@@ -51,6 +51,18 @@ FilterId CollisionFilter::ApplyTransient(
   return new_id;
 }
 
+void CollisionFilter::DropInvariantPairsSubsumedByAnchoring() {
+  if (anchored_.empty()) return;
+  auto subsumed = [this](const PairKey& key) {
+    return anchored_.contains(key.first()) && anchored_.contains(key.second());
+  };
+  /* Erasing from filter_state_ alone would pass any test that doesn't use
+   transients, and then the first RebuildComposite() would restore every pair
+   from the persistent base. */
+  std::erase_if(filter_state_.invariant, subsumed);
+  std::erase_if(persistent_base_.invariant, subsumed);
+}
+
 bool CollisionFilter::IsActive(FilterId id) const {
   for (const StateDelta& delta : transient_history_) {
     if (id == delta.id) return true;
@@ -118,6 +130,32 @@ void CollisionFilter::AddGeometry(GeometryId new_id, bool is_anchored) {
   /* No pair entries are needed: the sparse representation stores only filtered
    pairs, and new geometry is unfiltered by default. Transient deltas store
    only resolved GeometryId sets, so they also require no update. */
+}
+
+void CollisionFilter::SetAnchored(const std::vector<GeometryId>& ids) {
+  /* Transients can neither create nor resurrect invariant pairs, but a
+   transient that was *skipped* because the pair was invariant at the time
+   would start biting on the next replay, silently refiltering a pair that
+   DropInvariantPairsSubsumedByAnchoring() released. Refuse the whole situation
+   -- before touching any state -- as Apply() does for the same reason.
+
+   TODO(SeanCurtis-TRI): This message names no operation the user performed.
+   The user-facing error belongs in the public anchoring API (not yet
+   implemented); once it exists, this can simply become a DRAKE_DEMAND(). */
+  if (has_transient_history()) {
+    throw std::runtime_error(
+        "You cannot attempt to modify the persistent collision filter "
+        "configuration when there are active, transient filter declarations");
+  }
+  for (const GeometryId id : ids) {
+    if (geometries_.contains(id)) anchored_.insert(id);
+  }
+  // When adding a geometry to the collision filter, GeometryState::AssignRole()
+  // would automatically add filters between that geometry and its "sibling"
+  // geometries affixed to the same frame. We've now put those siblings in the
+  // anchored set but will still have the explicit filters. We clean them out
+  // in favor of the anchoring predicate.
+  DropInvariantPairsSubsumedByAnchoring();
 }
 
 void CollisionFilter::RemoveGeometry(GeometryId remove_id) {

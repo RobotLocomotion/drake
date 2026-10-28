@@ -107,6 +107,21 @@ class CollisionFilterTest : public ::testing::Test {
     return std::ssize(filter.persistent_base_.filtered) +
            std::ssize(filter.persistent_base_.invariant);
   }
+
+  /* Puts (id_A, id_B) directly into the invariant sets, reproducing the state
+   AssignRole() leaves behind when it declares sibling filters before the
+   geometries' frame is anchored. Applying a declaration would not do it: the
+   anchored pair is skipped on the way in. */
+  static void AddInvariantPair(CollisionFilter* filter, GeometryId id_A,
+                               GeometryId id_B) {
+    const CollisionFilter::PairKey key(id_A, id_B);
+    filter->filter_state_.invariant.insert(key);
+    filter->persistent_base_.invariant.insert(key);
+  }
+
+  static void DropInvariantPairsSubsumedByAnchoring(CollisionFilter* filter) {
+    filter->DropInvariantPairsSubsumedByAnchoring();
+  }
 };
 
 /* Tests that declaration statements that allow collisions between geometries
@@ -739,6 +754,99 @@ TEST_F(CollisionFilterTest, Anchored) {
   filters.AddGeometry(id_B, /* is_anchored = */ false);
   EXPECT_FALSE(filters.IsAnchored(id_B));
   EXPECT_TRUE(ExpectCanCollide(filters, id_A, id_B, kCanCollide));
+}
+
+/* DropInvariantPairsSubsumedByAnchoring() reclaims invariant pairs that the
+ anchored predicate has made redundant. It must:
+   1. Drop invariant pairs whose geometries are both anchored.
+   2. Leave invariant pairs with a non-anchored end alone.
+   3. Leave non-invariant (user-removable) pairs alone, even between two
+      anchored geometries.
+   4. Change nothing that CanCollideWith() reports -- the dropped pairs are
+      blocked by the predicate either way.
+   5. Erase from the persistent base as well as the composite, so a later
+      RebuildComposite() doesn't resurrect them. */
+TEST_F(CollisionFilterTest, DropInvariantPairsSubsumedByAnchoring) {
+  CollisionFilter filters;
+  const GeometryId id_A = GeometryId::get_new_id();
+  const GeometryId id_B = GeometryId::get_new_id();
+  const GeometryId id_C = GeometryId::get_new_id();
+  const GeometryId id_D = GeometryId::get_new_id();
+  filters.AddGeometry(id_A, /* is_anchored = */ true);
+  filters.AddGeometry(id_B, /* is_anchored = */ true);
+  filters.AddGeometry(id_C, /* is_anchored = */ false);
+  filters.AddGeometry(id_D, /* is_anchored = */ false);
+  const auto& extract = this->get_extract_ids_functor();
+  using Decl = CollisionFilterDeclaration;
+
+  /* The invariant pairs AssignRole() leaves behind when it runs before the
+   geometries' frame is known to be anchored. They have to be injected
+   directly: applying a declaration now would skip (A, B), because an anchored
+   pair is never materialized in the first place. */
+  AddInvariantPair(&filters, id_A, id_B);
+  AddInvariantPair(&filters, id_A, id_C);
+  /* Plus an ordinary, user-removable filter. */
+  filters.Apply(Decl().ExcludeBetween(GeometrySet(id_C), GeometrySet(id_D)),
+                extract, false);
+  ASSERT_EQ(NumStoredPairs(filters), 3);
+  ASSERT_EQ(NumStoredPairsInBase(filters), 3);
+
+  DropInvariantPairsSubsumedByAnchoring(&filters);
+
+  /* (1) Only (A, B) is dropped -- from both states. */
+  EXPECT_EQ(NumStoredPairs(filters), 2);
+  EXPECT_EQ(NumStoredPairsInBase(filters), 2);
+  /* (2) (A, C) has a non-anchored end, so it stays. */
+  EXPECT_TRUE(ExpectCanCollide(filters, id_A, id_C, !kCanCollide));
+  /* (3) The non-invariant (C, D) pair stays. */
+  EXPECT_TRUE(ExpectCanCollide(filters, id_C, id_D, !kCanCollide));
+  /* (4) Nothing observable changed: (A, B) is still blocked, by predicate. */
+  EXPECT_TRUE(ExpectCanCollide(filters, id_A, id_B, !kCanCollide));
+
+  /* (5) Force a RebuildComposite() by applying and removing a transient. If
+   the pair had only been erased from the composite, it would come back. */
+  const FilterId transient_id = filters.ApplyTransient(
+      Decl().ExcludeBetween(GeometrySet(id_B), GeometrySet(id_D)), extract);
+  ASSERT_TRUE(filters.RemoveDeclaration(transient_id));
+  EXPECT_EQ(NumStoredPairs(filters), 2);
+  EXPECT_TRUE(ExpectCanCollide(filters, id_A, id_B, !kCanCollide));
+}
+
+/* With nothing anchored there is nothing to subsume, so every invariant pair
+ survives. */
+TEST_F(CollisionFilterTest, DropInvariantPairsWithNothingAnchored) {
+  CollisionFilter filters;
+  auto [id_A, id_B, id_C] = this->InitIds(&filters);
+  const auto& extract = this->get_extract_ids_functor();
+  using Decl = CollisionFilterDeclaration;
+
+  filters.Apply(Decl().ExcludeWithin(GeometrySet({id_A, id_B, id_C})), extract,
+                true);
+  ASSERT_EQ(NumStoredPairs(filters), 3);
+
+  DropInvariantPairsSubsumedByAnchoring(&filters);
+  EXPECT_EQ(NumStoredPairs(filters), 3);
+  EXPECT_EQ(NumStoredPairsInBase(filters), 3);
+  EXPECT_TRUE(ExpectCanCollide(filters, id_A, id_B, !kCanCollide));
+}
+
+/* Anchoring while transients are active is refused, exactly as Apply() refuses
+ it. */
+TEST_F(CollisionFilterTest, SetAnchoredThrowsForTransients) {
+  CollisionFilter filters;
+  const GeometryId id_A = GeometryId::get_new_id();
+  const GeometryId id_B = GeometryId::get_new_id();
+  filters.AddGeometry(id_A, /* is_anchored = */ true);
+  filters.AddGeometry(id_B, /* is_anchored = */ false);
+  const auto& extract = this->get_extract_ids_functor();
+  using Decl = CollisionFilterDeclaration;
+
+  filters.ApplyTransient(
+      Decl().AllowBetween(GeometrySet(id_A), GeometrySet(id_B)), extract);
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      filters.SetAnchored({id_B}),
+      ".*cannot attempt to modify the persistent collision filter.*");
 }
 
 /* Declaring a filter between two anchored geometries must not materialize the

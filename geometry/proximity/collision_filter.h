@@ -154,6 +154,16 @@ class CollisionFilter {
    @pre `new_id` has not been previously added to this filter system. */
   void AddGeometry(GeometryId new_id, bool is_anchored);
 
+  /* Adds the given geometries to the anchored set (see the class
+   documentation). Unrecognized ids and those already anchored are ignored.
+
+   This exists for geometry that becomes anchored after it was added -- see
+   GeometryState::AnchorFrames(). Like AddGeometry()'s `is_anchored`, it is a
+   one-way trip: there is no un-anchor.
+
+   @throws std::exception if there are any transient declarations active. */
+  void SetAnchored(const std::vector<GeometryId>& ids);
+
   /* Removes a geometry from the filter system. All filtered collision pairs
    including `remove_id` will be removed, and the geometry is dropped from the
    inactive set (if present). Removing a geometry never changes any *other*
@@ -286,6 +296,18 @@ class CollisionFilter {
    transient_history_ replayed in order. Called after RemoveDeclaration() or
    RemoveGeometry() when transient history is active. */
   void RebuildComposite();
+
+  /* Drops every *invariant* filtered pair whose geometries are both anchored.
+
+   This is a clean-up/optimization operation. If both geometries are anchored,
+   the pair is filtered by the invariant rules; storing an explicit annotation
+   on the pair is redundant.
+
+   Note: this is the only way an invariant filter is ever undone. It is
+   _only_ called by SetAnchored() as part of the promotion process.
+
+   @pre There are no transient declarations active (see SetAnchored()). */
+  void DropInvariantPairsSubsumedByAnchoring();
 
   /* The cached composite filter state: persistent_base_ with all transient
    declarations applied in order. CanCollideWith() reads only from this, keeping
