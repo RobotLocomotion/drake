@@ -1,6 +1,6 @@
-#include "drake/bindings/pydrake/systems/framework_callback_lifetime.h"
+#include "drake/bindings/pydrake/common/ensure_callback_lifetime_pybind.h"
 
-#include <atomic>
+#include <cstdint>
 
 #include <fmt/format.h>
 
@@ -19,12 +19,19 @@ namespace {
 // *compare* as equal. This quirk defeats the reference bookkeeping of
 // common/ref_cycle_pybind; attempts to add distinct but "equal" wrappers fail,
 // and a reference is lost. To compensate, this function wraps a potentially
-// quirky callable in a tuple with a unique integer, so that apparently "equal"
+// quirky callable in a tuple with its own address, so that apparently "equal"
 // callables can be inserted as distinct set members with the
 // common/ref_cycle_pybind bookkeeping scheme.
+//
+// Using the address as the tiebreaker is sound because the bookkeeping set
+// holds a strong reference to each callable that it contains, and never
+// removes any. Hence an address cannot be reused while its tuple is in the
+// set, so distinct callables always yield distinct tuples. Adding the very same
+// callable twice yields equal tuples, which is correct because that callable
+// is already alive and already the one that C++ refers to.
 py::object UniquelyWrapCallback(py::object callback) {
-  static std::atomic<uint64_t> uniquifier{0};
-  return py::make_tuple(callback, uniquifier.fetch_add(1));
+  const auto address = reinterpret_cast<uintptr_t>(callback.ptr());
+  return py::make_tuple(callback, address);
 }
 
 }  // namespace
