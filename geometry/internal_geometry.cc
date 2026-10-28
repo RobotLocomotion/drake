@@ -23,6 +23,7 @@ InternalGeometry::InternalGeometry(SourceId source_id,
       name_(std::move(name)),
       source_id_(source_id),
       frame_id_(frame_id),
+      frame_is_anchored_(frame_id == InternalFrame::world_frame_id()),
       X_FG_(std::move(X_FG)) {}
 
 InternalGeometry::InternalGeometry(SourceId source_id,
@@ -36,6 +37,7 @@ InternalGeometry::InternalGeometry(SourceId source_id,
       name_(std::move(name)),
       source_id_(source_id),
       frame_id_(frame_id),
+      frame_is_anchored_(frame_id == InternalFrame::world_frame_id()),
       X_FG_(std::move(X_FG)) {
   // The function creates the mesh in frame G.
   reference_mesh_ = MakeMeshForDeformable(*shape_spec_, resolution_hint);

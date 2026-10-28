@@ -170,7 +170,7 @@ class ProximityEngineDeformableContactTest : public testing::Test {
         const RigidTransformd X_WG_registered = geometry.pose_in_world();
         EXPECT_TRUE(X_WG.IsExactlyEqualTo(X_WG_registered));
         EXPECT_TRUE(deformable_contact_geometries().is_rigid(id));
-        engine_.RemoveGeometry(id, true);
+        engine_.RemoveGeometry(id);
         EXPECT_FALSE(deformable_contact_geometries().is_rigid(id));
       }
     }
@@ -185,7 +185,7 @@ class ProximityEngineDeformableContactTest : public testing::Test {
         const RigidTransformd X_WG_registered = geometry.pose_in_world();
         EXPECT_TRUE(X_WG.IsExactlyEqualTo(X_WG_registered));
         EXPECT_TRUE(deformable_contact_geometries().is_rigid(id));
-        engine_.RemoveGeometry(id, false);
+        engine_.RemoveGeometry(id);
         EXPECT_FALSE(deformable_contact_geometries().is_rigid(id));
       }
     }
@@ -343,6 +343,26 @@ TEST_F(ProximityEngineDeformableContactTest, AddAndRemoveDeformableGeometry) {
   EXPECT_FALSE(deformable_contact_geometries().is_deformable(id));
   DRAKE_EXPECT_THROWS_MESSAGE(engine_.RemoveDeformableGeometry(id),
                               ".*does not contain a deformable geometry.*");
+}
+
+// AnchorGeometries() skips deformable ids -- deformable geometry is never
+// anchored -- and the filter must agree. Were a deformable marked anchored in
+// the filter, it would silently lose contact with all anchored geometry.
+TEST_F(ProximityEngineDeformableContactTest, AnchorGeometriesSkipsDeformable) {
+  const GeometryId deformable_id = AddDeformableSphere();
+  const GeometryId rigid_id = GeometryId::get_new_id();
+  engine_.AddDynamicGeometry(Sphere(kSphereRadius), {}, rigid_id, {});
+  const GeometryId ground_id = GeometryId::get_new_id();
+  engine_.AddAnchoredGeometry(HalfSpace(), {}, ground_id, {});
+
+  engine_.AnchorGeometries({rigid_id, deformable_id});
+
+  const CollisionFilter& filter = engine_.collision_filter();
+  EXPECT_TRUE(filter.IsAnchored(rigid_id));
+  EXPECT_FALSE(filter.IsAnchored(deformable_id));
+  EXPECT_TRUE(deformable_contact_geometries().is_deformable(deformable_id));
+  EXPECT_TRUE(filter.CanCollideWith(deformable_id, ground_id));
+  EXPECT_TRUE(filter.CanCollideWith(deformable_id, rigid_id));
 }
 
 TEST_F(ProximityEngineDeformableContactTest, UpdatePose) {

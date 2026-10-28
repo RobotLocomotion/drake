@@ -2085,7 +2085,7 @@ void GeometryState<T>::AddToProximityEngineUnchecked(
 template <typename T>
 void GeometryState<T>::RemoveFromProximityEngineUnchecked(
     const InternalGeometry& geometry) {
-  geometry_engine_->RemoveGeometry(geometry.id(), geometry.is_dynamic());
+  geometry_engine_->RemoveGeometry(geometry.id());
   geometry_version_.modify_proximity();
 }
 
