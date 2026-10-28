@@ -191,7 +191,10 @@ class CenicIntegrator final : public systems::IntegratorBase<T> {
     VectorX<T> generalized_forces;
     VectorX<T> tau_contact;
     VectorX<T> net_actuation;
-    MatrixX<T> actuation_matrix;
+    /* The velocity index actuated by each actuation input; i.e., the
+    nonzero row of each column of the plant's actuation matrix, which is a
+    selection of dofs. */
+    std::vector<int> actuated_dofs;
 
     /* Linearized external system gains (sized to the plant's num_velocities):
     Torque-limited actuation, τᵤ(v) ≈ clamp(-Kᵤ⋅v + bᵤ, e). */
