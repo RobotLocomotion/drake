@@ -16,7 +16,9 @@ InternalFrame::InternalFrame(SourceId source_id, FrameId frame_id,
       name_(name),
       frame_group_(frame_group),
       index_(index),
-      parent_id_(parent_id) {
+      parent_id_(parent_id),
+      // The world frame is the anchored base case; see is_anchored().
+      is_anchored_(frame_id == world_frame_id()) {
   DRAKE_DEMAND(index >= 0);
   DRAKE_DEMAND(frame_group >= 0 || frame_group == world_frame_group());
 }

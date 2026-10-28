@@ -23,6 +23,7 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/common/unused.h"
 #include "drake/geometry/geometry_state.h"
 #include "drake/geometry/proximity/mesh_distance_boundary.h"
 #include "drake/geometry/proximity_properties.h"
@@ -64,7 +65,8 @@ class ProximityEngineTester {
   template <typename T>
   static math::RigidTransformd GetX_WG(GeometryId id, bool is_dynamic,
                                        const ProximityEngine<T>& engine) {
-    return engine.GetX_WG(id, is_dynamic);
+    unused(is_dynamic);
+    return engine.GetX_WG(id);
   }
 
   template <typename T>
@@ -231,6 +233,106 @@ class ProximityEngineTests : public ::testing::Test {
   ProximityEngine<double> engine_;
   unordered_map<GeometryId, RigidTransform<double>> X_WGs_;
 };
+
+// AnchorGeometries() moves a geometry's fcl object from the dynamic
+// collections into the anchored ones, and marks it anchored in the filter.
+// The two must happen together: the engine routes object lookup, removal and
+// pose updates by which collection holds the object.
+TEST_F(ProximityEngineTests, AnchorGeometries) {
+  const Sphere sphere{0.5};
+  const GeometryId dynamic_id = AddDynamic(sphere, V3{0, 0, 0});
+  const GeometryId promoted_id = AddDynamic(sphere, V3{4, 0, 0});
+  const GeometryId declared_id = AddAnchored(sphere, V3{8, 0, 0});
+  ASSERT_EQ(engine_.num_dynamic(), 2);
+  ASSERT_EQ(engine_.num_anchored(), 1);
+  ASSERT_FALSE(engine_.collision_filter().IsAnchored(promoted_id));
+
+  engine_.AnchorGeometries({promoted_id});
+
+  EXPECT_EQ(engine_.num_dynamic(), 1);
+  EXPECT_EQ(engine_.num_anchored(), 2);
+  EXPECT_TRUE(engine_.collision_filter().IsAnchored(promoted_id));
+  // The move itself does not disturb the object's pose.
+  EXPECT_TRUE(CompareMatrices(
+      Tester::GetX_WG(promoted_id, false, engine_).translation(), V3{4, 0, 0}));
+
+  // The promoted geometry can no longer collide with other anchored geometry,
+  // but still can with what remains dynamic.
+  EXPECT_FALSE(
+      engine_.collision_filter().CanCollideWith(promoted_id, declared_id));
+  EXPECT_TRUE(
+      engine_.collision_filter().CanCollideWith(promoted_id, dynamic_id));
+
+  // Ids that are already anchored are ignored rather than rejected.
+  DRAKE_EXPECT_NO_THROW(engine_.AnchorGeometries({promoted_id, declared_id}));
+  EXPECT_EQ(engine_.num_anchored(), 2);
+
+  // Removal routes by actual membership, so the stale "is it dynamic?" answer
+  // the caller started with cannot misdirect it.
+  DRAKE_EXPECT_NO_THROW(engine_.RemoveGeometry(promoted_id));
+  EXPECT_EQ(engine_.num_anchored(), 1);
+}
+
+// Anchoring an *inactive* geometry: two independent properties (anchored,
+// inactive) span three trees, and this combination is the one that is easy to
+// leave undefined. The geometry leaves the inactive dynamic partition for the
+// anchored tree -- it is simply no longer culled -- and the filter's inactive
+// set goes on blocking its pairs.
+TEST_F(ProximityEngineTests, AnchorInactiveGeometry) {
+  const Sphere sphere{0.5};
+  const GeometryId other_id = AddDynamic(sphere, V3{0, 0, 0});
+  const GeometryId promoted_id = AddDynamic(sphere, V3{0.5, 0, 0});
+
+  Deactivate({promoted_id});
+  ASSERT_EQ(engine_.num_inactive_dynamic(), 1);
+  ASSERT_TRUE(engine_.IsInactiveDynamic(promoted_id));
+  // The two spheres overlap, but the inactive one collides with nothing.
+  ASSERT_FALSE(
+      engine_.collision_filter().CanCollideWith(promoted_id, other_id));
+
+  engine_.AnchorGeometries({promoted_id});
+
+  EXPECT_EQ(engine_.num_inactive_dynamic(), 0);
+  EXPECT_FALSE(engine_.IsInactiveDynamic(promoted_id));
+  EXPECT_EQ(engine_.num_anchored(), 1);
+  // Still blocked -- by the filter's inactive set, which promotion left alone.
+  EXPECT_FALSE(
+      engine_.collision_filter().CanCollideWith(promoted_id, other_id));
+  EXPECT_EQ(engine_.ComputePointPairPenetration(X_WGs_).size(), 0u);
+
+  // Reactivating it now has nothing to migrate, and unblocks the pair.
+  Activate({promoted_id});
+  EXPECT_EQ(engine_.num_inactive_dynamic(), 0);
+  EXPECT_TRUE(engine_.collision_filter().CanCollideWith(promoted_id, other_id));
+  EXPECT_EQ(engine_.ComputePointPairPenetration(X_WGs_).size(), 1u);
+}
+
+// RefreshAnchoredPoses() re-poses anchored geometry and refits the anchored
+// tree. Anchored poses change only when a parameter does, so this is driven on
+// demand rather than every step.
+TEST_F(ProximityEngineTests, RefreshAnchoredPoses) {
+  const Sphere sphere{0.5};
+  const GeometryId dynamic_id = AddDynamic(sphere, V3{0, 0, 0});
+  const GeometryId promoted_id = AddDynamic(sphere, V3{10, 0, 0});
+  engine_.AnchorGeometries({promoted_id});
+  ASSERT_EQ(engine_.ComputePointPairPenetration(X_WGs_).size(), 0u);
+
+  // Move the anchored geometry onto the dynamic one, as changing a weld
+  // parameter would. Until the refresh, the engine still sees it at the old
+  // location.
+  X_WGs_.at(promoted_id) = RigidTransformd(V3{0.5, 0, 0});
+  engine_.UpdateWorldPoses(X_WGs_);
+  EXPECT_EQ(engine_.ComputePointPairPenetration(X_WGs_).size(), 0u);
+
+  engine_.RefreshAnchoredPoses(X_WGs_);
+  EXPECT_TRUE(CompareMatrices(
+      Tester::GetX_WG(promoted_id, false, engine_).translation(),
+      V3{0.5, 0, 0}));
+  const auto pairs = engine_.ComputePointPairPenetration(X_WGs_);
+  ASSERT_EQ(pairs.size(), 1u);
+  EXPECT_EQ(SortedPair<GeometryId>(pairs[0].id_A, pairs[0].id_B),
+            SortedPair<GeometryId>(dynamic_id, promoted_id));
+}
 
 // Test simple addition of dynamic and anchored geometry. Confirms that the
 // added geometries are reflected in the bookkeeping.
@@ -757,15 +859,15 @@ TEST_F(ProximityEngineTests, ConvexHullCacheEviction) {
                     "Fake Geometry");
 
   // Remove G3 — G2 still holds the (2,1,1,0) hull; no eviction expected.
-  engine_.RemoveGeometry(id_G3, /* is_dynamic= */ true);
+  engine_.RemoveGeometry(id_G3);
   validate_eviction(id_G3, expected_files, expected_hulls, "G3 removed");
 
   // Remove G2 — cache is now sole owner of (2,1,1,0); sub-entry evicted.
-  engine_.RemoveGeometry(id_G2, /* is_dynamic= */ true);
+  engine_.RemoveGeometry(id_G2);
   validate_eviction(id_G2, expected_files, --expected_hulls, "G2 removed");
 
   // Remove G1 — cache is sole owner of (1,1,1,0); fully evicted.
-  engine_.RemoveGeometry(id_G1, /* is_dynamic= */ true);
+  engine_.RemoveGeometry(id_G1);
   validate_eviction(id_G1, --expected_files, --expected_hulls, "G1 removed");
 }
 
@@ -809,7 +911,7 @@ TEST_F(ProximityEngineTests, RemoveGeometry) {
 
   for (bool is_dynamic : {true, false}) {
     // Removing a geometry that doesn't exist, throws.
-    EXPECT_THROW(engine_.RemoveGeometry(GeometryId::get_new_id(), true),
+    EXPECT_THROW(engine_.RemoveGeometry(GeometryId::get_new_id()),
                  std::logic_error);
 
     // Populate the world with three anchored spheres located on the x-axis at
@@ -835,12 +937,11 @@ TEST_F(ProximityEngineTests, RemoveGeometry) {
     for (int index : {1, 2, 0}) {
       --expected_count;
       const GeometryId remove_id = ids[index];
-      engine_.RemoveGeometry(remove_id, is_dynamic);
+      engine_.RemoveGeometry(remove_id);
       EXPECT_EQ(engine_.num_geometries(), expected_count);
       EXPECT_EQ(engine_.num_anchored(), is_dynamic ? 0 : expected_count);
       EXPECT_EQ(engine_.num_dynamic(), is_dynamic ? expected_count : 0);
-      EXPECT_THROW(engine_.RemoveGeometry(remove_id, is_dynamic),
-                   std::logic_error);
+      EXPECT_THROW(engine_.RemoveGeometry(remove_id), std::logic_error);
       EXPECT_EQ(Tester::hydroelastic_type(remove_id, engine_),
                 HydroelasticType::kUndefined);
     }

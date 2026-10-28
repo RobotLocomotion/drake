@@ -90,9 +90,14 @@ class ProximityEngine {
    reflect the given net change to the collision filter's inactive set (see
    CollisionFilterManager::Deactivate()) -- a mechanism to resolve issue #24607.
 
+   Only dynamic geometries are culled. Anchored and deformable geometries have
+   no dynamic-tree membership to change, so they are ignored here; the filter's
+   inactive set still blocks them in CanCollideWith(), which is what makes the
+   query results correct either way.
+
    @pre change.empty() == false.
-   @pre Every geometry in `change` is dynamic and its active status change is
-        consistent with the engine's current understanding. */
+   @pre Each geometry's active status change is consistent with the engine's
+        current understanding. */
   // TODO(xuchen-han): Only dynamic geometries are culled. We are not optimizing
   // for anchored geometries yet. Do that when there's a use where it brings
   // noticeable performance improvement.
@@ -175,15 +180,31 @@ class ProximityEngine {
       const InternalGeometry& geometry,
       const ProximityProperties& new_properties);
 
-  // TODO(SeanCurtis-TRI): Decide if knowing whether something is dynamic or not
-  //  is *actually* sufficiently helpful to justify this act.
   /* Removes the given geometry indicated by `id` from the engine.
    @param id          The id of the geometry to be removed.
-   @param is_dynamic  True if the geometry is dynamic, false if anchored.
    @throws std::exception if `id` does not refer to a geometry in this engine.
    @throws std::exception if `id` corresponds to a deformable geometry. Use
-   RemoveDeformableGeometry to remove deformable geometries.  */
-  void RemoveGeometry(GeometryId id, bool is_dynamic);
+           RemoveDeformableGeometry to remove deformable geometries.  */
+  void RemoveGeometry(GeometryId id);
+
+  /* Marks previously registered geometries as "anchored". Ids that are already
+   classified as such are ignored.
+
+   The caller is responsible for keeping the InternalGeometry::is_dynamic() bits
+   on each corresponding geometry in sync; the two must never disagree.
+
+   Anchored poses are refreshed only on demand, via RefreshAnchoredPoses(), so
+   the caller must arrange for one refresh after this call: the objects moved
+   here still carry their registration-time poses. */
+  void AnchorGeometries(const std::vector<GeometryId>& ids);
+
+  /* Pushes the given world poses into the anchored geometries and refits the
+   anchored broadphase tree. Anchored poses are a function of parameters alone,
+   so this is driven by GeometryState observing an anchored frame's pose
+   change, rather than run every step.
+   @pre `X_WGs` contains an entry for every anchored geometry. */
+  void RefreshAnchoredPoses(
+      const std::unordered_map<GeometryId, math::RigidTransform<T>>& X_WGs);
 
   /* Removes the given deformable geometry indicated by `id` from the engine.
    @param id  The id of the geometry to be removed.
@@ -367,8 +388,7 @@ class ProximityEngine {
   bool IsDeepCopy(const ProximityEngine<T>& other) const;
 
   // Reports the pose (X_WG) of the geometry with the given id.
-  const math::RigidTransform<double> GetX_WG(GeometryId id,
-                                             bool is_dynamic) const;
+  const math::RigidTransform<double> GetX_WG(GeometryId id) const;
 
   // Reports whether the inactive-geometry cache is currently marked stale.
   bool is_inactive_dynamic_stale() const;

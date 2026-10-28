@@ -170,7 +170,7 @@ class ProximityEngineDeformableContactTest : public testing::Test {
         const RigidTransformd X_WG_registered = geometry.pose_in_world();
         EXPECT_TRUE(X_WG.IsExactlyEqualTo(X_WG_registered));
         EXPECT_TRUE(deformable_contact_geometries().is_rigid(id));
-        engine_.RemoveGeometry(id, true);
+        engine_.RemoveGeometry(id);
         EXPECT_FALSE(deformable_contact_geometries().is_rigid(id));
       }
     }
@@ -185,7 +185,7 @@ class ProximityEngineDeformableContactTest : public testing::Test {
         const RigidTransformd X_WG_registered = geometry.pose_in_world();
         EXPECT_TRUE(X_WG.IsExactlyEqualTo(X_WG_registered));
         EXPECT_TRUE(deformable_contact_geometries().is_rigid(id));
-        engine_.RemoveGeometry(id, false);
+        engine_.RemoveGeometry(id);
         EXPECT_FALSE(deformable_contact_geometries().is_rigid(id));
       }
     }

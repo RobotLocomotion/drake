@@ -135,14 +135,22 @@ class InternalGeometry {
    deformable. */
   bool is_deformable() const { return reference_mesh_ != nullptr; }
 
-  /* Returns true if the geometry can move with respect to the World frame. That
-   includes any deformable geometry, and any rigid geometry attached to a frame
-   other than World. */
-  bool is_dynamic() const {
-    // NOTE: If I allow non-dynamic frames welded to the world, this will not
-    // be sufficient.
-    return (frame_id_ != InternalFrame::world_frame_id() || is_deformable());
-  }
+  /* Returns true if the geometry can move as a function of state. All
+   deformable geometries and every rigid geometry whose parent frame is not
+   anchored is dynamic.
+
+   The frame's status is cached here rather than looked up through
+   GeometryState on each of the ~10 call sites. That is safe because anchoring
+   is irreversible and a frame's status never changes as a side effect of
+   another frame's. */
+  bool is_dynamic() const { return !frame_is_anchored_ || is_deformable(); }
+
+  /* Notes that this geometry's frame has become anchored.
+
+   It is the caller's responsibility to make sure that setting this bit is
+   consistent with the parent frame's anchored status (see
+   GeometryState::AnchorFrames()). */
+  void set_frame_is_anchored() { frame_is_anchored_ = true; }
 
   //@}
 
@@ -263,6 +271,9 @@ class InternalGeometry {
 
   // The identifier of the frame to which this geometry belongs.
   FrameId frame_id_;
+
+  // Whether frame_id_ is anchored; see is_dynamic().
+  bool frame_is_anchored_{false};
 
   // The pose of this geometry in the frame to which this geometry is rigidly
   // affixed. For deformable geometries, this is the pose of the reference

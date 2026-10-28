@@ -51,6 +51,29 @@ FilterId CollisionFilter::ApplyTransient(
   return new_id;
 }
 
+void CollisionFilter::DropInvariantPairsSubsumedByAnchoring() {
+  /* Transients can neither create nor resurrect invariant pairs, so erasing
+   from both states below is enough to make the change stick -- no
+   RebuildComposite() is required. But a transient that was *skipped* because
+   the pair was invariant at the time would start biting on the next replay,
+   silently refiltering a pair we just released. Refuse the whole situation, as
+   Apply() does for the same reason. */
+  if (has_transient_history()) {
+    throw std::runtime_error(
+        "You cannot attempt to modify the persistent collision filter "
+        "configuration when there are active, transient filter declarations");
+  }
+  if (anchored_.empty()) return;
+  auto subsumed = [this](const PairKey& key) {
+    return anchored_.contains(key.first()) && anchored_.contains(key.second());
+  };
+  /* Erasing from filter_state_ alone would pass any test that doesn't use
+   transients, and then the first RebuildComposite() would restore every pair
+   from the persistent base. */
+  std::erase_if(filter_state_.invariant, subsumed);
+  std::erase_if(persistent_base_.invariant, subsumed);
+}
+
 bool CollisionFilter::IsActive(FilterId id) const {
   for (const StateDelta& delta : transient_history_) {
     if (id == delta.id) return true;
@@ -118,6 +141,17 @@ void CollisionFilter::AddGeometry(GeometryId new_id, bool is_anchored) {
   /* No pair entries are needed: the sparse representation stores only filtered
    pairs, and new geometry is unfiltered by default. Transient deltas store
    only resolved GeometryId sets, so they also require no update. */
+}
+
+void CollisionFilter::SetAnchored(const std::vector<GeometryId>& ids) {
+  for (const GeometryId id : ids) {
+    if (geometries_.contains(id)) anchored_.insert(id);
+  }
+  // The sibling filters AssignRole() declared before these geometries'
+  // frames were known to be anchored are now carried by the predicate
+  // instead; reclaim them. Doing it here keeps every filter-side
+  // consequence of anchoring in one place, alongside the object move.
+  DropInvariantPairsSubsumedByAnchoring();
 }
 
 void CollisionFilter::RemoveGeometry(GeometryId remove_id) {
