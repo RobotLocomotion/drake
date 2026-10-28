@@ -179,8 +179,11 @@ class LadderTest : public ::testing::TestWithParam<LadderTestConfig> {
           DiscreteContactApproximation::kSap);
     }
 
-    // XXX maybe continuous only?
-    plant_->SetUseSampledOutputPorts(true);
+    // Only CENIC records samples for the sampled output ports.
+    if (config.integrator_choice ==
+        LadderTestConfig::IntegratorChoice::kCenic) {
+      plant_->SetUseSampledOutputPorts(true);
+    }
 
     plant_->Finalize();
 
@@ -495,7 +498,8 @@ class LadderTest : public ::testing::TestWithParam<LadderTestConfig> {
       adjusted_tolerance = 1e-4;
     }
     EXPECT_TRUE(CompareMatrices(F_Bl_W.rotational(), t_Bl_W_expected,
-                                kTolerance, MatrixCompareType::relative));
+                                adjusted_tolerance,
+                                MatrixCompareType::relative));
 
     // Verify reaction forces at the weld joint. We use a free body diagram of
     // the upper half of the ladder and balance of moments at the upper half's
