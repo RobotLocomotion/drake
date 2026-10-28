@@ -331,11 +331,13 @@ void IcfBuilder<T>::ValidatePlant() {
         plant_.num_tendon_constraints()));
   }
 
-  // The actuation gain constraints act per dof, with a single effort limit
-  // each, so they can't represent several actuators sharing a joint.
+  // Reporting the actuation applied during a step (for the sampled output
+  // ports) assumes a single actuator per dof, because the actuation gain
+  // constraints act per dof, with a single effort limit each.
   std::vector<const JointActuator<T>*> dof_actuators(plant_.num_velocities(),
                                                      nullptr);
   for (JointActuatorIndex i : plant_.GetJointActuatorIndices()) {
+    if (!plant_.has_sampled_output_ports()) break;
     const JointActuator<T>& actuator = plant_.get_joint_actuator(i);
     const JointActuator<T>*& existing =
         dof_actuators[actuator.joint().velocity_start()];

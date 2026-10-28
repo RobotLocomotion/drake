@@ -747,12 +747,28 @@ GTEST_TEST(IcfBuilder, SharedJointActuatorsUnsupported) {
   plant.AddJointActuator("elbow", plant.GetJointByName("joint2"));
   plant.AddJointActuator("elbow_assist", plant.GetJointByName("joint2"));
 
+  // Shared actuators are only a problem when reporting sampled outputs.
+  plant.SetUseSampledOutputPorts(true);
   plant.Finalize();
 
   DRAKE_EXPECT_THROWS_MESSAGE(
       IcfBuilder<double>(&plant),
       ".*not support more than one actuator on a joint.*'joint2'.*'elbow'.*"
       "'elbow_assist'.*AddCouplerConstraint.*");
+}
+
+GTEST_TEST(IcfBuilder, SharedJointActuatorsAllowedWithoutSampledPorts) {
+  systems::DiagramBuilder<double> diagram_builder;
+  multibody::MultibodyPlantConfig plant_config{.time_step = 0.0};
+  MultibodyPlant<double>& plant =
+      multibody::AddMultibodyPlant(plant_config, &diagram_builder);
+
+  Parser(&plant, "Pendulum").AddModelsFromString(kRobotXml, "xml");
+  plant.AddJointActuator("elbow", plant.GetJointByName("joint2"));
+  plant.AddJointActuator("elbow_assist", plant.GetJointByName("joint2"));
+  plant.Finalize();
+
+  EXPECT_NO_THROW(IcfBuilder<double> builder(&plant));
 }
 
 GTEST_TEST(IcfBuilder, DeformableUnsupported) {
