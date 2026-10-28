@@ -149,7 +149,6 @@ from the current model; all names are relative to the current model and can
 only refer to the current or a nested model. In particular, names must not
 start with `::`; there is no way to denote any "outer" or "outermost" scope.
 
-
 For a detailed design discussion with examples, see the
 <a href='http://sdformat.org/tutorials?tut=composition_proposal#1-3-name-scoping-and-cross-referencing'>SDFormat documentation of name scoping.</a>
 
@@ -766,7 +765,7 @@ frame), or `world`. It must not name a joint. Nor may it name a model's
 implicit frame, by the model's name or as `__model__`, or a frame attached to
 it, if Drake doesn't attach that implicit frame to the model's canonical link
 because the link is deformable or comes from an included URDF or MJCF model
-(name a link instead).
+(name a rigid link instead).
 
 @see @ref tag_drake_linear_bushing_rpy, drake::multibody::LinearBushingRollPitchYaw
 
@@ -786,7 +785,7 @@ frame), or `world`. It must not name a joint. Nor may it name a model's
 implicit frame, by the model's name or as `__model__`, or a frame attached to
 it, if Drake doesn't attach that implicit frame to the model's canonical link
 because the link is deformable or comes from an included URDF or MJCF model
-(name a link instead).
+(name a rigid link instead).
 
 @see @ref tag_drake_linear_bushing_rpy, drake::multibody::LinearBushingRollPitchYaw
 
@@ -958,13 +957,14 @@ URDF note: Drake supports both `drake:capsule`, and a non-standard
 The string names a frame (defined elsewhere in the model) that is associated
 with the child link of the joint being defined. That frame is the joint's frame
 Jc. The string may also name a link or a model (meaning its implicit model
-frame). Unlike drake:parent, it must not name `world`, just as an SDFormat
-joint's `<child>` must not, and its frame must be on a different link than the
-frame drake:parent names. It must not name a joint. Nor may it name a model's
-implicit frame, by the model's name or as `__model__`, or a frame attached to
-it, if Drake doesn't attach that implicit frame to the model's canonical link
-because the link is deformable or comes from an included URDF or MJCF model
-(name a link instead).
+frame). Unlike drake:parent, it must not name `world` or a frame on it, such as
+a frame of a static model with no links, just as an SDFormat joint's `<child>`
+must not, and its frame must be on a different link than the frame drake:parent
+names. It must not name a joint. Nor may it name a model's implicit frame, by
+the model's name or as `__model__`, or a frame attached to it, if Drake doesn't
+attach that implicit frame to the model's canonical link because the link is
+deformable or comes from an included URDF or MJCF model (name a rigid link
+instead).
 
 @see @ref tag_drake_joint
 
@@ -1549,8 +1549,8 @@ Jp. The string may also name a link, a model (meaning its implicit model frame),
 or `world`. It must not name a joint. Nor may it name a model's implicit frame,
 by the model's name or as `__model__`, or a frame attached to it, if Drake
 doesn't attach that implicit frame to the model's canonical link because the
-link is deformable or comes from an included URDF or MJCF model (name a link
-instead).
+link is deformable or comes from an included URDF or MJCF model (name a rigid
+link instead).
 
 @see @ref tag_drake_joint
 

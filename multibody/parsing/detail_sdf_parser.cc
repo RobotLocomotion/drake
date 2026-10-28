@@ -781,7 +781,7 @@ const Frame<double>* FindFrame(const SDFormatDiagnostic& diagnostic,
                 "{0}: <{1}>{2}</{1}> names {3} of model '{4}', which "
                 "Drake fixes to the world rather than to the model's "
                 "canonical link (it is deformable or from an included "
-                "URDF or MJCF model). Name a link instead.",
+                "URDF or MJCF model). Name a rigid link instead.",
                 referrer, element_name, frame_name,
                 f == &frame ? "the frame" : "a frame attached to the frame",
                 plant.GetModelInstanceName(f->model_instance())));
@@ -2033,12 +2033,14 @@ bool AddDrakeJointFromSpecification(const SDFormatDiagnostic& diagnostic,
   if (child_frame == nullptr) {
     return false;
   }
-  // As for an SDFormat <joint>, the child must not be the world. (Drake puts a
-  // joint in its child frame's model instance, so the joint would also leave
+  // As for an SDFormat <joint>, the child must not be the world or a frame on
+  // it, such as a frame of a static model with no links. (Finalize() can't
+  // reverse these joint types. And Drake puts a joint in its child frame's
+  // model instance, so a joint whose child is the world frame would also leave
   // this model.) Nor may a joint connect a link to itself.
-  if (child_frame == &plant->world_frame()) {
+  if (&child_frame->body() == &plant->world_body()) {
     diagnostic.Error(node, fmt::format("<drake:joint name='{}'>: <drake:child> "
-                                       "must not be world.",
+                                       "must not be world or a frame on it.",
                                        joint_name));
     return false;
   }

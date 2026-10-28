@@ -1507,7 +1507,7 @@ TEST_F(SdfParserTest, NamingModelFixedToWorldError) {
             MatchesRegex(fmt::format(
                 ".*{0}: <{1}>{2}</{1}> names {3} of model '{4}::w', which "
                 "Drake fixes to the world rather than to the model's "
-                "canonical link \\(.*\\)\\. Name a link instead\\.",
+                "canonical link \\(.*\\)\\. Name a rigid link instead\\.",
                 DescribeReferrer(kind, "j"), FrameTag(kind, true), name,
                 attached ? "a frame attached to the frame" : "the frame",
                 model_name)));
@@ -1552,12 +1552,13 @@ TEST_F(SdfParserTest, FramesOfStaticModelWithoutLinks) {
   EXPECT_EQ(&plant_.GetJointByName("js_model").frame_on_parent(), &frame_S);
 }
 
-// A <drake:joint>'s child must not be the world, as for an SDFormat <joint>,
-// and its two frames must be on different links: here the same link, or the
-// world, which a static model's frames are on.
+// A <drake:joint>'s child must not be the world or a frame on it, such as a
+// static model's frame, as for an SDFormat <joint>, and its two frames must be
+// on different links.
 TEST_F(SdfParserTest, DrakeJointLinksError) {
   const std::string child_world =
-      ".*<drake:joint name='j'>: <drake:child> must not be world\\.";
+      ".*<drake:joint name='j'>: <drake:child> must not be world or a frame on "
+      "it\\.";
   auto same_link = [](const std::string& link) {
     return fmt::format(
         ".*<drake:joint name='j'>: <drake:parent> and <drake:child> are both "
@@ -1571,8 +1572,9 @@ TEST_F(SdfParserTest, DrakeJointLinksError) {
   };
   const std::vector<Case> cases{{"D", "world", child_world},
                                 {"world", "world", child_world},
-                                {"D", "D", same_link("D")},
-                                {"world", "s::F", same_link("world")}};
+                                {"D", "s::F", child_world},
+                                {"world", "s::F", child_world},
+                                {"D", "D", same_link("D")}};
   for (const auto& [parent, child, error] : cases) {
     SCOPED_TRACE(fmt::format("{} {}", parent, child));
     const std::string model_name =
