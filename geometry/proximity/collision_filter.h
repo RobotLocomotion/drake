@@ -21,6 +21,10 @@ namespace internal {
  In addition to pairwise filters, a geometry can be marked *inactive* via
  SetActiveStatus(). See discussion in CollisionFilterManager.
 
+ As documented in CollisionFilterManager, a pair of anchored geometries is
+ always considered filtered. When adding a geometry, anchored geometries should
+ be reported as *anchored*.
+
  Geometries are identified by their geometry ids. The filter status of the
  geometry pair (g, h) can only be modified if both g and h have already been
  added to this filter system (via AddGeometry()). */
@@ -141,8 +145,14 @@ class CollisionFilter {
 
   /* Adds a geometry to the filter system. When added, it will not be part of
    any filtered pairs and it will be active.
+
+   If `is_anchored` is `true`, the geometry joins the anchored set (see the
+   CollisionFilterManager class documentation). Deformable geometry must never
+   be added as anchored; it is registered on the world frame but is free to
+   move.
+
    @pre `new_id` has not been previously added to this filter system. */
-  void AddGeometry(GeometryId new_id);
+  void AddGeometry(GeometryId new_id, bool is_anchored = false);
 
   /* Removes a geometry from the filter system. All filtered collision pairs
    including `remove_id` will be removed, and the geometry is dropped from the
@@ -153,19 +163,25 @@ class CollisionFilter {
 
   /* Reports true if the geometry pair (`id_A`, `id_B`) is considered to be
    unfiltered. A pair is filtered if either geometry is inactive (see
-   CollisionFilterDeclaration::Deactivate()) or if the pair itself is filtered.
+   CollisionFilterDeclaration::Deactivate()), if *both* geometries are anchored,
+   or if the pair itself is filtered.
    @pre `id_A` and `id_B` are both part of this filter system. */
   bool CanCollideWith(GeometryId id_A, GeometryId id_B) const;
 
   /* Reports if two collision filters are "equivalent" -- in that they are
-   defined over the same set of geometry ids, have the same inactive set, and
-   report the same pairs as being filtered (or not). This says nothing about how
-   the two filters are articulated (e.g., different declarations of invariance,
-   transient versus permanent declarations, etc.). */
+   defined over the same set of geometry ids, have the same inactive and
+   anchored sets, and report the same pairs as being filtered (or not). This
+   says nothing about how the two filters are articulated (e.g., different
+   declarations of invariance, transient versus permanent declarations, etc.).
+   */
   bool IsEquivalent(const CollisionFilter& other) const;
 
   /* Reports if the given `id` has been added to this filter system. */
   bool HasGeometry(GeometryId id) const { return geometries_.contains(id); }
+
+  /* Reports if the given `id` is in the anchored set (see the class
+   documentation). */
+  bool IsAnchored(GeometryId id) const { return anchored_.contains(id); }
 
  private:
   friend class CollisionFilterTest;
@@ -226,18 +242,20 @@ class CollisionFilter {
 
   /* Applies the resolved statements in `delta` to `state`. Used when first
    applying a transient and when replaying history in RebuildComposite(). */
-  static void ApplyStatements(const StateDelta& delta, FilterState* state);
+  void ApplyStatements(const StateDelta& delta, FilterState* state) const;
 
   /* Applies a single resolved statement to `state`. */
-  static void ApplyStatement(const ResolvedStatement& statement,
-                             FilterState* state);
+  void ApplyStatement(const ResolvedStatement& statement,
+                      FilterState* state) const;
 
   /* For each pair (a, b) with a ∈ set_A, b ∈ set_B (a ≠ b), adds the pair
    to `state->filtered` or `state->invariant` depending on `is_invariant`.
-   Pairs already in `invariant` are never downgraded. */
-  static void AddPairsBetween(const std::vector<GeometryId>& set_A,
-                              const std::vector<GeometryId>& set_B,
-                              bool is_invariant, FilterState* state);
+   Pairs already in `invariant` are never downgraded. Pairs in which both
+   geometries are anchored are skipped; CanCollideWith() already blocks them,
+   so storing them would cost memory and change nothing. */
+  void AddPairsBetween(const std::vector<GeometryId>& set_A,
+                       const std::vector<GeometryId>& set_B, bool is_invariant,
+                       FilterState* state) const;
 
   /* For each pair (a, b) with a ∈ set_A, b ∈ set_B (a ≠ b), removes the pair
    from `state->filtered`. Pairs in `state->invariant` are not affected. */
@@ -288,6 +306,12 @@ class CollisionFilter {
    the transient history -- its effect against the live geometry set lives
    entirely in CanCollideWith()'s membership test. */
   std::unordered_set<GeometryId> inactive_;
+
+  /* The anchored set `A` (see the class documentation): membership is declared
+   when a geometry is added and is never edited afterwards. Like inactive_, it
+   is independent of the pairwise filter sets and of the transient history --
+   its effect lives entirely in CanCollideWith()'s membership test. */
+  std::unordered_set<GeometryId> anchored_;
 
   /* The ordered list of active transient declarations. Each entry stores
    resolved statements (not a full NxN copy), so memory per entry is O(|A|+|B|)
