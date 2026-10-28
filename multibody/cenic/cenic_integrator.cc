@@ -584,9 +584,8 @@ void CenicIntegrator<T>::RecordStepMemory(const IcfModel<T>& model,
     tau_u.setZero();
     const auto& gains = model.gain_constraints_pool();
     const auto& gain_data = data.gain_constraints_data();
-    // External force constraints, if any, come first in the pool, one per
-    // clique, followed by the actuation constraints. See IcfBuilder.
-    const int actuation_start = has_external_forces ? model.num_cliques() : 0;
+    const int actuation_start = IcfBuilder<T>::ActuationGainConstraintsStart(
+        model, has_external_forces);
     for (int k = actuation_start; k < gains.num_constraints(); ++k) {
       model.mutable_clique_segment(gains.clique()[k], &tau_u) +=
           gain_data.gamma(k) / dt;

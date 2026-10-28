@@ -354,6 +354,10 @@ GTEST_TEST(IcfBuilder, RetryStep) {
     std::vector<int> is_actuation(pool.num_constraints(), 0);
     if (actuation_feedback != nullptr) {
       is_actuation[pool.num_constraints() - 1] = 1;
+      // The (only) actuation constraint is where the builder says it starts.
+      EXPECT_EQ(IcfBuilder<double>::ActuationGainConstraintsStart(
+                    model, external_feedback != nullptr),
+                pool.num_constraints() - 1);
     }
     for (int k = 0; k < pool.num_constraints(); ++k) {
       SCOPED_TRACE(fmt::format("index {}", k));

@@ -70,6 +70,16 @@ class IcfBuilder {
     return geometry_contact_data_;
   }
 
+  /* Returns the index of the first actuation constraint in the model's gain
+  constraints pool. The pool holds one external force constraint per clique (if
+  `has_external_forces`), followed by one actuation constraint per actuated
+  clique (if the model has actuation). Only this function knows that layout;
+  callers that interpret the pool should use it rather than assuming it. */
+  static int ActuationGainConstraintsStart(const IcfModel<T>& model,
+                                           bool has_external_forces) {
+    return has_external_forces ? model.num_cliques() : 0;
+  }
+
   /* Updates only the feedback gains. All other model data remains unchanged.
   @pre The existence (i.e., nullness) of the two feedbacks values must match the
   existence of the most recent prior call to UpdateModel(). */

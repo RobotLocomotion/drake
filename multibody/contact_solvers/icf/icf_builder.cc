@@ -970,12 +970,10 @@ void IcfBuilder<T>::SetActuationGainConstraints(const VectorX<T>& Ku,
 
   auto& gain_constraints = model->gain_constraints_pool();
 
-  int constraint_index = 0;
-  if (has_external_forces) {
-    // When external forces are present, actuation constraints come after all
-    // the external force constraints in the pool.
-    constraint_index = model->num_cliques();
-  }
+  // When external forces are present, actuation constraints come after all the
+  // external force constraints in the pool.
+  int constraint_index =
+      ActuationGainConstraintsStart(*model, has_external_forces);
 
   // Collect joint effort limits, indexed by velocity.
   VectorX<T>& effort_limits = scratch_.effort_limits;
