@@ -23,6 +23,14 @@ common --incompatible_autoload_externally=
 # Use cloudflare's mirror for improved reliability of external downloads.
 common --module_mirrors=https://bcr.cloudflaremirrors.com
 
+# Target x86-64-v2 microarchitecture at minimum without requesting it
+# specifically so that if the compiler is already using v3 or newer, we don't
+# downgrade it to v2. The -mcx16 flag enables the CMPXCHG16B instruction in
+# gcc/clang.
+build:x86-64-v2 --copt=-msse4.2
+build:x86-64-v2 --copt=-mpopcnt
+build:x86-64-v2 --copt=-mcx16
+
 # Default to an optimized build.
 build -c opt
 build --features=prefer_pic_for_opt_binaries
