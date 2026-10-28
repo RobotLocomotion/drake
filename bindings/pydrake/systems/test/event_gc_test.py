@@ -10,22 +10,65 @@ import unittest
 import weakref
 
 from pydrake.systems.analysis import Simulator
-from pydrake.systems.framework import LeafSystem
+from pydrake.systems.framework import (
+    LeafSystem,
+    PublishEvent,
+    TriggerType,
+    UnrestrictedUpdateEvent,
+    WitnessFunctionDirection,
+)
 
 
-def DeclareAllEvents(system, callback_function):
-    system.DeclareInitializationPublishEvent(callback_function)
-    system.DeclareInitializationDiscreteUpdateEvent(callback_function)
-    system.DeclareInitializationUnrestrictedUpdateEvent(callback_function)
-    system.DeclarePeriodicPublishEvent(1.0, 0.5, callback_function)
-    system.DeclarePeriodicDiscreteUpdateEvent(1.0, 0.5, callback_function)
-    system.DeclarePeriodicUnrestrictedUpdateEvent(1.0, 0.5, callback_function)
-    system.DeclarePerStepPublishEvent(callback_function)
-    system.DeclarePerStepDiscreteUpdateEvent(callback_function)
-    system.DeclarePerStepUnrestrictedUpdateEvent(callback_function)
-    system.DeclareForcedPublishEvent(callback_function)
-    system.DeclareForcedDiscreteUpdateEvent(callback_function)
-    system.DeclareForcedUnrestrictedUpdateEvent(callback_function)
+def DeclareAllEvents(system, get_callback):
+    """Declares one of every kind of event on the given system. Calls
+    get_callback() anew for every declaration to obtain the callback; see
+    MethodLeafSystem for why that matters.
+    """
+
+    def make_event_objects():
+        # Always returns new objects, so that no event object is ever passed
+        # to more than one declaration.
+        return [
+            PublishEvent(get_callback()),
+            PublishEvent(system_callback=get_callback()),
+            PublishEvent(TriggerType.kUnknown, get_callback()),
+            PublishEvent(TriggerType.kUnknown, system_callback=get_callback()),
+            UnrestrictedUpdateEvent(get_callback()),
+            UnrestrictedUpdateEvent(system_callback=get_callback()),
+        ]
+
+    for event in make_event_objects():
+        system.DeclareInitializationEvent(event)
+    system.DeclareInitializationPublishEvent(get_callback())
+    system.DeclareInitializationDiscreteUpdateEvent(get_callback())
+    system.DeclareInitializationUnrestrictedUpdateEvent(get_callback())
+
+    for event in make_event_objects():
+        system.DeclarePeriodicEvent(1.0, 0.5, event)
+    system.DeclarePeriodicPublishEvent(1.0, 0.5, get_callback())
+    system.DeclarePeriodicDiscreteUpdateEvent(1.0, 0.5, get_callback())
+    system.DeclarePeriodicUnrestrictedUpdateEvent(1.0, 0.5, get_callback())
+
+    for event in make_event_objects():
+        system.DeclarePerStepEvent(event)
+    system.DeclarePerStepPublishEvent(get_callback())
+    system.DeclarePerStepDiscreteUpdateEvent(get_callback())
+    system.DeclarePerStepUnrestrictedUpdateEvent(get_callback())
+
+    system.DeclareForcedPublishEvent(get_callback())
+    system.DeclareForcedDiscreteUpdateEvent(get_callback())
+    system.DeclareForcedUnrestrictedUpdateEvent(get_callback())
+
+    # Witness functions are never evaluated by these tests (the system does
+    # not report them via DoGetWitnessFunctions), but storing them on the
+    # system forms the reference cycles we want to check.
+    direction = WitnessFunctionDirection.kCrossesZero
+    system._witnesses = [
+        system.MakeWitnessFunction("calc", direction, get_callback()),
+    ] + [
+        system.MakeWitnessFunction("event", direction, get_callback(), event)
+        for event in make_event_objects()
+    ]
 
 
 class MethodLeafSystem(LeafSystem):
@@ -34,22 +77,11 @@ class MethodLeafSystem(LeafSystem):
     def __init__(self):
         super().__init__()
         self._count = 0
-        # These declarations are spelled out on purpose. It turns out that
-        # evaluating `self._callback` multiple times triggers unusual pybind11
-        # memory behavior that needs to be tested. See UniquelyWrapCallback()
-        # in framework_py_systems.cc.
-        self.DeclareInitializationPublishEvent(self._callback)
-        self.DeclareInitializationDiscreteUpdateEvent(self._callback)
-        self.DeclareInitializationUnrestrictedUpdateEvent(self._callback)
-        self.DeclarePeriodicPublishEvent(1.0, 0.5, self._callback)
-        self.DeclarePeriodicDiscreteUpdateEvent(1.0, 0.5, self._callback)
-        self.DeclarePeriodicUnrestrictedUpdateEvent(1.0, 0.5, self._callback)
-        self.DeclarePerStepPublishEvent(self._callback)
-        self.DeclarePerStepDiscreteUpdateEvent(self._callback)
-        self.DeclarePerStepUnrestrictedUpdateEvent(self._callback)
-        self.DeclareForcedPublishEvent(self._callback)
-        self.DeclareForcedDiscreteUpdateEvent(self._callback)
-        self.DeclareForcedUnrestrictedUpdateEvent(self._callback)
+        # It turns out that evaluating `self._callback` multiple times (which
+        # creates a new bound method object each time) triggers unusual
+        # pybind11 memory behavior that needs to be tested. See
+        # UniquelyWrapCallback() in framework_callback_lifetime.cc.
+        DeclareAllEvents(self, lambda: self._callback)
 
     def _callback(self, *args, **kwargs):
         self._count += 1
@@ -71,7 +103,7 @@ class FunctionCallbackLeafSystem(LeafSystem):
 
     def __init__(self):
         super().__init__()
-        DeclareAllEvents(self, a_global_callback)
+        DeclareAllEvents(self, lambda: a_global_callback)
 
     def count(self):
         return a_global_count
@@ -87,7 +119,7 @@ class ClosureCallbackLeafSystem(LeafSystem):
         def handler(*args, **kwargs):
             self._count += 1
 
-        DeclareAllEvents(self, handler)
+        DeclareAllEvents(self, lambda: handler)
 
     def count(self):
         return self._count
@@ -101,25 +133,31 @@ class TestPeriodicEventGarbageCollection(unittest.TestCase):
         simulator = Simulator(system)
         # Check that callbacks are callable.
         simulator.Initialize()
-        # This count represents 3 kinds of initialization events, plus a
-        # per-step publish event.
-        self.assertEqual(system.count(), 4)
+        expected_count = 0
+        # This count represents 9 variations of initialization events, plus 5
+        # per-step publish events.
+        expected_count += 14
+        self.assertEqual(system.count(), expected_count)
         simulator.AdvanceTo(0.6)
-        # This count has represents these additional events: 3 kinds of
-        # periodic events, 2 times 3 kinds of per-step events.
-        self.assertEqual(system.count(), 13)
+        # This count has represents these additional events: 9 kinds of
+        # periodic events, 2 times 9 kinds of per-step events.
+        expected_count += 27
+        self.assertEqual(system.count(), expected_count)
         context = simulator.get_context()
         system.ForcedPublish(context)
         # This count represents an added forced-publish event.
-        self.assertEqual(system.count(), 14)
+        expected_count += 1
+        self.assertEqual(system.count(), expected_count)
         discrete_state = system.AllocateDiscreteVariables()
         system.CalcForcedDiscreteVariableUpdate(context, discrete_state)
         # This count represents an added forced discrete update event.
-        self.assertEqual(system.count(), 15)
+        expected_count += 1
+        self.assertEqual(system.count(), expected_count)
         state = context.get_mutable_state()
         system.CalcForcedUnrestrictedUpdate(context, state)
         # This count represents an added forced unrestricted update event.
-        self.assertEqual(system.count(), 16)
+        expected_count += 1
+        self.assertEqual(system.count(), expected_count)
 
         spy = weakref.finalize(system, lambda: None)
 
