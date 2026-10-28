@@ -90,8 +90,13 @@ state: the constraint impulses γ divided by that step's time step δt
 resulting accelerations, joint reaction forces, contact results, and
 net actuation. The plant's dynamics output ports report that sample
 until the next step. Before the first step the sample is empty (zero
-forces and accelerations, no contacts). See output_port_sampling
-"Output port sampling" for details.
+forces and accelerations, no contacts). As with discrete-time plants,
+the sample's kinematics (e.g., contact points and the frames of the
+reaction forces) are those at the start of the solved step. For an
+error-controlled step that is the configuration at the midpoint t +
+h/2, not at the end of the step t + h, so it can lag the Context's
+body poses by up to half a step. See output_port_sampling "Output port
+sampling" for details.
 
 Implementation notes:
 
