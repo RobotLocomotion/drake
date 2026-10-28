@@ -20,6 +20,10 @@
 @drake-jenkins-bot linux-resolute-clang-bazel-experimental-everything-release please
 @drake-jenkins-bot linux-resolute-gcc-bazel-experimental-everything-debug please
 @drake-jenkins-bot linux-resolute-gcc-cmake-experimental-everything-release please
+@drake-jenkins-bot mac-goldengate-clang-bazel-experimental-everything-release please
+@drake-jenkins-bot mac-goldengate-clang-bazel-experimental-release please
+@drake-jenkins-bot mac-goldengate-clang-cmake-experimental-everything-release please
+@drake-jenkins-bot mac-goldengate-clang-cmake-experimental-release please
 @drake-jenkins-bot mac-tahoe-clang-bazel-experimental-everything-release please
 @drake-jenkins-bot mac-tahoe-clang-cmake-experimental-everything-release please
 @drake-jenkins-bot mac-tahoe-clang-cmake-experimental-packaging please
