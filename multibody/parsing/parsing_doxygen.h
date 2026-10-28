@@ -759,7 +759,13 @@ drake::multibody::LinearBushingRollPitchYaw,
 
 The string names a frame (expected to already be defined by this model) that
 will be passed to the constructor of
-drake::multibody::LinearBushingRollPitchYaw as the `frameA` parameter.
+drake::multibody::LinearBushingRollPitchYaw as the `frameA` parameter. In
+SDFormat, the string may also name a link, a model (meaning its implicit model
+frame), or `world`. It must not name a joint. Nor may it name a model's
+implicit frame, by the model's name or as `__model__`, or a frame attached to
+it, if Drake doesn't attach that implicit frame to the model's canonical link
+because the link is deformable or comes from an included URDF or MJCF model
+(name a rigid link instead).
 
 @see @ref tag_drake_linear_bushing_rpy, drake::multibody::LinearBushingRollPitchYaw
 
@@ -773,7 +779,13 @@ drake::multibody::LinearBushingRollPitchYaw as the `frameA` parameter.
 
 The string names a frame (expected to already be defined by this model) that
 will be passed to the constructor of
-drake::multibody::LinearBushingRollPitchYaw as the `frameC` parameter.
+drake::multibody::LinearBushingRollPitchYaw as the `frameC` parameter. In
+SDFormat, the string may also name a link, a model (meaning its implicit model
+frame), or `world`. It must not name a joint. Nor may it name a model's
+implicit frame, by the model's name or as `__model__`, or a frame attached to
+it, if Drake doesn't attach that implicit frame to the model's canonical link
+because the link is deformable or comes from an included URDF or MJCF model
+(name a rigid link instead).
 
 @see @ref tag_drake_linear_bushing_rpy, drake::multibody::LinearBushingRollPitchYaw
 
@@ -943,7 +955,16 @@ URDF note: Drake supports both `drake:capsule`, and a non-standard
 @subsubsection tag_drake_child_semantics Semantics
 
 The string names a frame (defined elsewhere in the model) that is associated
-with the child link of the joint being defined.
+with the child link of the joint being defined. That frame is the joint's frame
+Jc. The string may also name a link or a model (meaning its implicit model
+frame). Unlike drake:parent, it must not name `world` or a frame on it, such as
+a frame of a static model with no links, just as an SDFormat joint's `<child>`
+must not, and its frame must be on a different link than the frame drake:parent
+names. It must not name a joint. Nor may it name a model's implicit frame, by
+the model's name or as `__model__`, or a frame attached to it, if Drake doesn't
+attach that implicit frame to the model's canonical link because the link is
+deformable or comes from an included URDF or MJCF model (name a rigid link
+instead).
 
 @see @ref tag_drake_joint
 
@@ -1523,7 +1544,15 @@ MultibodyPlant's constructor documentation for details.
 @subsubsection tag_drake_parent_semantics Semantics
 
 The string names a frame (defined elsewhere in the model) that is associated
-with the parent link of the joint being defined.
+with the parent link of the joint being defined. That frame is the joint's frame
+Jp. The string may also name a link, a model (meaning its implicit model frame),
+or `world`. It must not name a joint. Nor may it name a model's implicit frame,
+by the model's name or as `__model__`, or a frame attached to it, if Drake
+doesn't attach that implicit frame to the model's canonical link because the
+link is deformable or comes from an included URDF or MJCF model (name a rigid
+link instead).
+
+@see @ref tag_drake_joint
 
 @subsection tag_drake_perception_properties drake:perception_properties
 

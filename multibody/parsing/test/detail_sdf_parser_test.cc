@@ -1018,12 +1018,11 @@ TEST_F(SdfParserTest, DrakeJointNestedParentBad) {
   </drake:joint>
 </model>
 )""");
-  EXPECT_THAT(
-      TakeError(),
-      MatchesRegex(
-          ".*<drake:joint>: Model instance name 'good::nesQQQted' .*implied by"
-          " frame name 'nesQQQted::a' in <drake:parent> within model instance"
-          " 'good'.* does not exist.*"));
+  EXPECT_THAT(TakeError(),
+              MatchesRegex(".*<drake:joint name='joint_name'>: Model instance "
+                           "name 'good::nesQQQted' .*implied by frame name "
+                           "'nesQQQted::a' in <drake:parent> within model "
+                           "instance 'good'.* does not exist.*"));
 }
 
 // drake:joint/drake:child yields an error on bad nested model name.
@@ -1041,12 +1040,561 @@ TEST_F(SdfParserTest, DrakeJointNestedChildBad) {
   </drake:joint>
 </model>
 )""");
-  EXPECT_THAT(
-      TakeError(),
-      MatchesRegex(
-          ".*<drake:joint>: Model instance name 'good::nesQQQted' .*implied by"
-          " frame name 'nesQQQted::b' in <drake:child> within model instance"
-          " 'good'.* does not exist.*"));
+  EXPECT_THAT(TakeError(),
+              MatchesRegex(".*<drake:joint name='joint_name'>: Model instance "
+                           "name 'good::nesQQQted' .*implied by frame name "
+                           "'nesQQQted::b' in <drake:child> within model "
+                           "instance 'good'.* does not exist.*"));
+}
+
+// The kinds of element whose tags name two frames.
+enum class Referrer {
+  kDrakeJoint,  // A planar <drake:joint>.
+  kBushing,     // A <drake:linear_bushing_rpy> with zero gains.
+};
+
+// Returns an element of the given kind whose tags name frames `first` and
+// `second`. A joint is named `name`.
+std::string MakeFrameReference(Referrer kind, const std::string& name,
+                               const std::string& first,
+                               const std::string& second) {
+  switch (kind) {
+    case Referrer::kDrakeJoint:
+      return fmt::format(R"""(
+<drake:joint name='{}' type='planar'>
+  <drake:parent>{}</drake:parent>
+  <drake:child>{}</drake:child>
+  <drake:damping>0 0 0</drake:damping>
+</drake:joint>)""",
+                         name, first, second);
+    case Referrer::kBushing:
+      return fmt::format(R"""(
+<drake:linear_bushing_rpy>
+  <drake:bushing_frameA>{}</drake:bushing_frameA>
+  <drake:bushing_frameC>{}</drake:bushing_frameC>
+  <drake:bushing_torque_stiffness>0 0 0</drake:bushing_torque_stiffness>
+  <drake:bushing_torque_damping>0 0 0</drake:bushing_torque_damping>
+  <drake:bushing_force_stiffness>0 0 0</drake:bushing_force_stiffness>
+  <drake:bushing_force_damping>0 0 0</drake:bushing_force_damping>
+</drake:linear_bushing_rpy>)""",
+                         first, second);
+  }
+  DRAKE_UNREACHABLE();
+}
+
+// Returns the tag with which the given kind of element names its first frame,
+// or its second.
+std::string FrameTag(Referrer kind, bool first) {
+  switch (kind) {
+    case Referrer::kDrakeJoint:
+      return first ? "drake:parent" : "drake:child";
+    case Referrer::kBushing:
+      return first ? "drake:bushing_frameA" : "drake:bushing_frameC";
+  }
+  DRAKE_UNREACHABLE();
+}
+
+// Returns how diagnostics identify the given kind of element. A joint is named
+// `name`.
+std::string DescribeReferrer(Referrer kind, const std::string& name) {
+  switch (kind) {
+    case Referrer::kDrakeJoint:
+      return fmt::format("<drake:joint name='{}'>", name);
+    case Referrer::kBushing:
+      return "<drake:linear_bushing_rpy>";
+  }
+  DRAKE_UNREACHABLE();
+}
+
+// Frame lookup accepts the world and models (meaning their implicit frames) as
+// well as links and frames, and it ignores extra scope delimiters, in both
+// <drake:joint> and bushing references.
+TEST_F(SdfParserTest, NoncanonicalFrameNames) {
+  ParseTestString(
+      fmt::format(
+          R"""(
+<model name='m'>
+  <link name='A'/>
+  <link name='C'/>
+  <model name='nested'>
+    <link name='B'/>
+  </model>
+  {}{}{}{}
+</model>)""",
+          MakeFrameReference(Referrer::kDrakeJoint, "joint",
+                             "::A::", "::nested::"),
+          MakeFrameReference(Referrer::kDrakeJoint, "world_joint", "::world",
+                             "C"),
+          MakeFrameReference(Referrer::kBushing, "", "::A::", "::nested::"),
+          MakeFrameReference(Referrer::kBushing, "", "world::", "nested")),
+      "1.9");
+  const auto& frame_A = plant_.GetFrameByName("A");
+  const auto& frame_B = GetModelFrameByName(plant_, "m::nested");
+  const auto& joint = plant_.GetJointByName("joint");
+  EXPECT_EQ(&joint.frame_on_parent(), &frame_A);
+  EXPECT_EQ(&joint.frame_on_child(), &frame_B);
+  EXPECT_EQ(&plant_.GetJointByName("world_joint").frame_on_parent(),
+            &plant_.world_frame());
+  const auto& bushing =
+      plant_.GetForceElement<LinearBushingRollPitchYaw>(ForceElementIndex(1));
+  EXPECT_EQ(&bushing.frameA(), &frame_A);
+  EXPECT_EQ(&bushing.frameC(), &frame_B);
+  const auto& world_bushing =
+      plant_.GetForceElement<LinearBushingRollPitchYaw>(ForceElementIndex(2));
+  EXPECT_EQ(&world_bushing.frameA(), &plant_.world_frame());
+  EXPECT_EQ(&world_bushing.frameC(), &frame_B);
+}
+
+// An empty frame reference must not resolve to the containing model's frame,
+// including when it contains only scope delimiters.
+TEST_F(SdfParserTest, EmptyFrameNameError) {
+  for (Referrer kind : {Referrer::kDrakeJoint, Referrer::kBushing}) {
+    for (const std::string name : {"", "::", "::::"}) {
+      for (bool first : {false, true}) {
+        ParseTestString(
+            fmt::format(R"""(
+<model name='m{}'>
+  <link name='A'/>
+  {}
+</model>)""",
+                        plant_.num_model_instances(),
+                        MakeFrameReference(kind, "j", first ? name : "A",
+                                           first ? "A" : name)));
+        EXPECT_THAT(
+            TakeError(),
+            MatchesRegex(fmt::format(
+                ".*{}: Frame name '{}' specified for <{}> must not be "
+                "empty\\..*",
+                DescribeReferrer(kind, "j"), name, FrameTag(kind, first))));
+      }
+    }
+  }
+}
+
+// The source joint foo_child can coexist with the frame foo_child that Drake
+// generates for foo. A reference to the source joint must not resolve to the
+// generated frame on a different link; as for any joint, naming it is an
+// error. Check both of each element's frames, in model and nested-model
+// scopes. Frame lookup ignores extra scope delimiters, as in foo_child::, so
+// check those spellings too.
+TEST_F(SdfParserTest, FrameNamesNamingAJointError) {
+  for (Referrer kind : {Referrer::kDrakeJoint, Referrer::kBushing}) {
+    for (const std::string scope : {"model", "nested"}) {
+      for (bool first : {false, true}) {
+        for (const std::string pattern : {"{}", "{}::", "::{}", "::{}::"}) {
+          const std::string model_name =
+              fmt::format("m{}", plant_.num_model_instances());
+          SCOPED_TRACE(
+              fmt::format("{} {} {}", scope, FrameTag(kind, first), pattern));
+          const std::string prefix = scope == "nested" ? "nested::" : "";
+          const std::string joint_name =
+              fmt::format(fmt::runtime(pattern), prefix + "foo_child");
+          const std::string other_name = prefix + "D";
+          const std::string reference =
+              MakeFrameReference(kind, "j", first ? joint_name : other_name,
+                                 first ? other_name : joint_name);
+          const std::string model =
+              fmt::format(R"""(
+<model name='{0}'>
+  <link name='A'/>
+  <link name='B'/>
+  <link name='C'/>
+  <link name='D'/>
+  <joint name='foo' type='fixed'>
+    <parent>A</parent>
+    <child>B</child>
+  </joint>
+  <joint name='foo_child' type='fixed'>
+    <parent>A</parent>
+    <child>C</child>
+  </joint>
+  {1}
+</model>)""",
+                          scope == "nested" ? "nested" : model_name,
+                          scope == "model" ? reference : "");
+          std::string contents = model;
+          if (scope == "nested") {
+            contents = fmt::format("<model name='{}'>{}{}</model>", model_name,
+                                   model, reference);
+          }
+          ParseTestString(contents, "1.9");
+          EXPECT_THAT(TakeError(), MatchesRegex(fmt::format(
+                                       ".*{0}: <{1}>{2}</{1}> names a joint.*",
+                                       DescribeReferrer(kind, "j"),
+                                       FrameTag(kind, first), joint_name)));
+        }
+      }
+    }
+  }
+}
+
+// The included URDF has a joint foo_child connecting R to C. Adding the native
+// joint foo creates an unrelated frame foo_child on B after the URDF has been
+// exported to SDFormat. References to the imported joint must not find that
+// frame. The URDF also exports frames that references may name.
+std::string MakeModelWithImportedJointFrames(const std::string& model_name,
+                                             const std::string& urdf,
+                                             bool merge,
+                                             const std::string& extra) {
+  return fmt::format(R"""(
+<model name='{0}'>
+  <include merge='{1}'>
+    <uri>{2}</uri>
+    <name>u</name>
+  </include>
+  <link name='A'/>
+  <link name='D'/>
+  <link name='E'/>
+  <joint name='foo' type='fixed'>
+    <parent>A</parent>
+    <child>{3}B</child>
+  </joint>
+  {4}
+</model>)""",
+                     model_name, merge, urdf, merge ? "" : "u::", extra);
+}
+
+TEST_F(SdfParserTest, JointFramesImportedJointNameError) {
+  const std::string urdf = FindResourceOrThrow(
+      "drake/multibody/parsing/test/sdf_parser_test/"
+      "imported_joint_frames.urdf");
+  for (const std::string scope : {"model", "single_model"}) {
+    for (bool merge : {false, true}) {
+      for (bool first : {false, true}) {
+        const std::string model_name =
+            fmt::format("m_{}_{}_{}", scope, merge, first);
+        SCOPED_TRACE(model_name);
+        const std::string joint_name =
+            std::string(merge ? "" : "u::") + "foo_child";
+        const std::string reference = MakeFrameReference(
+            Referrer::kDrakeJoint, "j", first ? joint_name : "D",
+            first ? "D" : joint_name);
+        const std::string model = MakeModelWithImportedJointFrames(
+            model_name, urdf, merge, reference);
+        const std::string error =
+            fmt::format(".*<{0}>{1}</{0}> names a joint.*",
+                        FrameTag(Referrer::kDrakeJoint, first), joint_name);
+        if (scope == "single_model") {
+          // Check the single-model entry point as well as AddModelsFromSdf.
+          ThrowErrors();
+          const std::string contents =
+              fmt::format("<sdf version='1.12'>{}</sdf>", model);
+          const DataSource data_source{DataSource::kContents, &contents};
+          internal::CollisionFilterGroupResolver resolver{&plant_};
+          ParsingWorkspace w{options_,     package_map_, diagnostic_policy_,
+                             nullptr,      &plant_,      &resolver,
+                             TestingSelect};
+          DRAKE_EXPECT_THROWS_MESSAGE(AddModelFromSdf(data_source, "", {}, w),
+                                      error);
+          resolver.Resolve(diagnostic_policy_);
+          RecordErrors();
+        } else {
+          ParseTestString(model, "1.12");
+          EXPECT_THAT(TakeError(), MatchesRegex(error));
+        }
+        const ModelInstanceIndex imported = plant_.GetModelInstanceByName(
+            merge ? model_name : model_name + "::u");
+        const auto& imported_joint =
+            plant_.GetJointByName("foo_child", imported);
+        const auto& unrelated_frame =
+            plant_.GetFrameByName("foo_child", imported);
+        EXPECT_NE(&imported_joint.child_body(), &unrelated_frame.body());
+        const ModelInstanceIndex child_instance =
+            first ? plant_.GetModelInstanceByName(model_name) : imported;
+        EXPECT_FALSE(plant_.HasJointNamed("j", child_instance));
+      }
+    }
+  }
+}
+
+TEST_F(SdfParserTest, JointFramesImportedFrames) {
+  const std::string urdf = FindResourceOrThrow(
+      "drake/multibody/parsing/test/sdf_parser_test/"
+      "imported_joint_frames.urdf");
+  for (bool merge : {false, true}) {
+    const std::string model_name = fmt::format("m_{}", merge);
+    SCOPED_TRACE(model_name);
+    const std::string imported_prefix = merge ? "" : "u::";
+    // Planar joints cannot be reversed during Finalize(), so anchor E to keep
+    // use_exported oriented from parent E to child R.
+    const std::string joints =
+        R"""(
+<joint name='anchor' type='fixed'>
+  <parent>world</parent>
+  <child>E</child>
+</joint>)""" +
+        MakeFrameReference(Referrer::kDrakeJoint, "use_explicit",
+                           imported_prefix + "Fc", "D") +
+        MakeFrameReference(Referrer::kDrakeJoint, "use_exported", "E",
+                           imported_prefix + "bar_parent");
+    ParseTestString(
+        MakeModelWithImportedJointFrames(model_name, urdf, merge, joints),
+        "1.12");
+    const ModelInstanceIndex imported =
+        plant_.GetModelInstanceByName(merge ? model_name : model_name + "::u");
+    const ModelInstanceIndex enclosing =
+        plant_.GetModelInstanceByName(model_name);
+    const auto& explicit_joint =
+        plant_.GetJointByName("use_explicit", enclosing);
+    EXPECT_EQ(&explicit_joint.frame_on_parent(),
+              &plant_.GetFrameByName("Fc", imported));
+    const auto& exported_joint =
+        plant_.GetJointByName("use_exported", imported);
+    EXPECT_EQ(&exported_joint.frame_on_child(),
+              &plant_.GetFrameByName("bar_parent", imported));
+  }
+  plant_.Finalize();
+}
+
+// The name "world" always means the world frame. Here a merged URDF brings a
+// joint named "world" into the model's scope, but a reference to "world" must
+// still get the world frame rather than be rejected for naming a joint.
+TEST_F(SdfParserTest, JointFramesWorldDespiteImportedJointNamedWorld) {
+  const std::string urdf = FindResourceOrThrow(
+      "drake/multibody/parsing/test/sdf_parser_test/joint_named_world.urdf");
+  ParseTestString(
+      fmt::format(R"""(
+<model name='m'>
+  <include merge='true'>
+    <uri>{}</uri>
+    <name>u</name>
+  </include>
+  <link name='A'/>
+  {}
+</model>)""",
+                  urdf,
+                  MakeFrameReference(Referrer::kDrakeJoint, "j", "world", "A")),
+      "1.12");
+  const ModelInstanceIndex m = plant_.GetModelInstanceByName("m");
+  ASSERT_TRUE(plant_.HasJointNamed("world", m));
+  EXPECT_EQ(&plant_.GetJointByName("j", m).frame_on_parent(),
+            &plant_.world_frame());
+}
+
+// Names in a source can refer only to model instances that parsing that
+// source added. Here an earlier parse with the model name prefix "m" added a
+// model m::foo, which must not shadow model m's own frame foo, whether a
+// reference names foo or the frame G is attached to it. Nor may such a model
+// satisfy a reference to a foo, or a foo::L, that the referring model doesn't
+// have. Likewise at world scope, an earlier model foo must not shadow a
+// world's own frame foo.
+TEST_F(SdfParserTest, FrameNamesIgnorePreexistingModels) {
+  constexpr char kFoo[] = R"""(
+<model name='foo'>
+  <link name='L'/>
+</model>)""";
+  ParseTestString(kFoo, "1.9", "m");
+  ParseTestString(
+      fmt::format(R"""(
+<model name='m'>
+  <link name='A'/>
+  <link name='C'/>
+  <frame name='foo' attached_to='A'>
+    <pose>1 0 0 0 0 0</pose>
+  </frame>
+  <frame name='G' attached_to='foo'/>
+  {}{}
+</model>)""",
+                  MakeFrameReference(Referrer::kDrakeJoint, "j", "foo", "C"),
+                  MakeFrameReference(Referrer::kBushing, "", "foo", "C")),
+      "1.9");
+  const ModelInstanceIndex m = plant_.GetModelInstanceByName("m");
+  const Frame<double>& frame_foo = plant_.GetFrameByName("foo", m);
+  EXPECT_EQ(&plant_.GetJointByName("j", m).frame_on_parent(), &frame_foo);
+  const auto& bushing =
+      plant_.GetForceElement<LinearBushingRollPitchYaw>(ForceElementIndex(1));
+  EXPECT_EQ(&bushing.frameA(), &frame_foo);
+  EXPECT_EQ(&plant_.GetFrameByName("G", m).body(),
+            &plant_.GetBodyByName("A", m));
+
+  for (const std::string name : {"foo", "foo::L"}) {
+    const std::string model_name =
+        fmt::format("n{}", plant_.num_model_instances());
+    ParseTestString(kFoo, "1.9", model_name);
+    ParseTestString(
+        fmt::format(R"""(
+<model name='{}'>
+  <link name='C'/>
+  {}
+</model>)""",
+                    model_name,
+                    MakeFrameReference(Referrer::kDrakeJoint, "j", name, "C")),
+        "1.9");
+    EXPECT_THAT(TakeError(),
+                MatchesRegex(fmt::format(".*<drake:joint name='j'>: .*'{}'"
+                                         ".* does not exist in the model\\.",
+                                         name)));
+  }
+
+  ParseTestString(kFoo, "1.9");
+  ParseTestString(R"""(
+<world name='w'>
+  <frame name='foo'>
+    <pose>1 2 3 0 0 0</pose>
+  </frame>
+  <frame name='G' attached_to='foo'/>
+</world>)""",
+                  "1.9");
+  EXPECT_EQ(&plant_.GetFrameByName("G", world_model_instance()).body(),
+            &plant_.world_body());
+}
+
+// Drake fixes a model's implicit frame to the world when it doesn't attach it
+// to the model's canonical link, as SDFormat would: here, a deformable link or
+// a link from an included URDF, merged or not. Naming that frame in a
+// reference must be an error, rather than silently connect to the world,
+// whether the reference uses the model's name or w::__model__ from outside the
+// model or __model__ from inside it. So must naming a frame attached to it:
+// by default (F), explicitly (G), or from the enclosing model by the model's
+// name (H).
+TEST_F(SdfParserTest, NamingModelFixedToWorldError) {
+  AddSceneGraph();
+  const std::string urdf = FindResourceOrThrow(
+      "drake/multibody/parsing/test/sdf_parser_test/"
+      "imported_joint_frames.urdf");
+  static constexpr char kInclude[] = R"""(
+    <include merge='{}'>
+      <uri>{}</uri>
+      <name>u</name>
+    </include>)""";
+  struct Model {
+    std::string content;
+    std::string link;  // A link in the model.
+  };
+  const std::map<std::string, Model> models{
+      {"deformable",
+       {R"""(
+    <link name='body'>
+      <collision name='collision'>
+        <geometry>
+          <mesh><uri>package://drake/multibody/parsing/test/single_tet.vtk</uri></mesh>
+        </geometry>
+      </collision>
+      <drake:deformable_properties/>
+    </link>)""",
+        "body"}},
+      {"merged", {fmt::format(kInclude, true, urdf), "B"}},
+      {"nonmerged", {fmt::format(kInclude, false, urdf), "u::B"}}};
+  for (const auto& [model_kind, model] : models) {
+    for (const std::string name :
+         {"w", "w::__model__", "__model__", "w::F", "w::G", "H"}) {
+      const bool inside = name == "__model__";
+      const bool attached = name == "w::F" || name == "w::G" || name == "H";
+      for (Referrer kind : {Referrer::kDrakeJoint, Referrer::kBushing}) {
+        const std::string model_name =
+            fmt::format("o{}", plant_.num_model_instances());
+        SCOPED_TRACE(
+            fmt::format("{} {} {}", model_kind, name, FrameTag(kind, true)));
+        const std::string reference =
+            MakeFrameReference(kind, "j", name, inside ? model.link : "D");
+        ParseTestString(
+            fmt::format(R"""(
+<model name='{0}'>
+  <model name='w'>{1}
+    <frame name='F'/>
+    <frame name='G' attached_to='__model__'/>
+    {2}
+  </model>
+  <link name='D'/>
+  <frame name='H' attached_to='w'/>
+  {3}
+</model>)""",
+                        model_name, model.content, inside ? reference : "",
+                        inside ? "" : reference),
+            "1.12");
+        EXPECT_THAT(
+            TakeError(),
+            MatchesRegex(fmt::format(
+                ".*{0}: <{1}>{2}</{1}> names {3} of model '{4}::w', which "
+                "Drake fixes to the world rather than to the model's "
+                "canonical link \\(.*\\)\\. Name a rigid link instead\\.",
+                DescribeReferrer(kind, "j"), FrameTag(kind, true), name,
+                attached ? "a frame attached to the frame" : "the frame",
+                model_name)));
+      }
+    }
+  }
+}
+
+// A static model with no links has its implicit frame fixed to the world,
+// rightly, unlike the models in NamingModelFixedToWorldError. So a reference
+// may name that frame, by the model's name or as s::__model__, as well as the
+// model's explicit frames, and each is where SDFormat puts it.
+TEST_F(SdfParserTest, FramesOfStaticModelWithoutLinks) {
+  ParseTestString(
+      fmt::format(R"""(
+<model name='m'>
+  <model name='s'>
+    <static>true</static>
+    <pose>1 2 3 0 0 0.5</pose>
+    <frame name='F'/>
+  </model>
+  <link name='A'/>
+  <link name='B'/>
+  <link name='C'/>
+  {}{}{}
+</model>)""",
+                  MakeFrameReference(Referrer::kDrakeJoint, "jF", "s::F", "A"),
+                  MakeFrameReference(Referrer::kDrakeJoint, "js", "s", "B"),
+                  MakeFrameReference(Referrer::kDrakeJoint, "js_model",
+                                     "s::__model__", "C")),
+      "1.12");
+  const ModelInstanceIndex s = plant_.GetModelInstanceByName("m::s");
+  const Frame<double>& frame_F = plant_.GetFrameByName("F", s);
+  const Frame<double>& frame_S = plant_.GetFrameByName("__model__", s);
+  const RigidTransformd X_WS(RollPitchYawd(0, 0, 0.5), Vector3d(1, 2, 3));
+  for (const Frame<double>* frame : {&frame_F, &frame_S}) {
+    EXPECT_EQ(&frame->body(), &plant_.world_body());
+    EXPECT_TRUE(frame->GetFixedPoseInBodyFrame().IsNearlyEqualTo(X_WS, kEps));
+  }
+  EXPECT_EQ(&plant_.GetJointByName("jF").frame_on_parent(), &frame_F);
+  EXPECT_EQ(&plant_.GetJointByName("js").frame_on_parent(), &frame_S);
+  EXPECT_EQ(&plant_.GetJointByName("js_model").frame_on_parent(), &frame_S);
+}
+
+// A <drake:joint>'s child must not be the world or a frame on it, such as a
+// static model's frame, as for an SDFormat <joint>, and its two frames must be
+// on different links.
+TEST_F(SdfParserTest, DrakeJointLinksError) {
+  const std::string child_world =
+      ".*<drake:joint name='j'>: <drake:child> must not be world or a frame on "
+      "it\\.";
+  auto same_link = [](const std::string& link) {
+    return fmt::format(
+        ".*<drake:joint name='j'>: <drake:parent> and <drake:child> are both "
+        "on link '{}'; a joint must connect two different links\\.",
+        link);
+  };
+  struct Case {
+    std::string parent;
+    std::string child;
+    std::string error;
+  };
+  const std::vector<Case> cases{{"D", "world", child_world},
+                                {"world", "world", child_world},
+                                {"D", "s::F", child_world},
+                                {"world", "s::F", child_world},
+                                {"D", "D", same_link("D")}};
+  for (const auto& [parent, child, error] : cases) {
+    SCOPED_TRACE(fmt::format("{} {}", parent, child));
+    const std::string model_name =
+        fmt::format("m{}", plant_.num_model_instances());
+    ParseTestString(fmt::format(R"""(
+<model name='{}'>
+  <model name='s'>
+    <static>true</static>
+    <frame name='F'/>
+  </model>
+  <link name='D'/>
+  {}
+</model>)""",
+                                model_name,
+                                MakeFrameReference(Referrer::kDrakeJoint, "j",
+                                                   parent, child)),
+                    "1.12");
+    EXPECT_THAT(TakeError(), MatchesRegex(error));
+    EXPECT_FALSE(plant_.HasJointNamed("j"));
+  }
 }
 
 TEST_F(SdfParserTest, MimicSuccessfulParsing) {
