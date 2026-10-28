@@ -39,9 +39,12 @@ and `δt` come from the last accepted ICF solve.
   amplification, because the stiff law is never evaluated at a stale state.
 - In error-controlled mode CENIC propagates the two-half-step result, so the
   relevant solve is the second half step (`δt = h/2`). In fixed-step mode it is
-  the full step (`δt = h`). Rejected steps are harmless: `IntegratorBase` only
-  restores continuous state, and the final accepted `DoStep` always overwrites
-  the sample, so sample and state stay paired.
+  the full step (`δt = h`). The sample's kinematics (contact points, surface
+  centroids, reaction force frames) are those at the start of the recorded
+  solve, so in error-controlled mode they are at q(t₀+h/2) and can lag the
+  Context's poses at t₀+h by up to half a step. Rejected steps are harmless:
+  `IntegratorBase` only restores continuous state, and the final accepted
+  `DoStep` always overwrites the sample, so sample and state stay paired.
 
 These are the same semantics as Drake's existing *sampled output ports* for a
 discrete plant: the dynamics ports report the sample recorded by the most
