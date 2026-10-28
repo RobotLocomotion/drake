@@ -14,13 +14,13 @@ any other citations to it (e.g., in PYTHONPATH). -->
 The following table shows the configurations that Drake
 officially supports:
 
-| Operating System ⁽¹⁾                | Architecture             | Python ⁽²⁾ | Installation method | End of life ⁽³⁾ |
+| Operating System ⁽¹⁾                | Architecture ⁽²⁾         | Python ⁽³⁾ | Installation method | End of life ⁽⁴⁾ |
 |-------------------------------------|--------------------------|------------|---------------------|-----------------|
 | Ubuntu 24.04 LTS (Noble Numbat)     | x86-64, arm64            | 3.12       | Pip, Binary, APT    | March 2028      |
 |                                     | x86-64, arm64            | 3.13-3.14  | Pip                 | March 2028      |
 | Ubuntu 26.04 LTS (Resolute Raccoon) | x86-64, x86-64-v3, arm64 | 3.12-3.13  | Pip                 | March 2028      |
 |                                     | x86-64, x86-64-v3, arm64 | 3.14       | Pip, Binary, APT    | March 2030      |
-| macOS Tahoe (26)                    | arm64                    | 3.12 ⁽⁴⁾   | Pip                 | September 2027  |
+| macOS Tahoe (26)                    | arm64                    | 3.12 ⁽⁵⁾   | Pip                 | September 2027  |
 |                                     | arm64                    | 3.13       | Pip                 | September 2027  |
 |                                     | arm64                    | 3.14       | Pip, Binary         | September 2027  |
 | Amazon Linux 2023                   | x86-64, arm64            | 3.12-3.14  | Pip                 | March 2028      |
@@ -45,15 +45,17 @@ request with the fix, not a bug report.
 maybe require extra setup. See the
 [troubleshooting](/troubleshooting.html#gl-init) page for details.
 
-⁽²⁾ CPython is the only Python implementation supported.
+⁽²⁾ x86-64 hardware must support at minimum the x86-64-v2 instruction set.
+
+⁽³⁾ CPython is the only Python implementation supported.
 Drake is not tested regularly with Anaconda, so if you are using Anaconda you
 may experience compatibility hiccups; when asking for help, be sure to mention
 that Conda is involved.
 
-⁽³⁾ These end-of-life dates are estimates.
+⁽⁴⁾ These end-of-life dates are estimates.
 Refer to [OS Support](/stable.html#os-support) for details.
 
-⁽⁴⁾ macOS Pip support for 3.12 is available in nightly builds, and will reach
+⁽⁵⁾ macOS Pip support for 3.12 is available in nightly builds, and will reach
 stable release builds as of the 1.58 release.
 
 The following table shows the configurations that *must* be used when
