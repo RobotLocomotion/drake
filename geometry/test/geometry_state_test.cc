@@ -196,6 +196,17 @@ class GeometryStateTester {
     return *state_->geometry_engine_;
   }
 
+  // Marks the frame and its child geometries as anchored. This only sets the
+  // bookkeeping bits; it doesn't inform the proximity or render engines. It is
+  // only suitable for tests that don't involve those engines.
+  void AnchorFrameBitsOnly(FrameId frame_id) {
+    InternalFrame& frame = state_->frames_.at(frame_id);
+    frame.set_anchored();
+    for (GeometryId g_id : frame.child_geometries()) {
+      state_->geometries_.at(g_id).set_frame_is_anchored();
+    }
+  }
+
   int RendererCount() const { return state_->RendererCount(); }
 
   const GeometryVersion& geometry_version() const {
@@ -2767,6 +2778,176 @@ TEST_F(GeometryStateTest, DeactivateReachesProximityEngine) {
 
   geometry_state_.collision_filter_manager().Activate(
       GeometrySet(geometries_[0]));
+  EXPECT_EQ(engine.num_inactive_dynamic(), 0);
+}
+
+// Rigid geometry registered on an anchored frame is anchored and is added to
+// the proximity engine at X_WG = X_WF * X_FG. Likewise, ChangeShape() on an
+// anchored geometry re-adds it at its new pose.
+TEST_F(GeometryStateTest, RegisterGeometryOnAnchoredFrame) {
+  const SourceId s_id = geometry_state_.RegisterNewSource("test_source");
+  const FrameId anchored_frame_id =
+      geometry_state_.RegisterFrame(s_id, GeometryFrame("anchored"));
+  const FrameId dynamic_frame_id =
+      geometry_state_.RegisterFrame(s_id, GeometryFrame("dynamic"));
+
+  // Both frames are posed coincident and far from the origin so that geometry
+  // incorrectly posed at X_FG doesn't overlap the dynamic geometry.
+  const RigidTransformd X_WF(Vector3d(10, 0, 0));
+  FramePoseVector<double> poses;
+  poses.set_value(anchored_frame_id, X_WF);
+  poses.set_value(dynamic_frame_id, X_WF);
+  gs_tester_.SetFramePoses(s_id, poses, &gs_tester_.mutable_kinematics_data());
+  gs_tester_.FinalizePoseUpdate();
+
+  // The anchored frame has no child geometries yet, so the proximity engine
+  // has nothing to be informed of.
+  gs_tester_.AnchorFrameBitsOnly(anchored_frame_id);
+
+  auto make_sphere = [](const RigidTransformd& X_FG, std::string name) {
+    auto instance =
+        make_unique<GeometryInstance>(X_FG, make_unique<Sphere>(1.0), name);
+    instance->set_proximity_properties(ProximityProperties());
+    return instance;
+  };
+
+  const GeometryId dynamic_id = geometry_state_.RegisterGeometry(
+      s_id, dynamic_frame_id, make_sphere(RigidTransformd(), "dynamic"));
+  const GeometryId world_id = geometry_state_.RegisterAnchoredGeometry(
+      s_id, make_sphere(RigidTransformd(), "world"));
+  const GeometryId anchored_id = geometry_state_.RegisterGeometry(
+      s_id, anchored_frame_id, make_sphere(RigidTransformd(), "anchored"));
+
+  EXPECT_FALSE(gs_tester_.GetGeometry(anchored_id)->is_dynamic());
+  // Anchored against anchored is filtered; anchored against dynamic isn't.
+  EXPECT_TRUE(geometry_state_.CollisionFiltered(anchored_id, world_id));
+  EXPECT_FALSE(geometry_state_.CollisionFiltered(anchored_id, dynamic_id));
+
+  // The broadphase only reports the (anchored, dynamic) pair if the anchored
+  // sphere was placed at X_WF * X_FG. The world sphere is far away.
+  using Pairs = std::vector<SortedPair<GeometryId>>;
+  EXPECT_EQ(geometry_state_.FindCollisionCandidates(),
+            Pairs({SortedPair(anchored_id, dynamic_id)}));
+
+  // Moving the world sphere to the dynamic sphere via ChangeShape() must use
+  // the new X_FG.
+  geometry_state_.ChangeShape(s_id, world_id, Sphere(1.0), X_WF);
+  Pairs candidates = geometry_state_.FindCollisionCandidates();
+  std::sort(candidates.begin(), candidates.end());
+  Pairs expected{SortedPair(anchored_id, dynamic_id),
+                 SortedPair(world_id, dynamic_id)};
+  std::sort(expected.begin(), expected.end());
+  EXPECT_EQ(candidates, expected);
+}
+
+// Render engines receive rigid geometry at X_WG = X_WF * X_FG, regardless of
+// whether the geometry reaches the engine via AddRenderer() or via role
+// assignment. Geometry on an anchored, non-world frame must still be re-posed
+// on pose updates (its frame can move when parameters change). World geometry
+// moved by ChangeShape() is re-registered at its new pose.
+TEST_F(GeometryStateTest, RenderPosesOfAnchoredGeometry) {
+  const SourceId s_id = geometry_state_.RegisterNewSource("test_source");
+  const FrameId frame_id =
+      geometry_state_.RegisterFrame(s_id, GeometryFrame("anchored"));
+  const RigidTransformd X_WF(Vector3d(10, 0, 0));
+  auto set_frame_pose = [&](const RigidTransformd& X_WF_new) {
+    FramePoseVector<double> poses;
+    poses.set_value(frame_id, X_WF_new);
+    gs_tester_.SetFramePoses(s_id, poses,
+                             &gs_tester_.mutable_kinematics_data());
+    gs_tester_.FinalizePoseUpdate();
+  };
+  set_frame_pose(X_WF);
+  gs_tester_.AnchorFrameBitsOnly(frame_id);
+
+  auto make_instance = [](const RigidTransformd& X_FG, std::string name) {
+    auto instance =
+        make_unique<GeometryInstance>(X_FG, make_unique<Sphere>(1.0), name);
+    PerceptionProperties properties =
+        DummyRenderEngine().accepting_properties();
+    properties.AddProperty("label", "id", RenderLabel::kDontCare);
+    instance->set_perception_properties(std::move(properties));
+    return instance;
+  };
+  const RigidTransformd X_FG(Vector3d(0, 1, 0));
+
+  // Registered before the renderer exists; reaches it via AddRenderer().
+  const GeometryId early_id = geometry_state_.RegisterGeometry(
+      s_id, frame_id, make_instance(X_FG, "early"));
+  const GeometryId world_id = geometry_state_.RegisterAnchoredGeometry(
+      s_id, make_instance(RigidTransformd(), "world"));
+  auto engine = make_unique<DummyRenderEngine>();
+  const DummyRenderEngine* renderer = engine.get();
+  geometry_state_.AddRenderer("renderer", std::move(engine));
+
+  // Registered after the renderer exists; reaches it via AssignRole().
+  const GeometryId late_id = geometry_state_.RegisterGeometry(
+      s_id, frame_id, make_instance(X_FG, "late"));
+
+  for (const GeometryId id : {early_id, late_id}) {
+    ASSERT_TRUE(renderer->is_registered(id));
+    EXPECT_TRUE(renderer->world_pose(id).IsExactlyEqualTo(X_WF * X_FG));
+  }
+  EXPECT_TRUE(renderer->world_pose(world_id).IsExactlyEqualTo(
+      RigidTransformd::Identity()));
+
+  // Moving the anchored frame (as a parameter change would) reaches the
+  // renderer; the world geometry isn't updated.
+  const RigidTransformd X_WF_new(Vector3d(-3, 0, 0));
+  set_frame_pose(X_WF_new);
+  for (const GeometryId id : {early_id, late_id}) {
+    ASSERT_TRUE(renderer->updated_ids().contains(id));
+    EXPECT_TRUE(renderer->world_pose(id).IsExactlyEqualTo(X_WF_new * X_FG));
+  }
+  EXPECT_FALSE(renderer->updated_ids().contains(world_id));
+
+  // ChangeShape() with a new X_FG re-registers the world geometry at its new
+  // pose (the cached X_WG is not updated by ChangeShape()).
+  const RigidTransformd X_WG_world(Vector3d(0, 0, 5));
+  geometry_state_.ChangeShape(s_id, world_id, Sphere(1.0), X_WG_world);
+  ASSERT_TRUE(renderer->is_registered(world_id));
+  EXPECT_TRUE(renderer->world_pose(world_id).IsExactlyEqualTo(X_WG_world));
+}
+
+// Only dynamic geometry participates in the engine's broadphase culling, but
+// *any* geometry can be deactivated -- the filter's inactive set is what makes
+// the query results correct. Deactivating anchored or deformable geometry must
+// therefore filter it without disturbing the dynamic partition.
+TEST_F(GeometryStateTest, DeactivateNonDynamicGeometry) {
+  SetUpSingleSourceTree(Assign::kProximity);
+  const ProximityEngine<double>& engine = gs_tester_.proximity_engine();
+
+  auto instance = make_unique<GeometryInstance>(
+      RigidTransformd::Identity(), make_unique<Sphere>(1.0), "deformable");
+  instance->set_proximity_properties(ProximityProperties());
+  const GeometryId deformable_id = geometry_state_.RegisterDeformableGeometry(
+      source_id_, InternalFrame::world_frame_id(), std::move(instance), 2.0);
+
+  ASSERT_EQ(engine.num_inactive_dynamic(), 0);
+
+  for (const GeometryId id : {anchored_geometry_, deformable_id}) {
+    geometry_state_.collision_filter_manager().Deactivate(GeometrySet(id));
+    // The geometry is filtered against everything...
+    EXPECT_TRUE(geometry_state_.CollisionFiltered(id, geometries_[0]));
+    // ... but the dynamic partition is untouched.
+    EXPECT_EQ(engine.num_inactive_dynamic(), 0);
+    EXPECT_FALSE(engine.IsInactiveDynamic(id));
+
+    geometry_state_.collision_filter_manager().Activate(GeometrySet(id));
+    EXPECT_FALSE(geometry_state_.CollisionFiltered(id, geometries_[0]));
+    EXPECT_EQ(engine.num_inactive_dynamic(), 0);
+  }
+
+  // A mixed set still culls the dynamic member.
+  geometry_state_.collision_filter_manager().Deactivate(
+      GeometrySet({anchored_geometry_, geometries_[0]}));
+  EXPECT_EQ(engine.num_inactive_dynamic(), 1);
+  EXPECT_TRUE(engine.IsInactiveDynamic(geometries_[0]));
+  EXPECT_TRUE(
+      geometry_state_.CollisionFiltered(anchored_geometry_, geometries_[1]));
+
+  geometry_state_.collision_filter_manager().Activate(
+      GeometrySet({anchored_geometry_, geometries_[0]}));
   EXPECT_EQ(engine.num_inactive_dynamic(), 0);
 }
 

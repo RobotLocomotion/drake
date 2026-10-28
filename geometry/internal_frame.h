@@ -83,6 +83,30 @@ class InternalFrame {
   /* Returns true if this frame is the one and only world frame.  */
   bool is_world() const { return id_ == world_frame_id(); }
 
+  /* Returns true if this frame is *anchored*: it has a "fixed" or "welded"
+   path to the world frame. In practice, that means its pose with respect to the
+   world frame is a function of parameters alone -- never of state (q, v, or
+   time). It will move if its upstream parameters change.
+
+   The world frame is anchored by construction; it is the base case that makes
+   the frame hierarchy rule in AnchorFrames() terminate. */
+  bool is_anchored() const { return is_anchored_; }
+
+  /* Marks this frame as anchored. Anchoring is irreversible -- there is no
+   inverse operation -- because downstream state (notably which collection in
+   ProximityEngine owns a geometry's fcl object, and whether its pairs are
+   filtered by predicate) is derived from it and cached.
+
+   Setting a frame to be anchored is only allowed if all of the frame's
+   ancestors are already anchored, or marked anchored in an atomic operation.
+   Performing operations on an anchored frame with any non-anchored ancestors
+   is not allowed.
+
+   This method does not (and cannot) enforce that restriction; a frame knows
+   only its parent's id and not its status. It is the caller's responsibility
+   (see GeometryState::AnchorFrames()) to guarantee it. */
+  void set_anchored() { is_anchored_ = true; }
+
   /* Returns the id of this frame's parent frame. If this is the world frame,
    it returns its own id (as there is no usable "undefined" identifier value).
    */
@@ -177,6 +201,10 @@ class InternalFrame {
 
   // The identifier of this frame's parent frame.
   FrameId parent_id_;
+
+  // Whether this frame is anchored (see is_anchored()). Only ever goes from
+  // false to true.
+  bool is_anchored_{false};
 
   // The identifiers of the frames, who have this frame as parent.
   std::unordered_set<FrameId> child_frames_;
