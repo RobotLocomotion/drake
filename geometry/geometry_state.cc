@@ -1340,26 +1340,36 @@ void GeometryState<T>::AssignRole(SourceId source_id, GeometryId geometry_id,
                                               geometry_id,
                                               *geometry.proximity_properties());
       }
-      // The set of geometries G such that I need to introduce filtered pairs
-      // (geometry_id, gᵢ) ∀ gᵢ ∈ G. Generally, it consists of those proximity
-      // geometries affixed to the same frame as geometry_id (that frame would
-      // be the world frame for anchored geometry). To that end, we'll blindly
-      // add the id for the geometry's frame to the set. Worst case, there are
-      // no other geometries affixed to that frame -- attempting to apply
-      // filters in that case would be a harmless act.
-      GeometrySet ids_for_filtering;
-      ids_for_filtering.Add(geometry.frame_id());
-      // Apply collision filter between geometry id and any geometries that have
-      // been identified. If none have been identified, this makes no changes.
-      // Per public documentation of SceneGraph, we exclude deformable
-      // geometries and only filter among rigid geometries.
-      geometry_engine_->collision_filter().Apply(
-          CollisionFilterDeclaration(CollisionFilterScope::kOmitDeformable)
-              .ExcludeBetween(GeometrySet(geometry_id), ids_for_filtering),
-          [this](const GeometrySet& set, CollisionFilterScope scope) {
-            return this->CollectIds(set, Role::kProximity, scope);
-          },
-          true /* is_invariant */);
+      // Geometries affixed to a common frame never collide with each other.
+      //
+      // If the geometry is anchored, no explicit step need be taken;
+      // CollisionFilter implicitly excludes all pairs of anchored geometries.
+      //
+      // Deformable geometry is dynamic (it is registered on the world frame but
+      // is free to move), so it takes the explicit path below. That path is a
+      // no-op for it in any case: the kOmitDeformable scope resolves its
+      // GeometrySet to the empty set.
+      if (geometry.is_dynamic()) {
+        // The set of geometries G such that I need to introduce filtered pairs
+        // (geometry_id, gᵢ) ∀ gᵢ ∈ G. It consists of those proximity geometries
+        // affixed to the same frame as geometry_id. To that end, we'll blindly
+        // add the id for the geometry's frame to the set. Worst case, there are
+        // no other geometries affixed to that frame -- attempting to apply
+        // filters in that case would be a harmless act.
+        GeometrySet ids_for_filtering;
+        ids_for_filtering.Add(geometry.frame_id());
+        // Apply collision filter between geometry id and any geometries that
+        // have been identified. If none have been identified, this makes no
+        // changes. Per public documentation of SceneGraph, we exclude
+        // deformable geometries and only filter among rigid geometries.
+        geometry_engine_->collision_filter().Apply(
+            CollisionFilterDeclaration(CollisionFilterScope::kOmitDeformable)
+                .ExcludeBetween(GeometrySet(geometry_id), ids_for_filtering),
+            [this](const GeometrySet& set, CollisionFilterScope scope) {
+              return this->CollectIds(set, Role::kProximity, scope);
+            },
+            true /* is_invariant */);
+      }
     } break;
     case RoleAssign::kReplace:
       // Give the engine a chance to compare properties before and after.
