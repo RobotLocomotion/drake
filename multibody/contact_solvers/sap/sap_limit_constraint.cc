@@ -43,7 +43,8 @@ SapLimitConstraint<T>::SapLimitConstraint(int clique, int clique_dof,
       clique_dof_(clique_dof),
       q0_{q0},
       g_(CalcConstraintFunction(q0, parameters.lower_limit(),
-                                parameters.upper_limit())) {}
+                                parameters.upper_limit())),
+      clique_nv_(clique_nv) {}
 
 template <typename T>
 VectorX<T> SapLimitConstraint<T>::CalcConstraintFunction(const T& q0,
@@ -185,9 +186,8 @@ std::unique_ptr<SapConstraint<double>> SapLimitConstraint<T>::DoToDouble()
       ExtractDoubleOrThrow(p.dissipation_time_scale()), p.beta());
   // N.B. Limit constraints always act on a single clique.
   const int clique = this->first_clique();
-  const int clique_nv = this->num_velocities(0);
   return std::make_unique<SapLimitConstraint<double>>(
-      clique, clique_dof(), clique_nv, ExtractDoubleOrThrow(position()),
+      clique, clique_dof(), clique_nv_, ExtractDoubleOrThrow(position()),
       std::move(p_to_double));
 }
 

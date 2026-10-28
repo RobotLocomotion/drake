@@ -160,7 +160,8 @@ class SapJointFrictionConstraint final : public SapConstraint<T> {
   const Parameters& parameters() const { return parameters_; }
 
   /* Returns the degree of freedom, DOF, that this constraint acts on. Provided
-   at construction. */
+   at construction. It indexes the clique velocities at construction.
+   MakeReduced() does not update it. */
   int clique_dof() const { return clique_dof_; }
 
  private:
@@ -198,6 +199,7 @@ class SapJointFrictionConstraint final : public SapConstraint<T> {
 
   Parameters parameters_;
   int clique_dof_{-1};  // Initialized to an invalid value.
+  int clique_nv_{-1};   // Number of clique velocities at construction.
 };
 
 }  // namespace internal

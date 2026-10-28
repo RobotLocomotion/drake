@@ -186,7 +186,8 @@ class SapLimitConstraint final : public SapConstraint<T> {
   const Parameters& parameters() const { return parameters_; }
 
   /* Returns the degree of freedom, DOF, that this constraint limits. Provided
-   at construction. */
+   at construction. It indexes the clique velocities at construction.
+   MakeReduced() does not update it. */
   int clique_dof() const { return clique_dof_; }
 
   /* Returns the position provided at construction. */
@@ -252,6 +253,7 @@ class SapLimitConstraint final : public SapConstraint<T> {
   int clique_dof_{-1};  // Initialized to an invalid value.
   T q0_{};              // position at the configuration from construction.
   VectorX<T> g_;        // Constraint function g. See CalcConstraintFunction().
+  int clique_nv_{-1};   // Number of clique velocities at construction.
 };
 
 }  // namespace internal

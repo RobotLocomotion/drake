@@ -10,7 +10,13 @@
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/math/autodiff.h"
 #include "drake/multibody/contact_solvers/sap/sap_constraint.h"
+#include "drake/multibody/contact_solvers/sap/sap_coupler_constraint.h"
+#include "drake/multibody/contact_solvers/sap/sap_joint_friction_constraint.h"
+#include "drake/multibody/contact_solvers/sap/sap_limit_constraint.h"
+#include "drake/multibody/contact_solvers/sap/sap_pd_controller_constraint.h"
+#include "drake/multibody/contact_solvers/sap/sap_tendon_constraint.h"
 
 using Eigen::Matrix3d;
 using Eigen::MatrixXd;
@@ -729,6 +735,55 @@ GTEST_TEST(ContactProblem, CalcConstraintMultibodyForces) {
                                 spatial_forces_expected[object].get_coeffs(),
                                 std::numeric_limits<double>::epsilon(),
                                 MatrixCompareType::relative));
+  }
+}
+
+// ToDouble() of a reduced problem keeps the reduced Jacobians. The constraints
+// below build their Jacobian from clique and DOF indices, which MakeReduced()
+// does not change.
+GTEST_TEST(ContactProblem, ToDoubleOfReducedProblem) {
+  const double time_step = 0.01;
+  const int nv = 3;
+  std::vector<MatrixX<AutoDiffXd>> A{S33};
+  const VectorX<AutoDiffXd> v_star = VectorXd::LinSpaced(nv, 1.0, 3.0);
+  SapContactProblem<AutoDiffXd> problem(time_step, std::move(A), v_star);
+  // All constraints act on DOFs 1 and 2 of the only clique.
+  problem.AddConstraint(std::make_unique<SapLimitConstraint<AutoDiffXd>>(
+      0, 2, nv, 0.0,
+      SapLimitConstraint<AutoDiffXd>::Parameters(-1.0, 1.0, 1.0e8, 0.01)));
+  problem.AddConstraint(std::make_unique<SapPdControllerConstraint<AutoDiffXd>>(
+      SapPdControllerConstraint<AutoDiffXd>::Configuration{0, 2, nv, 0.0, 0.0,
+                                                           0.0, 0.0},
+      SapPdControllerConstraint<AutoDiffXd>::Parameters(1.0, 1.0, 10.0)));
+  problem.AddConstraint(std::make_unique<SapCouplerConstraint<AutoDiffXd>>(
+      SapCouplerConstraint<AutoDiffXd>::Kinematics{0, 1, nv, 0.0, 0, 2, nv, 0.0,
+                                                   2.0, 0.0}));
+  problem.AddConstraint(std::make_unique<SapTendonConstraint<AutoDiffXd>>(
+      SapTendonConstraint<AutoDiffXd>::Parameters(-1.0, 1.0, 1.0e8, 0.0),
+      SapTendonConstraint<AutoDiffXd>::Kinematics(
+          0, VectorX<AutoDiffXd>::Zero(nv), Eigen::Vector3d(1.0, 2.0, 3.0),
+          0.0)));
+  problem.AddConstraint(
+      std::make_unique<SapJointFrictionConstraint<AutoDiffXd>>(
+          0, 2, nv, SapJointFrictionConstraint<AutoDiffXd>::Parameters{1.0}));
+
+  // DOF 0 is known.
+  ReducedMapping mapping;
+  std::unique_ptr<SapContactProblem<AutoDiffXd>> reduced =
+      problem.MakeReduced({0}, {{0}}, &mapping);
+  std::unique_ptr<SapContactProblem<double>> reduced_double =
+      reduced->ToDouble();
+
+  ASSERT_EQ(reduced_double->num_constraints(), problem.num_constraints());
+  for (int i = 0; i < reduced->num_constraints(); ++i) {
+    const MatrixXd J_expected = math::DiscardGradient(
+        reduced->get_constraint(i).first_clique_jacobian().MakeDenseMatrix());
+    ASSERT_EQ(J_expected.cols(), nv - 1);
+    EXPECT_TRUE(CompareMatrices(reduced_double->get_constraint(i)
+                                    .first_clique_jacobian()
+                                    .MakeDenseMatrix(),
+                                J_expected))
+        << "constraint " << i;
   }
 }
 
