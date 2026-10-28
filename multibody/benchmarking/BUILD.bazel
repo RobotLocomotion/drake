@@ -39,6 +39,11 @@ drake_cc_googlebench_binary(
         "//tools/performance:fixture_common",
     ],
     add_test_rule = True,
+    test_rule_args = [
+        # When testing, only run the smallest grid; the larger grids cost
+        # tens of seconds apiece in debug builds.
+        "--benchmark_filter=.*/10/.*",
+    ],
 )
 
 drake_py_experiment_binary(

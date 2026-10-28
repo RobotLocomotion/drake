@@ -2846,6 +2846,59 @@ TEST_F(GeometryStateTest, CollisionFilterRespectsScope) {
   EXPECT_EQ(contacts.contact_surfaces().size(), 0);
 }
 
+// Anchored geometry can never collide with other anchored geometry. That is
+// expressed as a predicate over CollisionFilter's anchored set rather than as
+// n(n-1)/2 materialized pairs, so this confirms both that the filtering is in
+// force and that the mechanism behind it is the predicate.
+TEST_F(GeometryStateTest, AnchoredGeometryMutuallyFiltered) {
+  SetUpSingleSourceTree(Assign::kProximity);
+
+  // Add two more anchored geometries alongside the fixture's one. They are
+  // positioned well away from the dynamic geometry so that the only thing under
+  // test is the filter state.
+  std::vector<GeometryId> anchored_ids{anchored_geometry_};
+  for (int i = 0; i < 2; ++i) {
+    const GeometryId id = geometry_state_.RegisterAnchoredGeometry(
+        source_id_, make_unique<GeometryInstance>(
+                        RigidTransformd(Vector3d(100.0 * (i + 1), 0, 0)),
+                        make_unique<Sphere>(1), fmt::format("extra_{}", i)));
+    geometry_state_.AssignRole(source_id_, id, ProximityProperties());
+    anchored_ids.push_back(id);
+  }
+
+  const internal::CollisionFilter& filter =
+      gs_tester_.proximity_engine().collision_filter();
+
+  // Every anchored geometry is a member of the anchored set, and no pair of
+  // them can collide.
+  for (const GeometryId id_A : anchored_ids) {
+    EXPECT_TRUE(filter.IsAnchored(id_A));
+    for (const GeometryId id_B : anchored_ids) {
+      if (id_A == id_B) continue;
+      EXPECT_TRUE(geometry_state_.CollisionFiltered(id_A, id_B));
+    }
+  }
+
+  // Dynamic geometry is not anchored, and still collides with anchored
+  // geometry.
+  EXPECT_FALSE(filter.IsAnchored(geometries_[0]));
+  for (const GeometryId anchored_id : anchored_ids) {
+    EXPECT_FALSE(
+        geometry_state_.CollisionFiltered(geometries_[0], anchored_id));
+  }
+
+  // The filtering is not removable; it stands in for pairs that have always
+  // been declared invariant.
+  geometry_state_.collision_filter_manager().Apply(
+      CollisionFilterDeclaration().AllowWithin(GeometrySet{anchored_ids}));
+  for (const GeometryId id_A : anchored_ids) {
+    for (const GeometryId id_B : anchored_ids) {
+      if (id_A == id_B) continue;
+      EXPECT_TRUE(geometry_state_.CollisionFiltered(id_A, id_B));
+    }
+  }
+}
+
 // Test that the appropriate error messages are dispatched.
 TEST_F(GeometryStateTest, CollisionFilteredExceptions) {
   // Initialize tree *without* any proximity roles assigned.

@@ -111,9 +111,10 @@ void CollisionFilter::Flatten() {
   }
 }
 
-void CollisionFilter::AddGeometry(GeometryId new_id) {
+void CollisionFilter::AddGeometry(GeometryId new_id, bool is_anchored) {
   DRAKE_DEMAND(!geometries_.contains(new_id));
   geometries_.insert(new_id);
+  if (is_anchored) anchored_.insert(new_id);
   /* No pair entries are needed: the sparse representation stores only filtered
    pairs, and new geometry is unfiltered by default. Transient deltas store
    only resolved GeometryId sets, so they also require no update. */
@@ -123,6 +124,7 @@ void CollisionFilter::RemoveGeometry(GeometryId remove_id) {
   DRAKE_DEMAND(geometries_.contains(remove_id));
   geometries_.erase(remove_id);
   inactive_.erase(remove_id);
+  anchored_.erase(remove_id);
 
   RemovePairsFor(remove_id, &filter_state_);
   RemovePairsFor(remove_id, &persistent_base_);
@@ -152,6 +154,13 @@ bool CollisionFilter::CanCollideWith(GeometryId id_A, GeometryId id_B) const {
       (inactive_.contains(id_A) || inactive_.contains(id_B))) {
     return false;
   }
+  /* Two anchored geometries can never collide. Same idiom as the inactive test
+   above: the empty() guard keeps scenes with no anchored geometry at a single
+   branch. */
+  if (!anchored_.empty() && anchored_.contains(id_A) &&
+      anchored_.contains(id_B)) {
+    return false;
+  }
   const PairKey key(id_A, id_B);
   return !filter_state_.filtered.contains(key) &&
          !filter_state_.invariant.contains(key);
@@ -161,6 +170,9 @@ bool CollisionFilter::IsEquivalent(const CollisionFilter& other) const {
   if (this == &other) return true;
   if (geometries_ != other.geometries_) return false;
   if (inactive_ != other.inactive_) {
+    return false;
+  }
+  if (anchored_ != other.anchored_) {
     return false;
   }
   /* Two filters are equal iff CanCollideWith() agrees on every pair. A pair is
@@ -187,7 +199,10 @@ bool CollisionFilter::IsEquivalent(const CollisionFilter& other) const {
 CollisionFilter CollisionFilter::MakeClearCopy() const {
   CollisionFilter copy;
   copy.geometries_ = geometries_;
-  /* filtered, invariant, and inactive_ are intentionally left empty. */
+  /* anchored_ is copied: it is a declared property of the geometry, not a
+   configuration of filters. filtered, invariant, and inactive_ are
+   intentionally left empty. */
+  copy.anchored_ = anchored_;
   return copy;
 }
 

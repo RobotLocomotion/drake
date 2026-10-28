@@ -293,6 +293,8 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
 
   CollisionFilter& collision_filter() { return collision_filter_; }
 
+  const CollisionFilter& collision_filter() const { return collision_filter_; }
+
   // Reflects a net change of the collision filter's inactive set into the
   // broadphase: newly inactive dynamic geometries move out of dynamic_tree_
   // into inactive_dynamic_tree_; reactivated ones move back.
@@ -1239,7 +1241,9 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     tree->update();
     (*objects)[id] = std::move(data.fcl_object);
 
-    collision_filter_.AddGeometry(id);
+    // Deformable geometry takes the AddDeformableGeometry() path below, so it
+    // is never marked anchored even though it is on the world frame.
+    collision_filter_.AddGeometry(id, /* is_anchored = */ !is_dynamic);
   }
 
   // Removes the geometry with the given id from the given tree.
@@ -1634,6 +1638,11 @@ std::unique_ptr<ProximityEngine<U>> ProximityEngine<T>::ToScalarType() const {
 
 template <typename T>
 CollisionFilter& ProximityEngine<T>::collision_filter() {
+  return impl_->collision_filter();
+}
+
+template <typename T>
+const CollisionFilter& ProximityEngine<T>::collision_filter() const {
   return impl_->collision_filter();
 }
 
