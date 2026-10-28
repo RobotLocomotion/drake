@@ -10,7 +10,10 @@ namespace planning {
 /** This class represents the base interface for performing configuration
 distance and interpolation operations, used by CollisionChecker. See
 LinearDistanceAndInterpolationProvider for an implementation covering common
-"linear" distance and interpolation behavior.
+"linear" distance and interpolation behavior. Additionally, this class includes
+configuration deltas, which are generally used as an intermediate step in
+computing configuration distance and are useful on their own for applying
+per-joint or per-model-instance tolerance checks to robot motion.
 
 Configuration distance and interpolation are necessary for a CollisionChecker to
 perform edge collision checks, and an essential part of many motion planning
@@ -24,6 +27,20 @@ configuration differently when computing configuration distance.
 Likewise, in more complex C-spaces, it may be necessary to perform more complex
 interpolation behavior (e.g. when planning for a mobile robot whose motion is
 modelled via Dubbins or Reeds-Shepp paths).
+
+Configuration deltas takes two configurations of the robot, from and to, both as
+Eigen::VectorXd, and returns a Eigen::VectorXd of (generally) signed deltas of
+the same length as the from and to configurations. The specific meaning of these
+deltas is dependent on the implementation; for the nominal linear case of
+prismatic and non-continuous revolute joints, it is generally (to - from). See
+documentation on LinearDistanceAndInterpolationProvider for how more complex
+joint types may be handled.
+
+To be valid, deltas must satisfy the following condition:
+
+ - ComputeConfigurationDeltas(q, q) = zero vector
+
+for values of q that are valid for the C-space in use.
 
 Configuration distance takes two configurations of the robot, from and to, both
 as Eigen::VectorXd, and returns (potentially weighted) C-space distance as a
@@ -52,6 +69,14 @@ class DistanceAndInterpolationProvider {
 
   virtual ~DistanceAndInterpolationProvider();
 
+  /** Computes the configuration deltas from the provided configuration `from`
+  to the provided configuration `to`. The returned deltas will be the same size
+  as `from` and `to`.
+  @pre from.size() == to.size().
+  @throws if `from` or `to` contain non-finite values. */
+  Eigen::VectorXd ComputeConfigurationDeltas(const Eigen::VectorXd& from,
+                                             const Eigen::VectorXd& to) const;
+
   /** Computes the configuration distance from the provided configuration `from`
   to the provided configuration `to`. The returned distance will be strictly
   non-negative.
@@ -71,21 +96,24 @@ class DistanceAndInterpolationProvider {
  protected:
   DistanceAndInterpolationProvider();
 
+  /** Derived distance and interpolation providers must implement deltas
+  computation.
+  DistanceAndInterpolationProvider ensures that `from` and `to` are the same
+  size and contain only finite values. */
+  virtual Eigen::VectorXd DoComputeConfigurationDeltas(
+      const Eigen::VectorXd& from, const Eigen::VectorXd& to) const = 0;
+
   /** Derived distance and interpolation providers must implement distance
   computation. The returned distance must be non-negative.
   DistanceAndInterpolationProvider ensures that `from` and `to` are the same
-  size.
-
-  Base class guarantees that `from` and `to` contain only finite values. */
+  size and contain only finite values. */
   virtual double DoComputeConfigurationDistance(
       const Eigen::VectorXd& from, const Eigen::VectorXd& to) const = 0;
 
   /** Derived distance and interpolation providers must implement interpolation.
   The returned configuration must be the same size as `from` and `to`.
   DistanceAndInterpolationProvider ensures that `from` and `to` are the same
-  size and that `ratio` is in [0, 1].
-
-  Base class guarantees that `from` and `to` contain only finite values. */
+  size and contain only finite values and that `ratio` is in [0, 1]. */
   virtual Eigen::VectorXd DoInterpolateBetweenConfigurations(
       const Eigen::VectorXd& from, const Eigen::VectorXd& to,
       double ratio) const = 0;

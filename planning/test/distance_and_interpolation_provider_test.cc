@@ -24,6 +24,14 @@ class BrokenDistanceAndInterpolationProvider final
   ~BrokenDistanceAndInterpolationProvider() final = default;
 
  private:
+  Eigen::VectorXd DoComputeConfigurationDeltas(
+      const Eigen::VectorXd& from, const Eigen::VectorXd& to) const final {
+    unused(to);
+    // Throws because computed deltas must be the same size as the provided from
+    // and to configurations.
+    return Eigen::VectorXd::Zero(from.size() + 1);
+  }
+
   double DoComputeConfigurationDistance(const Eigen::VectorXd& from,
                                         const Eigen::VectorXd& to) const final {
     unused(from);
@@ -54,9 +62,14 @@ class SimpleLinearDistanceAndInterpolationProvider final
   ~SimpleLinearDistanceAndInterpolationProvider() final = default;
 
  private:
+  Eigen::VectorXd DoComputeConfigurationDeltas(
+      const Eigen::VectorXd& from, const Eigen::VectorXd& to) const final {
+    return to - from;
+  }
+
   double DoComputeConfigurationDistance(const Eigen::VectorXd& from,
                                         const Eigen::VectorXd& to) const final {
-    return (to - from).norm();
+    return DoComputeConfigurationDeltas(from, to).norm();
   }
 
   Eigen::VectorXd DoInterpolateBetweenConfigurations(
@@ -68,6 +81,12 @@ class SimpleLinearDistanceAndInterpolationProvider final
 
 GTEST_TEST(BrokenDistanceAndInterpolationProviderTest, Test) {
   const BrokenDistanceAndInterpolationProvider provider;
+
+  // Deltas with different length qs throws.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      provider.ComputeConfigurationDeltas(Eigen::VectorXd::Zero(2),
+                                          Eigen::VectorXd::Zero(3)),
+      ".* condition 'from\\.size\\(\\) == to\\.size\\(\\)' failed.*");
 
   // Distance with different length qs throws.
   DRAKE_EXPECT_THROWS_MESSAGE(
@@ -90,6 +109,12 @@ GTEST_TEST(BrokenDistanceAndInterpolationProviderTest, Test) {
       provider.InterpolateBetweenConfigurations(Eigen::VectorXd::Zero(2),
                                                 Eigen::VectorXd::Zero(2), 1.1),
       ".* condition 'ratio <= 1\\.0' failed.*");
+
+  // "Broken" provider causes all deltas queries to throw.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      provider.ComputeConfigurationDeltas(Eigen::VectorXd::Zero(2),
+                                          Eigen::VectorXd::Zero(2)),
+      ".* condition 'from\\.size\\(\\) == deltas\\.size\\(\\)' failed.*");
 
   // "Broken" provider causes all distance queries to throw.
   DRAKE_EXPECT_THROWS_MESSAGE(
@@ -119,6 +144,11 @@ GTEST_TEST(SimpleLinearDistanceAndInterpolationProviderTest, Test) {
   const Eigen::VectorXd kNans =
       Eigen::VectorXd::Constant(2, std::numeric_limits<double>::infinity());
 
+  // Deltas with different length qs throws.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      provider.ComputeConfigurationDeltas(kZeros, Eigen::VectorXd::Zero(3)),
+      ".* condition 'from\\.size\\(\\) == to\\.size\\(\\)' failed.*");
+
   // Distance with different length qs throws.
   DRAKE_EXPECT_THROWS_MESSAGE(
       provider.ComputeConfigurationDistance(kZeros, Eigen::VectorXd::Zero(3)),
@@ -137,6 +167,21 @@ GTEST_TEST(SimpleLinearDistanceAndInterpolationProviderTest, Test) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       provider.InterpolateBetweenConfigurations(kZeros, kZeros, 1.1),
       ".* condition 'ratio <= 1\\.0' failed.*");
+
+  // Deltas queries.
+  EXPECT_TRUE(CompareMatrices(
+      provider.ComputeConfigurationDeltas(kZeros, kZeros), kZeros));
+  EXPECT_TRUE(CompareMatrices(
+      provider.ComputeConfigurationDeltas(kOnes, kZeros), kOnes * -1.0));
+
+  EXPECT_THROW(provider.ComputeConfigurationDeltas(kOnes, kInfs),
+               std::exception);
+  EXPECT_THROW(provider.ComputeConfigurationDeltas(kInfs, kOnes),
+               std::exception);
+  EXPECT_THROW(provider.ComputeConfigurationDeltas(kOnes, kNans),
+               std::exception);
+  EXPECT_THROW(provider.ComputeConfigurationDeltas(kNans, kOnes),
+               std::exception);
 
   // Distance queries.
   EXPECT_EQ(provider.ComputeConfigurationDistance(kZeros, kZeros), 0.0);

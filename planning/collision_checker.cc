@@ -99,6 +99,15 @@ class LegacyDistanceAndInterpolationProvider final
   }
 
  private:
+  Eigen::VectorXd DoComputeConfigurationDeltas(
+      const Eigen::VectorXd& from, const Eigen::VectorXd& to) const final {
+    unused(from);
+    unused(to);
+    throw std::runtime_error(
+        "ComputeConfigurationDeltas is not supported by "
+        "LegacyDistanceAndInterpolationProvider");
+  }
+
   double DoComputeConfigurationDistance(const Eigen::VectorXd& from,
                                         const Eigen::VectorXd& to) const final {
     return distance_function_(from, to);
@@ -587,6 +596,13 @@ void CollisionChecker::SetDistanceAndInterpolationProvider(
   DRAKE_THROW_UNLESS(provider != nullptr);
 
   const Eigen::VectorXd& default_q = GetDefaultConfiguration();
+
+  const Eigen::VectorXd test_deltas =
+      provider->ComputeConfigurationDeltas(default_q, default_q);
+  DRAKE_THROW_UNLESS(test_deltas.size() == default_q.size());
+  for (int index = 0; index < test_deltas.size(); ++index) {
+    DRAKE_THROW_UNLESS(test_deltas(index) == 0.0);
+  }
 
   const double test_distance =
       provider->ComputeConfigurationDistance(default_q, default_q);

@@ -164,7 +164,8 @@ LinearDistanceAndInterpolationProvider::LinearDistanceAndInterpolationProvider(
 LinearDistanceAndInterpolationProvider::
     ~LinearDistanceAndInterpolationProvider() = default;
 
-double LinearDistanceAndInterpolationProvider::DoComputeConfigurationDistance(
+Eigen::VectorXd
+LinearDistanceAndInterpolationProvider::DoComputeConfigurationDeltas(
     const Eigen::VectorXd& from, const Eigen::VectorXd& to) const {
   Eigen::VectorXd deltas = to - from;
   for (const int quat_dof_start_index : quaternion_dof_start_indices()) {
@@ -173,6 +174,12 @@ double LinearDistanceAndInterpolationProvider::DoComputeConfigurationDistance(
     const double quat_angle = from_quat.angularDistance(to_quat);
     deltas.segment<4>(quat_dof_start_index) << quat_angle, 0.0, 0.0, 0.0;
   }
+  return deltas;
+}
+
+double LinearDistanceAndInterpolationProvider::DoComputeConfigurationDistance(
+    const Eigen::VectorXd& from, const Eigen::VectorXd& to) const {
+  const Eigen::VectorXd deltas = DoComputeConfigurationDeltas(from, to);
   return deltas.cwiseProduct(distance_weights()).norm();
 }
 

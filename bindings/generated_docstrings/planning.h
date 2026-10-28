@@ -662,6 +662,18 @@ See also:
           const char* doc_copy =
 R"""(To support Clone(), allow copying (but not move nor assign).)""";
         } ctor;
+        // Symbol: drake::planning::CollisionChecker::ComputeConfigurationDeltas
+        struct /* ComputeConfigurationDeltas */ {
+          // Source: drake/planning/collision_checker.h
+          const char* doc =
+R"""(For convenience, expose the configuration deltas function of the
+DistanceAndInterpolationProvider here.
+
+Warning:
+    this function will throw if this CollisionChecker is using the
+    deprecated separate distance and interpolation functions rather
+    than a proper DistanceAndInterpolationProvider.)""";
+        } ComputeConfigurationDeltas;
         // Symbol: drake::planning::CollisionChecker::ComputeConfigurationDistance
         struct /* ComputeConfigurationDistance */ {
           // Source: drake/planning/collision_checker.h
@@ -1606,7 +1618,11 @@ plant.)""";
 R"""(This class represents the base interface for performing configuration
 distance and interpolation operations, used by CollisionChecker. See
 LinearDistanceAndInterpolationProvider for an implementation covering
-common "linear" distance and interpolation behavior.
+common "linear" distance and interpolation behavior. Additionally,
+this class includes configuration deltas, which are generally used as
+an intermediate step in computing configuration distance and are
+useful on their own for applying per-joint or per-model-instance
+tolerance checks to robot motion.
 
 Configuration distance and interpolation are necessary for a
 CollisionChecker to perform edge collision checks, and an essential
@@ -1621,6 +1637,21 @@ configuration differently when computing configuration distance.
 Likewise, in more complex C-spaces, it may be necessary to perform
 more complex interpolation behavior (e.g. when planning for a mobile
 robot whose motion is modelled via Dubbins or Reeds-Shepp paths).
+
+Configuration deltas takes two configurations of the robot, from and
+to, both as Eigen∷VectorXd, and returns a Eigen∷VectorXd of
+(generally) signed deltas of the same length as the from and to
+configurations. The specific meaning of these deltas is dependent on
+the implementation; for the nominal linear case of prismatic and
+non-continuous revolute joints, it is generally (to - from). See
+documentation on LinearDistanceAndInterpolationProvider for how more
+complex joint types may be handled.
+
+To be valid, deltas must satisfy the following condition:
+
+- ComputeConfigurationDeltas(q, q) = zero vector
+
+for values of q that are valid for the C-space in use.
 
 Configuration distance takes two configurations of the robot, from and
 to, both as Eigen∷VectorXd, and returns (potentially weighted) C-space
@@ -1644,6 +1675,20 @@ To be valid, interpolation must satisfy the following conditions:
 - InterpolateBetweenConfigurations(q, q, ratio) ≡ q, for all ratio in [0, 1]
 
 for values of q, from, and to that are valid for the C-space in use.)""";
+        // Symbol: drake::planning::DistanceAndInterpolationProvider::ComputeConfigurationDeltas
+        struct /* ComputeConfigurationDeltas */ {
+          // Source: drake/planning/distance_and_interpolation_provider.h
+          const char* doc =
+R"""(Computes the configuration deltas from the provided configuration
+``from`` to the provided configuration ``to``. The returned deltas
+will be the same size as ``from`` and ``to``.
+
+Precondition:
+    from.size() == to.size().
+
+Raises:
+    if ``from`` or ``to`` contain non-finite values.)""";
+        } ComputeConfigurationDeltas;
         // Symbol: drake::planning::DistanceAndInterpolationProvider::ComputeConfigurationDistance
         struct /* ComputeConfigurationDistance */ {
           // Source: drake/planning/distance_and_interpolation_provider.h
@@ -1663,6 +1708,14 @@ Raises:
           // Source: drake/planning/distance_and_interpolation_provider.h
           const char* doc = R"""()""";
         } ctor;
+        // Symbol: drake::planning::DistanceAndInterpolationProvider::DoComputeConfigurationDeltas
+        struct /* DoComputeConfigurationDeltas */ {
+          // Source: drake/planning/distance_and_interpolation_provider.h
+          const char* doc =
+R"""(Derived distance and interpolation providers must implement deltas
+computation. DistanceAndInterpolationProvider ensures that ``from``
+and ``to`` are the same size and contain only finite values.)""";
+        } DoComputeConfigurationDeltas;
         // Symbol: drake::planning::DistanceAndInterpolationProvider::DoComputeConfigurationDistance
         struct /* DoComputeConfigurationDistance */ {
           // Source: drake/planning/distance_and_interpolation_provider.h
@@ -1670,10 +1723,7 @@ Raises:
 R"""(Derived distance and interpolation providers must implement distance
 computation. The returned distance must be non-negative.
 DistanceAndInterpolationProvider ensures that ``from`` and ``to`` are
-the same size.
-
-Base class guarantees that ``from`` and ``to`` contain only finite
-values.)""";
+the same size and contain only finite values.)""";
         } DoComputeConfigurationDistance;
         // Symbol: drake::planning::DistanceAndInterpolationProvider::DoInterpolateBetweenConfigurations
         struct /* DoInterpolateBetweenConfigurations */ {
@@ -1682,10 +1732,8 @@ values.)""";
 R"""(Derived distance and interpolation providers must implement
 interpolation. The returned configuration must be the same size as
 ``from`` and ``to``. DistanceAndInterpolationProvider ensures that
-``from`` and ``to`` are the same size and that ``ratio`` is in [0, 1].
-
-Base class guarantees that ``from`` and ``to`` contain only finite
-values.)""";
+``from`` and ``to`` are the same size and contain only finite values
+and that ``ratio`` is in [0, 1].)""";
         } DoInterpolateBetweenConfigurations;
         // Symbol: drake::planning::DistanceAndInterpolationProvider::InterpolateBetweenConfigurations
         struct /* InterpolateBetweenConfigurations */ {
@@ -2280,6 +2328,8 @@ R"""(Constructs a JointLimits with 0-length vectors for all limits.)""";
 R"""(This class represents a basic "linear" implementation of
 DistanceAndInterpolationProvider.
 
+- Configuration deltas are (angle, 0, 0, 0) for quaternion DoF and (to - from)
+for all other positions. Quaternion angle deltas are not signed.
 - Configuration distance is computed as difference.cwiseProduct(weights).norm(),
 where difference is computed as the angle between quaternion DoF and difference
 between all other positions. Default weights are (1, 0, 0, 0) for quaternion

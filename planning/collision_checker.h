@@ -885,6 +885,19 @@ class CollisionChecker {
     return *distance_and_interpolation_provider_;
   }
 
+  /** For convenience, expose the configuration deltas function of the
+   DistanceAndInterpolationProvider here.
+   @warning this function will throw if this CollisionChecker is using the
+   deprecated separate distance and interpolation functions rather than a proper
+   DistanceAndInterpolationProvider. */
+  Eigen::VectorXd ComputeConfigurationDeltas(const Eigen::VectorXd& q1,
+                                             const Eigen::VectorXd& q2) const {
+    // clang-format off
+    return distance_and_interpolation_provider_->ComputeConfigurationDeltas(
+        q1, q2);
+    // clang-format on
+  }
+
   /** Sets the configuration distance function to `distance_function`.
    @pre distance_function satisfies the requirements documented on
    ConfigurationDistanceFunction and a DistanceAndInterpolationProvider is not

@@ -56,6 +56,14 @@ void DoFixedIiwaTest(const RobotDiagram<double>& model,
               expected_weight);
   }
 
+  // Deltas queries.
+  EXPECT_TRUE(CompareMatrices(
+      provider.ComputeConfigurationDeltas(zero_q, zero_q), zero_q));
+  EXPECT_TRUE(CompareMatrices(
+      provider.ComputeConfigurationDeltas(zero_q, ones_q), ones_q));
+  EXPECT_TRUE(CompareMatrices(
+      provider.ComputeConfigurationDeltas(ones_q, zero_q), ones_q * -1.0));
+
   // Test full-q distance.
   {
     const Eigen::VectorXd weighted_deltas =
@@ -144,26 +152,41 @@ void DoFloatingIiwaTest(const RobotDiagram<double>& model,
     }
   }
 
+  const double orientation_delta =
+      Distance(X_WBase_identity.rotation().ToQuaternion(),
+               X_WBase_test.rotation().ToQuaternion());
+  const Eigen::Vector3d translation_deltas =
+      X_WBase_test.translation() - X_WBase_identity.translation();
+
+  const Eigen::VectorXd arm_deltas = arm_ones_q - arm_zero_q;
+
+  Eigen::VectorXd full_deltas(14);
+  full_deltas << orientation_delta, 0.0, 0.0, 0.0, translation_deltas,
+      arm_deltas;
+
+  const Eigen::VectorXd zero_deltas = Eigen::VectorXd::Zero(14);
+  const Eigen::VectorXd forward_deltas = full_deltas;
+  // Note that quaternion deltas are not signed.
+  Eigen::VectorXd backward_deltas = full_deltas * -1.0;
+  backward_deltas(0) *= -1.0;
+
+  // Deltas queries.
+  EXPECT_TRUE(CompareMatrices(
+      provider.ComputeConfigurationDeltas(full_zero_q, full_zero_q),
+      zero_deltas));
+  EXPECT_TRUE(CompareMatrices(
+      provider.ComputeConfigurationDeltas(full_zero_q, full_test_q),
+      forward_deltas));
+  EXPECT_TRUE(CompareMatrices(
+      provider.ComputeConfigurationDeltas(full_test_q, full_zero_q),
+      backward_deltas));
+
   // Test full-q distance.
-  {
-    const double orientation_delta =
-        Distance(X_WBase_identity.rotation().ToQuaternion(),
-                 X_WBase_test.rotation().ToQuaternion());
-
-    const Eigen::Vector3d translation_deltas =
-        X_WBase_test.translation() - X_WBase_identity.translation();
-
-    const Eigen::VectorXd arm_deltas = arm_ones_q - arm_zero_q;
-
-    Eigen::VectorXd deltas(14);
-    deltas << orientation_delta, 0.0, 0.0, 0.0, translation_deltas, arm_deltas;
-
-    const Eigen::VectorXd weighted_deltas =
-        deltas.cwiseProduct(expected_weights);
-    const double expected_distance = weighted_deltas.norm();
-    EXPECT_EQ(provider.ComputeConfigurationDistance(full_zero_q, full_test_q),
-              expected_distance);
-  }
+  const Eigen::VectorXd weighted_full_deltas =
+      full_deltas.cwiseProduct(expected_weights);
+  const double expected_distance = weighted_full_deltas.norm();
+  EXPECT_EQ(provider.ComputeConfigurationDistance(full_zero_q, full_test_q),
+            expected_distance);
 
   // Interpolation queries.
   EXPECT_TRUE(CompareMatrices(
