@@ -542,6 +542,27 @@ class LadderTest : public ::testing::TestWithParam<LadderTestConfig> {
       // TODO(rpoyner-tri): calculate reaction forces at the constraint site,
       // most likely by hand, but possibly by reaching into solver internals of
       // SAP and/or ICF.
+
+      // As a weaker check of the constraint's wrench, note that the upper half
+      // is a free body that is in equilibrium under gravity, contact, and the
+      // constraint. So long as the constraint wrench is included in the forces
+      // applied to it, its (floating) joint transmits nothing. If the
+      // constraint's wrench were missing or had the wrong sign, the joint would
+      // instead carry about half of the ladder's weight.
+      const Joint<double>* upper_joint = nullptr;
+      for (JointIndex i : plant_->GetJointIndices()) {
+        const Joint<double>& joint = plant_->get_joint(i);
+        if (joint.child_body().index() == ladder_upper_->index()) {
+          upper_joint = &joint;
+        }
+      }
+      ASSERT_NE(upper_joint, nullptr);
+      const SpatialForce<double>& F_Bu_W =
+          X_WBu.rotation() * reaction_forces[upper_joint->ordinal()];
+      EXPECT_TRUE(CompareMatrices(F_Bu_W.translational(), Vector3d::Zero(),
+                                  1e-3 * weight));
+      EXPECT_TRUE(CompareMatrices(F_Bu_W.rotational(), Vector3d::Zero(),
+                                  1e-3 * weight));
     }
   }
 
