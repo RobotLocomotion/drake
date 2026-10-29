@@ -1,6 +1,9 @@
 <?xml version="1.0"?>
 <sdf version="1.9">
   <model name="unmerged">
+    <!-- P is the canonical link, so the model frame, and the proxy frame that
+         replaces it in a merge include, are attached to P. P's pose keeps
+         that frame from coinciding with P's own frame. -->
     <link name="P">
       <pose>1 2 3 0.1 0.2 0.3</pose>
     </link>

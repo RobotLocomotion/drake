@@ -152,7 +152,7 @@ start with `::`; there is no way to denote any "outer" or "outermost" scope.
 For a detailed design discussion with examples, see the
 <a href='http://sdformat.org/tutorials?tut=composition_proposal#1-3-name-scoping-and-cross-referencing'>SDFormat documentation of name scoping.</a>
 
-@subsubsection sdf_joint_frames Joint Frames
+@subsection sdf_joint_frames Joint Frames
 
 Drake considers a joint to be a connection between two frames: the parent frame
 Jp (fixed on the parent link) and the child frame Jc (fixed on the child link).
@@ -1317,13 +1317,16 @@ The presence of `<drake:independent_frames/>` in a joint instead makes the
 frames named by its `<parent>` and `<child>` _be_ Jp and Jc, as with
 @ref tag_drake_joint. Each may name a link, an explicit frame, a model (meaning
 its implicit model frame), or (for `<parent>`) `world`, possibly using a scoped
-name. Neither may name a joint, since Drake has no frame for an SDFormat
-joint's own frame J. Nor may either name a model's implicit frame, by the
-model's name or as `__model__`, or a frame attached to it, if Drake doesn't
-attach that implicit frame to the model's canonical link because the link is
-deformable or comes from an included URDF or MJCF model (name a rigid link
-instead). Unlike @ref tag_drake_parent, neither may name a frame of a model with
-no links, such as a static model with only frames, or a frame attached to one.
+name. Neither may name:
+
+- a joint, since Drake has no frame for an SDFormat joint's own frame J;
+- a model's implicit frame, by the model's name or as `__model__`, or a frame
+  attached to it, if Drake doesn't attach that implicit frame to the model's
+  canonical link because the link is deformable or comes from an included URDF
+  or MJCF model (name a rigid link instead); or
+- a frame of a model with no links, such as a static model with only frames, or
+  a frame attached to one, though @ref tag_drake_parent allows those.
+
 The joint still connects the links to which SDFormat attaches the named frames;
 the element changes only where Jp and Jc are on them. Since Jp and Jc are
 located independently, the links' poses don't assemble them: at the zero

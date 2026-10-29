@@ -831,6 +831,48 @@ const Frame<double>* FindFrame(const SDFormatDiagnostic& diagnostic,
       plant.GetFrameByName(search_frame_name, search_model_instance));
 }
 
+// Returns the frame that `frame_name`, given by the <`element_name`> child of
+// a joint with <drake:independent_frames/>, refers to; see FindFrame(). Reports
+// an error and returns nullptr if there is no such frame, or if it can't be a
+// joint frame.
+//
+// Unlike a <drake:joint>, such a joint can't name a frame of a model with no
+// links, such as a static model with only frames, or a frame attached to one.
+// SDFormat attaches those to the model rather than to a link, and an ordinary
+// joint can't name them either. A frame attached to one belongs to the model
+// that declares it, which may have links, so this checks the model of each
+// frame along the chain of attachments, as FindFrame() does.
+// TODO(#25151) Allow those in <parent> once an ordinary joint can name them.
+const Frame<double>* FindIndependentJointFrame(
+    const SDFormatDiagnostic& diagnostic, const sdf::Joint& joint_spec,
+    const char* element_name, const std::string& frame_name,
+    const FrameNameScope& scope, ModelInstanceIndex model_instance,
+    const MultibodyPlant<double>& plant) {
+  const sdf::ElementPtr node = joint_spec.Element();
+  const Frame<double>* frame = FindFrame(
+      diagnostic, node, element_name, frame_name, scope, model_instance, plant);
+  if (frame == nullptr || &frame->body() != &plant.world_body()) {
+    return frame;
+  }
+  for (const Frame<double>* f = frame; f != nullptr;) {
+    if (plant.GetBodyIndices(f->model_instance()).empty()) {
+      diagnostic.Error(
+          node,
+          fmt::format("<joint name='{0}'>: <{1}>{2}</{1}> names {3} of model "
+                      "'{4}', which has no links. Name a link instead.",
+                      joint_spec.Name(), element_name, frame_name,
+                      f == frame ? "a frame"
+                                 : fmt::format("a frame attached to frame '{}'",
+                                               f->name()),
+                      plant.GetModelInstanceName(f->model_instance())));
+      return nullptr;
+    }
+    const auto* offset_frame = dynamic_cast<const FixedOffsetFrame<double>*>(f);
+    f = offset_frame != nullptr ? &offset_frame->parent_frame() : nullptr;
+  }
+  return frame;
+}
+
 // A joint whose frames Jp and Jc are the ones named by its `parent_tag` and
 // `child_tag` elements has nothing left for a <pose> to locate. Reports an
 // error and returns false if the joint `node` has a <pose> anyway.
@@ -901,6 +943,13 @@ std::optional<JointFrames> ResolveJointFramesAtJ(
   const DiagnosticPolicy policy =
       diagnostic.MakePolicyForNode(*joint_spec.Element());
 
+  // Neither call to GetRelativeBodyName() below can fail today, so no test
+  // reaches their error returns. For a joint in a model, that function needs a
+  // link in the model or one nested in it, which every link the joint names
+  // is, except the world. The parent world is handled separately, and
+  // libsdformat rejects a child that is, or resolves to, the world when it
+  // loads the file. For a world joint, the function accepts any link.
+
   // Get the pose of frame J in the frame of the child link C, as specified in
   // <joint> <pose> ... </pose></joint>. The default `relative_to` pose of a
   // joint will be the child link.
@@ -962,6 +1011,8 @@ std::optional<JointFrames> FindIndependentJointFrames(
                      "joint.");
     return std::nullopt;
   }
+  // libsdformat gives an unknown element a value only if it has text (see
+  // copyChildren() in its src/Utils.cc), so an empty one has none.
   if (independent_frames->GetValue() != nullptr ||
       independent_frames->GetFirstElement() != nullptr ||
       independent_frames->GetAttributeCount() > 0) {
@@ -977,42 +1028,13 @@ std::optional<JointFrames> FindIndependentJointFrames(
   }
   // Use the names held by the sdf::Joint, not the text of its elements, which
   // libsdformat does not update when it merges an included model.
-  //
-  // Unlike a <drake:joint>, this joint can't name a frame of a model with no
-  // links, such as a static model with only frames, or a frame attached to
-  // one. SDFormat attaches those to the model rather than to a link, and an
-  // ordinary joint can't name them either. A frame attached to one belongs to
-  // the model that declares it, which may have links, so check the model of
-  // each frame along the chain of attachments, as FindFrame() does.
-  // TODO(#25151) Allow those in <parent> once an ordinary joint can name them.
-  auto find_frame = [&](const char* tag,
-                        const std::string& name) -> const Frame<double>* {
-    const Frame<double>* frame =
-        FindFrame(diagnostic, node, tag, name, scope, model_instance, plant);
-    if (frame == nullptr || &frame->body() != &plant.world_body()) {
-      return frame;
-    }
-    for (const Frame<double>* f = frame; f != nullptr;) {
-      if (plant.GetBodyIndices(f->model_instance()).empty()) {
-        diagnostic.Error(
-            node,
-            fmt::format("<joint name='{0}'>: <{1}>{2}</{1}> names {3} of "
-                        "model '{4}', which has no links. Name a link "
-                        "instead.",
-                        joint_spec.Name(), tag, name,
-                        f == frame ? "a frame" : "a frame attached to a frame",
-                        plant.GetModelInstanceName(f->model_instance())));
-        return nullptr;
-      }
-      const auto* offset_frame =
-          dynamic_cast<const FixedOffsetFrame<double>*>(f);
-      f = offset_frame != nullptr ? &offset_frame->parent_frame() : nullptr;
-    }
-    return frame;
-  };
-  const Frame<double>* frame_Jp = find_frame("parent", joint_spec.ParentName());
+  const Frame<double>* frame_Jp = FindIndependentJointFrame(
+      diagnostic, joint_spec, "parent", joint_spec.ParentName(), scope,
+      model_instance, plant);
   if (frame_Jp == nullptr) return std::nullopt;
-  const Frame<double>* frame_Jc = find_frame("child", joint_spec.ChildName());
+  const Frame<double>* frame_Jc = FindIndependentJointFrame(
+      diagnostic, joint_spec, "child", joint_spec.ChildName(), scope,
+      model_instance, plant);
   if (frame_Jc == nullptr) return std::nullopt;
   return JointFrames{.P = frame_Jp, .C = frame_Jc};
 }

@@ -1159,7 +1159,11 @@ TEST_F(SdfParserTest, NoncanonicalFrameNames) {
 }
 
 // An empty frame reference must not resolve to the containing model's frame,
-// including when it contains only scope delimiters.
+// including when it contains only scope delimiters. A <joint> isn't checked
+// here, with or without <drake:independent_frames/>: libsdformat rejects an
+// empty or missing frame or model in its <parent> or <child> while loading,
+// before Drake looks the name up. That's also why DrakeJointNestedParentBad and
+// DrakeJointNestedChildBad have no <joint> counterparts.
 TEST_F(SdfParserTest, EmptyFrameNameError) {
   for (Referrer kind : {Referrer::kDrakeJoint, Referrer::kBushing}) {
     for (const std::string name : {"", "::", "::::"}) {
@@ -1702,6 +1706,54 @@ TEST_F(SdfParserTest, IndependentFramesErrors) {
   EXPECT_THAT(TakeError(),
               MatchesRegex(".*Unsupported SDFormat element in drake:joint: "
                            "drake:independent_frames.*"));
+
+  // What the failed models left in the plant must still be sound.
+  plant_.Finalize();
+}
+
+// Drake names the frames it adds for a joint j "j_parent" and "j_child", so an
+// explicit frame in the same model can't have either name. Explicit frames are
+// added before joints, so it's the joint's frame that collides, but the plant
+// reports the collision the same way whichever comes second. That's so for an
+// ordinary joint, and for a universal joint with <drake:independent_frames/>,
+// which adds frames too.
+TEST_F(SdfParserTest, JointFrameNameCollisionError) {
+  for (const bool flagged : {false, true}) {
+    for (const std::string suffix : {"parent", "child"}) {
+      SCOPED_TRACE(fmt::format("{} {}", flagged, suffix));
+      const std::string model_name =
+          fmt::format("m{}", plant_.num_model_instances());
+      DRAKE_EXPECT_THROWS_MESSAGE(
+          ParseTestString(fmt::format(R"""(
+<model name='{}'>
+  <link name='P'/>
+  <link name='C'>
+    <pose>1 0 0 0 0 0</pose>
+  </link>
+  <frame name='j_{}' attached_to='P'/>
+  {}
+</model>)""",
+                                      model_name, suffix,
+                                      flagged ? R"""(
+  <joint name='j' type='universal'>
+    <drake:independent_frames/>
+    <parent>P</parent>
+    <child>C</child>
+    <axis><xyz>1 0 0</xyz></axis>
+    <axis2><xyz>0 1 0</xyz></axis2>
+  </joint>)"""
+                                              : R"""(
+  <joint name='j' type='fixed'>
+    <parent>P</parent>
+    <child>C</child>
+  </joint>)"""),
+                          "1.9"),
+          fmt::format("Model instance '{}' already contains a frame named "
+                      "'j_{}'. Frame names must be unique within a given "
+                      "model.",
+                      model_name, suffix));
+    }
+  }
 }
 
 // With <drake:independent_frames/>, the frames named by a joint's <parent> and
@@ -2032,36 +2084,38 @@ TEST_F(SdfParserTest, IndependentFramesIgnorePreexistingModels) {
 // <drake:independent_frames/> must not name a frame of a model with no links,
 // whether the model's implicit frame or one of its explicit frames, in either
 // <parent> or <child>. Nor may it name a frame attached to one, here G and H,
-// even though such a frame belongs to the model that declares it, which has
-// links: the joint's model, or at world scope, the world.
+// or K through H, even though such a frame belongs to the model that declares
+// it, which has links: the joint's model, or at world scope, the world.
 TEST_F(SdfParserTest, IndependentFramesModelWithoutLinksError) {
   struct Case {
     std::string name;
-    bool attached;  // Whether the frame is attached to a frame of model s.
+    // The frame of model s to which the named frame is attached, if any.
+    std::string attached_to;
   };
-  const std::vector<Case> cases{{"s::F", false},
-                                {"s", false},
-                                {"s::__model__", false},
-                                {"G", true},
-                                {"H", true}};
+  const std::vector<Case> cases{{"s::F", ""},         {"s", ""},
+                                {"s::__model__", ""}, {"G", "__model__"},
+                                {"H", "F"},           {"K", "F"}};
   for (const bool at_world : {false, true}) {
-    for (const auto& [name, attached] : cases) {
+    for (const auto& [name, attached_to] : cases) {
       for (const bool in_parent : {true, false}) {
         SCOPED_TRACE(fmt::format("{} {} {}", at_world ? "world" : "model", name,
                                  in_parent ? "parent" : "child"));
         const std::string model_name =
             fmt::format("m{}", plant_.num_model_instances());
-        // At world scope, names in the model need its prefix, and G and H are
-        // world frames, which need names unique to this parse.
+        // At world scope, names in the model need its prefix, and G, H, and K
+        // are world frames, which need names unique to this parse.
         const std::string prefix = at_world ? model_name + "::" : "";
-        const std::string g = at_world ? model_name + "_G" : "G";
-        const std::string h = at_world ? model_name + "_H" : "H";
+        auto local = [&](const std::string& frame) {
+          return at_world ? model_name + "_" + frame : frame;
+        };
         const std::string frames = fmt::format(R"""(
   <frame name='{}' attached_to='{}s'/>
-  <frame name='{}' attached_to='{}s::F'/>)""",
-                                               g, prefix, h, prefix);
+  <frame name='{}' attached_to='{}s::F'/>
+  <frame name='{}' attached_to='{}'/>)""",
+                                               local("G"), prefix, local("H"),
+                                               prefix, local("K"), local("H"));
         const std::string frame_name =
-            name == "G" ? g : (name == "H" ? h : prefix + name);
+            attached_to.empty() ? prefix + name : local(name);
         const std::string joint = MakeFrameReference(
             Referrer::kJoint, "j", in_parent ? frame_name : prefix + "D",
             in_parent ? prefix + "D" : frame_name);
@@ -2086,12 +2140,19 @@ TEST_F(SdfParserTest, IndependentFramesModelWithoutLinksError) {
                         "'{3}::s', which has no links\\. Name a link "
                         "instead\\.",
                         in_parent ? "parent" : "child", frame_name,
-                        attached ? "a frame attached to a frame" : "a frame",
+                        attached_to.empty()
+                            ? "a frame"
+                            : fmt::format("a frame attached to frame '{}'",
+                                          attached_to),
                         model_name)));
         EXPECT_EQ(plant_.num_joints(), num_joints);
       }
     }
   }
+
+  // What the failed models left in the plant, including their explicit
+  // frames, must still be sound.
+  plant_.Finalize();
 }
 
 // This is what <drake:independent_frames/> is for: a closed kinematic loop that
