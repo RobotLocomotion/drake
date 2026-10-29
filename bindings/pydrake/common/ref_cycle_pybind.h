@@ -98,6 +98,14 @@ void make_arbitrary_ref_cycle(
 void make_arbitrary_ref_link(
     py::handle p0, py::handle p1, const std::string& location_hint);
 
+/* Returns true if `p` is the source of at least one ref link. (A ref_cycle
+makes two ref links, one in each direction, so both of its ends are sources.)
+The target of a one-way link is not thereby a source, so this returns false for
+it. For example, an object that borrows a Python callable and keeps it alive
+with a link is a source. This only reflects the links made so far, so it must be
+asked after the links are made. */
+bool is_ref_link_source(py::handle p);
+
 }  // namespace internal
 }  // namespace pydrake
 }  // namespace drake
