@@ -249,6 +249,14 @@ class TestInverseKinematics(unittest.TestCase):
         )
         self.assertIsInstance(binding, mp.Binding[mp.Cost])
 
+    def test_AddManipulabilityCost(self):
+        binding = self.ik_two_bodies.AddManipulabilityCost(
+            frameA=self.body1_frame,
+            frameB=self.body2_frame,
+            c=1.0,
+        )
+        self.assertIsInstance(binding, mp.Binding[mp.Cost])
+
     def test_AddGazeTargetConstraint(self):
         p_AS = np.array([0.1, 0.2, 0.3])
         n_A = np.array([0.3, 0.5, 1.2])
@@ -895,6 +903,28 @@ class TestConstraints(unittest.TestCase):
             plant_context=variables.plant_context,
         )
         self.assertIsInstance(cost, mp.Cost)
+
+    def test_manipulability_cost(self):
+        # Double plant only: the gradient uses CalcHessianSpatialVelocity.
+        variables = self.variables_f
+        q = variables.plant.GetPositions(variables.plant_context)
+        cost = ik.ManipulabilityCost(
+            plant=variables.plant,
+            frameA=variables.body1_frame,
+            frameB=variables.body2_frame,
+            c=1.0,
+            plant_context=variables.plant_context,
+        )
+        self.assertIsInstance(cost, mp.Cost)
+        weighted = ik.ManipulabilityCost(
+            plant=variables.plant,
+            frameA=variables.body1_frame,
+            frameB=variables.body2_frame,
+            c=2.0,
+            plant_context=variables.plant_context,
+        )
+        self.assertLess(cost.Eval(q)[0], 0)
+        self.assertAlmostEqual(weighted.Eval(q)[0], 2 * cost.Eval(q)[0])
 
     @check_type_variables
     def test_com_position_constraint(self, variables):
