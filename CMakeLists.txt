@@ -470,27 +470,40 @@ if(WITH_USER_FMT)
   override_module(fmt)
 endif()
 
-option(WITH_USER_SPDLOG "Use user-provided spdlog" ${DEFAULT_WITH_USER_LIBS})
+set(DRAKE_TEXT_LOGGING "spdlog" CACHE STRING
+  "Configures text logging; valid choices are 'spdlog' or 'simple'"
+)
+if(DRAKE_TEXT_LOGGING STREQUAL spdlog)
+  string(APPEND BAZEL_REPO_ENV " --@drake//tools/flags:text_logging=spdlog")
+elseif(DRAKE_TEXT_LOGGING STREQUAL simple)
+  string(APPEND BAZEL_REPO_ENV " --@drake//tools/flags:text_logging=simple")
+else()
+  message(WARNING "Ignoring unknown value '${DRAKE_TEXT_LOGGING}' for DRAKE_TEXT_LOGGING")
+endif()
 
-if(WITH_USER_SPDLOG)
-  if(NOT WITH_USER_FMT)
-    message(FATAL_ERROR
-      "User-provided spdlog (WITH_USER_SPDLOG) "
-      "requires user-provided fmt (WITH_USER_FMT).")
+if(DRAKE_TEXT_LOGGING STREQUAL spdlog)
+  option(WITH_USER_SPDLOG "Use user-provided spdlog" ${DEFAULT_WITH_USER_LIBS})
+
+  if(WITH_USER_SPDLOG)
+    if(NOT WITH_USER_FMT)
+      message(FATAL_ERROR
+        "User-provided spdlog (WITH_USER_SPDLOG) "
+        "requires user-provided fmt (WITH_USER_FMT).")
+    endif()
+    find_package(spdlog CONFIG REQUIRED)
+    symlink_external_repository_includes(spdlog spdlog::spdlog)
+    # Modern versions of spdlog (i.e. >= 1.11.0) specify a minor version in the
+    # SONAME spelling, while older versions only use the major version.
+    # We support that logic here to provide compatibility with both.
+    # See https://github.com/gabime/spdlog/releases/tag/v1.11.0 for details.
+    set(SPDLOG_USE_SO_MINOR_VERSION USE_SO_MINOR_VERSION)
+    if(${spdlog_VERSION_MAJOR} LESS 1 OR
+      (${spdlog_VERSION_MAJOR} EQUAL 1 AND ${spdlog_VERSION_MINOR} LESS 11))
+      set(SPDLOG_USE_SO_MINOR_VERSION)
+    endif()
+    symlink_external_repository_libs(spdlog spdlog::spdlog ${SPDLOG_USE_SO_MINOR_VERSION})
+    override_module(spdlog)
   endif()
-  find_package(spdlog CONFIG REQUIRED)
-  symlink_external_repository_includes(spdlog spdlog::spdlog)
-  # Modern versions of spdlog (i.e. >= 1.11.0) specify a minor version in the
-  # SONAME spelling, while older versions only use the major version.
-  # We support that logic here to provide compatibility with both.
-  # See https://github.com/gabime/spdlog/releases/tag/v1.11.0 for details.
-  set(SPDLOG_USE_SO_MINOR_VERSION USE_SO_MINOR_VERSION)
-  if(${spdlog_VERSION_MAJOR} LESS 1 OR
-    (${spdlog_VERSION_MAJOR} EQUAL 1 AND ${spdlog_VERSION_MINOR} LESS 11))
-    set(SPDLOG_USE_SO_MINOR_VERSION)
-  endif()
-  symlink_external_repository_libs(spdlog spdlog::spdlog ${SPDLOG_USE_SO_MINOR_VERSION})
-  override_module(spdlog)
 endif()
 
 if(NOT APPLE)

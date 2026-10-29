@@ -7,12 +7,6 @@
 #include <fmt/ostream.h>
 #include <gtest/gtest.h>
 
-// The BUILD.bazel rules must supply this flag.  This test code is compiled and
-// run twice -- once with spdlog, and once without.
-#ifndef TEXT_LOGGING_TEST_SPDLOG
-#error Missing a required definition to compile this test case.
-#endif
-
 namespace {
 
 class Streamable {

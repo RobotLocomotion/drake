@@ -56,7 +56,7 @@ std::string logging::set_log_level(const std::string& level) {
 }
 
 const char* const logging::kSetLogLevelHelpMessage =
-    "sets the spdlog output threshold; possible values are "
+    "sets the output threshold; possible values are "
     "'unchanged', "
     "'trace', "
     "'debug', "
@@ -72,7 +72,8 @@ void logging::set_log_pattern(const std::string& pattern) {
 
 const char* const logging::kSetLogPatternHelpMessage =
     "sets the spdlog pattern for formatting; for more information, see "
-    "https://github.com/gabime/spdlog/wiki/3.-Custom-formatting";
+    "https://github.com/gabime/spdlog/wiki/3.-Custom-formatting; "
+    "this has no effect unless spdlog is enabled";
 
 const char* const logging::kSetLogLevelUnchanged = "unchanged";
 
