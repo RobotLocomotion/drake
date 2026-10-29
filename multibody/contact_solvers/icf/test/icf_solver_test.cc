@@ -569,6 +569,67 @@ GTEST_TEST(IcfSolver, ReuseAcrossIslandMergeAndSplit) {
   }
 }
 
+/* Hessian reuse must not carry a factorization between models whose islands
+have the same shape but consist of different dofs. That happens when joint
+locking switches between the full model and a reduced model, since ReduceInto()
+renumbers cliques and dofs: island i of one model can look just like island i of
+the previous one (same block sizes and pattern) while being different dofs. */
+GTEST_TEST(IcfSolver, ReuseAcrossReducedModels) {
+  std::unique_ptr<IcfSolver> solver =
+      MakeSolver(true, [](IcfSolverParameters* p) {
+        p->enable_hessian_reuse = true;
+      });
+  IcfData<double> data;
+
+  // Solves `model`, and checks that each island flagged in `must_refactor` was
+  // factored (islands that are unchanged since the previous solve may or may
+  // not have reused their factorization).
+  auto solve = [&](const IcfModel<double>& model,
+                   const std::vector<bool>& must_refactor) {
+    model.ResizeData(&data);
+    data.set_v(VectorXd::LinSpaced(model.num_velocities(), -0.5, 0.7));
+    ASSERT_TRUE(solver->SolveWithGuess(model, kConvergenceTolerance, &data));
+    ASSERT_EQ(solver->num_islands(), ssize(must_refactor));
+    for (int i = 0; i < solver->num_islands(); ++i) {
+      if (must_refactor[i]) {
+        EXPECT_GE(solver->island_stats(i).num_factorizations, 1)
+            << "island " << i;
+      }
+    }
+  };
+
+  IcfModel<double> model;
+  MakeUnconstrainedModel(&model);  // Three cliques of six dofs each.
+  model.SetSparsityPattern();
+  solve(model, {true, true, true});
+
+  // Each case lists the dofs to lock, and the islands whose dofs differ from
+  // those that the same island index held in the previous solve:
+  //  - Locking all of clique 0 makes island 0 clique 1 and island 1 clique 2.
+  //  - Locking dof 0 leaves three islands; islands 0 and 1 changed. Island 2 is
+  //    clique 2 again, as it was in the very first solve.
+  //  - Locking dof 1 instead of dof 0 keeps every clique and block size, but
+  //    island 0 holds different dofs.
+  //  - Locking nothing grows island 0 back to six dofs.
+  struct Case {
+    std::vector<int> locked;
+    std::vector<bool> must_refactor;
+  };
+  const std::vector<Case> cases{{{0, 1, 2, 3, 4, 5}, {true, true}},
+                                {{0}, {true, true, false}},
+                                {{1}, {true, false, false}},
+                                {{}, {true, false, false}}};
+  IcfModel<double> reduced_model;
+  ReducedMapping mapping;
+  for (const Case& c : cases) {
+    SCOPED_TRACE(fmt::format("locked dofs = {}", fmt::join(c.locked, ", ")));
+    MakeModelReducible(&model, c.locked);
+    model.ReduceInto(&reduced_model, &mapping);
+    reduced_model.SetSparsityPattern();
+    solve(reduced_model, c.must_refactor);
+  }
+}
+
 /* Checks the aggregation of per-island statistics when the islands take
 different numbers of iterations, including an island that converges at its
 initial guess. */

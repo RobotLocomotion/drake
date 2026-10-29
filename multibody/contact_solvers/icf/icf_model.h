@@ -71,6 +71,12 @@ struct IcfParameters {
   // IcfSolverParameters::use_islands).
   bool use_islands{true};
 
+  // For a model made by IcfModel::ReduceInto(), the velocity index in the full
+  // model of each of this model's velocities, size nv. Empty for any other
+  // model, whose velocities are their own originals. This identifies velocities
+  // across models, since reduction renumbers cliques and velocities.
+  std::vector<int> original_velocities;
+
   // Parameters that are only for model reduction. These do not affect *this*
   // model, but rather describe how to construct a separate, reduced, model.
   struct ReductionParameters {
@@ -166,6 +172,16 @@ class IcfModel {
   /* Returns a vector of starting indices into the velocity vector for each
   clique, size num_cliques() + 1. The final entry contains num_velocities(). */
   const std::vector<int>& clique_starts() const { return clique_starts_; }
+
+  /* Returns the index of velocity `i` in the full model that this model was
+  reduced from by ReduceInto(), or `i` itself if this model is not a reduced
+  model. Unlike velocity and clique indices, this identifies a velocity across
+  models that came from the same full model. */
+  int original_velocity(int i) const {
+    DRAKE_ASSERT(0 <= i && i < num_velocities_);
+    const std::vector<int>& original = params().original_velocities;
+    return original.empty() ? i : original[i];
+  }
 
   /* Returns the total number of constraints of any type in the problem. */
   int num_constraints() const {

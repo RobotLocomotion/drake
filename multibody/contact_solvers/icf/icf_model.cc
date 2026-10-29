@@ -601,6 +601,7 @@ void IcfModel<T>::ReduceInto(IcfModel<T>* reduced_model,
   reduced_params->body_mass = full_params.body_mass;
   reduced_params->body_is_floating = full_params.body_is_floating;
   reduced_params->use_islands = full_params.use_islands;
+  reduced_params->original_velocities = unlocked_dofs;
 
   // Map all cliques possibly having unlocked DoFs.
   mapping->clique_subsequence.ResetToSize(num_cliques());

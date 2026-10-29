@@ -185,14 +185,17 @@ class IcfSolver {
         hessian_factorization;
     Eigen::LDLT<Eigen::MatrixXd> dense_hessian_factorization;
 
-    // The island's sub-Hessian sparsity pattern and cliques from the last time
-    // the Hessian was computed, for triggering Hessian reuse. The cliques are
-    // needed because an island index can refer to different cliques in
-    // different solves (e.g., as contacts merge or split islands), even when
-    // the sparsity pattern has the same shape.
+    // The island's sub-Hessian sparsity pattern and velocities from the last
+    // time the Hessian was computed, for triggering Hessian reuse. The
+    // velocities (as numbered in the full model, see
+    // IcfModel::original_velocity()) are needed because an island index can
+    // refer to different dofs in different solves, even when the sparsity
+    // pattern has the same shape: as contacts merge or split islands, and as
+    // joint locking switches between the full model and reduced models, which
+    // renumber cliques and dofs.
     std::unique_ptr<contact_solvers::internal::BlockSparsityPattern>
         previous_sparsity_pattern;
-    std::vector<int> previous_cliques;
+    std::vector<int> previous_velocities;
 
     // Flag for Hessian factorization re-use (changes between iterations).
     bool hessian_factorization_is_fresh_enough{false};

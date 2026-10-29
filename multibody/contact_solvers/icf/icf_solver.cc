@@ -292,9 +292,14 @@ bool IcfSolver::SolveIsland(const IcfModel<double>& model, const int island,
     if (!reuse_sparsity_pattern) {
       state->previous_sparsity_pattern = std::make_unique<BlockSparsityPattern>(
           model.island_sparsity_pattern(island));
-      const std::span<const int> cliques =
-          model.partition().island_cliques(island);
-      state->previous_cliques.assign(cliques.begin(), cliques.end());
+      state->previous_velocities.clear();
+      for (int c : model.partition().island_cliques(island)) {
+        const int start = model.clique_starts()[c];
+        for (int j = 0; j < model.clique_size(c); ++j) {
+          state->previous_velocities.push_back(
+              model.original_velocity(start + j));
+        }
+      }
     }
 
     // Compute the optimal step size αₖ = min_α ℓᵢ(vₖ + α⋅wₖ).
@@ -524,9 +529,21 @@ bool IcfSolver::IslandSparsityChanged(const IcfModel<double>& model,
   if (state.previous_sparsity_pattern == nullptr) {
     return true;  // No previous sparsity pattern to compare against.
   }
-  if (!std::ranges::equal(model.partition().island_cliques(island),
-                          state.previous_cliques)) {
-    return true;  // Same island index, but different cliques.
+  // Same island index, but possibly different dofs. N.B. Comparing clique
+  // indices is not enough: ReduceInto() renumbers them, and a lock can remove
+  // different dofs from a clique without changing its size.
+  int i = 0;
+  for (int c : model.partition().island_cliques(island)) {
+    const int start = model.clique_starts()[c];
+    for (int k = 0; k < model.clique_size(c); ++k, ++i) {
+      if (i >= ssize(state.previous_velocities) ||
+          state.previous_velocities[i] != model.original_velocity(start + k)) {
+        return true;
+      }
+    }
+  }
+  if (i != ssize(state.previous_velocities)) {
+    return true;
   }
   const BlockSparsityPattern& current = model.island_sparsity_pattern(island);
   return (current.neighbors() !=
