@@ -221,7 +221,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     hydroelastic_geometries_ = other.hydroelastic_geometries_;
     geometries_for_deformable_contact_ =
         other.geometries_for_deformable_contact_;
-    mesh_distance_boundary_cahe_ = other.mesh_distance_boundary_cahe_;
+    mesh_distance_boundary_cache_ = other.mesh_distance_boundary_cache_;
     convex_hull_cache_ = other.convex_hull_cache_;
     geometry_to_hull_key_ = other.geometry_to_hull_key_;
     dynamic_tree_.clear();
@@ -283,7 +283,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     engine->hydroelastic_geometries_ = this->hydroelastic_geometries_;
     engine->geometries_for_deformable_contact_ =
         this->geometries_for_deformable_contact_;
-    engine->mesh_distance_boundary_cahe_ = this->mesh_distance_boundary_cahe_;
+    engine->mesh_distance_boundary_cache_ = this->mesh_distance_boundary_cache_;
     engine->convex_hull_cache_ = this->convex_hull_cache_;
     engine->geometry_to_hull_key_ = this->geometry_to_hull_key_;
     engine->distance_tolerance_ = this->distance_tolerance_;
@@ -497,7 +497,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     }
     hydroelastic_geometries_.RemoveGeometry(id);
     geometries_for_deformable_contact_.RemoveGeometry(id);
-    mesh_distance_boundary_cahe_.Remove(id);
+    mesh_distance_boundary_cache_.Remove(id);
 
     // Evict the convex hull cache entry for this geometry if it is the last
     // user. The CollisionObjectd was already destroyed above (by the inner
@@ -617,73 +617,78 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
         shape, data.id, data.properties, data.X_WG);
   }
 
+  // Note: In ImplementGeometry(*), all supported shape types rely either on
+  // ProcessPrimitive() or ProcessMeshType(). If any shape ends up using a
+  // different code path, we'll need to update the unit tests; they assume that
+  // there are only two code paths and are written accordingly.
+
+  // The common work for reifying a primitive shape.
+  template <typename Shape>
+  void ProcessPrimitive(const Shape& shape,
+                        const std::shared_ptr<fcl::ShapeBased>& fcl_shape,
+                        void* user_data) {
+    TakeShapeOwnership(fcl_shape, user_data);
+    ProcessHydroelastic(shape, user_data);
+    ProcessGeometriesForDeformableContact(shape, user_data);
+  }
+
+  // The common work for reifying a mesh-type shape (Mesh or Convex).
+  template <typename Shape>
+  void ProcessMeshType(const Shape& shape, void* user_data) {
+    ImplementFromConvexHull(shape, user_data);
+    // Set up data for ComputeSignedDistanceToPoint() for mesh types.
+    const ReifyData& data = *static_cast<ReifyData*>(user_data);
+    mesh_distance_boundary_cache_.Register(data.id, shape);
+  }
+
   void ImplementGeometry(const Box& box, void* user_data) override {
     auto fcl_box = make_shared<fcl::Boxd>(box.size());
-    TakeShapeOwnership(fcl_box, user_data);
-    ProcessHydroelastic(box, user_data);
-    ProcessGeometriesForDeformableContact(box, user_data);
+    ProcessPrimitive(box, fcl_box, user_data);
   }
 
   void ImplementGeometry(const Capsule& capsule, void* user_data) override {
     // Note: Using `shared_ptr` because of FCL API requirements.
     auto fcl_capsule =
         make_shared<fcl::Capsuled>(capsule.radius(), capsule.length());
-    TakeShapeOwnership(fcl_capsule, user_data);
-    ProcessHydroelastic(capsule, user_data);
-    ProcessGeometriesForDeformableContact(capsule, user_data);
+    ProcessPrimitive(capsule, fcl_capsule, user_data);
   }
 
   // For proximity role, a Convex surface mesh can come from a surface mesh in
   // obj file or a tetrahedral mesh in vtk file, from which we extract its
   // surface.
   void ImplementGeometry(const Convex& convex, void* user_data) override {
-    ImplementFromConvexHull(convex, user_data);
-    // Set up data for ComputeSignedDistanceToPoint() from convex meshes.
-    const ReifyData& data = *static_cast<ReifyData*>(user_data);
-    mesh_distance_boundary_cahe_.Register(data.id, convex);
+    ProcessMeshType(convex, user_data);
   }
 
   void ImplementGeometry(const Cylinder& cylinder, void* user_data) override {
     // Note: Using `shared_ptr` because of FCL API requirements.
     auto fcl_cylinder =
         make_shared<fcl::Cylinderd>(cylinder.radius(), cylinder.length());
-    TakeShapeOwnership(fcl_cylinder, user_data);
-    ProcessHydroelastic(cylinder, user_data);
-    ProcessGeometriesForDeformableContact(cylinder, user_data);
+    ProcessPrimitive(cylinder, fcl_cylinder, user_data);
   }
 
   void ImplementGeometry(const Ellipsoid& ellipsoid, void* user_data) override {
     // Note: Using `shared_ptr` because of FCL API requirements.
     auto fcl_ellipsoid = make_shared<fcl::Ellipsoidd>(
         ellipsoid.a(), ellipsoid.b(), ellipsoid.c());
-    TakeShapeOwnership(fcl_ellipsoid, user_data);
-    ProcessHydroelastic(ellipsoid, user_data);
-    ProcessGeometriesForDeformableContact(ellipsoid, user_data);
+    ProcessPrimitive(ellipsoid, fcl_ellipsoid, user_data);
   }
 
   void ImplementGeometry(const HalfSpace& half_space,
                          void* user_data) override {
     // Note: Using `shared_ptr` because of FCL API requirements.
     auto fcl_half_space = make_shared<fcl::Halfspaced>(0, 0, 1, 0);
-    TakeShapeOwnership(fcl_half_space, user_data);
-    ProcessHydroelastic(half_space, user_data);
-    ProcessGeometriesForDeformableContact(half_space, user_data);
+    ProcessPrimitive(half_space, fcl_half_space, user_data);
   }
 
   void ImplementGeometry(const Mesh& mesh, void* user_data) override {
-    // We currently represent Mesh shapes with their convex hulls in FCL.
-    ImplementFromConvexHull(mesh, user_data);
-    // Set up data for ComputeSignedDistanceToPoint() from non-convex meshes.
-    const ReifyData& data = *static_cast<ReifyData*>(user_data);
-    mesh_distance_boundary_cahe_.Register(data.id, mesh);
+    ProcessMeshType(mesh, user_data);
   }
 
   void ImplementGeometry(const Sphere& sphere, void* user_data) override {
     // Note: Using `shared_ptr` because of FCL API requirements.
     auto fcl_sphere = make_shared<fcl::Sphered>(sphere.radius());
-    TakeShapeOwnership(fcl_sphere, user_data);
-    ProcessHydroelastic(sphere, user_data);
-    ProcessGeometriesForDeformableContact(sphere, user_data);
+    ProcessPrimitive(sphere, fcl_sphere, user_data);
   }
 
   std::vector<SignedDistancePair<T>> ComputeSignedDistancePairwiseClosestPoints(
@@ -761,7 +766,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     // UpdateWorldPoses() defers; bring the inactive objects' poses and that
     // tree up to date here, as necessary.
     EnsureInactiveDynamicUpToDate();
-    mesh_distance_boundary_cahe_.ComputeAll();
+    mesh_distance_boundary_cache_.ComputeAll();
     // We create a sphere of zero radius centered at the query point and put
     // it into a CollisionObject.
     auto fcl_sphere = make_shared<fcl::Sphered>(0.0);  // sphere of zero radius
@@ -774,7 +779,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     std::vector<SignedDistanceToPoint<T>> distances;
 
     point_distance::CallbackData<T> data{
-        &query_point, threshold, p_WQ, &X_WGs, &mesh_distance_boundary_cahe_,
+        &query_point, threshold, p_WQ, &X_WGs, &mesh_distance_boundary_cache_,
         &distances};
 
     // Perform query of point vs dynamic objects (including the inactive
@@ -814,7 +819,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
       const Vector3<T>& p_WQ,
       const std::unordered_map<GeometryId, RigidTransform<T>>& X_WGs,
       const std::unordered_set<GeometryId>& geometries) const {
-    mesh_distance_boundary_cahe_.ComputeAll();
+    mesh_distance_boundary_cache_.ComputeAll();
     // We create a sphere of zero radius centered at the query point and put
     // it into a CollisionObject.
     auto fcl_sphere = make_shared<fcl::Sphered>(0.0);  // sphere of zero radius
@@ -831,7 +836,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     double kInf = std::numeric_limits<double>::infinity();
     std::vector<SignedDistanceToPoint<T>> distances;
     point_distance::CallbackData<T> data{
-        &query_point, kInf, p_WQ, &X_WGs, &mesh_distance_boundary_cahe_,
+        &query_point, kInf, p_WQ, &X_WGs, &mesh_distance_boundary_cache_,
         &distances};
     for (const GeometryId& id : ids) {
       CollisionObjectd* geometry = FindCollisionObject(id, "signed distance");
@@ -1056,9 +1061,9 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
 
   const TriangleSurfaceMesh<double>* mesh_distance_boundary(
       GeometryId g_id) const {
-    mesh_distance_boundary_cahe_.ComputeAll();
+    mesh_distance_boundary_cache_.ComputeAll();
     const MeshDistanceBoundary* boundary =
-        mesh_distance_boundary_cahe_.GetBoundary(g_id);
+        mesh_distance_boundary_cache_.GetBoundary(g_id);
     if (boundary == nullptr) return nullptr;
     return &boundary->tri_mesh();
   }
@@ -1488,7 +1493,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   // Deferred repository of per-geometry data for point_distance::Callback on
   // meshes (Mesh and Convex). It converts declarations to definitions within
   // queries that require it.
-  MeshDistanceBoundaryCache mesh_distance_boundary_cahe_{};
+  MeshDistanceBoundaryCache mesh_distance_boundary_cache_{};
 
   // Two-level cache used by ImplementFromConvexHull().
   //   Level 1: mesh-source cache key  →  ConvexHullCacheEntry
