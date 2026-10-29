@@ -28,6 +28,7 @@
 // #include "drake/multibody/inverse_kinematics/global_inverse_kinematics.h"
 // #include "drake/multibody/inverse_kinematics/inverse_kinematics.h"
 // #include "drake/multibody/inverse_kinematics/kinematic_evaluator_utilities.h"
+// #include "drake/multibody/inverse_kinematics/manipulability_cost.h"
 // #include "drake/multibody/inverse_kinematics/minimum_distance_lower_bound_constraint.h"
 // #include "drake/multibody/inverse_kinematics/minimum_distance_upper_bound_constraint.h"
 // #include "drake/multibody/inverse_kinematics/orientation_constraint.h"
@@ -3226,6 +3227,78 @@ R"""(Getter for q. q is the decision variable for the generalized positions
 of the robot.)""";
         } q;
       } InverseKinematics;
+      // Symbol: drake::multibody::ManipulabilityCost
+      struct /* ManipulabilityCost */ {
+        // Source: drake/multibody/inverse_kinematics/manipulability_cost.h
+        const char* doc =
+R"""(Implements a cost of the form ``-c * w(q)``, where ``w`` is
+Yoshikawa's manipulability index of frame B relative to frame A, so
+that minimizing the cost maximizes manipulability. With J the ``6 x
+n`` spatial velocity Jacobian of frame B measured in frame A, keeping
+only the columns of the n generalized velocities on the kinematic path
+between A and B,
+
+
+.. raw:: html
+
+    <details><summary>Click to expand C++ code...</summary>
+
+.. code-block:: c++
+
+    w(q) = √det(J Jᵀ).
+
+.. raw:: html
+
+    </details>
+
+The index depends only on the bodies of frames A and B, not on the
+frames' poses on those bodies, and swapping A and B leaves it
+unchanged. If a floating joint is on the path (e.g. A is the world
+frame and the robot's base floats), its six columns make J Jᵀ
+nonsingular everywhere; to measure an arm's manipulability, use the
+arm's base as frame A. At a singularity (det(J Jᵀ) = 0) the cost and
+its gradient are zero. The gradient is exact, computed from
+MultibodyPlant∷CalcHessianSpatialVelocity().
+
+T. Yoshikawa, "Manipulability of Robotic Mechanisms," The
+International Journal of Robotics Research, 4(2), pp. 3-9, 1985.)""";
+        // Symbol: drake::multibody::ManipulabilityCost::ManipulabilityCost
+        struct /* ctor */ {
+          // Source: drake/multibody/inverse_kinematics/manipulability_cost.h
+          const char* doc =
+R"""(Constructs ManipulabilityCost object.
+
+Parameter ``plant``:
+    The MultibodyPlant on which the cost is implemented. ``plant``
+    should be alive during the lifetime of this cost.
+
+Parameter ``frameA``:
+    The frame in which frame B's motion is measured.
+
+Parameter ``frameB``:
+    The frame whose manipulability is measured.
+
+Parameter ``plant_context``:
+    A context for the ``plant``.
+
+Parameter ``c``:
+    A positive scalar cost weight.
+
+Raises:
+    RuntimeError if ``plant`` is nullptr.
+
+Raises:
+    RuntimeError if ``plant_context`` is nullptr.
+
+Raises:
+    RuntimeError if ``c`` is not positive.
+
+Raises:
+    RuntimeError if fewer than six generalized velocities are on the
+    kinematic path between frame A and frame B (det(J Jᵀ) would always
+    be zero).)""";
+        } ctor;
+      } ManipulabilityCost;
       // Symbol: drake::multibody::MinimumDistanceLowerBoundConstraint
       struct /* MinimumDistanceLowerBoundConstraint */ {
         // Source: drake/multibody/inverse_kinematics/minimum_distance_lower_bound_constraint.h

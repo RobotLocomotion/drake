@@ -20,6 +20,7 @@
 #include "drake/multibody/inverse_kinematics/gaze_target_constraint.h"
 #include "drake/multibody/inverse_kinematics/global_inverse_kinematics.h"
 #include "drake/multibody/inverse_kinematics/inverse_kinematics.h"
+#include "drake/multibody/inverse_kinematics/manipulability_cost.h"
 #include "drake/multibody/inverse_kinematics/minimum_distance_lower_bound_constraint.h"
 #include "drake/multibody/inverse_kinematics/minimum_distance_upper_bound_constraint.h"
 #include "drake/multibody/inverse_kinematics/orientation_constraint.h"
@@ -685,6 +686,21 @@ PYDRAKE_MODULE(inverse_kinematics, m) {
             py::keep_alive<1, 2>(),
             // Keep alive, reference: `self` keeps `plant_context` alive.
             py::keep_alive<1, 8>(), cls_doc.ctor.doc_autodiff);
+  }
+
+  {
+    using Class = ManipulabilityCost;
+    constexpr auto& cls_doc = doc.ManipulabilityCost;
+    using Ptr = std::shared_ptr<Class>;
+    class_<Class, solvers::Cost, Ptr>(m, "ManipulabilityCost", cls_doc.doc)
+        .def(py::init<const MultibodyPlant<double>*, const Frame<double>&,
+                 const Frame<double>&, systems::Context<double>*, double>(),
+            py::arg("plant"), py::arg("frameA"), py::arg("frameB"),
+            py::arg("plant_context"), py::arg("c") = 1.0,
+            // Keep alive, reference: `self` keeps `plant` alive.
+            py::keep_alive<1, 2>(),
+            // Keep alive, reference: `self` keeps `plant_context` alive.
+            py::keep_alive<1, 5>(), cls_doc.ctor.doc);
   }
 
   {

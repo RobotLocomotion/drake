@@ -896,6 +896,27 @@ class TestConstraints(unittest.TestCase):
         )
         self.assertIsInstance(cost, mp.Cost)
 
+    def test_manipulability_cost(self):
+        # Double plant only: the gradient uses CalcHessianSpatialVelocity.
+        variables = self.variables_f
+        q = variables.plant.GetPositions(variables.plant_context)
+        cost = ik.ManipulabilityCost(
+            plant=variables.plant,
+            frameA=variables.body1_frame,
+            frameB=variables.body2_frame,
+            plant_context=variables.plant_context,
+        )
+        self.assertIsInstance(cost, mp.Cost)
+        weighted = ik.ManipulabilityCost(
+            plant=variables.plant,
+            frameA=variables.body1_frame,
+            frameB=variables.body2_frame,
+            plant_context=variables.plant_context,
+            c=2.0,
+        )
+        self.assertLess(cost.Eval(q)[0], 0)
+        self.assertAlmostEqual(weighted.Eval(q)[0], 2 * cost.Eval(q)[0])
+
     @check_type_variables
     def test_com_position_constraint(self, variables):
         constraint = ik.ComPositionConstraint(
