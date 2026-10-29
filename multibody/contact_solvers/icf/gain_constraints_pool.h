@@ -68,7 +68,7 @@ class GainConstraintsPool {
 
   /* @see HasJointVelocityCalcData. */
   T CalcData(const VectorX<T>& v, std::span<const int> constraints,
-             GainConstraintsDataPool<T>* limit_data) const;
+             GainConstraintsDataPool<T>* gain_data) const;
 
   /* Returns the number of velocities for each gain constraint. */
   std::span<const int> constraint_sizes() const {

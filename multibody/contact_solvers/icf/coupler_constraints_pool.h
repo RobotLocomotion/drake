@@ -61,7 +61,7 @@ class CouplerConstraintsPool {
 
   /* @see HasJointVelocityCalcData. */
   T CalcData(const VectorX<T>& v, std::span<const int> constraints,
-             CouplerConstraintsDataPool<T>* limit_data) const;
+             CouplerConstraintsDataPool<T>* coupler_data) const;
 
   /* Resizes the constraints pool to store the given number of constraints.
 

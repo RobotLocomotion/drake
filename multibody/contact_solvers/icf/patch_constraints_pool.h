@@ -83,8 +83,7 @@ class PatchConstraintsPool {
                   PatchConstraintsPool<T>* reduced_pool) const;
 
   /* @see HasSpatialVelocityCalcData. */
-  T CalcData(const EigenPool<Vector6<T>>& V_WB,
-             std::span<const int> constraints,
+  T CalcData(const EigenPool<Vector6<T>>& V_WB, std::span<const int> patches,
              PatchConstraintsDataPool<T>* patch_data) const;
 
   /* Returns the number of patches (pairs of contacting bodies) in the pool. */
@@ -166,15 +165,16 @@ class PatchConstraintsPool {
   void CalcSparsityPattern(std::vector<std::vector<int>>* sparsity) const;
 
   /* Computes the first and second derivatives of the constraint cost
-  ℓ̃(α) = ℓ(v + α⋅w).
+  ℓ̃(α) = ℓ(v + α⋅w), for only the listed patches.
 
   @param patch_data The pre-computed patch constraint data at v + α⋅w.
-  @param U_WB Body spatial velocity when the generalized velocities equal w.
-         I.e., U_WB = J⋅w.
-  @param U_AbB_W_pool Scratch space for patch spatial velocities.
+  @param U_WB_pool Body spatial velocity when the generalized velocities equal
+         w. I.e., U_WB_pool = J⋅w.
+  @param patches indices of patches to operate on.
+  @param U_AbB_W_pool Scratch space for patch spatial velocities. Only the
+         entries for the listed patches are updated.
   @param[out] dcost the first derivative dℓ̃ /dα on output.
   @param[out] d2cost the second derivative d²ℓ̃ /dα² on output. */
-  /* Island-filtered overload: derivatives for only the listed patches. */
   void CalcCostAlongLine(const PatchConstraintsDataPool<T>& patch_data,
                          const EigenPool<Vector6<T>>& U_WB_pool,
                          std::span<const int> patches,
