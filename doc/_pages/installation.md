@@ -20,10 +20,10 @@ officially supports:
 |                                     | x86-64, arm64            | 3.13-3.14  | Pip                 | March 2028      |
 | Ubuntu 26.04 LTS (Resolute Raccoon) | x86-64, x86-64-v3, arm64 | 3.12-3.13  | Pip                 | March 2028      |
 |                                     | x86-64, x86-64-v3, arm64 | 3.14       | Pip, Binary, APT    | March 2030      |
-| macOS Tahoe (26)                    | arm64                    | 3.12-3.13  | Pip                 | September 2027  |
-|                                     | arm64                    | 3.14       | Pip, Binary         | September 2027  |
-| macOS Golden Gate (27)              | arm64                    | 3.12-3.13  | Pip                 | September 2028  |
-|                                     | arm64                    | 3.14       | Pip, Binary         | September 2028  |
+| macOS Tahoe (26)                    | arm64                    | 3.12-3.14  | Pip                 | September 2027  |
+|                                     | arm64                    | 3.15       | Pip, Binary         | September 2027  |
+| macOS Golden Gate (27)              | arm64                    | 3.12-3.14  | Pip                 | September 2028  |
+|                                     | arm64                    | 3.15       | Pip, Binary         | September 2028  |
 | Amazon Linux 2023                   | x86-64, arm64            | 3.12-3.14  | Pip                 | March 2028      |
 
 <!-- End of life constraints:

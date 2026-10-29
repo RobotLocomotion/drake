@@ -39,8 +39,8 @@ officially supports when building from source:
 |                                     | arm64 ⁽⁴⁾         | 3.12       | {{site.data.versions.bazel}} | 3.28  | GCC 13                       |
 | Ubuntu 26.04 LTS (Resolute Raccoon) | x86-64-v3         | 3.14       | {{site.data.versions.bazel}} | 4.2   | GCC 15 (default) or Clang 21 |
 |                                     | x86-64, arm64 ⁽⁴⁾ | 3.14       | {{site.data.versions.bazel}} | 4.2   | GCC 15                       |
-| macOS Tahoe (26)                    | arm64             | 3.14       | {{site.data.versions.bazel}} | 4.4   | Apple LLVM 21 (Xcode 27)     |
-| macOS Golden Gate (27)              | arm64             | 3.14       | {{site.data.versions.bazel}} | 4.4   | Apple LLVM 21 (Xcode 27)     |
+| macOS Tahoe (26)                    | arm64             | 3.15       | {{site.data.versions.bazel}} | 4.4   | Apple LLVM 21 (Xcode 27)     |
+| macOS Golden Gate (27)              | arm64             | 3.15       | {{site.data.versions.bazel}} | 4.4   | Apple LLVM 21 (Xcode 27)     |
 
 "Official support" means that we have Continuous Integration test coverage to
 notice regressions, so if it doesn't work for you then please file a bug report.
