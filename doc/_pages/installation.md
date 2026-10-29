@@ -20,8 +20,7 @@ officially supports:
 |                                     | x86-64, arm64            | 3.13-3.14  | Pip                 | March 2028      |
 | Ubuntu 26.04 LTS (Resolute Raccoon) | x86-64, x86-64-v3, arm64 | 3.12-3.13  | Pip                 | March 2028      |
 |                                     | x86-64, x86-64-v3, arm64 | 3.14       | Pip, Binary, APT    | March 2030      |
-| macOS Tahoe (26)                    | arm64                    | 3.12 ⁽⁵⁾   | Pip                 | September 2027  |
-|                                     | arm64                    | 3.13       | Pip                 | September 2027  |
+| macOS Tahoe (26)                    | arm64                    | 3.12-3.13  | Pip                 | September 2027  |
 |                                     | arm64                    | 3.14       | Pip, Binary         | September 2027  |
 | Amazon Linux 2023                   | x86-64, arm64            | 3.12-3.14  | Pip                 | March 2028      |
 
@@ -54,9 +53,6 @@ that Conda is involved.
 
 ⁽⁴⁾ These end-of-life dates are estimates.
 Refer to [OS Support](/stable.html#os-support) for details.
-
-⁽⁵⁾ macOS Pip support for 3.12 is available in nightly builds, and will reach
-stable release builds as of the 1.58 release.
 
 The following table shows the configurations that *must* be used when
 compiling your own C++ code against Drake's C++ code using one of
