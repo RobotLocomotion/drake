@@ -22,6 +22,8 @@ officially supports:
 |                                     | x86-64, x86-64-v3, arm64 | 3.14       | Pip, Binary, APT    | March 2030      |
 | macOS Tahoe (26)                    | arm64                    | 3.12-3.13  | Pip                 | September 2027  |
 |                                     | arm64                    | 3.14       | Pip, Binary         | September 2027  |
+| macOS Golden Gate (27)              | arm64                    | 3.12-3.13  | Pip                 | September 2028  |
+|                                     | arm64                    | 3.14       | Pip, Binary         | September 2028  |
 | Amazon Linux 2023                   | x86-64, arm64            | 3.12-3.14  | Pip                 | March 2028      |
 
 <!-- End of life constraints:
@@ -63,6 +65,7 @@ Drake's pre-compiled binaries:
 | Ubuntu 24.04 LTS (Noble Numbat)     | GCC 13                     | C++23 |
 | Ubuntu 26.04 LTS (Resolute Raccoon) | GCC 15                     | C++23 |
 | macOS Tahoe (26)                    | Apple LLVM 21 (Xcode 27)   | C++23 |
+| macOS Golden Gate (27)              | Apple LLVM 21 (Xcode 27)   | C++23 |
 
 Any other configuration not listed here will lead to undefined behavior
 (as a violation of the C++ One-Definition Rule).
