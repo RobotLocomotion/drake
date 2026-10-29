@@ -8,6 +8,7 @@
 #include "drake/multibody/inverse_kinematics/angle_between_vectors_cost.h"
 #include "drake/multibody/inverse_kinematics/distance_constraint.h"
 #include "drake/multibody/inverse_kinematics/gaze_target_constraint.h"
+#include "drake/multibody/inverse_kinematics/manipulability_cost.h"
 #include "drake/multibody/inverse_kinematics/minimum_distance_lower_bound_constraint.h"
 #include "drake/multibody/inverse_kinematics/minimum_distance_upper_bound_constraint.h"
 #include "drake/multibody/inverse_kinematics/orientation_constraint.h"
@@ -121,6 +122,13 @@ solvers::Binding<solvers::Cost> InverseKinematics::AddOrientationCost(
   auto cost =
       std::make_shared<OrientationCost>(&plant_, frameAbar, R_AbarA, frameBbar,
                                         R_BbarB, c, get_mutable_context());
+  return prog_->AddCost(cost, q_);
+}
+
+solvers::Binding<solvers::Cost> InverseKinematics::AddManipulabilityCost(
+    const Frame<double>& frameA, const Frame<double>& frameB, double c) {
+  auto cost = std::make_shared<ManipulabilityCost>(&plant_, frameA, frameB, c,
+                                                   get_mutable_context());
   return prog_->AddCost(cost, q_);
 }
 

@@ -20,6 +20,7 @@
 #include "drake/multibody/inverse_kinematics/gaze_target_constraint.h"
 #include "drake/multibody/inverse_kinematics/global_inverse_kinematics.h"
 #include "drake/multibody/inverse_kinematics/inverse_kinematics.h"
+#include "drake/multibody/inverse_kinematics/manipulability_cost.h"
 #include "drake/multibody/inverse_kinematics/minimum_distance_lower_bound_constraint.h"
 #include "drake/multibody/inverse_kinematics/minimum_distance_upper_bound_constraint.h"
 #include "drake/multibody/inverse_kinematics/orientation_constraint.h"
@@ -126,6 +127,9 @@ PYDRAKE_MODULE(inverse_kinematics, m) {
         .def("AddOrientationCost", &Class::AddOrientationCost,
             py::arg("frameAbar"), py::arg("R_AbarA"), py::arg("frameBbar"),
             py::arg("R_BbarB"), py::arg("c"), cls_doc.AddOrientationCost.doc)
+        .def("AddManipulabilityCost", &Class::AddManipulabilityCost,
+            py::arg("frameA"), py::arg("frameB"), py::arg("c"),
+            cls_doc.AddManipulabilityCost.doc)
         .def("AddGazeTargetConstraint", &Class::AddGazeTargetConstraint,
             py::arg("frameA"), py::arg("p_AS"), py::arg("n_A"),
             py::arg("frameB"), py::arg("p_BT"), py::arg("cone_half_angle"),
@@ -685,6 +689,21 @@ PYDRAKE_MODULE(inverse_kinematics, m) {
             py::keep_alive<1, 2>(),
             // Keep alive, reference: `self` keeps `plant_context` alive.
             py::keep_alive<1, 8>(), cls_doc.ctor.doc_autodiff);
+  }
+
+  {
+    using Class = ManipulabilityCost;
+    constexpr auto& cls_doc = doc.ManipulabilityCost;
+    using Ptr = std::shared_ptr<Class>;
+    class_<Class, solvers::Cost, Ptr>(m, "ManipulabilityCost", cls_doc.doc)
+        .def(py::init<const MultibodyPlant<double>*, const Frame<double>&,
+                 const Frame<double>&, double, systems::Context<double>*>(),
+            py::arg("plant"), py::arg("frameA"), py::arg("frameB"),
+            py::arg("c"), py::arg("plant_context"),
+            // Keep alive, reference: `self` keeps `plant` alive.
+            py::keep_alive<1, 2>(),
+            // Keep alive, reference: `self` keeps `plant_context` alive.
+            py::keep_alive<1, 6>(), cls_doc.ctor.doc);
   }
 
   {

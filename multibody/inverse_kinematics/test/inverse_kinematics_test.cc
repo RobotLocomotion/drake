@@ -9,6 +9,7 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/math/wrap_to.h"
+#include "drake/multibody/inverse_kinematics/manipulability_cost.h"
 #include "drake/multibody/inverse_kinematics/test/inverse_kinematics_test_utilities.h"
 #include "drake/multibody/tree/quaternion_floating_joint.h"
 #include "drake/multibody/tree/revolute_joint.h"
@@ -360,6 +361,32 @@ TEST_F(TwoFreeBodiesTest, OrientationCost) {
   const double theta = R_AB.ToAngleAxis().angle();
   EXPECT_NEAR(ik_.prog().EvalBindingAtInitialGuess(binding)[0],
               c * (1.0 - cos(theta)), 1e-12);
+}
+
+TEST_F(TwoFreeBodiesTest, ManipulabilityCost) {
+  const double c{2.4};
+  auto binding = ik_.AddManipulabilityCost(body1_frame_, body2_frame_, c);
+
+  // Only check that the arguments are passed correctly.
+  auto context = two_bodies_plant_->CreateDefaultContext();
+  two_bodies_plant_->SetFreeBodyPose(
+      context.get(), two_bodies_plant_->GetBodyByName("body1"),
+      math::RigidTransform<double>(
+          math::RollPitchYaw<double>(0.32, -0.24, -0.51),
+          Eigen::Vector3d(0.1, 0.3, 0.72)));
+  two_bodies_plant_->SetFreeBodyPose(
+      context.get(), two_bodies_plant_->GetBodyByName("body2"),
+      math::RigidTransform<double>(math::RollPitchYaw<double>(8.1, 0.42, -0.2),
+                                   Eigen::Vector3d(-0.84, 0.2, 1.4)));
+  const Eigen::VectorXd q = two_bodies_plant_->GetPositions(*context);
+  ik_.get_mutable_prog()->SetInitialGuess(ik_.q(), q);
+
+  const ManipulabilityCost expected(two_bodies_plant_.get(), body1_frame_,
+                                    body2_frame_, c, context.get());
+  Eigen::VectorXd y;
+  expected.Eval(q, &y);
+  EXPECT_LT(y(0), 0);
+  EXPECT_NEAR(ik_.prog().EvalBindingAtInitialGuess(binding)[0], y(0), 1e-14);
 }
 
 TEST_F(TwoFreeBodiesTest, GazeTargetConstraint) {
