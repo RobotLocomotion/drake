@@ -11,8 +11,8 @@ _root_logger = _logging.getLogger()
 _drake_logger = _logging.getLogger("drake")
 
 
-def _python_level_to_spdlog(level: int):
-    """Returns the spdlog string level that enables C++ logging at the given
+def _python_level_to_cxx_logger_level(level: int):
+    """Returns the level name that enables C++ logging at the given
     Python logging level, for use with pydrake.common._set_log_level.
     """
     if level >= _logging.CRITICAL:
@@ -28,24 +28,24 @@ def _python_level_to_spdlog(level: int):
     return "trace"
 
 
-def _sync_spdlog_level():
-    """Updates Drake's C++ spdlog level threshold to match the effective level
-    of Drake's Python logger. This will either be the Drake Logger's level or
+def _sync_cxx_logger_level():
+    """Updates Drake's C++ level threshold to match the effective level of
+    Drake's Python logger. This will either be the Drake Logger's level or
     else the root Logger's level in case Drake Logger's level is NOTSET.
 
     This only syncs the "effective" level, not the "enabled for" level. The
     "enabled for" level would also incorporate the global "logging.disable"
-    setting, but we do not reflect that back into C++ spdlog at the moment.
+    setting, but we do not reflect that back into C++ at the moment.
     """
-    if not _drake_logger._tied_to_spdlog:
+    if not _drake_logger._tied_to_cxx_logger:
         return
     level = _drake_logger.level or _root_logger.level
-    _set_log_level(_python_level_to_spdlog(level))
+    _set_log_level(_python_level_to_cxx_logger_level(level))
 
 
 def _monkey_patch_logger_level_events():
     """Adds a hook into Drake's Python Logger object such that changes to
-    Python logging levels are reflected back into Drake's C++ spdlog level.
+    Python logging levels are reflected back into Drake's C++ level.
     """
 
     # To notice log level changes (whether to the root logger or our logger) we
@@ -66,16 +66,16 @@ def _monkey_patch_logger_level_events():
     # This relies on the implementation details of CPython's logging module,
     # so we might need to adapt this technique to track CPython changes. Our
     # CI testing will inform us in case this technique ever stops working.
-    class spdlog_syncing_dict(dict):
+    class cxx_logger_syncing_dict(dict):
         def clear(self):
             super().clear()
-            _sync_spdlog_level()
+            _sync_cxx_logger_level()
 
-    _drake_logger._cache = spdlog_syncing_dict()
+    _drake_logger._cache = cxx_logger_syncing_dict()
 
 
-# Reflect the Python level to C++ level iff the Python sink is fed by spdlog.
-if getattr(_drake_logger, "_tied_to_spdlog", False):
+# Reflect the Python level to C++ level iff the Python sink is tied to C++.
+if getattr(_drake_logger, "_tied_to_cxx_logger", False):
     _monkey_patch_logger_level_events()
 
 
@@ -126,7 +126,7 @@ def use_native_cpp_logging():
             already manually adjusted the C++ logging configuration.
     """
     _use_native_cpp_logging()
-    _drake_logger._tied_to_spdlog = False
+    _drake_logger._tied_to_cxx_logger = False
 
 
 def _wrap_to_match_input_shape(f):

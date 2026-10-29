@@ -173,7 +173,7 @@ class logger {
     this->log(level::err, std::string_view{message});
   }
 
-  /** Logs a string at `critival` severity. */
+  /** Logs a string at `critical` severity. */
   template <typename StringLike>
   void critical(const StringLike& message) {
     this->log(level::critical, std::string_view{message});
@@ -216,6 +216,7 @@ class logger {
   logger();
   ~logger();
 
+  // The implementation must check the severity (i.e., check should_log).
   void LogMessage(level_enum severity, std::string_view message);
 
   // The runtime type of `impl_` depends on which `text_logging_impl_*.cc` file

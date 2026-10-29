@@ -5,14 +5,19 @@ load("//tools/lint:lint.bzl", "add_lint_tests")
 load("//tools/skylark:cc.bzl", "cc_library")
 load("//tools/skylark:drake_cc.bzl", "cc_nolink_library")
 
-# ---- Logic for choosing which spdlog to use. ---
+# All of the targets in this directory are labeled with `tags = ["manual"]`,
+# because we want to avoid compiling spdlog during `build //...` when text
+# logging to spdlog is disabled. The targets will be built as-needed when
+# text_logging is set to use spdlog.
 
 config_setting(
-    name = "flag_spdlog_repo_disabled",
+    name = "flag_text_logging_spdlog",
     flag_values = {
-        "//tools/flags:spdlog_repo": "disabled",
+        "//tools/flags:text_logging": "spdlog",
     },
 )
+
+# ---- Logic for choosing which spdlog to use. ---
 
 config_setting(
     name = "flag_spdlog_repo_pkgconfig",
@@ -53,10 +58,12 @@ selects.config_setting_group(
 
 cc_library(
     name = "spdlog",
-    tags = ["nolint"],
+    tags = [
+        "manual",
+        "nolint",
+    ],
     visibility = ["//visibility:public"],
     deps = select({
-        ":flag_spdlog_repo_disabled": [],
         ":use_pkgconfig": ["@pkgconfig_spdlog_internal"],
         "//conditions:default": ["@module_spdlog//:spdlog"],
     }),
@@ -85,12 +92,14 @@ selects.config_setting_group(
 
 cc_nolink_library(
     name = "hdrs",
+    tags = ["manual"],
     visibility = ["//tools/install/libdrake:__pkg__"],
     deps = ["@spdlog"],
 )
 
 cc_library(
     name = "shared_library_maybe",
+    tags = ["manual"],
     visibility = ["//tools/install/libdrake:__pkg__"],
     deps = select({
         ":is_external": ["@spdlog"],
@@ -100,6 +109,7 @@ cc_library(
 
 install(
     name = "install_hdrs",
+    tags = ["manual"],
     targets = [":hdrs"],
     hdr_dest = "include",
     hdr_strip_prefix = ["include"],
@@ -111,10 +121,12 @@ install_license(
     name = "install_license",
     doc_dest = "share/doc/spdlog",
     licenses = ["@module_spdlog//:license"],
+    tags = ["manual"],
 )
 
 install(
     name = "install",
+    tags = ["manual"],
     visibility = ["//tools/workspace:__pkg__"],
     deps = select({
         ":is_external": [],
