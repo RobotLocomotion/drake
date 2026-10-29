@@ -1,5 +1,7 @@
 #include "drake/bindings/pydrake/systems/framework_callback_lifetime.h"
 
+#include <atomic>
+
 #include <fmt/format.h>
 
 namespace drake {
