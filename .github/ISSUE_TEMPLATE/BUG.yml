@@ -35,6 +35,7 @@ body:
         - Ubuntu 24.04 (Noble)
         - Ubuntu 26.04 (Resolute)
         - macOS 26 (Tahoe)
+        - macOS 27 (Golden Gate)
         - Other
   - type: dropdown
     attributes:
