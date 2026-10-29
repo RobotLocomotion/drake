@@ -71,9 +71,7 @@ struct IcfSolverParameters {
 
   /** Whether to decompose the problem into independent constraint islands
   (connected components of the clique graph) and solve them separately. When
-  false, the full problem across all cliques is solved as a single Newton
-  optimization, matching the solver's behavior prior to the introduction of
-  constraint islands. */
+  false, all cliques are solved together as a single Newton problem. */
   bool use_islands{true};
 
   /** Maximum iterations for exact linesearch. */

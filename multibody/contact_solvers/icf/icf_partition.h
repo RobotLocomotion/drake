@@ -74,7 +74,10 @@ subproblems.
 
 Islands are numbered in increasing order of the smallest clique index they
 contain, so the numbering is deterministic across runs. All storage is
-grow-only across calls to Compute(). */
+grow-only across calls to Compute().
+
+Islands can be disabled (see Compute()), in which case all cliques are placed in
+a single island and the partition is no longer the connected components. */
 class IcfPartition {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(IcfPartition);
@@ -82,7 +85,10 @@ class IcfPartition {
 
   /* Computes the islands of the clique graph encoded by `pattern`. The diagonal
   blocks of `pattern` are the cliques (graph nodes); an off-diagonal nonzero
-  block (i, j) is an edge between cliques i and j. */
+  block (i, j) is an edge between cliques i and j.
+  @param use_islands  If true, islands are the connected components of the
+                      graph. If false, all cliques are placed in island 0 and
+                      the union-find computation is skipped. */
   void Compute(const contact_solvers::internal::BlockSparsityPattern& pattern,
                bool use_islands);
 

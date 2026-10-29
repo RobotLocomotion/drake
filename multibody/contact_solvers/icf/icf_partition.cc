@@ -63,7 +63,7 @@ void IcfPartition::Compute(
   const std::vector<std::vector<int>>& neighbors = pattern.neighbors();
   num_cliques_ = std::ssize(neighbors);
 
-  if (num_cliques_ > 0 && use_islands == false) {
+  if (num_cliques_ > 0 && !use_islands) {
     // Force use of only one island, and skip all of the union-find work.
     num_islands_ = 1;
     clique_to_island_.assign(num_cliques_, 0);

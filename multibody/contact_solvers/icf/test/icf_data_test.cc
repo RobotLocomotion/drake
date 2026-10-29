@@ -19,6 +19,17 @@ GTEST_TEST(IcfData, DefaultConstructedIsEmpty) {
   EXPECT_EQ(data.num_velocities(), 0);
   EXPECT_EQ(data.num_islands(), 0);
   EXPECT_EQ(data.V_WB().size(), 0);
+  EXPECT_EQ(data.scratch().V_WB_alpha.size(), 0);
+  EXPECT_EQ(data.scratch().v_alpha.size(), 0);
+  EXPECT_EQ(data.scratch().Gw_gain.size(), 0);
+  EXPECT_EQ(data.scratch().Gw_limit.size(), 0);
+  EXPECT_EQ(data.scratch().U_AbB_W.size(), 0);
+  EXPECT_EQ(data.scratch().H_BB_pool.size(), 0);
+  EXPECT_EQ(data.scratch().H_AA_pool.size(), 0);
+  EXPECT_EQ(data.scratch().H_AB_pool.size(), 0);
+  EXPECT_EQ(data.scratch().H_BA_pool.size(), 0);
+  EXPECT_EQ(data.scratch().GJa_pool.size(), 0);
+  EXPECT_EQ(data.scratch().GJb_pool.size(), 0);
 }
 
 /* Checks that elements are the correct shape after a resize. */

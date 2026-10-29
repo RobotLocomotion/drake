@@ -99,6 +99,13 @@ with convergence tolerance ε, η = θ / (1 − θ), and θ = ‖D⁻¹⋅Δvₖ
 as per [Hairer and Wanner, 1996]. Norms are scaled by D = diag(M)⁻⁰ᐧ⁵, so that
 all entries of g̃ = D⋅g and ṽ = D⁻¹⋅v share the same units [Castro et al., 2023].
 
+When the problem splits into islands, the criteria above are applied to each
+island separately: g, r, D, and Δv are restricted to the island's cliques, so
+each island's tolerance depends only on its own dofs. The cost is separable, so
+this does not degrade the solution of any island. When every island is in the
+absolute regime (‖D⋅rᵢ‖ < 1), the assembled residual ‖D⋅g‖ can reach √N⋅ε for N
+islands.
+
 Additionally, this solver supports optional Hessian reuse to avoid the cost of
 recomputing and refactoring the Hessian at each iteration. Since ℓ(v) is convex,
 any positive definite approximation of Hₖ can be used to compute the search

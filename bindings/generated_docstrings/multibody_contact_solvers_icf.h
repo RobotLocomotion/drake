@@ -149,9 +149,8 @@ generally much faster.)""";
               const char* doc =
 R"""(Whether to decompose the problem into independent constraint islands
 (connected components of the clique graph) and solve them separately.
-When false, the full problem across all cliques is solved as a single
-Newton optimization, matching the solver's behavior prior to the
-introduction of constraint islands.)""";
+When false, all cliques are solved together as a single Newton
+problem.)""";
             } use_islands;
             auto Serialize__fields() const {
               return std::array{

@@ -384,10 +384,11 @@ class IcfModel {
     return *sparsity_pattern_;
   }
 
-  /* Returns the partition of cliques into islands (connected components of the
-  clique graph). Islands are independent convex subproblems that may be solved
-  separately. Computed alongside the sparsity pattern by SetSparsityPattern(),
-  so it changes only when the sparsity pattern changes. */
+  /* Returns the partition of cliques into islands: the connected components of
+  the clique graph, or a single island holding all cliques when
+  params().use_islands is false. Islands are independent convex subproblems
+  that may be solved separately. Computed alongside the sparsity pattern by
+  SetSparsityPattern(), so it changes only when the sparsity pattern changes. */
   const IcfPartition& partition() const { return partition_; }
 
   /* Per-island groupings of each constraint kind and of the (dynamic) bodies.
