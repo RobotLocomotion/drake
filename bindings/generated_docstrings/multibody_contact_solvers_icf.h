@@ -120,7 +120,9 @@ R"""(Minimum tolerance ε for the convergence conditions
 
 ‖D⋅∇ℓ‖ ≤ ε max(1, ‖D⋅r‖), η ‖D⁻¹⋅Δv‖ ≤ ε max(1, ‖D⋅r‖),
 
-as detailed in Section VI.B of [Kurtz and Castro, 2025].
+as detailed in Section VI.B of [Kurtz and Castro, 2025]. When the
+problem splits into islands, the conditions (including the norms and
+r) are evaluated for each island separately; see IcfSolver.
 
 This provides a lower bound on the actual tolerance used, which is
 specified explicitly when calling the solver. For instance, CENIC
