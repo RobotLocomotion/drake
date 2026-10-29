@@ -460,6 +460,8 @@ def _setup_user_environment():
         build:clang --action_env=CC=clang-{clang_major}
         build:clang --host_action_env=CC=clang-{clang_major}
         """)
+        if platform.machine().lower() == "x86_64":
+            bazelrc_content += "build --config=x86-64-v2\n"
 
     # Write out the two snippets.
     workspace_dir = _workspace_dir()

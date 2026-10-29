@@ -31,6 +31,12 @@ project(drake
   LANGUAGES C
 )
 
+if(CMAKE_HOST_SYSTEM_PROCESSOR STREQUAL x86_64)
+  # Target minimum x86-64-v2 microarchitecture. Later flags (e.g. -march=native)
+  # specified by users will override this flag.
+  set(BAZEL_MICROARCHITECTURE_CONFIG --config=x86-64-v2)
+endif()
+
 # CMake build type flag transcriptions are handled in cmake/bazel.rc.in. CMake's
 # modules otherwise seed configuration-specific C flags which we'd forward to
 # Bazel, thus overriding its --compilation_mode; e.g., the default -O3 from
