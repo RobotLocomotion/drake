@@ -151,6 +151,11 @@ Adjusting installation:
 
 Adjusting open-source dependencies:
 
+* `DRAKE_TEXT_LOGGING` (default `spdlog`). Configures how Drake performs text
+  logging (i.e., console output). By default (i.e., when set to `spdlog`), C++
+  log messages are routed through the spdlog library, which allows users to
+  customize the destination and formatting. When set to `simple`, C++ log
+  messages cannot be customized.
 * `WITH_USER_EIGEN` (default `ON`). When `ON`, uses `find_package(Eigen3)`
   to locate a user-provided `Eigen3::Eigen` library
   instead of hard-coding to the operating system version.

@@ -122,5 +122,9 @@ void logger::LogMessage(level_enum severity, std::string_view message) {
   return impl->log(ToSpdlogLevel(severity), message);
 }
 
+const char* const kSetLogPatternHelpMessage =
+    "sets the spdlog pattern for formatting; for more information, see "
+    "https://github.com/gabime/spdlog/wiki/3.-Custom-formatting";
+
 }  // namespace logging
 }  // namespace drake
