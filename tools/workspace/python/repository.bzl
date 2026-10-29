@@ -211,7 +211,7 @@ python_repository = repository_rule(
         ),
         "macos_interpreter_path": attr.string(
             # When changing this, see drake/tools/workspace/python/README.md.
-            default = "{homebrew_prefix}/bin/python3.14",
+            default = "{homebrew_prefix}/bin/python3.15",
         ),
         "requirements_flavor": attr.string(
             default = "test",

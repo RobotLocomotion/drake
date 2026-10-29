@@ -20,7 +20,7 @@
 set -eux -o pipefail
 
 # When changing this, see drake/tools/workspace/python/README.md.
-readonly python_versions=( 3.12 3.13 3.14 )
+readonly python_versions=( 3.12 3.13 3.14 3.15 )
 
 purge=1
 commit=

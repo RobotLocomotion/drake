@@ -56,7 +56,7 @@ if [[ "$(uname)" == "Darwin" ]]; then
   if [[ "${user_environment_only}" -eq 0 ]]; then
     /bin/bash "${BASH_SOURCE%/*}/mac/install_prereqs.sh" "${mac_sh_args[@]:0}"
   fi
-  exec $(brew --prefix)/bin/python3.14 -B "${BASH_SOURCE%/*}/install_prereqs.py" "${py_args[@]:0}"
+  exec $(brew --prefix)/bin/python3.15 -B "${BASH_SOURCE%/*}/install_prereqs.py" "${py_args[@]:0}"
 else
   if [[ "${user_environment_only}" -eq 0 ]]; then
     if ! command -v python3 > /dev/null; then
