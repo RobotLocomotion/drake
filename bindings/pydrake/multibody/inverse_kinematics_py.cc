@@ -1,6 +1,7 @@
 #include "drake/bindings/pydrake/multibody/inverse_kinematics_py.h"
 
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -8,6 +9,7 @@
 #include "drake/bindings/generated_docstrings/solvers.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/deprecation_pybind.h"
+#include "drake/bindings/pydrake/common/ensure_callback_lifetime_pybind.h"
 #include "drake/bindings/pydrake/common/ref_cycle_pybind.h"
 #include "drake/bindings/pydrake/common/sorted_pair_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
@@ -36,22 +38,27 @@ namespace pydrake {
 namespace {
 // This is used in the
 // MinimumDistanceLowerBoundConstraint/MinimumDistanceUpperBoundConstraint to
-// convert a penalty function in python to a penalty function in C++.
-using CppPenaltyFunction = std::function<void(double, double*, double*)>;
-using PyPenaltyFunction = std::function<py::tuple(double, bool)>;
-CppPenaltyFunction UnwrapPyPenaltyFunction(PyPenaltyFunction penalty_function) {
-  if (penalty_function) {
-    return [penalty_function](double x, double* penalty, double* dpenalty) {
-      const bool compute_grad = dpenalty != nullptr;
-      py::tuple penalty_tuple = penalty_function(x, compute_grad);
-      *penalty = py::cast<double>(penalty_tuple[0]);
-      if (compute_grad) {
-        *dpenalty = py::cast<double>(penalty_tuple[1]);
-      }
-    };
-  } else {
+// convert a penalty function in python to a penalty function in C++. The
+// constraint borrows the python callable; the constraint's python object keeps
+// it alive (see ensure_callback_lifetime at the binding sites). A missing
+// penalty function selects the default. (This mirrors the helper of the same
+// name in solvers_py_evaluators.cc, which lives in a different module.)
+solvers::MinimumValuePenaltyFunction BorrowPenaltyFunction(
+    const std::optional<py::callable>& penalty_function) {
+  if (!penalty_function.has_value()) {
     return solvers::MinimumValuePenaltyFunction{};
   }
+  PyObject* ptr = penalty_function->ptr();
+  return [ptr](double x, double* penalty, double* dpenalty) {
+    py::gil_scoped_acquire guard;
+    py::handle callback = ptr;
+    const bool compute_grad = dpenalty != nullptr;
+    py::tuple penalty_tuple = py::cast<py::tuple>(callback(x, compute_grad));
+    *penalty = py::cast<double>(penalty_tuple[0]);
+    if (compute_grad) {
+      *dpenalty = py::cast<double>(penalty_tuple[1]);
+    }
+  };
 }
 
 using solvers::Constraint;
@@ -417,8 +424,8 @@ PYDRAKE_MODULE(inverse_kinematics, m) {
     using Class = MinimumDistanceLowerBoundConstraint;
     constexpr auto& cls_doc = doc.MinimumDistanceLowerBoundConstraint;
     using Ptr = std::shared_ptr<Class>;
-    class_<Class, Constraint, Ptr> minimum_distance_lower_bound_constraint(
-        m, "MinimumDistanceLowerBoundConstraint", cls_doc.doc);
+    class_<Class, Constraint, Ptr> minimum_distance_lower_bound_constraint(m,
+        "MinimumDistanceLowerBoundConstraint", cls_doc.doc, py::dynamic_attr());
 
     std::string py_penalty_doc =
         "The penalty function `penalty_function(x: float, compute_grad: bool) "
@@ -435,19 +442,20 @@ PYDRAKE_MODULE(inverse_kinematics, m) {
         "__init__",
         [](Class* self, const multibody::MultibodyPlant<double>* plant,
             double bound, systems::Context<double>* plant_context,
-            PyPenaltyFunction penalty_function,
+            std::optional<py::callable> penalty_function,
             double influence_distance_offset) {
           new (self) Class(plant, bound, plant_context,
-              UnwrapPyPenaltyFunction(penalty_function),
+              BorrowPenaltyFunction(penalty_function),
               influence_distance_offset);
         },
         py::arg("plant"), py::arg("bound"), py::arg("plant_context"),
-        py::arg("penalty_function").none() = nullptr,
+        py::arg("penalty_function").none() = py::none(),
         py::arg("influence_distance_offset") = 0.01,
         // Keep alive, reference: `self` keeps `plant` alive.
         py::keep_alive<1, 2>(),
         // Keep alive, reference: `self` keeps `plant_context` alive.
-        py::keep_alive<1, 4>(), constructor_double_mbp_py_penalty.c_str());
+        py::keep_alive<1, 4>(), internal::ensure_callback_lifetime<1, 5>(),
+        constructor_double_mbp_py_penalty.c_str());
 
     const std::string constructor_autodiff_mbp_py_penalty =
         cls_doc.ctor.doc_autodiff_mbp + py_penalty_doc;
@@ -456,19 +464,20 @@ PYDRAKE_MODULE(inverse_kinematics, m) {
         "__init__",
         [](Class* self, const multibody::MultibodyPlant<AutoDiffXd>* plant,
             double bound, systems::Context<AutoDiffXd>* plant_context,
-            PyPenaltyFunction penalty_function,
+            std::optional<py::callable> penalty_function,
             double influence_distance_offset) {
           new (self) Class(plant, bound, plant_context,
-              UnwrapPyPenaltyFunction(penalty_function),
+              BorrowPenaltyFunction(penalty_function),
               influence_distance_offset);
         },
         py::arg("plant"), py::arg("bound"), py::arg("plant_context"),
-        py::arg("penalty_function").none() = nullptr,
+        py::arg("penalty_function").none() = py::none(),
         py::arg("influence_distance_offset") = 0.01,
         // Keep alive, reference: `self` keeps `plant` alive.
         py::keep_alive<1, 2>(),
         // Keep alive, reference: `self` keeps `plant_context` alive.
-        py::keep_alive<1, 4>(), constructor_autodiff_mbp_py_penalty.c_str());
+        py::keep_alive<1, 4>(), internal::ensure_callback_lifetime<1, 5>(),
+        constructor_autodiff_mbp_py_penalty.c_str());
 
     const std::string constructor_collision_checker_py_penalty =
         cls_doc.ctor.doc_collision_checker + py_penalty_doc;
@@ -478,24 +487,23 @@ PYDRAKE_MODULE(inverse_kinematics, m) {
             [](Class* self, const planning::CollisionChecker* collision_checker,
                 double bound,
                 planning::CollisionCheckerContext* collision_checker_context,
-                PyPenaltyFunction penalty_function,
+                std::optional<py::callable> penalty_function,
                 double influence_distance_offset) {
               new (self)
                   Class(collision_checker, bound, collision_checker_context,
-                      UnwrapPyPenaltyFunction(penalty_function),
+                      BorrowPenaltyFunction(penalty_function),
                       influence_distance_offset);
             },
             py::arg("collision_checker"), py::arg("bound"),
             py::arg("collision_checker_context"),
-            py::arg("penalty_function").none() =
-                solvers::MinimumValuePenaltyFunction{},
+            py::arg("penalty_function").none() = py::none(),
             py::arg("influence_distance_offset") = 0.01,
             // Keep alive, reference: `self` keeps collision_checker
             // alive.
             py::keep_alive<1, 2>(),
             // Keep alive, reference: `self` keeps collision_checker_context
             // alive.
-            py::keep_alive<1, 4>(),
+            py::keep_alive<1, 4>(), internal::ensure_callback_lifetime<1, 5>(),
             constructor_collision_checker_py_penalty.c_str())
         .def("distance_bound", &Class::distance_bound,
             cls_doc.distance_bound.doc)
@@ -507,8 +515,8 @@ PYDRAKE_MODULE(inverse_kinematics, m) {
     using Class = MinimumDistanceUpperBoundConstraint;
     constexpr auto& cls_doc = doc.MinimumDistanceUpperBoundConstraint;
     using Ptr = std::shared_ptr<Class>;
-    class_<Class, Constraint, Ptr> minimum_distance_upper_bound_constraint(
-        m, "MinimumDistanceUpperBoundConstraint", cls_doc.doc);
+    class_<Class, Constraint, Ptr> minimum_distance_upper_bound_constraint(m,
+        "MinimumDistanceUpperBoundConstraint", cls_doc.doc, py::dynamic_attr());
 
     std::string py_penalty_doc =
         "The penalty function `penalty_function(x: float, compute_grad: bool) "
@@ -526,18 +534,19 @@ PYDRAKE_MODULE(inverse_kinematics, m) {
         [](Class* self, const multibody::MultibodyPlant<double>* plant,
             double bound, systems::Context<double>* plant_context,
             double influence_distance_offset,
-            PyPenaltyFunction penalty_function) {
+            std::optional<py::callable> penalty_function) {
           new (self)
               Class(plant, bound, plant_context, influence_distance_offset,
-                  UnwrapPyPenaltyFunction(penalty_function));
+                  BorrowPenaltyFunction(penalty_function));
         },
         py::arg("plant"), py::arg("bound"), py::arg("plant_context"),
         py::arg("influence_distance_offset"),
-        py::arg("penalty_function").none() = nullptr,
+        py::arg("penalty_function").none() = py::none(),
         // Keep alive, reference: `self` keeps `plant` alive.
         py::keep_alive<1, 2>(),
         // Keep alive, reference: `self` keeps `plant_context` alive.
-        py::keep_alive<1, 4>(), constructor_double_mbp_py_penalty.c_str());
+        py::keep_alive<1, 4>(), internal::ensure_callback_lifetime<1, 6>(),
+        constructor_double_mbp_py_penalty.c_str());
 
     const std::string constructor_autodiff_mbp_py_penalty =
         cls_doc.ctor.doc_autodiff_mbp + py_penalty_doc;
@@ -547,18 +556,19 @@ PYDRAKE_MODULE(inverse_kinematics, m) {
         [](Class* self, const multibody::MultibodyPlant<AutoDiffXd>* plant,
             double bound, systems::Context<AutoDiffXd>* plant_context,
             double influence_distance_offset,
-            PyPenaltyFunction penalty_function) {
+            std::optional<py::callable> penalty_function) {
           new (self)
               Class(plant, bound, plant_context, influence_distance_offset,
-                  UnwrapPyPenaltyFunction(penalty_function));
+                  BorrowPenaltyFunction(penalty_function));
         },
         py::arg("plant"), py::arg("bound"), py::arg("plant_context"),
         py::arg("influence_distance_offset"),
-        py::arg("penalty_function").none() = nullptr,
+        py::arg("penalty_function").none() = py::none(),
         // Keep alive, reference: `self` keeps `plant` alive.
         py::keep_alive<1, 2>(),
         // Keep alive, reference: `self` keeps `plant_context` alive.
-        py::keep_alive<1, 4>(), constructor_autodiff_mbp_py_penalty.c_str());
+        py::keep_alive<1, 4>(), internal::ensure_callback_lifetime<1, 6>(),
+        constructor_autodiff_mbp_py_penalty.c_str());
 
     const std::string constructor_collision_checker_py_penalty =
         cls_doc.ctor.doc_collision_checker + py_penalty_doc;
@@ -569,21 +579,20 @@ PYDRAKE_MODULE(inverse_kinematics, m) {
                 double bound,
                 planning::CollisionCheckerContext* collision_checker_context,
                 double influence_distance_offset,
-                PyPenaltyFunction penalty_function) {
+                std::optional<py::callable> penalty_function) {
               new (self) Class(collision_checker, bound,
                   collision_checker_context, influence_distance_offset,
-                  UnwrapPyPenaltyFunction(penalty_function));
+                  BorrowPenaltyFunction(penalty_function));
             },
             py::arg("collision_checker"), py::arg("bound"),
             py::arg("collision_checker_context"),
             py::arg("influence_distance_offset"),
-            py::arg("penalty_function").none() =
-                solvers::MinimumValuePenaltyFunction{},
+            py::arg("penalty_function").none() = py::none(),
             // Keep alive, reference: `self` keeps collision_checker alive.
             py::keep_alive<1, 2>(),
             // Keep alive, reference: `self` keeps collision_checker_context
             // alive.
-            py::keep_alive<1, 4>(),
+            py::keep_alive<1, 4>(), internal::ensure_callback_lifetime<1, 6>(),
             constructor_collision_checker_py_penalty.c_str())
         .def("distance_bound", &Class::distance_bound,
             cls_doc.distance_bound.doc)
