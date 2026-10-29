@@ -187,7 +187,12 @@ cc_defines(
 cc_defines(
     name = "bazel_spdlog_defines.cmake",
     var = "BAZEL_SPDLOG_DEFINES",
-    deps = ["@spdlog"],
+    deps = select({
+        "//tools/workspace/spdlog:flag_text_logging_spdlog": [
+            "@spdlog",
+        ],
+        "//conditions:default": [],
+    }),
 )
 
 cmake_configure_file(
@@ -450,8 +455,12 @@ cc_library(
         "//common:drake_marker_shared_library",
         "//tools/workspace/fmt:shared_library_maybe",
         "//tools/workspace/lcm_internal:shared_library_maybe",
-        "//tools/workspace/spdlog:shared_library_maybe",
-    ],
+    ] + select({
+        "//tools/workspace/spdlog:flag_text_logging_spdlog": [
+            "//tools/workspace/spdlog:shared_library_maybe",
+        ],
+        "//conditions:default": [],
+    }),
 )
 
 # The list of depended-on header-only libraries that libdrake's header files
@@ -465,9 +474,13 @@ cc_library(
     deps = [
         "//lcmtypes:lcmtypes_drake_cc",
         "//tools/workspace/fmt:hdrs",
-        "//tools/workspace/spdlog:hdrs",
         "@eigen",
-    ],
+    ] + select({
+        "//tools/workspace/spdlog:flag_text_logging_spdlog": [
+            "//tools/workspace/spdlog:hdrs",
+        ],
+        "//conditions:default": [],
+    }),
 )
 
 drake_cc_test(
