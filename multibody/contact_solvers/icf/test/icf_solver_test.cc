@@ -371,7 +371,8 @@ double IslandScaledResidual(const IcfModel<double>& model, int island,
                             const VectorXd& v) {
   IcfData<double> data;
   model.ResizeData(&data);
-  model.CalcData(v, island, &data);
+  data.set_v(v);
+  model.CalcData(island, &data);
   double g_sq = 0.0;
   double r_sq = 0.0;
   for (int c : model.partition().island_cliques(island)) {
@@ -450,7 +451,7 @@ GTEST_TEST(IcfSolver, ConvergenceIsPerIsland) {
   }
   data.set_v(v_guess);
   for (int i = 0; i < num_islands; ++i) {
-    model.CalcData(v_guess, i, &data);
+    model.CalcData(i, &data);
   }
   const VectorXd Dg = model.scale_factor().array() * data.gradient().array();
   const VectorXd Dr = model.scale_factor().array() * model.r().array();

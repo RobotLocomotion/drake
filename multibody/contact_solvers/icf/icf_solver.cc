@@ -111,19 +111,19 @@ bool IcfSolver::SolveWithGuess(const IcfModel<double>& model,
   DRAKE_ASSERT(tolerance > 0);
   DRAKE_ASSERT(model.num_velocities() >= 0);
   DRAKE_ASSERT(model.num_velocities() == data->num_velocities());
+  // The solver solves whatever partition the model holds; the setting only
+  // takes effect when the model is built. See IcfSolverParameters::use_islands.
+  DRAKE_ASSERT(model.params().use_islands == parameters_.use_islands);
 
   const int num_islands = model.partition().num_islands();
 
-  // Pre-allocate scratch for decision variables vₖ and search direction wₖ.
-  // These are full size; each island writes only its own clique segments.
-  decision_variables_.resize(model.num_velocities());
+  // Pre-allocate scratch for the search direction wₖ. This is full size; each
+  // island writes only its own clique segments.
   search_direction_.resize(model.num_velocities());
 
-  // The decision variables start from the initial guess stored in data. We keep
-  // data->v() in sync with decision_variables_ as each island updates its own
-  // clique segments (see SolveIsland), so that linesearch, which reads
-  // data->v(), stays consistent.
-  decision_variables_ = data->v();
+  // The decision variables vₖ live in data->v(), starting from the initial
+  // guess stored there. Each island updates only its own clique segments (see
+  // SolveIsland).
 
   // Grow the per-island state pool as needed. Storage is grow-only: it never
   // shrinks, so per-island factorizations can be reused across time steps.
@@ -140,9 +140,8 @@ bool IcfSolver::SolveWithGuess(const IcfModel<double>& model,
   }
 
   // Solve each island as an independent convex subproblem. Each island owns its
-  // IslandSolverState and writes only disjoint regions of `data`,
-  // decision_variables_, and search_direction_, so the per-island solves do not
-  // interfere.
+  // IslandSolverState and writes only disjoint regions of `data` and
+  // search_direction_, so the per-island solves do not interfere.
   for (int island = 0; island < num_islands; ++island) {
     IslandSolverState& state = *island_states_[island];
     state.converged = SolveIsland(model, island, tolerance, data, &state);
@@ -207,14 +206,13 @@ bool IcfSolver::SolveIsland(const IcfModel<double>& model, const int island,
   int ls_iterations{0};  // Count of linesearch iterations taken.
   double eta = 1.0;      // Convergence scaling factor η.
 
-  VectorXd& v = decision_variables_;
+  VectorXd& v = data->mutable_v();   // The decision variables vₖ.
   VectorXd& dv = search_direction_;  // Also stores Δvₖ = αₖ⋅wₖ.
-  VectorXd& data_v = data->mutable_v();
 
   for (int k = 0; k < parameters_.max_iterations; ++k) {
     // Compute the island's cost and gradient (writes the island's segments of
-    // data; does not touch data->v(), which we maintain ourselves below).
-    model.CalcData(v, island, data);
+    // data; does not touch data->v(), which we update ourselves below).
+    model.CalcData(island, data);
     const double grad_norm =
         IslandWeightedNorm(model, island, D, data->gradient());
 
@@ -304,18 +302,15 @@ bool IcfSolver::SolveIsland(const IcfModel<double>& model, const int island,
         PerformExactLineSearchIsland(model, island, *data, dv);
 
     // Update the decision variables (velocities), vₖ₊₁ = vₖ + αₖ⋅wₖ, on the
-    // island's clique segments only, mirroring the change into data->v() for
-    // linesearch. We also accumulate the step size ‖D⁻¹⋅Δvₖ‖ over those
-    // segments.
+    // island's clique segments only. We also accumulate the step size
+    // ‖D⁻¹⋅Δvₖ‖ over those segments.
     double step_norm_sq = 0.0;
     for (int c : model.partition().island_cliques(island)) {
       auto dv_c = model.mutable_clique_segment(c, &dv);
       dv_c *= alpha;  // Store Δvₖ = αₖ⋅wₖ.
       const auto D_c = model.clique_segment(c, D);
       step_norm_sq += (dv_c.array() / D_c.array()).matrix().squaredNorm();
-      auto v_c = model.mutable_clique_segment(c, &v);
-      v_c += dv_c;
-      model.mutable_clique_segment(c, &data_v) = v_c;
+      model.mutable_clique_segment(c, &v) += dv_c;
     }
     const double step_norm = std::sqrt(step_norm_sq);
 

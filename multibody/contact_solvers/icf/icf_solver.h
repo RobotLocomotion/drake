@@ -212,8 +212,8 @@ class IcfSolver {
   };
 
   /* Runs the Newton + exact-linesearch loop for a single `island`, updating
-  only that island's clique segments of `data` (and `decision_variables_` /
-  `search_direction_`), and recording per-island statistics in state->stats.
+  only that island's clique segments of `data` (and `search_direction_`), and
+  recording per-island statistics in state->stats.
   @returns true iff the island converged to `tolerance`. */
   bool SolveIsland(const IcfModel<double>& model, int island, double tolerance,
                    IcfData<double>* data, IslandSolverState* state);
@@ -275,9 +275,8 @@ class IcfSolver {
   // The number of islands in the most recent solve.
   int num_islands_{0};
 
-  // Pre-allocated decision variables v and search direction w. Full size; each
-  // island writes only its own clique segments.
-  Eigen::VectorXd decision_variables_;
+  // Pre-allocated search direction w. Full size; each island writes only its
+  // own clique segments.
   Eigen::VectorXd search_direction_;
 
   // Data used during linesearch. Islands are solved one at a time, so they all

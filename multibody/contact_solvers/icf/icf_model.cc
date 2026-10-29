@@ -119,14 +119,14 @@ void IcfModel<T>::CalcAllData(const VectorX<T>& v, IcfData<T>* data) const {
   // Set generalized velocities v.
   data->set_v(v);
   for (int i = 0; i < partition().num_islands(); ++i) {
-    CalcData(v, i, data);
+    CalcData(i, data);
   }
 }
 
 template <typename T>
-T IcfModel<T>::CalcData(const VectorX<T>& v, int island,
-                        IcfData<T>* data) const {
+T IcfModel<T>::CalcData(int island, IcfData<T>* data) const {
   DRAKE_ASSERT(data != nullptr);
+  const VectorX<T>& v = data->v();
 
   // Momentum terms (Av, gradient = Av - r) for the island's clique segments.
   T cost = CalcMomentumTerms(v, island, data);
@@ -439,8 +439,9 @@ void IcfModel<T>::BuildIslandSparsityPatterns() {
       sparsity_pattern_->neighbors();
   const std::vector<int>& clique_sizes = params().clique_sizes;
 
-  // Reuse one set of pattern objects across calls, but rebuild the contents
-  // each time the sparsity changes (the SetSparsityPattern() cadence).
+  // Rebuild every island's pattern, at the SetSparsityPattern() cadence. Each
+  // BlockSparsityPattern owns its storage, so this allocates.
+  // TODO(#23912): Try removing allocations.
   island_sparsity_patterns_.clear();
   island_sparsity_patterns_.reserve(num_islands);
 
@@ -449,28 +450,22 @@ void IcfModel<T>::BuildIslandSparsityPatterns() {
     const int n = ssize(cliques);
 
     // Local block sizes follow the island's (ascending) clique order.
-    island_block_sizes_.assign(n, 0);
-    for (int l = 0; l < n; ++l)
-      island_block_sizes_[l] = clique_sizes[cliques[l]];
+    std::vector<int> block_sizes(n);
+    for (int l = 0; l < n; ++l) block_sizes[l] = clique_sizes[cliques[l]];
 
     // Local neighbors: map each global neighbor of clique cliques[l] to its
     // island-local index. All neighbors lie in the same island (islands are
     // connected components), and local indexing preserves global ordering, so
     // the lower-triangular (j >= i) invariant carries over.
-    island_neighbors_.resize(n);
+    std::vector<std::vector<int>> neighbors(n);
     for (int l = 0; l < n; ++l) {
-      std::vector<int>& local = island_neighbors_[l];
-      local.clear();
+      std::vector<int>& local = neighbors[l];
       local.reserve(ssize(global_neighbors[cliques[l]]));
       for (int g : global_neighbors[cliques[l]]) {
         local.push_back(partition_.clique_local_index(g));
       }
     }
 
-    std::vector<int> block_sizes(island_block_sizes_.begin(),
-                                 island_block_sizes_.begin() + n);
-    std::vector<std::vector<int>> neighbors(island_neighbors_.begin(),
-                                            island_neighbors_.begin() + n);
     island_sparsity_patterns_.emplace_back(std::move(block_sizes),
                                            std::move(neighbors));
   }

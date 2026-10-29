@@ -150,7 +150,13 @@ generally much faster.)""";
 R"""(Whether to decompose the problem into independent constraint islands
 (connected components of the clique graph) and solve them separately.
 When false, all cliques are solved together as a single Newton
-problem.)""";
+problem.
+
+This setting takes effect when the model is built: IcfBuilder forwards
+it to IcfModel∷SetSparsityPattern(), which computes the partition.
+IcfSolver solves whatever partition the model holds, so a solver used
+directly with a model built with a different setting will not change
+behavior (this mismatch is checked in debug builds).)""";
             } use_islands;
             auto Serialize__fields() const {
               return std::array{

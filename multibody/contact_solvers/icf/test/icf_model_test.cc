@@ -104,6 +104,23 @@ GTEST_TEST(IcfModel, LimitMallocOnModelUpdate) {
   }
 }
 
+/* Checks the heap allocations in SetSparsityPattern() for a multi-island model,
+since it runs every step. Each of the 3 cliques is its own island. */
+GTEST_TEST(IcfModel, LimitMallocOnSetSparsityPattern) {
+  IcfModel<double> model;
+  MakeUnconstrainedModel(&model);  // Memory is allocated here.
+  model.SetSparsityPattern();      // So is memory for the first partition.
+  ASSERT_EQ(model.partition().num_islands(), 3);
+
+  {
+    // TODO(#23912): measured 15 allocations: 6 for the global sparsity pattern
+    // and 3 per island (block sizes, neighbors, and its one neighbor list).
+    drake::test::LimitMalloc guard({15});
+    model.SetSparsityPattern();
+  }
+  EXPECT_EQ(model.partition().num_islands(), 3);
+}
+
 GTEST_TEST(IcfModel, ReducedMapping) {
   IcfModel<double> model;
   MakeUnconstrainedModel(&model);
@@ -396,6 +413,7 @@ GTEST_TEST(IcfModel, IslandSpatialVelocities) {
     SCOPED_TRACE(fmt::format("island = {}", island));
     IcfData<double> data;
     model.ResizeData(&data);
+    data.set_v(v);
     IcfSearchDirectionData<double> search_data;
     EigenPool<Vector6d>& V_WB_alpha = data.scratch().V_WB_alpha;
     fill_with_garbage(&data.mutable_V_WB());
@@ -403,7 +421,7 @@ GTEST_TEST(IcfModel, IslandSpatialVelocities) {
     fill_with_garbage(&V_WB_alpha);
 
     // Evaluate only this island: data, search direction, and line search.
-    model.CalcData(v, island, &data);
+    model.CalcData(island, &data);
     model.CalcSearchDirectionData(data, w, island, &search_data);
     double dcost, d2cost;
     model.CalcCostAlongLine(0.5, data, island, search_data, &dcost, &d2cost);
@@ -470,7 +488,7 @@ GTEST_TEST(IcfModel, IslandCalcDataLeavesOtherIslandsUntouched) {
     std::vector<bool> evaluated(num_islands, false);
     for (int active : order) {
       SCOPED_TRACE(fmt::format("after evaluating island {}", active));
-      model.CalcData(v, active, &data);
+      model.CalcData(active, &data);
       evaluated[active] = true;
 
       for (int i = 0; i < num_islands; ++i) {

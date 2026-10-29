@@ -411,16 +411,17 @@ class IcfModel {
        storage is sized by partition().num_islands(). */
   void ResizeData(IcfData<T>* data) const;
 
-  /* Updates `data` as a function of v. Performs no heap allocations. Computes
-  the cost, gradient, and per-constraint data contributed by `island` only,
-  writing into the island's clique/body segments of `data` (other segments are
-  left untouched). The island cost is stored via data->set_island_cost(island,
-  ...) and also returned. The caller must have set data's velocities
-  (data->set_v(v)) beforehand; this method does not, so that evaluating one
-  island leaves the other islands' regions of `data` intact.
+  /* Updates `data` as a function of its velocities v = data->v(). Performs no
+  heap allocations. Computes the cost, gradient, and per-constraint data
+  contributed by `island` only, writing into the island's clique/body segments
+  of `data` (other segments are left untouched). The island cost is stored via
+  data->set_island_cost(island, ...) and also returned. The caller must have
+  set data's velocities (data->set_v()) beforehand; this method does not, so
+  that evaluating one island leaves the other islands' regions of `data`
+  intact.
 
   @pre `data` has been resized to fit this model via ResizeData(). */
-  T CalcData(const VectorX<T>& v, int island, IcfData<T>* data) const;
+  T CalcData(int island, IcfData<T>* data) const;
 
   /* Makes a new sub-Hessian over only the cliques of `island`, using the
   island's local block indexing (block i corresponds to the i-th clique of
@@ -609,8 +610,6 @@ class IcfModel {
   // island. Recomputed by SetSparsityPattern() via BuildIslandSparsityPatterns.
   std::vector<contact_solvers::internal::BlockSparsityPattern>
       island_sparsity_patterns_;
-  std::vector<int> island_block_sizes_;             // Scratch, grow-only.
-  std::vector<std::vector<int>> island_neighbors_;  // Scratch, grow-only.
 
   // Per-island groupings of constraints (by kind) and dynamic bodies, derived
   // from partition_. Recomputed by SetSparsityPattern() via BuildIslandMaps().
