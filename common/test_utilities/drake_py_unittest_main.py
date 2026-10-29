@@ -4,7 +4,7 @@ should NOT be called directly by anything else.
 """
 
 import argparse
-from importlib.machinery import SourceFileLoader
+import importlib.util
 import os
 from pathlib import Path
 import re
@@ -119,8 +119,12 @@ def main():
     if has_pydrake:
         warnings.simplefilter("error", DrakeDeprecationWarning)
 
-    module = SourceFileLoader(test_name, runfiles_test_filename).load_module(
-        test_name)
+    spec = importlib.util.spec_from_file_location(
+        test_name, runfiles_test_filename
+    )
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[test_name] = module
+    spec.loader.exec_module(module)
 
     # Figure out which arguments are for unittest and which are for the module
     # under test.
