@@ -988,6 +988,39 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "proximity_engine_deformable_test",
+    data = [":test_obj_files"],
+    deps = [
+        ":geometry_state",
+        ":proximity_engine",
+        ":shape_specification",
+        "//common:find_resource",
+        "//common/test_utilities:expect_no_throw",
+        "//common/test_utilities:expect_throws_message",
+        "//geometry/proximity:make_sphere_mesh",
+        "//math",
+    ],
+)
+
+drake_cc_googletest(
+    name = "proximity_engine_hydroelastic_test",
+    data = [
+        ":test_obj_files",
+        ":test_vtk_files",
+    ],
+    deps = [
+        ":geometry_state",
+        ":proximity_engine",
+        ":shape_specification",
+        "//common:find_resource",
+        "//common/test_utilities:expect_no_throw",
+        "//common/test_utilities:expect_throws_message",
+        "//geometry/proximity:hydroelastic_calculator",
+        "//math",
+    ],
+)
+
+drake_cc_googletest(
     name = "proximity_engine_test",
     data = [
         ":test_obj_files",
@@ -1001,7 +1034,6 @@ drake_cc_googletest(
         "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:expect_throws_message",
         "//geometry/proximity:hydroelastic_calculator",
-        "//geometry/proximity:make_sphere_mesh",
         "//math",
         "@fcl_internal//:fcl",
     ],
