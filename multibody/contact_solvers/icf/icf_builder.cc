@@ -1123,14 +1123,14 @@ IcfBuilder<T>::PlantFacts::PlantFacts(const MultibodyPlant<T>& plant) {
   }
 
   // Couplers are only supported within a single clique (see TODO(#23992) in
-  // AddCouplerConstraints()), but a coupler can join two branches of one tree
+  // SetCouplerConstraints()), but a coupler can join two branches of one tree
   // that the walk above placed in separate cliques. Merge such cliques back
   // together. Cliques are numbered in ascending velocity order, so merging the
   // whole range [c0, c1] keeps each clique's DOFs contiguous; since c0 and c1
   // are in the same tree, so is every clique in between. We merge regardless
   // of whether the coupler is active, so that cliques depend only on the plant.
   // Couplers between different trees are left alone, and are still rejected
-  // by AddCouplerConstraints().
+  // by SetCouplerConstraints().
   const int num_unmerged_cliques = ssize(clique_sizes);
   std::vector<int> merge_through(num_unmerged_cliques);
   std::iota(merge_through.begin(), merge_through.end(), 0);

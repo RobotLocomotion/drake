@@ -176,7 +176,7 @@ class IcfData {
   int num_islands() const { return ssize(island_cost_); }
 
   /* Returns the momentum cost of `island`: the sum of (½vᵀAv - rᵀv) for each
-  clique in `island` . The island momentum costs sum to the total momentum
+  clique in `island`. The island momentum costs sum to the total momentum
   cost; each is computed independently during a per-island solve. */
   const T& island_momentum_cost(int island) const {
     DRAKE_ASSERT(0 <= island && island < num_islands());

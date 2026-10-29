@@ -540,7 +540,7 @@ GTEST_TEST(IcfBuilder, RetryStep) {
     EXPECT_EQ(data1.gradient(), data2.gradient());
     ASSERT_EQ(data1.V_WB().size(), data2.V_WB().size());
     for (int m = 0; m < data1.V_WB().size(); ++m) {
-      EXPECT_TRUE(CompareMatrices(data1.V_WB()[m], data2.V_WB()[m], 1e-15));
+      EXPECT_TRUE(CompareMatrices(data1.V_WB()[m], data2.V_WB()[m]));
     }
   }
 }

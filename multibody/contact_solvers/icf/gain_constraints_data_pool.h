@@ -41,7 +41,7 @@ class GainConstraintsDataPool {
   int num_constraints() const { return gamma_pool_.size(); }
 
   /* Returns the constraint impulse γ = -∇ℓ(v) for the k-th constraint in the
-  pool.  See GainConstraintsPool for details. */
+  pool. See GainConstraintsPool for details. */
   ConstVectorXView gamma(int k) const { return gamma_pool_[k]; }
   VectorXView mutable_gamma(int k) { return gamma_pool_[k]; }
 

@@ -201,11 +201,11 @@ GTEST_TEST(IcfModel, ReducedDataAndHessian) {
     reduced_v = VectorX<double>::Zero(reduced_model.num_velocities());
     reduced_model.SetSparsityPattern();
     reduced_model.ResizeData(&reduced_data);
-    reduced_data.set_v(reduced_v);
     reduced_model.CalcAllData(reduced_v, &reduced_data);
     std::vector<IcfHessian<double>> reduced_island_hessians;
     for (int i = 0; i < reduced_model.partition().num_islands(); ++i) {
-      reduced_island_hessians.emplace_back(*reduced_model.MakeHessian(i, data));
+      reduced_island_hessians.emplace_back(
+          *reduced_model.MakeHessian(i, reduced_data));
     }
     const MatrixXd reduced_hessian =
         CombineSubHessians(reduced_model.sparsity_pattern(),

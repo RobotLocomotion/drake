@@ -126,9 +126,8 @@ bool IcfSolver::SolveWithGuess(const IcfModel<double>& model,
   decision_variables_ = data->v();
 
   // Grow the per-island state pool as needed. Storage is grow-only: it never
-  // shrinks, so per-island factorizations can be reused across time steps. The
-  // full-problem path (below) reuses slot 0, so always keep at least one.
-  while (ssize(island_states_) < std::max(num_islands, 1)) {
+  // shrinks, so per-island factorizations can be reused across time steps.
+  while (ssize(island_states_) < num_islands) {
     island_states_.push_back(std::make_unique<IslandSolverState>());
   }
 

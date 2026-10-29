@@ -80,7 +80,7 @@ void AddDistanceConstraints(IcfModel<T>* model);
 /* Construct a full Hessian for the model from its island-specific
 sub-Hessians.
 
-@pre The` sub_hessians` are the complete set of island Hessians described by
+@pre The `sub_hessians` are the complete set of island Hessians described by
 `sparsity_pattern` and `partition`. */
 template <typename T>
 std::unique_ptr<IcfHessian<T>> CombineSubHessians(

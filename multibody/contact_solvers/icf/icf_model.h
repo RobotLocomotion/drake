@@ -410,7 +410,7 @@ class IcfModel {
        storage is sized by partition().num_islands(). */
   void ResizeData(IcfData<T>* data) const;
 
-  /* Updates `data` as a function of v. Performs no heap allocations.  Computes
+  /* Updates `data` as a function of v. Performs no heap allocations. Computes
   the cost, gradient, and per-constraint data contributed by `island` only,
   writing into the island's clique/body segments of `data` (other segments are
   left untouched). The island cost is stored via data->set_island_cost(island,
@@ -462,7 +462,7 @@ class IcfModel {
   std::unique_ptr<IcfHessian<T>> MakeHessian(int island,
                                              const IcfData<T>& data) const;
 
-  /* Updates the values of the island's sub-Hessian. for the input `data`.
+  /* Updates the values of the island's sub-Hessian for the input `data`.
 
   @pre The sparsity of the `hessian` matches the structure of `island` in
        `this` model.
@@ -494,7 +494,7 @@ class IcfModel {
   @param search_direction Stores w along with cached quantities. See
                           CalcSearchDirectionData().
   @param[out] dcost_dalpha dℓ̃ /dα on output.
-  @param[out] dcost_dalpha d²ℓ̃ /dα² on output.
+  @param[out] d2cost_dalpha2 d²ℓ̃ /dα² on output.
   @returns The cost ℓ̃ (α). */
   T CalcCostAlongLine(const T& alpha, const IcfData<T>& data, int island,
                       const IcfSearchDirectionData<T>& search_direction,
@@ -543,9 +543,9 @@ class IcfModel {
   current partition_. Called by SetSparsityPattern(). */
   void BuildIslandMaps();
 
-  /* Builds the per-island sub-Hessian sparsity patterns (island_sparsity_
-  patterns_) from the current partition_ and sparsity_pattern_. Called by
-  SetSparsityPattern(). */
+  /* Builds the per-island sub-Hessian sparsity patterns
+  (island_sparsity_patterns_) from the current partition_ and sparsity_pattern_.
+  Called by SetSparsityPattern(). */
   void BuildIslandSparsityPatterns();
 
   /* Computes result = A⋅v, where A is the (sparse) linearized dynamics matrix.

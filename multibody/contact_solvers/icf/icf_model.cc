@@ -4,7 +4,6 @@
 #include <utility>
 #include <vector>
 
-#include "drake/common/unused.h"
 #include "drake/multibody/plant/slicing_and_indexing.h"
 
 namespace drake {
@@ -229,25 +228,23 @@ void IcfModel<T>::CalcSearchDirectionData(
   MultiplyByDynamicsMatrix(w, island, &temp);  // temp = A⋅w (island segments).
 
   const VectorX<T>& v = data.v();
-  const VectorX<T>& Av = data.Av();
 
-  // a = wᵀ⋅A⋅w, b = vᵀ⋅A⋅w - wᵀ⋅r, c = ½vᵀ⋅A⋅v - rᵀ⋅v, all restricted to the
-  // island's clique segments (the only segments where w is nonzero).
-  T a = 0, vAw = 0, wr = 0, c = 0;
+  // a = wᵀ⋅A⋅w and b = vᵀ⋅A⋅w - wᵀ⋅r, restricted to the island's clique
+  // segments (the only segments where w is nonzero).
+  T a = 0, vAw = 0, wr = 0;
   for (int cl : partition_.island_cliques(island)) {
     const auto w_c = clique_segment(cl, w);
     const auto Aw_c = clique_segment(cl, temp);
     const auto v_c = clique_segment(cl, v);
-    const auto Av_c = clique_segment(cl, Av);
     const auto r_c = clique_segment(cl, r_);
     a += w_c.dot(Aw_c);
     vAw += v_c.dot(Aw_c);
     wr += w_c.dot(r_c);
-    c += v_c.dot(0.5 * Av_c - r_c);
   }
   search_direction_data->a = a;
   search_direction_data->b = vAw - wr;
-  search_direction_data->c = c;
+  // c = ½vᵀ⋅A⋅v - rᵀ⋅v was already computed by CalcData().
+  search_direction_data->c = data.island_momentum_cost(island);
 
   // It is now safe to overwrite the scratch with the desired value.
   search_direction_data->w = w;
@@ -352,26 +349,26 @@ T IcfModel<T>::CalcCostAlongLine(
   {
     T constraint_dcost, constraint_d2cost;
     EigenPool<Vector6<T>>& V_WB_alpha = scratch.V_WB_alpha;
-    const T wc = ball_constraints_pool_.CalcData(
+    const T bc = ball_constraints_pool_.CalcData(
         V_WB_alpha, balls, &scratch.ball_constraints_data);
     ball_constraints_pool_.CalcCostAlongLine(
         scratch.ball_constraints_data, search_direction.U, balls,
         &constraint_dcost, &constraint_d2cost);
-    cost += wc;
+    cost += bc;
     *dcost_dalpha += constraint_dcost;
     *d2cost_dalpha2 += constraint_d2cost;
   }
 
-  //  Distance constraints (V_WB_alpha was already computed above).
+  // Distance constraints (V_WB_alpha was already computed above).
   {
     T constraint_dcost, constraint_d2cost;
     EigenPool<Vector6<T>>& V_WB_alpha = scratch.V_WB_alpha;
-    const T wc = distance_constraints_pool_.CalcData(
+    const T dc = distance_constraints_pool_.CalcData(
         V_WB_alpha, distances, &scratch.distance_constraints_data);
     distance_constraints_pool_.CalcCostAlongLine(
         scratch.distance_constraints_data, search_direction.U, distances,
         &constraint_dcost, &constraint_d2cost);
-    cost += wc;
+    cost += dc;
     *dcost_dalpha += constraint_dcost;
     *d2cost_dalpha2 += constraint_d2cost;
   }

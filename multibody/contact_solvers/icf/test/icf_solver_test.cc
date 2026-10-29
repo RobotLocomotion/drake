@@ -1,5 +1,6 @@
 #include "drake/multibody/contact_solvers/icf/icf_solver.h"
 
+#include <algorithm>
 #include <functional>
 #include <memory>
 #include <utility>
