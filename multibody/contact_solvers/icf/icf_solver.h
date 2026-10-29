@@ -133,8 +133,9 @@ class IcfSolver {
   IcfSolverStats), and the solve converges iff every island converges.
 
   @param model The ICF model defining the optimization problem.
-  @param tolerance The convergence tolerance ε to be used for this solve. See
-                   the class documentation for convergence criteria details.
+  @param tolerance The convergence tolerance ε to be used for this solve. It
+                   applies to each island separately. See the class
+                   documentation for convergence criteria details.
   @param[in, out] data The ICF data structure to be updated with the solution.
                        To begin, stores the initial guess for velocities v.
 

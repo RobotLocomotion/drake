@@ -363,6 +363,107 @@ GTEST_TEST(IcfSolver, NoIslandsMatchesIslands) {
                               MatrixCompareType::relative));
 }
 
+/* Returns ‖D⋅g‖ / max(1, ‖D⋅r‖) for the given island at `v`, where the norms
+are restricted to the island's cliques. This is the island's convergence
+measure, which the solver compares to the tolerance ε. */
+double IslandScaledResidual(const IcfModel<double>& model, int island,
+                            const VectorXd& v) {
+  IcfData<double> data;
+  model.ResizeData(&data);
+  model.CalcData(v, island, &data);
+  double g_sq = 0.0;
+  double r_sq = 0.0;
+  for (int c : model.partition().island_cliques(island)) {
+    const auto D_c = model.clique_segment(c, model.scale_factor());
+    g_sq += (D_c.array() * model.clique_segment(c, data.gradient()).array())
+                .matrix()
+                .squaredNorm();
+    r_sq += (D_c.array() * model.clique_segment(c, model.r()).array())
+                .matrix()
+                .squaredNorm();
+  }
+  return std::sqrt(g_sq) / std::max(1.0, std::sqrt(r_sq));
+}
+
+/* Convergence is judged per island, against that island's own (normalized)
+gradient and its own scale max(1, ‖D⋅r‖). In the regime where the absolute floor
+applies to every island, the assembled residual can therefore exceed the
+tolerance by up to a factor of sqrt(N) for N islands. This is intended: adding
+independent copies of a problem must not require solving each copy more
+accurately. */
+GTEST_TEST(IcfSolver, ConvergenceIsPerIsland) {
+  // Three independent cliques, with v₀ = 0 and k₀ = 0 so that r = 0 and every
+  // island is in the absolute regime.
+  IcfModel<double> model;
+  MakeUnconstrainedModel(&model);
+  auto params = model.ReleaseParameters();
+  params->use_islands = true;
+  params->v0.setZero();
+  params->k0.setZero();
+  model.ResetParameters(std::move(params));
+  model.SetSparsityPattern();
+  const int num_islands = model.partition().num_islands();
+  ASSERT_EQ(num_islands, 3);
+  ASSERT_EQ(model.r().norm(), 0.0);
+  const int nv = model.num_velocities();
+
+  // Solve tightly for a reference solution.
+  IcfData<double> data;
+  model.ResizeData(&data);
+  data.set_v(VectorXd::LinSpaced(nv, -0.5, 0.7));
+  std::unique_ptr<IcfSolver> tight_solver =
+      MakeSolver(true, [](IcfSolverParameters* p) {
+        p->min_tolerance = 1e-12;
+      });
+  ASSERT_TRUE(tight_solver->SolveWithGuess(model, 1e-12, &data));
+  const VectorXd v_star = data.v();
+
+  // Offset each island from the solution by an amount that puts its own
+  // convergence measure just inside the tolerance. The offsets are tiny, so the
+  // gradient is locally linear and a single rescaling gets us there.
+  const double tolerance = 1e-6;
+  const double offset = 1e-6;
+  const auto make_offset_guess = [&](const std::vector<double>& amplitudes) {
+    VectorXd v = v_star;
+    for (int i = 0; i < num_islands; ++i) {
+      for (int c : model.partition().island_cliques(i)) {
+        model.mutable_clique_segment(c, &v).array() += amplitudes[i];
+      }
+    }
+    return v;
+  };
+  const VectorXd v_probe =
+      make_offset_guess(std::vector<double>(num_islands, offset));
+  std::vector<double> amplitudes;
+  for (int i = 0; i < num_islands; ++i) {
+    const double probe_residual = IslandScaledResidual(model, i, v_probe);
+    ASSERT_GT(probe_residual, 0.0);
+    amplitudes.push_back(offset * 0.9 * tolerance / probe_residual);
+  }
+  const VectorXd v_guess = make_offset_guess(amplitudes);
+
+  // Every island is converged on its own, but the assembled residual exceeds ε
+  // times the global scale, which would fail a global criterion.
+  for (int i = 0; i < num_islands; ++i) {
+    EXPECT_LT(IslandScaledResidual(model, i, v_guess), tolerance);
+  }
+  data.set_v(v_guess);
+  for (int i = 0; i < num_islands; ++i) {
+    model.CalcData(v_guess, i, &data);
+  }
+  const VectorXd Dg = model.scale_factor().array() * data.gradient().array();
+  const VectorXd Dr = model.scale_factor().array() * model.r().array();
+  EXPECT_GT(Dg.norm(), tolerance * std::max(1.0, Dr.norm()));
+
+  // The solver accepts the guess without iterating on any island.
+  std::unique_ptr<IcfSolver> solver = MakeSolver(true);
+  model.ResizeData(&data);
+  data.set_v(v_guess);
+  EXPECT_TRUE(solver->SolveWithGuess(model, tolerance, &data));
+  EXPECT_EQ(solver->stats().num_iterations, 0);
+  EXPECT_EQ(data.v(), v_guess);
+}
+
 /* Fixture for nonlinear multi-island solves where one island starts at its
 solution and the other is perturbed away from it. */
 class IcfSolverPerturbedIslandTest : public ::testing::Test {
