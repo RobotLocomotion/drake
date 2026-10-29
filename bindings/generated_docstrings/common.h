@@ -3297,7 +3297,7 @@ details.)""";
           const char* doc_2args =
 R"""(Logs a formatted message at ``critical`` severity.)""";
           // Source: drake/common/text_logging.h
-          const char* doc_1args = R"""(Logs a string at ``critival`` severity.)""";
+          const char* doc_1args = R"""(Logs a string at ``critical`` severity.)""";
         } critical;
         // Symbol: drake::logging::logger::debug
         struct /* debug */ {

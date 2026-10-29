@@ -6,12 +6,6 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-// The BUILD.bazel rules must supply this flag.  This test code is compiled and
-// run twice -- once with spdlog, and once without.
-#ifndef TEXT_LOGGING_TEST_SPDLOG
-#error Missing a required definition to compile this test case.
-#endif
-
 namespace {
 class Formattable {
  public:
@@ -60,23 +54,13 @@ GTEST_TEST(TextLoggingTest, CaptureOutputTest) {
   drake::log()->debug("bad sentinel");
   drake::log()->info("good sentinel");
   std::string output = testing::internal::GetCapturedStderr();
-#if TEXT_LOGGING_TEST_SPDLOG
   EXPECT_TRUE(output.find("good sentinel") != std::string::npos);
   EXPECT_TRUE(output.find("bad sentinel") == std::string::npos);
-#else
-  EXPECT_EQ(output, "");
-#endif
 }
 
 // Verify that DRAKE_LOGGER macros succeed in avoiding evaluation of their
 // arguments.
 GTEST_TEST(TextLoggingTest, DrakeMacrosDontEvaluateArguments) {
-#if TEXT_LOGGING_TEST_SPDLOG
-  [[maybe_unused]] constexpr bool kTestSpdlog = true;
-#else
-  [[maybe_unused]] constexpr bool kTestSpdlog = false;
-#endif
-
   int tracearg = 0, debugarg = 0;
 
   // Shouldn't increment argument whether the macro expanded or not, since
@@ -94,8 +78,8 @@ GTEST_TEST(TextLoggingTest, DrakeMacrosDontEvaluateArguments) {
   DRAKE_LOGGER_TRACE("tracearg={}", ++tracearg);
   DRAKE_LOGGER_DEBUG("debugarg={}", ++debugarg);
 #ifndef NDEBUG
-  EXPECT_EQ(tracearg, kTestSpdlog ? 1 : 0);
-  EXPECT_EQ(debugarg, kTestSpdlog ? 1 : 0);
+  EXPECT_EQ(tracearg, 1);
+  EXPECT_EQ(debugarg, 1);
 #else
   EXPECT_EQ(tracearg, 0);
   EXPECT_EQ(debugarg, 0);
@@ -109,7 +93,7 @@ GTEST_TEST(TextLoggingTest, DrakeMacrosDontEvaluateArguments) {
   DRAKE_LOGGER_DEBUG("debugarg={}", ++debugarg);
 #ifndef NDEBUG
   EXPECT_EQ(tracearg, 0);
-  EXPECT_EQ(debugarg, kTestSpdlog ? 1 : 0);
+  EXPECT_EQ(debugarg, 1);
 #else
   EXPECT_EQ(tracearg, 0);
   EXPECT_EQ(debugarg, 0);
@@ -132,7 +116,6 @@ GTEST_TEST(TextLoggingTest, SetLogLevel) {
 
   EXPECT_THROW(set_log_level("bad"), std::runtime_error);
 
-#if TEXT_LOGGING_TEST_SPDLOG
   const std::vector<std::string> levels = {"trace", "debug",    "info", "warn",
                                            "err",   "critical", "off"};
   const std::string first_level = set_log_level("unchanged");
@@ -143,20 +126,13 @@ GTEST_TEST(TextLoggingTest, SetLogLevel) {
     prev_level = level;
   }
   set_log_level(first_level);
-#else
-  ASSERT_EQ(drake::logging::set_log_level("unchanged"), "off");
-#endif
 }
 
 GTEST_TEST(TextLoggingTest, SetLogPattern) {
   using drake::logging::set_log_pattern;
 
-#if TEXT_LOGGING_TEST_SPDLOG
   set_log_pattern("%v");
   set_log_pattern("%+");
-#else
-  set_log_pattern("anything really");
-#endif
 }
 
 }  // namespace
