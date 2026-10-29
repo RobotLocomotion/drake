@@ -165,18 +165,13 @@ void LimitConstraintsPool<T>::AccumulateHessian(
     const IcfData<T>& data, std::span<const int> constraints,
     std::span<const int> clique_to_block, IcfHessian<T>* hessian) const {
   DRAKE_ASSERT(hessian != nullptr);
+  DRAKE_ASSERT(ssize(clique_to_block) == model().num_cliques());
 
   const LimitConstraintsDataPool<T>& limit_data = data.limit_constraints_data();
 
-  auto c2b = [&](int clique) {
-    if (!clique_to_block.empty()) {
-      return clique_to_block[clique];
-    }
-    return clique;
-  };
   for (int k : constraints) {
     const int c = clique_[k];
-    const int block = c2b(c);
+    const int block = clique_to_block[c];
 
     const MatrixX<T> G_lower = limit_data.G_lower(k).asDiagonal();
     const MatrixX<T> G_upper = limit_data.G_upper(k).asDiagonal();

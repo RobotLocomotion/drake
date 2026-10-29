@@ -275,23 +275,18 @@ void HolonomicConstraintsPool<T, N, Derived>::AccumulateHessian(
     const IcfData<T>&, std::span<const int> constraints,
     std::span<const int> clique_to_block, IcfHessian<T>* hessian) const {
   DRAKE_ASSERT(hessian != nullptr);
-
-  auto c2b = [&](int clique) {
-    if (!clique_to_block.empty()) {
-      return clique_to_block[clique];
-    }
-    return clique;
-  };
+  DRAKE_ASSERT(ssize(clique_to_block) == model().num_cliques());
 
   for (int k : constraints) {
     const HessianBlock& hb = hessian_blocks_[k];
-    const int b_b = c2b(hb.c_B);
+    const int b_b = clique_to_block[hb.c_B];
     hessian->AddToBlock(b_b, b_b, hb.H_BB);
 
     if (hb.A_is_dynamic) {
-      const int b_a = c2b(hb.c_A);
+      const int b_a = clique_to_block[hb.c_A];
       hessian->AddToBlock(b_a, b_a, hb.H_AA);
-      hessian->AddToBlock(c2b(hb.cross_row), c2b(hb.cross_col), hb.H_cross);
+      hessian->AddToBlock(clique_to_block[hb.cross_row],
+                          clique_to_block[hb.cross_col], hb.H_cross);
     }
   }
 }

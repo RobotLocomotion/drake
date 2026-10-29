@@ -154,13 +154,7 @@ void CouplerConstraintsPool<T>::AccumulateHessian(
     const IcfData<T>& data, std::span<const int> constraints,
     std::span<const int> clique_to_block, IcfHessian<T>* hessian) const {
   DRAKE_ASSERT(hessian != nullptr);
-
-  auto c2b = [&](int clique) {
-    if (!clique_to_block.empty()) {
-      return clique_to_block[clique];
-    }
-    return clique;
-  };
+  DRAKE_ASSERT(ssize(clique_to_block) == model().num_cliques());
 
   const T& dt = model().time_step();
   const T dt_eff = model().effective_time_step();
@@ -170,7 +164,7 @@ void CouplerConstraintsPool<T>::AccumulateHessian(
   const T R_time_step_factor = (dt_eff * dt_eff) / (dt * (dt + taud));
   for (int k : constraints) {
     const int c = constraint_to_clique_[k];
-    const int block = c2b(c);
+    const int block = clique_to_block[c];
     const int i = dofs_[k].first;
     const int j = dofs_[k].second;
     const T& rho = gear_ratio_[k];

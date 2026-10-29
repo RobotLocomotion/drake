@@ -114,7 +114,7 @@ bool IcfSolver::SolveWithGuess(const IcfModel<double>& model,
 
   const int num_islands = model.partition().num_islands();
 
-  // Pre-allocate scratch for decision variables v_k and search direction w_k.
+  // Pre-allocate scratch for decision variables vₖ and search direction wₖ.
   // These are full size; each island writes only its own clique segments.
   decision_variables_.resize(model.num_velocities());
   search_direction_.resize(model.num_velocities());
@@ -187,29 +187,28 @@ bool IcfSolver::SolveIsland(const IcfModel<double>& model, const int island,
   IcfSolverStats& stats = state->stats;
   stats.Clear();
 
-  // Convergence tolerances are scaled by D = diag(M)^{-1/2}, so that all
-  // entries of g~ = D*g and v~ = D^{-1}*v have the same units [Castro 2023].
+  // Convergence tolerances are scaled by D = diag(M)⁻⁰ᐧ⁵, so that all
+  // entries of g̃ = D⋅g and ṽ = D⁻¹⋅v have the same units [Castro et al., 2021].
   //
   // Convergence is achieved when either the (normalized) gradient is small
-  //   ||D*g_k|| <= eps max(1, ||D*r||),
+  //   ‖D⋅gₖ‖ ≤ ε max(1, ‖D⋅r‖),
   // or the (normalized) step size is sufficiently small,
-  //   eta ||D^{-1}*dv_k|| <= eps max(1, ||D*r||),
-  // where eta = theta / (1 - theta), theta = ||D^{-1}*dv_k|| /
-  // ||D^{-1}*dv_km1|| as per [Hairer and Wanner, 1996]. All norms are
-  // restricted to the island's clique segments; for a single island these
-  // reduce to the full-problem quantities.
+  //   η ‖D⁻¹⋅Δvₖ‖ ≤ ε max(1, ‖D⋅r‖).
+  // where η = θ / (1 − θ), θ = ‖D⁻¹⋅Δvₖ‖ / ‖D⁻¹⋅Δvₖ₋₁‖, as per [Hairer and
+  // Wanner, 1996]. All norms are restricted to the island's clique segments;
+  // for a single island these reduce to the full-problem quantities.
   const VectorXd& D = model.scale_factor();
   const double scale =
       std::max(1.0, IslandWeightedNorm(model, island, D, model.r()));
   const double epsilon = std::max(tolerance, parameters_.min_tolerance);
   const double scaled_tolerance = epsilon * scale;
 
-  double alpha{NAN};     // Linesearch parameter alpha.
+  double alpha{NAN};     // Linesearch parameter α.
   int ls_iterations{0};  // Count of linesearch iterations taken.
-  double eta = 1.0;      // Convergence scaling factor eta.
+  double eta = 1.0;      // Convergence scaling factor η.
 
   VectorXd& v = decision_variables_;
-  VectorXd& dv = search_direction_;  // Also stores dv_k = alpha_k * w_k.
+  VectorXd& dv = search_direction_;  // Also stores Δvₖ = αₖ⋅wₖ.
   VectorXd& data_v = data->mutable_v();
 
   for (int k = 0; k < parameters_.max_iterations; ++k) {
@@ -232,12 +231,11 @@ bool IcfSolver::SolveIsland(const IcfModel<double>& model, const int island,
     }
 
     // Step-size-based convergence check. This is only valid after the first
-    // iteration has been completed, since we need the step size
-    // ||D^{-1}*dv_k||.
+    // iteration has been completed, since we need the step size ‖D⁻¹⋅Δvₖ‖.
     if (k > 0) {
-      // For k = 1, we have eta = 1, so this is equivalent to ||D^{-1}*dv_k|| <
-      // tol. Otherwise we use eta = theta/(1-theta) as set below (see [Hairer
-      // and Wanner, 1996], p.120).
+      // For k = 1, we have η = 1, so this is equivalent to ‖D⁻¹⋅Δvₖ‖ < tol.
+      // Otherwise we use η = θ/(1−θ) as set below (see [Hairer and Wanner,
+      // 1996], p.120).
       if (eta * stats.step_norm.back() < scaled_tolerance) {
         return true;
       }
@@ -247,20 +245,19 @@ bool IcfSolver::SolveIsland(const IcfModel<double>& model, const int island,
     // IV.8.11 of [Hairer and Wanner, 1996]. This essentially predicts whether
     // we'll converge in the next few iterations, assuming linear convergence.
     if (k > 1) {
-      const double dvk = stats.step_norm[k - 1];    // ||D^{-1}*dv_k||
-      const double dvkm1 = stats.step_norm[k - 2];  // ||D^{-1}*dv_km1||
+      const double dvk = stats.step_norm[k - 1];    // ‖D⁻¹⋅Δvₖ‖
+      const double dvkm1 = stats.step_norm[k - 2];  // ‖D⁻¹⋅Δvₖ₋₁‖
 
-      // Convergence rate estimate theta = ||D^{-1}*dv_k|| / ||D^{-1}*dv_km1||.
-      // Note that unlike in the Newton-Raphson steps discussed in [Hairer and
-      // Wanner, 1996], it is possible that theta >= 1 without divergence,
-      // thanks to linesearch. Therefore we clamp theta to be slightly less
-      // than 1.0 to avoid division by zero when computing eta =
-      // theta/(1-theta).
+      // Convergence rate estimate θ = ‖D⁻¹⋅Δvₖ‖ / ‖D⁻¹⋅Δvₖ₋₁‖. Note that unlike
+      // in the Newton-Raphson steps discussed in [Hairer and Wanner, 1996], it
+      // is possible that θ ≥ 1 without divergence, thanks to linesearch.
+      // Therefore we clamp θ to be slightly less than 1.0 to avoid division by
+      // zero when computing η = θ/(1−θ).
       const double theta = clamp(dvk / dvkm1, 0.0, 0.9999);
       eta = theta / (1.0 - theta);
 
       // Predict the residual after a total of k_max iterations, assuming
-      // linear convergence at the current rate theta.
+      // linear convergence at the current rate θ.
       const int k_max = parameters_.hessian_reuse_target_iterations;
       const double anticipated_residual =
           std::pow(theta, k_max - k) / (1 - theta) * dvk;
@@ -289,7 +286,7 @@ bool IcfSolver::SolveIsland(const IcfModel<double>& model, const int island,
                                reuse_sparsity_pattern &&
                                state->hessian_factorization_is_fresh_enough;
 
-    // Compute the search direction w_k = -H_k^{-1}*g_k for the island.
+    // Compute the search direction wₖ = -Hₖ⁻¹⋅gₖ for the island.
     ComputeIslandSearchDirection(model, island, *data, &dv, state,
                                  reuse_hessian, reuse_sparsity_pattern);
 
@@ -302,17 +299,18 @@ bool IcfSolver::SolveIsland(const IcfModel<double>& model, const int island,
       state->previous_cliques.assign(cliques.begin(), cliques.end());
     }
 
-    // Compute the optimal step size alpha_k = min_alpha l_i(v_k + alpha*w_k).
+    // Compute the optimal step size αₖ = min_α ℓᵢ(vₖ + α⋅wₖ).
     std::tie(alpha, ls_iterations) =
         PerformExactLineSearchIsland(model, island, *data, dv);
 
-    // Update the decision variables v_{k+1} = v_k + alpha_k*w_k on the island's
-    // clique segments only, mirroring the change into data->v() for linesearch.
-    // We also accumulate the step size ||D^{-1}*dv_k|| over those segments.
+    // Update the decision variables (velocities), vₖ₊₁ = vₖ + αₖ⋅wₖ, on the
+    // island's clique segments only, mirroring the change into data->v() for
+    // linesearch. We also accumulate the step size ‖D⁻¹⋅Δvₖ‖ over those
+    // segments.
     double step_norm_sq = 0.0;
     for (int c : model.partition().island_cliques(island)) {
       auto dv_c = model.mutable_clique_segment(c, &dv);
-      dv_c *= alpha;  // Store dv_k = alpha_k*w_k.
+      dv_c *= alpha;  // Store Δvₖ = αₖ⋅wₖ.
       const auto D_c = model.clique_segment(c, D);
       step_norm_sq += (dv_c.array() / D_c.array()).matrix().squaredNorm();
       auto v_c = model.mutable_clique_segment(c, &v);
@@ -352,29 +350,29 @@ std::pair<double, int> IcfSolver::PerformExactLineSearchIsland(
     const IcfData<double>& data, const VectorXd& w) {
   const double alpha_max = parameters_.alpha_max;
 
-  // Set up prerequisites for efficiently computing l~_i(alpha) and its
-  // derivatives. Only the island's clique segments of w are read.
+  // Set up prerequisites for efficiently computing ℓ̃ᵢ(α) and its derivatives.
+  // Only the island's clique segments of w are read.
   IcfSearchDirectionData<double>& search_data = search_direction_data_;
   model.CalcSearchDirectionData(data, w, island, &search_data);
 
-  // First we'll evaluate dl~/dalpha at alpha = 0. This should be strictly
-  // negative, since the Hessian is positive definite. This is cheap since we
-  // already have the gradient at alpha = 0 cached from the search direction.
+  // First we'll evaluate ∂ℓ̃ᵢ/∂α at α = 0. This should be strictly negative,
+  // since the Hessian is positive definite. This is cheap since we already have
+  // the gradient at α = 0 cached from solving for the search direction earlier.
   // Both quantities are restricted to the island's clique segments.
-  const double ell0 = data.island_cost(island);  // Cost l~_i(0).
+  const double ell0 = data.island_cost(island);  // Cost ℓ̃ᵢ(0).
   const double dell0 =
-      IslandDot(model, island, data.gradient(), w);  // dl~_i/dalpha at 0.
-  // The derivative along the linesearch direction should be negative at
-  // alpha = 0 since the Hessian is positive definite.
+      IslandDot(model, island, data.gradient(), w);  // ∂ℓ̃ᵢ/∂α at 0.
+  // The derivative along the linesearch direction, ∂ℓ̃ᵢ/∂α, should be negative
+  // at α = 0 since the Hessian is positive definite.
   DRAKE_THROW_UNLESS(dell0 < 0, dell0);
 
-  // First and second derivatives of l~_i(alpha).
-  double dell{NAN};   // First derivative dl~_i/dalpha.
-  double d2ell{NAN};  // Second derivative d2l~_i/dalpha2.
+  // First and second derivatives of ℓ̃ᵢ(α).
+  double dell{NAN};   // First derivative ∂ℓ̃ᵢ/∂α.
+  double d2ell{NAN};  // Second derivative ∂²ℓ̃ᵢ/∂α².
 
-  // Next we'll evaluate l~_i, dl~_i/dalpha, and d2l~_i/dalpha2 at alpha =
-  // alpha_max. If the cost is still decreasing here, we just accept alpha_max
-  // to take the largest step possible.
+  // Next we'll evaluate ℓ̃ᵢ, ∂ℓ̃ᵢ/∂α, and ∂²ℓ̃ᵢ/∂α² at α = α_max. If the cost is
+  // still decreasing here, we just accept α_max to take the largest step
+  // possible.
   const double ell = model.CalcCostAlongLine(alpha_max, data, island,
                                              search_data, &dell, &d2ell);
   if (dell <= std::numeric_limits<double>::epsilon()) {
@@ -387,14 +385,14 @@ std::pair<double, int> IcfSolver::PerformExactLineSearchIsland(
   // formulation.
 
   // Set the initial guess for linesearch based on a cubic hermite spline
-  // between alpha = 0 and alpha = alpha_max. This spline takes the form
-  // p(t) = a t^3 + b t^2 + c t + d, where
-  //   p(0) = l(0),
-  //   p(1) = l(alpha_max),
-  //   p'(0) = alpha_max*l'(0),
-  //   p'(1) = alpha_max*l'(alpha_max).
-  // We can then find the analytical minimum in [0, alpha_max] by setting
-  // p'(t) = 0 and use that to establish an initial guess for linesearch.
+  // between α = 0 and α = α_max. This spline takes the form
+  // p(t) = a t³ + b t² + c t + d, where
+  //   p(0) = ℓ(0),
+  //   p(1) = ℓ(α_max),
+  //   p'(0) = α_max⋅ℓ'(0),
+  //   p'(1) = α_max⋅ℓ'(α_max).
+  // We can then find the analytical minimum in [0, α_max] by setting p'(t) = 0
+  // and use that to establish an initial guess for linesearch.
   const double a = 2 * (ell0 - ell) + dell0 * alpha_max + dell * alpha_max;
   const double b = -3 * (ell0 - ell) - 2 * dell0 * alpha_max - dell * alpha_max;
   const double c = dell0 * alpha_max;
@@ -406,10 +404,9 @@ std::pair<double, int> IcfSolver::PerformExactLineSearchIsland(
 
   // We've exhausted all of the early exit conditions, so now we move on to the
   // Newton method with bisection fallback. To do so, we define an anonymous
-  // function that computes the value and gradient of f(alpha) =
-  // -l~_i'(alpha)/l~_i'_0, where l~_i'(alpha) = dl~_i/dalpha and l~_i'_0 =
-  // l~_i'(0). Normalizing in this way reduces round-off errors, ensuring
-  // f(0) = -1.
+  // function that computes the value and gradient of f(α) = −ℓ̃ᵢ'(α)/ℓ̃ᵢ'₀,
+  // where ℓ̃ᵢ'(α) = ∂ℓ̃ᵢ/∂α and ℓ̃ᵢ'₀ = ℓ̃ᵢ'(0). Normalizing in this way reduces
+  // round-off errors, ensuring f(0) = -1.
   const double dell_scale = -dell0;
   auto cost_and_gradient = [&model, island, &data, &search_data,
                             &dell_scale](double x) {
@@ -420,13 +417,13 @@ std::pair<double, int> IcfSolver::PerformExactLineSearchIsland(
     return std::make_pair(dell_dalpha / dell_scale, d2ell_dalpha2 / dell_scale);
   };
 
-  // The initial bracket is [0, alpha_max], since we already know that
-  // l~_i'(0) < 0 and l~_i'(alpha_max) > 0. Values at the endpoints of the
-  // bracket are f(0) = -1 (by definition) and f(alpha_max) = dell / dell_scale,
-  // because we just set dell = l~_i'(alpha_max) above.
+  // The initial bracket is [0, α_max], since we already know that ℓ̃ᵢ'(0) < 0
+  // and ℓ̃ᵢ'(α_max) > 0. Values at the endpoints of the bracket are f(0) = -1
+  // (by definition) and f(α_max) = dell / dell_scale, because we just set
+  // dell = ℓ̃ᵢ'(α_max) above.
   const Bracket bracket(0.0, -1.0, alpha_max, dell / dell_scale);
 
-  // Finally, solve for f(alpha) = 0 using Newton with bisection fallback.
+  // Finally, solve for f(α) = 0 using Newton with bisection fallback.
   return DoNewtonWithBisectionFallback(
       cost_and_gradient, bracket, alpha_guess, parameters_.linesearch_tolerance,
       parameters_.linesearch_tolerance, parameters_.max_linesearch_iterations);
@@ -489,7 +486,7 @@ void IcfSolver::ComputeIslandSearchDirection(
       state->hessian_factorization_is_fresh_enough = true;
     }
 
-    // Compute the island search direction w = -H^{-1}*g with dense algebra,
+    // Compute the island search direction w = -H⁻¹⋅g with dense algebra,
     // gathering the right-hand side -g into the island's local block layout,
     // solving, and scattering the result back into w.
     GatherIsland(model, island, data.gradient(), -1.0, &state->local_rhs);
@@ -518,7 +515,7 @@ void IcfSolver::ComputeIslandSearchDirection(
       state->hessian_factorization_is_fresh_enough = true;
     }
 
-    // Compute the island search direction w = -H^{-1}*g with sparse algebra,
+    // Compute the island search direction w = -H⁻¹⋅g with sparse algebra,
     // operating in the island's local block layout, then scatter into w.
     GatherIsland(model, island, data.gradient(), -1.0, &state->local_rhs);
     state->hessian_factorization.SolveInPlace(&state->local_rhs);

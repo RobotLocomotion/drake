@@ -211,7 +211,6 @@ void PatchConstraintsPool<T>::Resize(std::span<const int> num_pairs_per_patch) {
   num_pairs_.assign(num_pairs_per_patch.begin(), num_pairs_per_patch.end());
 
   const int num_patches = num_pairs_.size();
-
   const int num_pairs =
       std::accumulate(num_pairs_.begin(), num_pairs_.end(), 0);
 
@@ -418,24 +417,16 @@ void PatchConstraintsPool<T>::AccumulateHessian(
     const IcfData<T>& data, std::span<const int> patches,
     std::span<const int> clique_to_block, IcfHessian<T>* hessian) const {
   DRAKE_ASSERT(hessian != nullptr);
-
-  auto c2b = [&](int clique) {
-    if (!clique_to_block.empty()) {
-      return clique_to_block[clique];
-    }
-    return clique;
-  };
+  DRAKE_ASSERT(ssize(clique_to_block) == model().num_cliques());
 
   const PatchConstraintsDataPool<T>& patch_data = data.patch_constraints_data();
 
-  typename IcfData<T>::Scratch* scratch{};
-  scratch = &data.scratch();
-  auto& H_BB_pool = scratch->H_BB_pool;
-  auto& H_AA_pool = scratch->H_AA_pool;
-  auto& H_AB_pool = scratch->H_AB_pool;
-  auto& H_BA_pool = scratch->H_BA_pool;
-  auto& GJa_pool = scratch->GJa_pool;
-  auto& GJb_pool = scratch->GJb_pool;
+  auto& H_BB_pool = data.scratch().H_BB_pool;
+  auto& H_AA_pool = data.scratch().H_AA_pool;
+  auto& H_AB_pool = data.scratch().H_AB_pool;
+  auto& H_BA_pool = data.scratch().H_BA_pool;
+  auto& GJa_pool = data.scratch().GJa_pool;
+  auto& GJb_pool = data.scratch().GJb_pool;
 
   const EigenPool<Matrix6<T>>& G_Bp_pool = patch_data.G_Bp_pool();
 
@@ -451,11 +442,12 @@ void PatchConstraintsPool<T>::AccumulateHessian(
     // are sorted ascending, local indices preserve the global clique ordering,
     // so the c_b/c_a comparisons below remain valid for lower-triangular
     // writes.
-    const int b_b = c2b(c_b);
+    const int b_b = clique_to_block[c_b];
 
     // First clique, body B.
     DRAKE_ASSERT(!model().is_anchored(body_b));  // Body B is never anchored.
 
+    // Accumulate Hessian.
     H_BB_pool.Resize(1, nv_b, nv_b);
     auto H_BB = H_BB_pool[0];
 
@@ -473,18 +465,21 @@ void PatchConstraintsPool<T>::AccumulateHessian(
 
     // Second clique, for body A, only contributes if not anchored.
     if (!model().is_anchored(body_a)) {
-      const int b_a = c2b(c_a);
+      const int b_a = clique_to_block[c_a];
       GJa_pool.Resize(1, 6, nv_a);
       auto GJa = GJa_pool[0];
 
       const Vector3<T>& p_AB_W = p_AB_W_[p];
       ConstJacobianView J_WA = model().J_WB(body_a);
 
+      // Accumulate (upper triangular) Hessian.
       H_AA_pool.Resize(1, nv_a, nv_a);
       auto H_AA = H_AA_pool[0];
       const Matrix6<T> G_Phi = ShiftFromTheRight(G_Bp, p_AB_W);  // = Gₚ⋅Φ
       const Matrix6<T> G_Ap = ShiftFromTheLeft(G_Phi, p_AB_W);   // = Φᵀ⋅Gₚ⋅Φ
 
+      // When c_a != c_b, we only write the lower triangular portion.
+      // If c_a == c_b, we must compute both terms.
       GJa.noalias() = G_Phi * J_WA;
       H_BA_pool.Resize(1, nv_b, nv_a);
       auto H_BA = H_BA_pool[0];
@@ -497,12 +492,16 @@ void PatchConstraintsPool<T>::AccumulateHessian(
         hessian->AddToBlock(b_b, b_a, H_BA);
       }
       if (c_a > c_b) {
+        // N.B. Doing:
+        // AddToBlock(b_a, b_b, H_BA.transpose()) allocates temp memory!!!.
         H_AB_pool.Resize(1, nv_a, nv_b);
         auto H_AB = H_AB_pool[0];
         H_AB = H_BA.transpose();
         hessian->AddToBlock(b_a, b_b, H_AB);
       }
       if (c_b == c_a) {
+        // We must add both. Additionally, AddToBlock assumes symmetric blocks
+        // for diagonal blocks.
         H_BB.noalias() = H_BA + H_BA.transpose();  // Re-use H_BB.
         hessian->AddToBlock(b_a, b_b, H_BB);
       }

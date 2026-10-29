@@ -93,18 +93,12 @@ void GainConstraintsPool<T>::AccumulateHessian(
     const IcfData<T>& data, std::span<const int> constraints,
     std::span<const int> clique_to_block, IcfHessian<T>* hessian) const {
   DRAKE_ASSERT(hessian != nullptr);
-
-  auto c2b = [&](int clique) {
-    if (!clique_to_block.empty()) {
-      return clique_to_block[clique];
-    }
-    return clique;
-  };
+  DRAKE_ASSERT(ssize(clique_to_block) == model().num_cliques());
 
   const GainConstraintsDataPool<T>& gain_data = data.gain_constraints_data();
   for (int k : constraints) {
     const int c = clique_[k];
-    const int block = c2b(c);
+    const int block = clique_to_block[c];
 
     // TODO(vincekurtz): use data.scratch() to avoid allocating Gk here.
     const MatrixX<T> Gk = gain_data.G(k).asDiagonal();
