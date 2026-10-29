@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vector>
+
 #include "drake/multibody/plant/multibody_plant.h"
 
 namespace drake {
@@ -17,10 +19,15 @@ class IcfExternalSystemsLinearizer;
 }  // namespace icf
 }  // namespace contact_solvers
 
+// Forward declaration for friendship, below.
+template <typename T>
+class CenicIntegrator;
+
 namespace internal {
 
 /* This class is used to grant access to a selected collection of
-MultibodyPlant's private methods to //multibody/contact_solvers/icf.
+MultibodyPlant's private methods to //multibody/contact_solvers/icf and to
+//multibody/cenic.
 
 @tparam_default_scalar */
 template <typename T>
@@ -30,6 +37,24 @@ class MultibodyPlantIcfAttorney {
 
   friend class contact_solvers::icf::internal::IcfBuilder<T>;
   friend class contact_solvers::icf::internal::IcfExternalSystemsLinearizer<T>;
+  friend class CenicIntegrator<T>;
+
+  // Returns the plant's cached geometry contact data (point pairs and contact
+  // surfaces) at the configuration stored in `context`.
+  static const GeometryContactData<T>& EvalGeometryContactData(
+      const MultibodyPlant<T>& plant, const systems::Context<T>& context) {
+    return plant.EvalGeometryContactData(context);
+  }
+
+  // See MultibodyPlant::CalcAccelerationKinematicsAndReactionForces().
+  static void CalcAccelerationKinematicsAndReactionForces(
+      const MultibodyPlant<T>& plant, const systems::Context<T>& context,
+      const MultibodyForces<T>& applied_forces, const VectorX<T>& vdot,
+      AccelerationKinematicsCache<T>* ac,
+      std::vector<SpatialForce<T>>* reaction_forces) {
+    plant.CalcAccelerationKinematicsAndReactionForces(
+        context, applied_forces, vdot, ac, reaction_forces);
+  }
 
   static void AddAppliedExternalGeneralizedForces(
       const MultibodyPlant<T>& plant, const systems::Context<T>& context,

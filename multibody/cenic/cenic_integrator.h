@@ -9,6 +9,7 @@
 #include "drake/multibody/contact_solvers/icf/icf_solver.h"
 #include "drake/multibody/contact_solvers/icf/icf_solver_parameters.h"
 #include "drake/multibody/plant/multibody_plant.h"
+#include "drake/multibody/tree/multibody_forces.h"
 #include "drake/systems/analysis/integrator_base.h"
 
 namespace drake {
@@ -83,6 +84,26 @@ MultibodyPlant subsystem, at any level of Diagram nesting.
 
 Running CENIC in fixed-step mode (with error-control disabled) recovers the
 "Lagged" variant of discrete-time ICF simulation from [Castro et al., 2023].
+
+**Force reporting.** CENIC does not integrate the plant's own continuous
+contact dynamics, so by default the plant's dynamics output ports (e.g.,
+`reaction_forces`, `contact_results`, `generalized_acceleration`) report the
+plant's compliant contact model, which is inconsistent with the simulated
+trajectory. To report the ICF contact and constraint forces instead, call
+MultibodyPlant::SetUseSampledOutputPorts(true) on the (continuous-time) plant
+before finalizing it. CENIC then records, at every step, a sample of the
+dynamics of the convex problem that produced the new state: the constraint
+impulses γ divided by that step's time step δt (for error-controlled steps, the
+second half-step), together with the resulting accelerations, joint reaction
+forces, contact results, and net actuation. The plant's dynamics output ports
+report that sample until the next step. Before the first step the sample is
+empty (zero forces and accelerations, no contacts). As with discrete-time
+plants, the sample's kinematics (e.g., contact points and the frames of the
+reaction forces) are those at the start of the solved step. For an
+error-controlled step that is the configuration at the midpoint t + h/2, not at
+the end of the step t + h, so it can lag the Context's body poses by up to half
+a step. See
+@ref output_port_sampling "Output port sampling" for details.
 
 Implementation notes:
 
@@ -163,6 +184,18 @@ class CenicIntegrator final : public systems::IntegratorBase<T> {
     VectorX<T> v_guess;
     VectorX<T> q;
 
+    /* Storage for recording output port samples; see RecordStepMemory(). */
+    contact_solvers::icf::internal::IcfData<T> report_data;
+    std::unique_ptr<MultibodyForces<T>> applied_forces;
+    VectorX<T> vdot;
+    VectorX<T> generalized_forces;
+    VectorX<T> tau_contact;
+    VectorX<T> net_actuation;
+    /* The velocity index actuated by each actuation input; i.e., the
+    nonzero row of each column of the plant's actuation matrix, which is a
+    selection of dofs. */
+    std::vector<int> actuated_dofs;
+
     /* Linearized external system gains (sized to the plant's num_velocities):
     Torque-limited actuation, τᵤ(v) ≈ clamp(-Kᵤ⋅v + bᵤ, e). */
     contact_solvers::icf::internal::IcfLinearFeedbackGains<T>
@@ -214,6 +247,23 @@ class CenicIntegrator final : public systems::IntegratorBase<T> {
   void ComputeNextContinuousState(
       const contact_solvers::icf::internal::IcfModel<T>& model,
       const VectorX<T>& v_guess, systems::ContinuousState<T>* x_next);
+
+  /* Records a sample of the dynamics of the step just solved into the plant's
+  step memory (abstract state), for use by the plant's sampled output ports.
+  See MultibodyPlant::SetUseSampledOutputPorts().
+
+  @param model The ICF model of the solve that produced the accepted next state
+               (its time step is used to convert impulses to forces).
+  @param has_actuation_forces Whether `model` includes actuation gain
+                              constraints.
+  @param has_external_forces Whether `model` includes external force gain
+                             constraints.
+  @pre this->get_context() still holds the state (q₀, v₀) from which `model`
+       was built, and data_ holds the solution of that model.
+  @pre plant().has_sampled_output_ports(). */
+  void RecordStepMemory(
+      const contact_solvers::icf::internal::IcfModel<T>& model,
+      bool has_actuation_forces, bool has_external_forces);
 
   /* Advances the plant's generalized positions, q = q₀ + h N(q₀) v, taking care
   to handle quaternion DoFs properly.

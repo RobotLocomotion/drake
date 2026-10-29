@@ -354,6 +354,10 @@ GTEST_TEST(IcfBuilder, RetryStep) {
     std::vector<int> is_actuation(pool.num_constraints(), 0);
     if (actuation_feedback != nullptr) {
       is_actuation[pool.num_constraints() - 1] = 1;
+      // The (only) actuation constraint is where the builder says it starts.
+      EXPECT_EQ(IcfBuilder<double>::ActuationGainConstraintsStart(
+                    model, external_feedback != nullptr),
+                pool.num_constraints() - 1);
     }
     for (int k = 0; k < pool.num_constraints(); ++k) {
       SCOPED_TRACE(fmt::format("index {}", k));
@@ -732,6 +736,43 @@ GTEST_TEST(IcfBuilder, TendonConstraintUnsupported) {
 
   DRAKE_EXPECT_THROWS_MESSAGE(IcfBuilder<double>(&plant),
                               ".*not.*support.*1 tendon constraint\\(s\\).*");
+}
+
+GTEST_TEST(IcfBuilder, SharedJointActuatorsUnsupported) {
+  systems::DiagramBuilder<double> diagram_builder;
+  multibody::MultibodyPlantConfig plant_config{.time_step = 0.0};
+  MultibodyPlant<double>& plant =
+      multibody::AddMultibodyPlant(plant_config, &diagram_builder);
+
+  Parser(&plant, "Pendulum").AddModelsFromString(kRobotXml, "xml");
+
+  // The shoulder's lone actuator is fine; the elbow's pair is not.
+  plant.AddJointActuator("shoulder", plant.GetJointByName("joint1"));
+  plant.AddJointActuator("elbow", plant.GetJointByName("joint2"));
+  plant.AddJointActuator("elbow_assist", plant.GetJointByName("joint2"));
+
+  // Shared actuators are only a problem when reporting sampled outputs.
+  plant.SetUseSampledOutputPorts(true);
+  plant.Finalize();
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      IcfBuilder<double>(&plant),
+      ".*not support more than one actuator on a joint.*'joint2'.*'elbow'.*"
+      "'elbow_assist'.*AddCouplerConstraint.*");
+}
+
+GTEST_TEST(IcfBuilder, SharedJointActuatorsAllowedWithoutSampledPorts) {
+  systems::DiagramBuilder<double> diagram_builder;
+  multibody::MultibodyPlantConfig plant_config{.time_step = 0.0};
+  MultibodyPlant<double>& plant =
+      multibody::AddMultibodyPlant(plant_config, &diagram_builder);
+
+  Parser(&plant, "Pendulum").AddModelsFromString(kRobotXml, "xml");
+  plant.AddJointActuator("elbow", plant.GetJointByName("joint2"));
+  plant.AddJointActuator("elbow_assist", plant.GetJointByName("joint2"));
+  plant.Finalize();
+
+  EXPECT_NO_THROW(IcfBuilder<double> builder(&plant));
 }
 
 GTEST_TEST(IcfBuilder, DeformableUnsupported) {

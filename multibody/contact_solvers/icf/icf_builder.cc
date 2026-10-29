@@ -11,6 +11,7 @@
 #include "drake/geometry/scene_graph_inspector.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/plant/contact_properties.h"
+#include "drake/multibody/plant/geometry_contact_data.h"
 #include "drake/multibody/plant/multibody_plant_icf_attorney.h"
 #include "drake/multibody/topology/graph.h"
 
@@ -329,36 +330,42 @@ void IcfBuilder<T>::ValidatePlant() {
         "constraint(s)",
         plant_.num_tendon_constraints()));
   }
+
+  // Reporting the actuation applied during a step (for the sampled output
+  // ports) assumes a single actuator per dof, because the actuation gain
+  // constraints act per dof, with a single effort limit each.
+  std::vector<const JointActuator<T>*> dof_actuators(plant_.num_velocities(),
+                                                     nullptr);
+  for (JointActuatorIndex i : plant_.GetJointActuatorIndices()) {
+    if (!plant_.has_sampled_output_ports()) break;
+    const JointActuator<T>& actuator = plant_.get_joint_actuator(i);
+    const JointActuator<T>*& existing =
+        dof_actuators[actuator.joint().velocity_start()];
+    if (existing != nullptr) {
+      throw std::logic_error(fmt::format(
+          "The CENIC integrator does not support more than one actuator on a "
+          "joint, but joint '{}' is actuated by both '{}' and '{}'. Consider "
+          "modeling each motor on its own joint and coupling those joints with "
+          "constraints (e.g., MultibodyPlant::AddCouplerConstraint()).",
+          actuator.joint().name(), existing->name(), actuator.name()));
+    }
+    existing = &actuator;
+  }
 }
 
 template <typename T>
 void IcfBuilder<T>::CalcGeometryContactData(
     const systems::Context<T>& context) {
   DRAKE_DEMAND(plant_.geometry_source_is_registered());
-  surfaces_.clear();
-  point_pairs_.clear();
 
-  const auto& query_object =
-      plant_.get_geometry_query_input_port()
-          .template Eval<geometry::QueryObject<T>>(context);
-
-  switch (plant_.get_contact_model()) {
-    case ContactModel::kPoint: {
-      point_pairs_ = query_object.ComputePointPairPenetration();
-      break;
-    }
-    case ContactModel::kHydroelastic: {
-      surfaces_ = query_object.ComputeContactSurfaces(
-          plant_.get_contact_surface_representation());
-      break;
-    }
-    case ContactModel::kHydroelasticWithFallback: {
-      query_object.ComputeContactSurfacesWithFallback(
-          plant_.get_contact_surface_representation(), &surfaces_,
-          &point_pairs_);
-      break;
-    }
-  }
+  // Source the contact set from MultibodyPlant's position-keyed
+  // geometry_contact_data cache. This performs the same ContactModel-dependent
+  // SceneGraph query the plant itself uses, computed once per configuration.
+  // We keep only a cheap, shared handle to the results, so that (e.g.) an
+  // integrator recording contact results for the plant's output ports can share
+  // ownership of the contact surfaces without copying them.
+  geometry_contact_data_ =
+      MultibodyPlantIcfAttorney<T>::EvalGeometryContactData(plant_, context);
 }
 
 template <typename T>
@@ -367,17 +374,19 @@ void IcfBuilder<T>::AllocatePatchConstraints(IcfModel<T>* model) const {
   // N.B. This assumes that geometry info has already been computed
   DRAKE_ASSERT(model != nullptr);
   PatchConstraintsPool<T>& patches = model->patch_constraints_pool();
-  const int num_surfaces = surfaces_.size();
+  const auto& point_pairs = geometry_contact_data_.get().point_pairs;
+  const auto& surfaces = geometry_contact_data_.get().surfaces;
+  const int num_surfaces = surfaces.size();
 
   // First we'll get the number of contact pairs for point contact. There is one
   // pair per contact patch with point contact.
-  const int num_point_contacts = point_pairs_.size();
+  const int num_point_contacts = point_pairs.size();
   std::vector<int> num_pairs_per_patch(num_point_contacts, 1);
 
   // Now we'll do hydro contact. With hydro we typically have multiple contact
   // pairs in each patch.
   for (int surface = 0; surface < num_surfaces; ++surface) {
-    const auto& s = surfaces_[surface];
+    const auto& s = surfaces[surface];
     num_pairs_per_patch.push_back(s.num_faces());
   }
 
@@ -728,7 +737,8 @@ template <typename T>
 void IcfBuilder<T>::SetPatchConstraintsForPointContact(
     const systems::Context<T>& context, IcfModel<T>* model) const {
   DRAKE_DEMAND(plant_.geometry_source_is_registered());
-  const int num_point_contacts = point_pairs_.size();
+  const auto& point_pairs = geometry_contact_data_.get().point_pairs;
+  const int num_point_contacts = point_pairs.size();
   if (num_point_contacts == 0) {
     return;
   }
@@ -743,7 +753,7 @@ void IcfBuilder<T>::SetPatchConstraintsForPointContact(
   for (int point_pair_index = 0; point_pair_index < num_point_contacts;
        ++point_pair_index) {
     const geometry::PenetrationAsPointPair<T>& point_pair =
-        point_pairs_[point_pair_index];
+        point_pairs[point_pair_index];
 
     // Retrieve participating geometries and bodies.
     const geometry::GeometryId Mid = point_pair.id_A;
@@ -815,16 +825,18 @@ void IcfBuilder<T>::SetPatchConstraintsForHydroelasticContact(
   const double kDefaultDissipation =
       geometry::DefaultProximityProperties{}.hunt_crossley_dissipation.value();
 
-  const int num_surfaces = surfaces_.size();
+  const auto& point_pairs = geometry_contact_data_.get().point_pairs;
+  const auto& surfaces = geometry_contact_data_.get().surfaces;
+  const int num_surfaces = surfaces.size();
 
   PatchConstraintsPool<T>& patches = model->patch_constraints_pool();
 
   for (int surface_index = 0; surface_index < num_surfaces; ++surface_index) {
     // To get the patch index, we need to account for the fact that there may
     // be some point contact pairs that get added before this.
-    const int patch_index = surface_index + point_pairs_.size();
+    const int patch_index = surface_index + point_pairs.size();
 
-    const geometry::ContactSurface<T>& s = surfaces_[surface_index];
+    const geometry::ContactSurface<T>& s = surfaces[surface_index];
     const bool M_is_compliant = s.HasGradE_M();
     const bool N_is_compliant = s.HasGradE_N();
     DRAKE_DEMAND(M_is_compliant || N_is_compliant);
@@ -958,12 +970,10 @@ void IcfBuilder<T>::SetActuationGainConstraints(const VectorX<T>& Ku,
 
   auto& gain_constraints = model->gain_constraints_pool();
 
-  int constraint_index = 0;
-  if (has_external_forces) {
-    // When external forces are present, actuation constraints come after all
-    // the external force constraints in the pool.
-    constraint_index = model->num_cliques();
-  }
+  // When external forces are present, actuation constraints come after all the
+  // external force constraints in the pool.
+  int constraint_index =
+      ActuationGainConstraintsStart(*model, has_external_forces);
 
   // Collect joint effort limits, indexed by velocity.
   VectorX<T>& effort_limits = scratch_.effort_limits;

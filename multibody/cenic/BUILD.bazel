@@ -25,6 +25,7 @@ drake_cc_library(
         "//multibody/contact_solvers/icf:icf_builder",
         "//multibody/contact_solvers/icf:icf_external_systems_linearizer",
         "//multibody/contact_solvers/icf:icf_solver",
+        "//multibody/plant",
         "//systems/analysis:integrator_base",
     ],
 )

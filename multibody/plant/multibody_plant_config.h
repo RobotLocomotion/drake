@@ -35,7 +35,9 @@ struct MultibodyPlantConfig {
   double time_step{0.001};
 
   /// Configures the MultibodyPlant::SetUseSampledOutputPorts().
-  /// Ignored when the time_step is zero.
+  /// Ignored when the time_step is zero (i.e., a continuous-time plant always
+  /// defaults to live output ports; sampled output ports for a continuous-time
+  /// plant must be requested by calling SetUseSampledOutputPorts() directly).
   bool use_sampled_output_ports{true};
 
   // TODO(amcastro-tri): deprecate. Defaults should always come from

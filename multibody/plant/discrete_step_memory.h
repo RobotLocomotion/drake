@@ -7,6 +7,7 @@
 
 #include "drake/multibody/contact_solvers/contact_solver_results.h"
 #include "drake/multibody/math/spatial_algebra.h"
+#include "drake/multibody/plant/contact_results.h"
 #include "drake/multibody/plant/discrete_contact_data.h"
 #include "drake/multibody/plant/discrete_contact_pair.h"
 #include "drake/multibody/plant/geometry_contact_data.h"
@@ -17,12 +18,16 @@ namespace multibody {
 namespace internal {
 
 /* When MbP is operating in "sampled" mode (vs "live") mode, this class will be
-stored as State in the Context as an output of the discrete step, and will be
-used to compute dynamics-related output ports. (When operating in "live" mode,
-including continuous-time mode, this class is not used.)
+stored as State in the Context as an output of a step, and will be used to
+compute dynamics-related output ports. (When operating in "live" mode, this
+class is not used.)
 
-The values here are populated during DiscreteUpdateManager::CalcDiscreteValues,
-except for `reaction_forces` which is populated in the MbP.
+For a discrete-time plant, the values here are populated during
+DiscreteUpdateManager::CalcDiscreteValues, except for `reaction_forces` which is
+populated in the MbP. For a continuous-time plant with sampled output ports,
+the values are populated by the integrator advancing the plant (e.g.,
+CenicIntegrator), with help from
+MultibodyPlant::CalcAccelerationKinematicsAndReactionForces.
 
 Once it has been populated, the stored Data is immutable forever after. Copying
 or assigning the `DiscreteStepMemory` just switches which immutable Data it is
@@ -55,6 +60,13 @@ struct DiscreteStepMemory {
     // N.B. This field is populated by MultibodyPlant::CalcStepUnrestricted, not
     // the DiscreteUpdateManager::CalcDiscreteValues.
     std::vector<SpatialForce<T>> reaction_forces;
+
+    // N.B. This field is only used for a continuous-time plant, where the
+    // integrator recording the step assembles the contact results itself. For
+    // a discrete-time plant the DiscreteUpdateManager computes contact results
+    // from `geometry_contact_data`, `discrete_contact_pairs`, and
+    // `contact_solver_results` instead, and this field is left empty.
+    ContactResults<T> contact_results;
   };
 
   /* Resets this object with fresh-allocated (empty) data.

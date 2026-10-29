@@ -428,9 +428,6 @@ template <typename T>
 void MultibodyPlant<T>::SetUseSampledOutputPorts(
     bool use_sampled_output_ports) {
   DRAKE_MBP_THROW_IF_FINALIZED();
-  if (!is_discrete()) {
-    DRAKE_THROW_UNLESS(use_sampled_output_ports == false);
-  }
   use_sampled_output_ports_ = use_sampled_output_ports;
 }
 
@@ -2237,23 +2234,25 @@ void MultibodyPlant<T>::CalcContactResultsOutput(
   }
 
   // Use is_discrete() and use_sampled_output_ports() to govern the approach.
-  if (this->is_discrete()) {
-    if constexpr (sampled) {
-      DRAKE_DEMAND(use_sampled_output_ports_);
-      const DiscreteStepMemory::Data<T>* const memory =
-          get_discrete_step_memory(context);
-      if (memory != nullptr) {
-        discrete_update_manager_->CalcContactResults(*memory, output);
-      } else {
-        // The plant has not been stepped yet.
-        *output = ContactResults<T>{};
-        output->set_plant(this);
-      }
+  if constexpr (sampled) {
+    DRAKE_DEMAND(use_sampled_output_ports_);
+    const DiscreteStepMemory::Data<T>* const memory =
+        get_discrete_step_memory(context);
+    if (memory == nullptr) {
+      // The plant has not been stepped yet.
+      *output = ContactResults<T>{};
+      output->set_plant(this);
+    } else if (is_discrete()) {
+      discrete_update_manager_->CalcContactResults(*memory, output);
     } else {
-      discrete_update_manager_->CalcContactResults(context, output);
+      // For a continuous plant, the integrator that recorded the step memory
+      // is responsible for having assembled the contact results already.
+      *output = memory->contact_results;
+      output->set_plant(this);
     }
+  } else if (is_discrete()) {
+    discrete_update_manager_->CalcContactResults(context, output);
   } else {
-    DRAKE_DEMAND(!sampled);
     CalcContactResultsContinuous(context, output);
   }
 }
@@ -3012,22 +3011,19 @@ void MultibodyPlant<T>::CalcNetActuationOutput(const Context<T>& context,
   DRAKE_DEMAND(output != nullptr);
   DRAKE_DEMAND(output->size() == num_actuated_dofs());
   // Use is_discrete() and use_sampled_output_ports() to govern the approach.
-  if (is_discrete()) {
-    if constexpr (sampled) {
-      DRAKE_DEMAND(use_sampled_output_ports_);
-      const DiscreteStepMemory::Data<T>* const memory =
-          get_discrete_step_memory(context);
-      if (memory != nullptr) {
-        output->SetFromVector(memory->net_actuation);
-      } else {
-        // The plant has not been stepped yet.
-        output->SetZero();
-      }
+  if constexpr (sampled) {
+    DRAKE_DEMAND(use_sampled_output_ports_);
+    const DiscreteStepMemory::Data<T>* const memory =
+        get_discrete_step_memory(context);
+    if (memory != nullptr) {
+      output->SetFromVector(memory->net_actuation);
     } else {
-      output->SetFromVector(discrete_update_manager_->EvalActuation(context));
+      // The plant has not been stepped yet.
+      output->SetZero();
     }
+  } else if (is_discrete()) {
+    output->SetFromVector(discrete_update_manager_->EvalActuation(context));
   } else {
-    DRAKE_DEMAND(!sampled);
     output->SetFromVector(EvalNetActuationContinuous(context));
   }
 }
@@ -3541,7 +3537,6 @@ const AccelerationKinematicsCache<T>&
 MultibodyPlant<T>::EvalAccelerationKinematicsCacheForOutputPortCalc(
     const systems::Context<T>& context) const {
   if constexpr (sampled) {
-    DRAKE_DEMAND(is_discrete());
     DRAKE_DEMAND(use_sampled_output_ports_);
     const DiscreteStepMemory::Data<T>* const memory =
         get_discrete_step_memory(context);
@@ -3707,7 +3702,15 @@ template <typename T>
 void MultibodyPlant<T>::DeclareStateUpdate() {
   // The model must be finalized.
   DRAKE_DEMAND(this->is_finalized());
-  if (is_discrete()) {
+  if (!is_discrete()) {
+    // A continuous plant has no update events of its own. When output port
+    // sampling is requested, we still declare the step memory State so that an
+    // integrator that understands it (e.g., CenicIntegrator) can record the
+    // dynamics of each step it takes for use by the sampled output ports.
+    if (use_sampled_output_ports_) {
+      this->DeclareAbstractState(Value<DiscreteStepMemory>{});
+    }
+  } else {
     // Declare our periodic update step, and also permit triggering a step via
     // a Forced update. For output port sampling, we also need additional State.
     if (use_sampled_output_ports_) {
@@ -4153,24 +4156,20 @@ void MultibodyPlant<T>::CalcInstanceGeneralizedContactForcesOutput(
   // Vector of generalized contact forces for the entire multibody system.
   // We will find a pointer to it based on the discrete / sampled mode.
   const VectorX<T>* tau_contact{};
-  if (is_discrete()) {
-    if constexpr (sampled) {
-      DRAKE_DEMAND(use_sampled_output_ports_);
-      const DiscreteStepMemory::Data<T>* const memory =
-          get_discrete_step_memory(context);
-      if (memory == nullptr) {
-        // The plant has not been stepped yet.
-        DRAKE_DEMAND(sampled == true);
-        output->SetZero();
-        return;
-      }
-      tau_contact = &memory->contact_solver_results.tau_contact;
-    } else {
-      tau_contact = &discrete_update_manager_->EvalContactSolverResults(context)
-                         .tau_contact;
+  if constexpr (sampled) {
+    DRAKE_DEMAND(use_sampled_output_ports_);
+    const DiscreteStepMemory::Data<T>* const memory =
+        get_discrete_step_memory(context);
+    if (memory == nullptr) {
+      // The plant has not been stepped yet.
+      output->SetZero();
+      return;
     }
+    tau_contact = &memory->contact_solver_results.tau_contact;
+  } else if (is_discrete()) {
+    tau_contact = &discrete_update_manager_->EvalContactSolverResults(context)
+                       .tau_contact;
   } else {
-    DRAKE_DEMAND(sampled == false);
     tau_contact = &EvalGeneralizedContactForcesContinuous(context);
   }
   DRAKE_DEMAND(tau_contact != nullptr);
@@ -4456,7 +4455,6 @@ void MultibodyPlant<T>::CalcReactionForces(
   // dynamics, consistent with the value of vdot obtained below.
   MultibodyForces<T> applied_forces(*this);
   auto& Fapplied_Bo_W_array = applied_forces.mutable_body_forces();
-  auto& tau_applied = applied_forces.mutable_generalized_forces();
   if (is_discrete()) {
     applied_forces =
         discrete_update_manager_->EvalDiscreteUpdateMultibodyForces(context);
@@ -4474,6 +4472,21 @@ void MultibodyPlant<T>::CalcReactionForces(
   //  DiscreteUpdateManager::EvalReactionForces() to ensure the manager performs
   //  this computation consistently with its discrete update.
   const VectorX<T>& vdot = this->EvalForwardDynamics(context).get_vdot();
+  CalcReactionForcesGivenAppliedForcesAndVdot(context, applied_forces, vdot,
+                                              output);
+}
+
+template <typename T>
+void MultibodyPlant<T>::CalcReactionForcesGivenAppliedForcesAndVdot(
+    const systems::Context<T>& context,
+    const MultibodyForces<T>& applied_forces, const VectorX<T>& vdot,
+    std::vector<SpatialForce<T>>* output) const {
+  DRAKE_DEMAND(output != nullptr);
+  DRAKE_DEMAND(ssize(*output) == num_joints());
+  DRAKE_DEMAND(applied_forces.CheckHasRightSizeForModel(*this));
+  DRAKE_DEMAND(vdot.size() == num_velocities());
+  const auto& Fapplied_Bo_W_array = applied_forces.body_forces();
+  const auto& tau_applied = applied_forces.generalized_forces();
   std::vector<SpatialAcceleration<T>> A_WB_vector(num_bodies());
   std::vector<SpatialForce<T>> F_BMo_W_vector(num_bodies());
   VectorX<T> tau_id(num_velocities());
@@ -4544,6 +4557,30 @@ void MultibodyPlant<T>::CalcReactionForces(
     // Perform  the M->Jc shift.
     F_CJc_Jc = F_CMo_Jc.Shift(p_MoJco_Jc);
   }
+}
+
+template <typename T>
+void MultibodyPlant<T>::CalcAccelerationKinematicsAndReactionForces(
+    const systems::Context<T>& context,
+    const MultibodyForces<T>& applied_forces, const VectorX<T>& vdot,
+    AccelerationKinematicsCache<T>* ac,
+    std::vector<SpatialForce<T>>* reaction_forces) const {
+  this->ValidateContext(context);
+  DRAKE_DEMAND(ac != nullptr);
+  DRAKE_DEMAND(reaction_forces != nullptr);
+  DRAKE_DEMAND(applied_forces.CheckHasRightSizeForModel(*this));
+  DRAKE_DEMAND(vdot.size() == num_velocities());
+
+  // Acceleration kinematics, consistent with the given vdot.
+  ac->get_mutable_vdot() = vdot;
+  internal_tree().CalcSpatialAccelerationsFromVdot(
+      context, EvalPositionKinematics(context), EvalVelocityKinematics(context),
+      ac->get_vdot(), &ac->get_mutable_A_WB_pool());
+
+  // Joint reaction forces, consistent with the applied forces and vdot.
+  reaction_forces->resize(num_joints());
+  CalcReactionForcesGivenAppliedForcesAndVdot(context, applied_forces, vdot,
+                                              reaction_forces);
 }
 
 template <typename T>
