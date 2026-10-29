@@ -15,7 +15,9 @@ from pydrake.common.ref_cycle_test_util import (
     arbitrary_cycle_ok,
     arbitrary_link_bad,
     arbitrary_link_ok,
+    arbitrary_link_pair,
     free_function,
+    has_ref_link_peers,
     invalid_arg_index,
     ouroboros,
 )
@@ -86,6 +88,20 @@ class TestRefCycle(unittest.TestCase):
     def test_arbitrary_link_ok(self):
         got = arbitrary_link_ok()
         self.assertTrue(hasattr(got, "_pydrake_internal_ref_cycle_peers"))
+
+    def test_has_ref_link_peers(self):
+        # A fresh object has no peers.
+        self.assertFalse(has_ref_link_peers(IsDynamic()))
+        # The source of a one-way link has peers, but the target does not.
+        source, target = arbitrary_link_pair()
+        self.assertTrue(has_ref_link_peers(source))
+        self.assertFalse(has_ref_link_peers(target))
+        # Both ends of a cycle have peers.
+        p0 = IsDynamic()
+        p1 = IsDynamic()
+        free_function(p0, p1)
+        self.assertTrue(has_ref_link_peers(p0))
+        self.assertTrue(has_ref_link_peers(p1))
 
     def test_arbitrary_link_bad(self):
         with self.assertRaisesRegex(

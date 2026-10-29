@@ -15,6 +15,8 @@ namespace internal {
 
 namespace {
 
+constexpr char kRefCyclePeers[] = "_pydrake_internal_ref_cycle_peers";
+
 // Creates a one-way reference link from `a` to `b`. Gives `a` a new/updated
 // attribute, containing a dict of handles. Inserts `b` into `a`'s handle dict.
 // Creates the dict first if it does not yet exist.
@@ -29,13 +31,12 @@ namespace {
 // reference to each peer that it contains, and never removes any. Hence an
 // address cannot be reused while its entry is in the dict.
 void make_link(handle a, handle b) {
-  static const char refcycle_peers[] = "_pydrake_internal_ref_cycle_peers";
-  if (!hasattr(a, refcycle_peers)) {
+  if (!hasattr(a, kRefCyclePeers)) {
     py::dict new_dict;
     DRAKE_DEMAND(PyType_IS_GC(Py_TYPE(new_dict.ptr())));
-    a.attr(refcycle_peers) = new_dict;
+    a.attr(kRefCyclePeers) = new_dict;
   }
-  handle peers = a.attr(refcycle_peers);
+  handle peers = a.attr(kRefCyclePeers);
   // Ensure the proper ref count on the `peers` dict. If it is > 1, the
   // objects will live forever. If it is < 1, the cycle will just be deleted
   // immediately.
@@ -144,6 +145,10 @@ void make_arbitrary_ref_link(
         n, location_hint);
   };
   check_and_make_link(p0, p1, not_gc_error);
+}
+
+bool has_ref_link_peers(handle p) {
+  return hasattr(p, kRefCyclePeers);
 }
 
 void make_arbitrary_ref_cycle(

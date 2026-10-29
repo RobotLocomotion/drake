@@ -93,6 +93,15 @@ PYDRAKE_MODULE(ref_cycle_test_util, m) {
     internal::make_arbitrary_ref_link(d1, d2, "IsDynamic::arbitrary_link_ok");
     return d1;
   });
+  // Returns the (source, target) of a one-way link.
+  m.def("arbitrary_link_pair", []() {
+    auto d1 = py::cast(new IsDynamic);
+    auto d2 = py::cast(new IsDynamic);
+    internal::make_arbitrary_ref_link(d1, d2, "IsDynamic::arbitrary_link_pair");
+    return py::make_tuple(d1, d2);
+  });
+  m.def("has_ref_link_peers",
+      [](py::handle p) { return internal::has_ref_link_peers(p); });
   m.def("arbitrary_link_bad", []() {
     auto bad = py::cast(new NotDynamic);
     auto dyn = py::cast(new IsDynamic);

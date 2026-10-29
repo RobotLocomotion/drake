@@ -157,11 +157,10 @@ void BorrowEvaluatorFuncs(MathematicalProgram* prog,
 class PyFunctionCost;
 class PyFunctionConstraint;
 
-// Arranges for `prog` to keep alive the Python object of `evaluator` when it
-// is a kind of evaluator that borrows Python callables from its Python object
-// (PyFunctionCost, PyFunctionConstraint, or a MinimumValue constraint) that
-// was added to some other program. Does nothing for any other kind of
-// evaluator.
+// Arranges for `prog` to keep alive the Python object of `evaluator` when that
+// object borrows Python callables (i.e., it keeps them alive using ref links),
+// for an evaluator that was added to some other program. Does nothing for any
+// other kind of evaluator.
 template <typename EvaluatorBase>
 void KeepPyFunctionEvaluatorAlive(MathematicalProgram* prog,
     const std::shared_ptr<EvaluatorBase>& evaluator,
@@ -250,30 +249,16 @@ class PyFunctionConstraint : public Constraint {
   UserEvaluatorFuncs funcs_;
 };
 
-// Returns true iff `evaluator` is a kind of evaluator that borrows Python
-// callables from its Python object.
-template <typename EvaluatorBase>
-bool BorrowsPythonCallables(const std::shared_ptr<EvaluatorBase>& evaluator) {
-  return std::dynamic_pointer_cast<PyFunctionCost>(evaluator) != nullptr ||
-         std::dynamic_pointer_cast<PyFunctionConstraint>(evaluator) !=
-             nullptr ||
-         std::dynamic_pointer_cast<solvers::MinimumValueLowerBoundConstraint>(
-             evaluator) != nullptr ||
-         std::dynamic_pointer_cast<solvers::MinimumValueUpperBoundConstraint>(
-             evaluator) != nullptr ||
-         std::dynamic_pointer_cast<solvers::VisualizationCallback>(evaluator) !=
-             nullptr;
-}
-
 template <typename EvaluatorBase>
 void KeepPyFunctionEvaluatorAlive(MathematicalProgram* prog,
     const std::shared_ptr<EvaluatorBase>& evaluator,
     const std::string& location_hint) {
-  if (!BorrowsPythonCallables(evaluator)) {
+  py::object evaluator_py = py::cast(evaluator);
+  if (!internal::has_ref_link_peers(evaluator_py)) {
     return;
   }
   internal::make_arbitrary_ref_link(
-      py::cast(prog, py_rvp::reference), py::cast(evaluator), location_hint);
+      py::cast(prog, py_rvp::reference), evaluator_py, location_hint);
 }
 
 // Returns a Python clone of `self`, which keeps `self` alive. See the comment
@@ -297,10 +282,9 @@ template <typename C>
 py::object CastBindingKeepingEvaluatorAlive(
     const Binding<C>& binding, const std::string& location_hint) {
   py::object binding_py = py::cast(binding);
-  const std::shared_ptr<C> evaluator = binding.evaluator();
-  if (BorrowsPythonCallables(evaluator)) {
-    internal::make_arbitrary_ref_link(
-        binding_py, py::cast(evaluator), location_hint);
+  py::object evaluator_py = py::cast(binding.evaluator());
+  if (internal::has_ref_link_peers(evaluator_py)) {
+    internal::make_arbitrary_ref_link(binding_py, evaluator_py, location_hint);
   }
   return binding_py;
 }

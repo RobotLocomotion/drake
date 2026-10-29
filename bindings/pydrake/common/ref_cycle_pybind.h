@@ -98,6 +98,13 @@ void make_arbitrary_ref_cycle(
 void make_arbitrary_ref_link(
     py::handle p0, py::handle p1, const std::string& location_hint);
 
+/* Returns true if `p` has ref link peers: it was the source of a one-way ref
+link, or an endpoint of a ref_cycle. (The target of a one-way link gets no peers
+of its own, so this returns false for it.) For example, an object that borrows a
+Python callable and keeps it alive with a link has peers. This only reflects
+the links made so far, so it must be asked after the links are made. */
+bool has_ref_link_peers(py::handle p);
+
 }  // namespace internal
 }  // namespace pydrake
 }  // namespace drake
