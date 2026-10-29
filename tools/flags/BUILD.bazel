@@ -112,23 +112,34 @@ string_flag(
     ],
 )
 
+# The :text_logging flag configures how Drake performs text logging (i.e.,
+# console output).
+#
+# By default (i.e., when set to "spdlog"), C++ log messages are routed through
+# spdlog, which allows users to customize the destination and formatting. When
+# set to "simple", C++ log message cannot be customized.
+string_flag(
+    name = "text_logging",
+    build_setting_default = "spdlog",
+    values = [
+        "spdlog",
+        "simple",
+    ],
+)
+
 # The :spdlog_repo flag configures where Drake obtains spdlog from.
 # See the section header documentation above for the full details.
 # The public dependency alias is `@drake//tools/workspace/spdlog` or use the
 # drake_dep_repositories() module extension at //tools/workspace:default.bzl.
 #
-# This flag also offers an additional value: the value "disabled" will turn the
-# `@drake//tools/workspace/spdlog` library into a no-op and Drake will be built
-# without any text_logging infrastructure; all log messages will be discarded.
-#
-# WARNING: The "disabled" feature should be considered experimental (no promise
-# of stability in future releases); in the future, we anticipate respelling the
-# flag so that "how to find spdlog" and "what should text_logging be doing" are
-# configured separately.
-#
 # Note that fmt is typically a dependency of spdlog, so be careful to configure
 # them in a sensible pairing; setting one to module and the other to pkgconfig
 # is probably a mistake.
+#
+# This flag has no effect on the build Drake output unless the ":text_logging"
+# flag is set to "spdlog". However, no matter the ":text_logging" setting, this
+# flag still affects downstream use of the `@drake//tools/workspace/spdlog`
+# alias and its associated drake_dep_repositories() module extension "spdlog".
 string_flag(
     name = "spdlog_repo",
     build_setting_default = "default",
@@ -136,8 +147,6 @@ string_flag(
         "default",
         "module",
         "pkgconfig",
-        # N.B. See warning above about our stability promise for 'disabled'.
-        "disabled",
     ],
 )
 

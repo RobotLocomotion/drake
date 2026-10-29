@@ -6,35 +6,44 @@
 #include <string>
 #include <vector>
 
+// clang-format off
 #ifdef DRAKE_SPDLOG_ENABLED
-
 #include <spdlog/sinks/base_sink.h>
 #include <spdlog/sinks/dist_sink.h>
 #include <spdlog/sinks/stdout_sinks.h>
 #include <spdlog/spdlog.h>
+#include "drake/common/text_logging_impl_spdlog.h"
+#else
+#include "drake/common/text_logging_impl_simple.h"
+#endif
+// clang-format on
 
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/text_logging.h"
-#include "drake/common/text_logging_impl_spdlog.h"
 
 namespace drake {
 namespace pydrake {
 namespace internal {
 namespace {
 
+/* This long-linked sink class maintains the necessary Python state to propagate
+C++ log messages into Python. */
 class pylogging_sink final
+#ifdef DRAKE_SPDLOG_ENABLED
     // We use null_mutex below because we'll use the GIL as our *only* mutex.
     // This is critically important to avoid deadlocks by lock order inversion.
-    : public spdlog::sinks::base_sink<spdlog::details::null_mutex> {
+    : public spdlog::sinks::base_sink<spdlog::details::null_mutex>
+#endif
+{
  public:
   pylogging_sink() {
     // Add a Python logging.Logger to be used by Drake.
     py::object logging = py::module_::import_("logging");
     py::object logger = logging.attr("getLogger")(name_);
 
-    // Annotate that the logger is alive (fed by spdlog).
-    py::setattr(logger, "_tied_to_spdlog", py::cast(true));
+    // Annotate that the logger is now fed by C++.
+    py::setattr(logger, "_tied_to_cxx_logger", py::cast(true));
 
     // Match the C++ default level.
     logger.attr("setLevel")(to_py_level(drake::log()->level()));
@@ -45,12 +54,21 @@ class pylogging_sink final
     handle_ = logger.attr("handle");
   }
 
- protected:
-  void sink_it_(const spdlog::details::log_msg& msg) final {
+  /* Propagates a single log message from C++ into Python. */
+#ifdef DRAKE_SPDLOG_ENABLED
+  void sink_it_(const spdlog::details::log_msg& msg) final
+#else
+  void sink_it(logging::level_enum severity, std::string_view message)
+#endif
+  {
     py::gil_scoped_acquire acquire;
 
     // Bail out quickly in case this log level is disabled.
+#ifdef DRAKE_SPDLOG_ENABLED
     const int level = to_py_level(msg.level);
+#else
+    const int level = to_py_level(severity);
+#endif
     if (!py::cast<bool>(is_enabled_for_(level))) {
       return;
     }
@@ -67,16 +85,24 @@ class pylogging_sink final
 
     // Construct the LogRecord.
     // https://docs.python.org/3/library/logging.html#logrecord-objects
-    py::object record = make_record_(                                   // BR
-        "name"_a = name_,                                               // BR
-        "level"_a = level,                                              // BR
-        "fn"_a = msg.source.filename,                                   // BR
-        "lno"_a = msg.source.line,                                      // BR
-        "func"_a = msg.source.funcname,                                 // BR
-        "msg"_a = std::string(msg.payload.begin(), msg.payload.end()),  // BR
-        "args"_a = py::list(),                                          // BR
+    py::object record = make_record_(  // BR
+        "name"_a = name_,              // BR
+        "level"_a = level,
+#ifdef DRAKE_SPDLOG_ENABLED
+        "fn"_a = msg.source.filename,    // BR
+        "lno"_a = msg.source.line,       // BR
+        "func"_a = msg.source.funcname,  // BR
+        "msg"_a = std::string(msg.payload.begin(), msg.payload.end()),
+#else
+        "fn"_a = py::none(),   // BR
+        "lno"_a = py::none(),  // BR
+        "msg"_a = message,
+#endif
+        "args"_a = py::list(),  // BR
         "exc_info"_a = py::none());
+#ifdef DRAKE_SPDLOG_ENABLED
     py::setattr(record, "thread", py::cast(msg.thread_id));
+#endif
     // We don't pass msg.time along into the record time because we'd need to
     // fix up record.created, record.msecs, and record.relativeCreated, and we'd
     // still be brittle with respect to future changes to the record class's
@@ -87,9 +113,13 @@ class pylogging_sink final
     handle_(record);
   }
 
+#ifdef DRAKE_SPDLOG_ENABLED
+  /* Stub required by the spdlog base class. */
   void flush_() final {}
+#endif  // DRAKE_SPDLOG_ENABLED
 
  private:
+#ifdef DRAKE_SPDLOG_ENABLED
   // https://docs.python.org/3/library/logging.html#logging-levels
   static int to_py_level(spdlog::level::level_enum level) {
     using Enum = spdlog::level::level_enum;
@@ -113,6 +143,7 @@ class pylogging_sink final
     }
     DRAKE_UNREACHABLE();
   }
+#endif
 
   // https://docs.python.org/3/library/logging.html#logging-levels
   static int to_py_level(drake::logging::level_enum level) {
@@ -154,9 +185,14 @@ bool ShouldDisableRedirect() {
   return false;
 }
 
-}  // namespace
+// The header file functions MaybeRedirectPythonLogging and UseNativeCppLogging
+// call backend-specific implementation helpers DoMaybeRedirectPythonLogging and
+// DoUseNativeCppLogging that are completely different for "spdlog" mode vs
+// "simple" mode.
 
-void MaybeRedirectPythonLogging() {
+#ifdef DRAKE_SPDLOG_ENABLED
+
+void DoRedirectPythonLogging() {
   if (ShouldDisableRedirect()) {
     drake::log()->debug("Will not redirect C++ logging to Python ({}={})",
         kDisableEnv, kDisableValue);
@@ -202,11 +238,9 @@ void MaybeRedirectPythonLogging() {
 
   // Remove the stderr sink.
   dist_sink->set_sinks({});
-
-  drake::log()->trace("Successfully redirected C++ logs to Python");
 }
 
-void UseNativeCppLogging() {
+void DoUseNativeCppLogging() {
   // If the configurtion exactly matches what MaybeRedirectPythonLogging did,
   // then we should undo that and return. If the sink configuration already
   // exactly matches how drake/common/text_logging.cc configures itself by
@@ -257,25 +291,41 @@ void UseNativeCppLogging() {
   // Roll back the MaybeRedirectPythonLogging changes.
   dist_sink->add_sink(std::make_shared<spdlog::sinks::stderr_sink_mt>());
   root_sinks.resize(1);
+}
 
+#else  // DRAKE_SPDLOG_ENABLED
+
+void DoRedirectPythonLogging() {
+  auto sink = std::make_shared<pylogging_sink>();
+  logging::internal::ReplaceSinkFunction(
+      [sink](logging::level_enum severity, std::string_view message) {
+        sink->sink_it(severity, message);
+      });
+}
+
+void DoUseNativeCppLogging() {
+  logging::internal::ReplaceSinkFunction(nullptr);
+}
+
+#endif  // DRAKE_SPDLOG_ENABLED
+
+}  // namespace
+
+void MaybeRedirectPythonLogging() {
+  if (ShouldDisableRedirect()) {
+    drake::log()->debug("Will not redirect C++ logging to Python ({}={})",
+        kDisableEnv, kDisableValue);
+    return;
+  }
+  DoRedirectPythonLogging();
+  drake::log()->trace("Successfully redirected C++ logs to Python");
+}
+
+void UseNativeCppLogging() {
+  DoUseNativeCppLogging();
   drake::log()->trace("Successfully routed C++ logs back to stderr directly");
 }
 
 }  // namespace internal
 }  // namespace pydrake
 }  // namespace drake
-
-#else  // DRAKE_SPDLOG_ENABLED
-
-namespace drake {
-namespace pydrake {
-namespace internal {
-
-void MaybeRedirectPythonLogging() {}
-void UseNativeCppLogging() {}
-
-}  // namespace internal
-}  // namespace pydrake
-}  // namespace drake
-
-#endif  // DRAKE_SPDLOG_ENABLED
