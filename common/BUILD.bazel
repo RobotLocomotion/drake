@@ -102,11 +102,11 @@ drake_cc_library(
         "drake_deprecated.cc",
         "text_logging.cc",
     ] + select({
-        "//tools/workspace/spdlog:flag_spdlog_repo_disabled": [
-            "text_logging_impl_none.cc",
+        "//tools/workspace/spdlog:flag_text_logging_spdlog": [
+            "text_logging_impl_spdlog.cc",
         ],
         "//conditions:default": [
-            "text_logging_impl_spdlog.cc",
+            "text_logging_impl_simple.cc",
         ],
     }),
     hdrs = [
@@ -120,30 +120,40 @@ drake_cc_library(
         "never_destroyed.h",
         "ranges.h",
         "text_logging.h",
-        "text_logging_impl_spdlog.h",
         "text_logging_level.h",
-    ],
+    ] + select({
+        "//tools/workspace/spdlog:flag_text_logging_spdlog": [
+            "text_logging_impl_spdlog.h",
+        ],
+        "//conditions:default": [
+            "text_logging_impl_simple.h",
+        ],
+    }),
     deps = [
         ":fmt",
         "@eigen",
         "@fmt",
-        "@spdlog",
-    ],
+    ] + select({
+        "//tools/workspace/spdlog:flag_text_logging_spdlog": [
+            "@spdlog",
+        ],
+        "//conditions:default": [],
+    }),
 )
 
 drake_cc_library(
     name = "text_logging_spdlog",
     srcs = select({
-        "//tools/workspace/spdlog:flag_spdlog_repo_disabled": [],
-        "//conditions:default": [
+        "//tools/workspace/spdlog:flag_text_logging_spdlog": [
             "text_logging_spdlog.cc",
         ],
+        "//conditions:default": [],
     }),
     hdrs = select({
-        "//tools/workspace/spdlog:flag_spdlog_repo_disabled": [],
-        "//conditions:default": [
+        "//tools/workspace/spdlog:flag_text_logging_spdlog": [
             "text_logging_spdlog.h",
         ],
+        "//conditions:default": [],
     }),
     deps = [
         ":essential",
@@ -1162,13 +1172,9 @@ drake_cc_googletest(
     ],
 )
 
-# This version of text_logging_test is compiled with HAVE_SPDLOG enabled,
-# because that is what Drake's WORKSPACE provides for the @spdlog external.
+# This version of text_logging_test is compiled with spdlog enabled.
 drake_cc_googletest(
     name = "text_logging_test",
-    defines = [
-        "TEXT_LOGGING_TEST_SPDLOG=1",
-    ],
     use_default_main = False,
     deps = [
         ":essential",
@@ -1178,9 +1184,6 @@ drake_cc_googletest(
 # Likewise (to the above test) for the ostream variation.
 drake_cc_googletest(
     name = "text_logging_ostream_test",
-    defines = [
-        "TEXT_LOGGING_TEST_SPDLOG=1",
-    ],
     use_default_main = False,
     deps = [
         ":essential",
@@ -1188,10 +1191,10 @@ drake_cc_googletest(
     ],
 )
 
-# This version of text_logging_test re-compiles all source files without
-# defining HAVE_SPDLOG, to ensure that the no-op stubs behave as desired.
+# This version of text_logging_test re-compiles all source files without making
+# spdlog available, to ensure that the "simple" impl behaves as desired.
 drake_cc_googletest(
-    name = "text_logging_no_spdlog_test",
+    name = "text_logging_simple_test",
     srcs = [
         "drake_copyable.h",
         "fmt.h",
@@ -1199,11 +1202,9 @@ drake_cc_googletest(
         "test/text_logging_test.cc",
         "text_logging.cc",
         "text_logging.h",
-        "text_logging_impl_none.cc",
+        "text_logging_impl_simple.cc",
+        "text_logging_impl_simple.h",
         "text_logging_level.h",
-    ],
-    defines = [
-        "TEXT_LOGGING_TEST_SPDLOG=0",
     ],
     use_default_main = False,
     deps = [
@@ -1213,7 +1214,7 @@ drake_cc_googletest(
 
 # Likewise (to the above test) for the ostream variation.
 drake_cc_googletest(
-    name = "text_logging_ostream_no_spdlog_test",
+    name = "text_logging_ostream_simple_test",
     srcs = [
         "drake_copyable.h",
         "fmt.h",
@@ -1221,11 +1222,9 @@ drake_cc_googletest(
         "test/text_logging_ostream_test.cc",
         "text_logging.cc",
         "text_logging.h",
-        "text_logging_impl_none.cc",
+        "text_logging_impl_simple.cc",
+        "text_logging_impl_simple.h",
         "text_logging_level.h",
-    ],
-    defines = [
-        "TEXT_LOGGING_TEST_SPDLOG=0",
     ],
     use_default_main = False,
     deps = [
@@ -1316,7 +1315,8 @@ add_lint_tests(
         "nice_type_name.h",
         "nice_type_name_override.cc",
         "nice_type_name_override.h",
-        "text_logging_impl_none.cc",
+        "text_logging_impl_simple.cc",
+        "text_logging_impl_simple.h",
         "text_logging_impl_spdlog.cc",
         "text_logging_impl_spdlog.h",
         "text_logging_spdlog.cc",
