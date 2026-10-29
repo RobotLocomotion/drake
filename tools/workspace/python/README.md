@@ -6,7 +6,8 @@ version on macOS), the following files need attention:
       exclusive of the max.
 - `drake/MODULE.bazel` near `PYTHON_VERSIONS`,
 - `drake/doc/_pages/installation.md` in the support matrix column for `Python`,
-- `drake/doc/_pages/from_source.md` in the support matrix column for `Python`,
+- `drake/ doc/_pages/from_source.md` in the support matrix column for `Python`,
+    - And in the "Running the Python Bindings" section.
 - `drake/doc/_release-notes/end_of_support.md` if dropping support,
 - `drake/setup/mac/Brewfile-binary`,
 - `drake/setup/mac/install_prereqs_binary.sh` near the `pip3.##` and
@@ -24,3 +25,4 @@ version on macOS), the following files need attention:
 - `drake/tools/workspace/nanobind/defs.bzl` near `LIMITED_API_DEFINES`.
 - `drake/tools/workspace/python/repository.bzl` near `macos_interpreter_path`,
 - `drake/tools/workspace/python/venv_upgrade` near `python_versions`.
+    - And then run this script.
