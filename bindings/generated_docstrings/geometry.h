@@ -446,24 +446,29 @@ at least as long as the manager instance.
 
 Warning:
     Generally, the effect of applying a declaration is based on the
-    state of SceneGraph's geometry data at the time of application.
-    The geometry's active status is the one exception (see below).
-    More concretely: - For a particular FrameId in a GeometrySet
-    instance, only those geometries attached to the identified frame
-    with the proximity role assigned at the time of the call will be
-    included in the filter. If geometries are subsequently added or
-    assigned the proximity role, they will not be retroactively added
-    to the user-declared filter. - In general, adding collision
-    geometries and assigning proximity roles should happen prior to
-    collision filter configuration. - Declarations of user-defined
-    exclusions and allowances can only be made on "known" geometries
-    (geometries with assigned the proximity role). Declarations on
-    unknown geometries will be rejected with an error. - Declaring a
-    set of geometries active/inactive is the exception. These add or
-    remove the geometries from the set Gₐ. We are not adding/deleting
-    filtered pairs at the time of declaration, but simply changing the
-    active status of the geometries. A geometry's active status
-    doesn't change just because other geometries get added/removed.
+    state of SceneGraph's geometry data at the time of application. A
+    geometry's active status and whether it is anchored are the two
+    exceptions (see below). More concretely: - For a particular
+    FrameId in a GeometrySet instance, only those geometries attached
+    to the identified frame with the proximity role assigned at the
+    time of the call will be included in the filter. If geometries are
+    subsequently added or assigned the proximity role, they will not
+    be retroactively added to the user-declared filter. - In general,
+    adding collision geometries and assigning proximity roles should
+    happen prior to collision filter configuration. - Declarations of
+    user-defined exclusions and allowances can only be made on "known"
+    geometries (geometries with assigned the proximity role).
+    Declarations on unknown geometries will be rejected with an error.
+    - Declaring a set of geometries active/inactive is one exception.
+    These add or remove the geometries from the set Gₐ. We are not
+    adding/deleting filtered pairs at the time of declaration, but
+    simply changing the active status of the geometries. A geometry's
+    active status doesn't change just because other geometries get
+    added/removed. - Anchored geometry is the other exception. No two
+    anchored geometries can ever collide, and that applies to anchored
+    geometry added at any time -- it is not a set of pairs fixed at
+    declaration. Like an invariant filter, it cannot be undone by an
+    Allow* declaration.
 
 **Transient vs Persistent changes**
 

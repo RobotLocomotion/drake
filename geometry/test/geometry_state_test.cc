@@ -2846,6 +2846,48 @@ TEST_F(GeometryStateTest, CollisionFilterRespectsScope) {
   EXPECT_EQ(contacts.contact_surfaces().size(), 0);
 }
 
+// Confirms GeometryState registers geometries properly with the collision
+// filter.
+//   1. All geometries are recognized by the collision filter manager.
+//   2. Geometries affixed to the same frame are filtered (both dynamic and
+//      anchored).
+//   3. All other pairs are unfiltered upon initialization.
+TEST_F(GeometryStateTest, IntrinsicCollisionFilters) {
+  const SourceId s_id = NewSource();
+  const FrameId shared_frame =
+      geometry_state_.RegisterFrame(s_id, GeometryFrame("shared"));
+  const FrameId solo_frame =
+      geometry_state_.RegisterFrame(s_id, GeometryFrame("solo"));
+
+  auto add_geometry = [this, s_id](FrameId f_id, const string& name) {
+    auto instance = make_unique<GeometryInstance>(
+        RigidTransformd::Identity(), make_unique<Sphere>(1), name);
+    instance->set_proximity_properties(ProximityProperties());
+    return geometry_state_.RegisterGeometry(s_id, f_id, std::move(instance));
+  };
+
+  const FrameId world = InternalFrame::world_frame_id();
+  const GeometryId anchored_0 = add_geometry(world, "anchored_0");
+  const GeometryId anchored_1 = add_geometry(world, "anchored_1");
+  const GeometryId shared_0 = add_geometry(shared_frame, "shared_0");
+  const GeometryId shared_1 = add_geometry(shared_frame, "shared_1");
+  const GeometryId solo = add_geometry(solo_frame, "solo");
+
+  // Pairs are stored as (smaller id, larger id).
+  const set<pair<GeometryId, GeometryId>> expected_filtered{
+      std::minmax(anchored_0, anchored_1), std::minmax(shared_0, shared_1)};
+
+  const std::vector<GeometryId> ids{anchored_0, anchored_1, shared_0, shared_1,
+                                    solo};
+  for (size_t i = 0; i < ids.size(); ++i) {
+    for (size_t j = i + 1; j < ids.size(); ++j) {
+      EXPECT_EQ(geometry_state_.CollisionFiltered(ids[i], ids[j]),
+                expected_filtered.contains(std::minmax(ids[i], ids[j])))
+          << fmt::format("({}, {})", ids[i], ids[j]);
+    }
+  }
+}
+
 // Test that the appropriate error messages are dispatched.
 TEST_F(GeometryStateTest, CollisionFilteredExceptions) {
   // Initialize tree *without* any proximity roles assigned.
