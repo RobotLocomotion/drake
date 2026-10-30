@@ -1142,6 +1142,7 @@ drake_cc_googletest(
     deps = [
         ":multibody_plant_config_functions",
         ":plant",
+        "//common/test_utilities:eigen_matrix_compare",
         "//systems/analysis:simulator",
         "//systems/analysis:simulator_config_functions",
     ],
