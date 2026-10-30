@@ -17,8 +17,8 @@ GTEST_TEST(IcfData, DefaultConstructedIsEmpty) {
   IcfData<double> data;
 
   EXPECT_EQ(data.num_velocities(), 0);
+  EXPECT_EQ(data.num_islands(), 0);
   EXPECT_EQ(data.V_WB().size(), 0);
-  EXPECT_EQ(data.scratch().Av_minus_r.size(), 0);
   EXPECT_EQ(data.scratch().V_WB_alpha.size(), 0);
   EXPECT_EQ(data.scratch().v_alpha.size(), 0);
   EXPECT_EQ(data.scratch().Gw_gain.size(), 0);
@@ -45,6 +45,7 @@ GTEST_TEST(IcfData, ResizeAndAccessors) {
   const std::vector<int> gain_sizes = {3, 2};
   const std::vector<int> limit_sizes = {5, 4, 3};
   const std::vector<int> patch_sizes = {8, 6, 4, 2};
+  const int num_islands = 3;
 
   data.Resize({.num_bodies = num_bodies,
                .num_velocities = num_velocities,
@@ -55,10 +56,12 @@ GTEST_TEST(IcfData, ResizeAndAccessors) {
                .num_welds = num_welds,
                .gain_sizes = gain_sizes,
                .limit_sizes = limit_sizes,
-               .patch_sizes = patch_sizes});
+               .patch_sizes = patch_sizes,
+               .num_islands = num_islands});
 
-  // Main data elements
+  // Main data elements.
   EXPECT_EQ(data.num_velocities(), num_velocities);
+  EXPECT_EQ(data.num_islands(), num_islands);
   EXPECT_EQ(data.v().size(), num_velocities);
   EXPECT_EQ(data.V_WB().size(), num_bodies);
   EXPECT_EQ(data.Av().size(), num_velocities);
@@ -66,8 +69,7 @@ GTEST_TEST(IcfData, ResizeAndAccessors) {
   // N.B. scalar cost terms (cost, momentum cost) are considered undefined until
   // set explicitly.
 
-  // Scratch space
-  EXPECT_EQ(data.scratch().Av_minus_r[0].size(), num_velocities);
+  // Scratch space, shared by all islands and sized to the full problem.
   EXPECT_EQ(data.scratch().V_WB_alpha.size(), num_bodies);
   EXPECT_EQ(data.scratch().U_AbB_W.size(), 4);  // num_patches()
   EXPECT_EQ(data.scratch().v_alpha[0].size(), num_velocities);
@@ -114,6 +116,7 @@ GTEST_TEST(IcfData, LimitMallocOnResize) {
   const std::vector<int> gain_sizes = {3};
   const std::vector<int> limit_sizes = {4};
   const std::vector<int> patch_sizes = {5};
+  const int num_islands = 2;
 
   data.Resize({.num_bodies = num_bodies,
                .num_velocities = num_velocities,
@@ -124,7 +127,8 @@ GTEST_TEST(IcfData, LimitMallocOnResize) {
                .num_welds = num_welds,
                .gain_sizes = gain_sizes,
                .limit_sizes = limit_sizes,
-               .patch_sizes = patch_sizes});
+               .patch_sizes = patch_sizes,
+               .num_islands = num_islands});
 
   // Clearing pools changes size but shouldn't change capacity.
   EXPECT_EQ(data.scratch().V_WB_alpha.size(), num_bodies);
@@ -147,10 +151,36 @@ GTEST_TEST(IcfData, LimitMallocOnResize) {
                  .num_welds = num_welds,
                  .gain_sizes = gain_sizes,
                  .limit_sizes = limit_sizes,
-                 .patch_sizes = patch_sizes});
+                 .patch_sizes = patch_sizes,
+                 .num_islands = num_islands});
     data.set_v(v);
   }
   EXPECT_EQ(data.scratch().V_WB_alpha.size(), num_bodies);
+}
+
+/* Checks that the memory needed for data does not grow with the number of
+islands, since all islands share the full-size scratch. */
+GTEST_TEST(IcfData, AllocationsIndependentOfNumIslands) {
+  const std::vector<int> gain_sizes = {3};
+  const std::vector<int> limit_sizes = {4};
+  const std::vector<int> patch_sizes = {5};
+  auto count_allocations = [&](int num_islands) {
+    IcfData<double> data;
+    drake::test::LimitMalloc guard({.max_num_allocations = -1});
+    data.Resize({.num_bodies = 100,
+                 .num_velocities = 600,
+                 .max_clique_size = 6,
+                 .num_ball_constraints = 2,
+                 .num_couplers = 2,
+                 .num_distance_constraints = 3,
+                 .num_welds = 1,
+                 .gain_sizes = gain_sizes,
+                 .limit_sizes = limit_sizes,
+                 .patch_sizes = patch_sizes,
+                 .num_islands = num_islands});
+    return guard.num_allocations();
+  };
+  EXPECT_EQ(count_allocations(2), count_allocations(100));
 }
 
 }  // namespace internal

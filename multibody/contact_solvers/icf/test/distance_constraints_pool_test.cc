@@ -32,51 +32,81 @@ namespace {
 
 constexpr double kEpsilon = std::numeric_limits<double>::epsilon();
 
+template <typename T>
+class DistanceConstraintsPoolBaseTest : public ::testing::Test {
+ protected:
+  explicit DistanceConstraintsPoolBaseTest(bool use_islands)
+      : use_islands_(use_islands) {}
+
+  void SetUp() override {
+    // Create a simple model with two cliques.
+
+    MakeUnconstrainedModel(&model_);
+    std::unique_ptr<IcfParameters<T>> params = model_.ReleaseParameters();
+    params->use_islands = use_islands_;
+    model_.ResetParameters(std::move(params));
+  }
+
+  IcfModel<T> model_;
+  bool use_islands_{};
+};
+
+template <typename T>
+class DistanceConstraintsPoolParamTest
+    : public DistanceConstraintsPoolBaseTest<T>,
+      public ::testing::WithParamInterface<bool> {
+ protected:
+  DistanceConstraintsPoolParamTest()
+      : DistanceConstraintsPoolBaseTest<T>(/* use_islands = */ GetParam()) {}
+};
+
+using DistanceConstraintsPoolParamTestD =
+    DistanceConstraintsPoolParamTest<double>;
+using DistanceConstraintsPoolParamTestAd =
+    DistanceConstraintsPoolParamTest<AutoDiffXd>;
+
 /* Checks that model.CalcData does not incur any heap allocations on a problem
 with distance constraints. */
-GTEST_TEST(DistanceConstraintsPool, LimitMallocOnCalcData) {
-  IcfModel<double> model;
-  MakeUnconstrainedModel(&model);
-  AddDistanceConstraints(&model);
-  model.SetSparsityPattern();
-  EXPECT_EQ(model.num_cliques(), 3);
-  EXPECT_EQ(model.num_velocities(), 18);
-  EXPECT_EQ(model.num_constraints(), 2);
-  EXPECT_EQ(model.num_distance_constraints(), 2);
+TEST_P(DistanceConstraintsPoolParamTestD, LimitMallocOnCalcData) {
+  AddDistanceConstraints(&model_);
+  model_.SetSparsityPattern();
+  EXPECT_EQ(model_.num_cliques(), 3);
+  EXPECT_EQ(model_.num_velocities(), 18);
+  EXPECT_EQ(model_.num_constraints(), 2);
+  EXPECT_EQ(model_.num_distance_constraints(), 2);
+  EXPECT_EQ(model_.partition().num_islands(), use_islands_ ? 2 : 1);
 
   IcfData<double> data;
-  model.ResizeData(&data);
+  model_.ResizeData(&data);
   EXPECT_EQ(data.distance_constraints_data().num_constraints(), 2);
 
-  const int nv = model.num_velocities();
+  const int nv = model_.num_velocities();
   const VectorXd v = VectorXd::LinSpaced(nv, -10.0, 10.0);
 
   // Computing data should not cause any new allocations.
   {
     drake::test::LimitMalloc guard;
-    model.CalcData(v, &data);
+    model_.CalcAllData(v, &data);
   }
 }
 
 /* Checks that pool.ReduceInto() does not incur any heap allocations on a
 problem with distance constraints. */
-GTEST_TEST(DistanceConstraintsPool, LimitMallocOnReduceInto) {
-  IcfModel<double> model;
-  MakeUnconstrainedModel(&model);
-  AddDistanceConstraints(&model);
+TEST_P(DistanceConstraintsPoolParamTestD, LimitMallocOnReduceInto) {
+  AddDistanceConstraints(&model_);
 
   IcfModel<double> reduced_model;
   ReducedMapping mapping;
 
-  // Do a not-smaller reduction to allocate memory in the reduced model.
-  MakeModelReducible(&model, {});
-  model.ReduceInto(&reduced_model, &mapping);
+  // Do a not-smaller reduction to allocate memory in the reduced model_.
+  MakeModelReducible(&model_, {});
+  model_.ReduceInto(&reduced_model, &mapping);
 
   // Given prior allocation of a big enough model, the constraint pool
   // reduction does not allocate.
   {
     drake::test::LimitMalloc guard;
-    model.distance_constraints_pool().ReduceInto(
+    model_.distance_constraints_pool().ReduceInto(
         mapping, &reduced_model.distance_constraints_pool());
   }
 }
@@ -84,47 +114,45 @@ GTEST_TEST(DistanceConstraintsPool, LimitMallocOnReduceInto) {
 /* Verifies that distance constraints produce correct data. Uses a rigid and a
 compliant constraint (see AddDistanceConstraints), exercising both the
 near-rigid and compliant regularization (R) branches. */
-GTEST_TEST(DistanceConstraintsPool, Data) {
-  IcfModel<AutoDiffXd> model;
-  MakeUnconstrainedModel(&model);
-  model.SetSparsityPattern();
-  EXPECT_EQ(model.num_cliques(), 3);
-  EXPECT_EQ(model.num_velocities(), 18);
-  EXPECT_EQ(model.num_constraints(), 0);
+TEST_P(DistanceConstraintsPoolParamTestAd, Data) {
+  model_.SetSparsityPattern();
+  EXPECT_EQ(model_.num_cliques(), 3);
+  EXPECT_EQ(model_.num_velocities(), 18);
+  EXPECT_EQ(model_.num_constraints(), 0);
 
   IcfData<AutoDiffXd> data;
-  model.ResizeData(&data);
-  EXPECT_EQ(data.num_velocities(), model.num_velocities());
+  model_.ResizeData(&data);
+  EXPECT_EQ(data.num_velocities(), model_.num_velocities());
 
   // At this point there should be no distance constraints.
-  EXPECT_EQ(model.num_distance_constraints(), 0);
-  EXPECT_EQ(model.num_constraints(), 0);
+  EXPECT_EQ(model_.num_distance_constraints(), 0);
+  EXPECT_EQ(model_.num_constraints(), 0);
   EXPECT_EQ(data.distance_constraints_data().num_constraints(), 0);
 
   // Add distance constraints.
-  AddDistanceConstraints(&model);
-  EXPECT_EQ(model.num_distance_constraints(), 2);
-  EXPECT_EQ(model.num_constraints(), 2);
+  AddDistanceConstraints(&model_);
+  EXPECT_EQ(model_.num_distance_constraints(), 2);
+  EXPECT_EQ(model_.num_constraints(), 2);
 
   // Re-set sparsity since distance constraints introduce cross-clique coupling.
-  model.SetSparsityPattern();
+  model_.SetSparsityPattern();
 
   // Resize data to include distance constraints data.
-  model.ResizeData(&data);
+  model_.ResizeData(&data);
   EXPECT_EQ(data.distance_constraints_data().num_constraints(), 2);
 
-  const int nv = model.num_velocities();
+  const int nv = model_.num_velocities();
   VectorXd v_value = VectorXd::LinSpaced(nv, -10, 10.0);
   VectorX<AutoDiffXd> v(nv);
   math::InitializeAutoDiff(v_value, &v);
-  model.CalcData(v, &data);
+  model_.CalcAllData(v, &data);
 
   const DistanceConstraintsDataPool<AutoDiffXd>& distance_data =
       data.distance_constraints_data();
   EXPECT_EQ(distance_data.num_constraints(), 2);
 
   // The distance constraints should add positive cost (non-zero error).
-  EXPECT_GT(distance_data.cost().value(), 0.0);
+  EXPECT_GT(distance_data.ComputeCost().value(), 0.0);
 
   // Impulses should be finite and non-zero scalars.
   for (int k = 0; k < 2; ++k) {
@@ -134,10 +162,10 @@ GTEST_TEST(DistanceConstraintsPool, Data) {
   }
 
   // The total cost should include the distance contribution.
-  EXPECT_GT(data.cost().value(), data.momentum_cost().value());
+  EXPECT_GT(data.ComputeCost().value(), data.ComputeMomentumCost().value());
 
   // Verify accumulated total cost and gradients via AutoDiff.
-  const VectorXd total_cost_derivatives = data.cost().derivatives();
+  const VectorXd total_cost_derivatives = data.ComputeCost().derivatives();
   const VectorXd total_gradient_value = math::ExtractValue(data.gradient());
   EXPECT_TRUE(CompareMatrices(total_gradient_value, total_cost_derivatives,
                               2 * kEpsilon, MatrixCompareType::relative));
@@ -147,7 +175,12 @@ GTEST_TEST(DistanceConstraintsPool, Data) {
   // Hessian is pure floating-point round-off, which scales with the magnitude
   // of the (large) intermediate products rather than with each individual
   // entry. We therefore use a scale-aware absolute tolerance.
-  auto distance_hessian = model.MakeHessian(data);
+  std::vector<IcfHessian<AutoDiffXd>> island_hessians;
+  for (int i = 0; i < model_.partition().num_islands(); ++i) {
+    island_hessians.emplace_back(*model_.MakeHessian(i, data));
+  }
+  auto distance_hessian = CombineSubHessians(
+      model_.sparsity_pattern(), model_.partition(), island_hessians);
   MatrixXd distance_hessian_value =
       math::ExtractValue(distance_hessian->MakeDenseMatrix());
   MatrixXd distance_gradient_derivatives =
@@ -165,24 +198,34 @@ GTEST_TEST(DistanceConstraintsPool, Data) {
   // Check CalcCostAlongLine for distance constraints.
   const VectorX<AutoDiffXd> w = VectorX<AutoDiffXd>::LinSpaced(
       nv, 0.1, -0.2);  // Arbitrary search direction.
-  IcfSearchDirectionData<AutoDiffXd> search_data;
 
   // Set data with constant value of v.
   VectorX<AutoDiffXd> v_constant =
       VectorX<AutoDiffXd>::LinSpaced(nv, -10, 10.0);
-  model.CalcData(v_constant, &data);
-  model.CalcSearchDirectionData(data, w, &search_data);
+  model_.CalcAllData(v_constant, &data);
+  std::vector<IcfSearchDirectionData<AutoDiffXd>> search_data{2};
+  for (int i = 0; i < model_.partition().num_islands(); ++i) {
+    model_.CalcSearchDirectionData(data, w, i, &search_data[i]);
+  }
 
   const AutoDiffXd alpha = {
       0.35 /* arbitrary value */,
       VectorXd::Ones(1) /* This is the independent variable */};
-  AutoDiffXd dcost, d2cost;
-  const AutoDiffXd cost =
-      model.CalcCostAlongLine(alpha, data, search_data, &dcost, &d2cost);
+  AutoDiffXd total_dcost = 0, total_d2cost = 0;
+  AutoDiffXd total_cost = 0;
+  for (int i = 0; i < model_.partition().num_islands(); ++i) {
+    AutoDiffXd dcost, d2cost;
+    total_cost += model_.CalcCostAlongLine(alpha, data, i, search_data[i],
+                                           &dcost, &d2cost);
+    total_dcost += dcost;
+    total_d2cost += d2cost;
+  }
 
-  const double scale = std::abs(dcost.value());
-  EXPECT_NEAR(dcost.value(), cost.derivatives()[0], scale * kEpsilon);
-  EXPECT_NEAR(d2cost.value(), dcost.derivatives()[0], scale * kEpsilon);
+  const double scale = std::abs(total_dcost.value());
+  EXPECT_NEAR(total_dcost.value(), total_cost.derivatives()[0],
+              scale * kEpsilon);
+  EXPECT_NEAR(total_d2cost.value(), total_dcost.derivatives()[0],
+              scale * kEpsilon);
 }
 
 /* Sets up a simple model with 3 bodies in separate cliques, suitable for
@@ -285,7 +328,7 @@ GTEST_TEST(DistanceConstraintsPool, DistanceToWorld) {
   model.ResizeData(&data);
 
   const VectorXd& v0 = model.v0();
-  model.CalcData(v0, &data);
+  model.CalcAllData(v0, &data);
 
   // --- Hand calculation of expected distance constraint values ---
   const double dt = model.time_step();
@@ -327,13 +370,13 @@ GTEST_TEST(DistanceConstraintsPool, DistanceToWorld) {
   const double gamma = data.distance_constraints_data().gamma(0)(0);
   EXPECT_NEAR(gamma, expected_gamma, 4 * kEpsilon * std::abs(expected_gamma));
 
-  const double distance_cost = data.distance_constraints_data().cost();
+  const double distance_cost = data.distance_constraints_data().ComputeCost();
   EXPECT_NEAR(distance_cost, expected_cost,
               4 * kEpsilon * std::abs(expected_cost));
 
-  EXPECT_NEAR(data.momentum_cost(), expected_momentum_cost,
+  EXPECT_NEAR(data.ComputeMomentumCost(), expected_momentum_cost,
               4 * kEpsilon * std::abs(expected_momentum_cost));
-  EXPECT_NEAR(data.cost(), expected_total_cost,
+  EXPECT_NEAR(data.ComputeCost(), expected_total_cost,
               4 * kEpsilon * std::abs(expected_total_cost));
 
   // --- Hand calculation of the (rank-1) Hessian block for body B (clique 0)
@@ -356,7 +399,14 @@ GTEST_TEST(DistanceConstraintsPool, DistanceToWorld) {
   const Matrix6<double> A_clique0 = A_mat.block<6, 6>(0, 0);
   const Matrix6<double> expected_hessian_block = A_clique0 + expected_H_BB;
 
-  const MatrixXd hessian = model.MakeHessian(data)->MakeDenseMatrix();
+  std::vector<IcfHessian<double>> island_hessians;
+  for (int i = 0; i < model.partition().num_islands(); ++i) {
+    island_hessians.emplace_back(*model.MakeHessian(i, data));
+  }
+  const MatrixXd hessian =
+      CombineSubHessians(model.sparsity_pattern(), model.partition(),
+                         island_hessians)
+          ->MakeDenseMatrix();
   EXPECT_TRUE(hessian.allFinite());
 
   const Matrix6<double> hessian_block_B = hessian.block<6, 6>(0, 0);
@@ -391,7 +441,7 @@ GTEST_TEST(DistanceConstraintsPool, CompliantSpring) {
   IcfData<double> data;
   model.ResizeData(&data);
   const VectorXd& v0 = model.v0();
-  model.CalcData(v0, &data);
+  model.CalcAllData(v0, &data);
 
   // --- Hand calculation ---
   const double dt = model.time_step();
@@ -422,7 +472,7 @@ GTEST_TEST(DistanceConstraintsPool, CompliantSpring) {
 
   const double gamma = data.distance_constraints_data().gamma(0)(0);
   EXPECT_NEAR(gamma, expected_gamma, 4 * kEpsilon * std::abs(expected_gamma));
-  EXPECT_NEAR(data.distance_constraints_data().cost(), expected_cost,
+  EXPECT_NEAR(data.distance_constraints_data().ComputeCost(), expected_cost,
               4 * kEpsilon * std::abs(expected_cost));
 }
 
@@ -461,16 +511,21 @@ TEST_P(CrossCliqueDistanceTest, CrossCliqueDistance) {
   IcfData<double> data;
   model.ResizeData(&data);
   const VectorXd v = model.v0();
-  model.CalcData(v, &data);
+  model.CalcAllData(v, &data);
 
   // Verify cost and impulse.
-  EXPECT_GT(data.distance_constraints_data().cost(), 0.0);
+  EXPECT_GT(data.distance_constraints_data().ComputeCost(), 0.0);
   const double gamma = data.distance_constraints_data().gamma(0)(0);
   EXPECT_TRUE(std::isfinite(gamma));
   EXPECT_GT(std::abs(gamma), 0.0);
 
   // Build Hessian and verify it has off-diagonal blocks.
-  auto hessian = model.MakeHessian(data);
+  std::vector<IcfHessian<double>> island_hessians;
+  for (int i = 0; i < model.partition().num_islands(); ++i) {
+    island_hessians.emplace_back(*model.MakeHessian(i, data));
+  }
+  auto hessian = CombineSubHessians(model.sparsity_pattern(), model.partition(),
+                                    island_hessians);
   const MatrixXd H_dense = hessian->MakeDenseMatrix();
   EXPECT_TRUE(H_dense.allFinite());
 
@@ -512,37 +567,45 @@ GTEST_TEST(DistanceConstraintsPool, CalcCostAlongLine) {
 
   // Compute data at the base point v = v0.
   const VectorX<AutoDiffXd> v = VectorXd::LinSpaced(nv, -1.0, 1.0);
-  model.CalcData(v, &data);
+  model.CalcAllData(v, &data);
 
   // Arbitrary search direction.
   const VectorX<AutoDiffXd> w = VectorX<AutoDiffXd>::LinSpaced(nv, 0.1, 0.5);
 
   // Precompute search direction data.
-  IcfSearchDirectionData<AutoDiffXd> search_data;
-  model.CalcSearchDirectionData(data, w, &search_data);
+  std::vector<IcfSearchDirectionData<AutoDiffXd>> search_data{3};
+  for (int i = 0; i < model.partition().num_islands(); ++i) {
+    model.CalcSearchDirectionData(data, w, i, &search_data[i]);
+  }
 
   // Verify at several α values.
   for (double alpha_value : {-0.45, 0.0, 0.15, 0.34, 0.93, 1.32}) {
     const AutoDiffXd alpha = {alpha_value, VectorXd::Ones(1)};
 
     const VectorX<AutoDiffXd> v_alpha = v + alpha * w;
-    model.CalcData(v_alpha, &scratch);
-    const double cost_expected = scratch.cost().value();
-    const double dcost_expected = scratch.cost().derivatives()[0];
+    model.CalcAllData(v_alpha, &scratch);
+    const double cost_expected = scratch.ComputeCost().value();
+    const double dcost_expected = scratch.ComputeCost().derivatives()[0];
     const VectorXd w_times_H = math::ExtractGradient(scratch.gradient());
     const double d2cost_expected = w_times_H.dot(math::ExtractValue(w));
 
-    AutoDiffXd dcost, d2cost;
-    const AutoDiffXd cost =
-        model.CalcCostAlongLine(alpha, data, search_data, &dcost, &d2cost);
+    AutoDiffXd total_dcost = 0, total_d2cost = 0;
+    AutoDiffXd total_cost = 0;
+    for (int i = 0; i < model.partition().num_islands(); ++i) {
+      AutoDiffXd dcost, d2cost;
+      total_cost += model.CalcCostAlongLine(alpha, data, i, search_data[i],
+                                            &dcost, &d2cost);
+      total_dcost += dcost;
+      total_d2cost += d2cost;
+    }
     // Scale-aware tolerance with an absolute floor: the analytic and autodiff
     // paths agree to a few ULP, but a scalar distance constraint's derivatives
     // can be small, so a pure relative tolerance would be too tight.
-    EXPECT_NEAR(cost.value(), cost_expected,
+    EXPECT_NEAR(total_cost.value(), cost_expected,
                 100 * kEpsilon * (std::abs(cost_expected) + 1.0));
-    EXPECT_NEAR(dcost.value(), dcost_expected,
+    EXPECT_NEAR(total_dcost.value(), dcost_expected,
                 100 * kEpsilon * (std::abs(dcost_expected) + 1.0));
-    EXPECT_NEAR(d2cost.value(), d2cost_expected,
+    EXPECT_NEAR(total_d2cost.value(), d2cost_expected,
                 100 * kEpsilon * (std::abs(d2cost_expected) + 1.0));
   }
 }
@@ -573,9 +636,9 @@ GTEST_TEST(DistanceConstraintsPool, GradientConsistency) {
   VectorX<AutoDiffXd> v(nv);
   math::InitializeAutoDiff(v_values, &v);
 
-  model.CalcData(v, &data);
+  model.CalcAllData(v, &data);
 
-  const VectorXd cost_derivatives = data.cost().derivatives();
+  const VectorXd cost_derivatives = data.ComputeCost().derivatives();
   const VectorXd gradient_value = math::ExtractValue(data.gradient());
 
   EXPECT_TRUE(CompareMatrices(gradient_value, cost_derivatives, 100 * kEpsilon,
@@ -587,12 +650,13 @@ GTEST_TEST(DistanceConstraintsPool, Reduce) {
   IcfModel<double> model;
   MakeUnconstrainedModel(&model);
   AddDistanceConstraints(&model);
+  model.SetSparsityPattern();
 
   IcfData<double> data;
   model.ResizeData(&data);
   const int nv = model.num_velocities();
   const VectorXd v = VectorXd::LinSpaced(nv, -10, 10.0);
-  model.CalcData(v, &data);
+  model.CalcAllData(v, &data);
 
   auto check_reduced = [&](const std::vector<int>& locked_dofs) {
     SCOPED_TRACE(fmt::format("locked_dofs [{}]", fmt::join(locked_dofs, ", ")));
@@ -674,6 +738,11 @@ GTEST_TEST(DistanceConstraintsPool, Reduce) {
   std::iota(all_locked.begin(), all_locked.end(), 0);
   check_reduced(all_locked);
 }
+
+INSTANTIATE_TEST_SUITE_P(FlipIslandsD, DistanceConstraintsPoolParamTestD,
+                         ::testing::Bool());
+INSTANTIATE_TEST_SUITE_P(FlipIslandsAd, DistanceConstraintsPoolParamTestAd,
+                         ::testing::Bool());
 
 }  // namespace
 }  // namespace internal

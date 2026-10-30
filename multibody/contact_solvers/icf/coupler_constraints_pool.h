@@ -1,5 +1,6 @@
 #pragma once
 
+#include <span>
 #include <utility>
 #include <vector>
 
@@ -48,10 +49,19 @@ class CouplerConstraintsPool {
   /* @see IsAbstractConstraintsPool. */
   const IcfModel<T>& model() const { return *model_; }
   int num_constraints() const { return constraint_to_clique_.size(); }
-  void AccumulateGradient(const IcfData<T>& data, VectorX<T>* gradient) const;
-  void AccumulateHessian(const IcfData<T>& data, IcfHessian<T>* hessian) const;
+  void AccumulateGradient(const IcfData<T>& data,
+                          std::span<const int> constraints,
+                          VectorX<T>* gradient) const;
+  void AccumulateHessian(const IcfData<T>& data,
+                         std::span<const int> constraints,
+                         std::span<const int> clique_to_block,
+                         IcfHessian<T>* hessian) const;
   void ReduceInto(const ReducedMapping& mapping,
                   CouplerConstraintsPool<T>* reduced_pool) const;
+
+  /* @see HasJointVelocityCalcData. */
+  T CalcData(const VectorX<T>& v, std::span<const int> constraints,
+             CouplerConstraintsDataPool<T>* coupler_data) const;
 
   /* Resizes the constraints pool to store the given number of constraints.
 
@@ -78,22 +88,19 @@ class CouplerConstraintsPool {
   void Set(int index, int clique, int i, int j, const T& qi, const T& qj,
            T gear_ratio, T offset);
 
-  /* Computes problem data as a function of the generalized velocities v for the
-  full IcfModel. */
-  void CalcData(const VectorX<T>& v,
-                CouplerConstraintsDataPool<T>* coupler_data) const;
-
   /* Computes the first and second derivatives of the constraint cost
-  ℓ̃ (α) = ℓ(v + α⋅w).
+  ℓ̃ (α) = ℓ(v + α⋅w), for only the listed constraints.
 
   @param coupler_data Constraint data computed at v + α⋅w.
   @param w The search direction.
+  @param constraints indices of constraints to operate on.
   @param[out] dcost the first derivative dℓ̃ /dα on output.
   @param[out] d2cost the second derivative d²ℓ̃ /dα² on output.
 
   TODO(vincekurtz): factor out common documentation among constraints. */
   void CalcCostAlongLine(const CouplerConstraintsDataPool<T>& coupler_data,
-                         const VectorX<T>& w, T* dcost, T* d2cost) const;
+                         const VectorX<T>& w, std::span<const int> constraints,
+                         T* dcost, T* d2cost) const;
 
   /* Testing only access. */
   const std::vector<int>& constraint_to_clique() const {
@@ -128,6 +135,8 @@ class CouplerConstraintsPool {
   std::vector<T> R_fragment_;
 };
 static_assert(IsAbstractConstraintsPool<CouplerConstraintsPool>);
+static_assert(HasJointVelocityCalcData<CouplerConstraintsPool,
+                                       CouplerConstraintsDataPool>);
 
 }  // namespace internal
 }  // namespace icf

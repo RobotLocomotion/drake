@@ -30,97 +30,122 @@ namespace {
 
 constexpr double kEpsilon = std::numeric_limits<double>::epsilon();
 
+template <typename T>
+class WeldConstraintsPoolBaseTest : public ::testing::Test {
+ protected:
+  explicit WeldConstraintsPoolBaseTest(bool use_islands)
+      : use_islands_(use_islands) {}
+
+  void SetUp() override {
+    // Create a simple model with two cliques.
+
+    MakeUnconstrainedModel(&model_);
+    std::unique_ptr<IcfParameters<T>> params = model_.ReleaseParameters();
+    params->use_islands = use_islands_;
+    model_.ResetParameters(std::move(params));
+  }
+
+  IcfModel<T> model_;
+  bool use_islands_{};
+};
+
+template <typename T>
+class WeldConstraintsPoolParamTest
+    : public WeldConstraintsPoolBaseTest<T>,
+      public ::testing::WithParamInterface<bool> {
+ protected:
+  WeldConstraintsPoolParamTest()
+      : WeldConstraintsPoolBaseTest<T>(/* use_islands = */ GetParam()) {}
+};
+
+using WeldConstraintsPoolParamTestD = WeldConstraintsPoolParamTest<double>;
+using WeldConstraintsPoolParamTestAd = WeldConstraintsPoolParamTest<AutoDiffXd>;
+
 /* Checks that model.CalcData does not incur any heap allocations on a problem
 with weld constraints. */
-GTEST_TEST(WeldConstraintsPool, LimitMallocOnCalcData) {
-  IcfModel<double> model;
-  MakeUnconstrainedModel(&model);
-  AddWeldConstraints(&model);
-  model.SetSparsityPattern();
-  EXPECT_EQ(model.num_cliques(), 3);
-  EXPECT_EQ(model.num_velocities(), 18);
-  EXPECT_EQ(model.num_constraints(), 2);
-  EXPECT_EQ(model.num_weld_constraints(), 2);
+TEST_P(WeldConstraintsPoolParamTestD, LimitMallocOnCalcData) {
+  AddWeldConstraints(&model_);
+  model_.SetSparsityPattern();
+  EXPECT_EQ(model_.num_cliques(), 3);
+  EXPECT_EQ(model_.num_velocities(), 18);
+  EXPECT_EQ(model_.num_constraints(), 2);
+  EXPECT_EQ(model_.num_weld_constraints(), 2);
 
   IcfData<double> data;
-  model.ResizeData(&data);
+  model_.ResizeData(&data);
   EXPECT_EQ(data.weld_constraints_data().num_constraints(), 2);
 
-  const int nv = model.num_velocities();
+  const int nv = model_.num_velocities();
   const VectorXd v = VectorXd::LinSpaced(nv, -10.0, 10.0);
 
   // Computing data should not cause any new allocations.
   {
     drake::test::LimitMalloc guard;
-    model.CalcData(v, &data);
+    model_.CalcAllData(v, &data);
   }
 }
 
 /* Checks that pool.ReduceInto does not incur any heap allocations on a
 problem with weld constraints. */
-GTEST_TEST(WeldConstraintsPool, LimitMallocOnReduceInto) {
-  IcfModel<double> model;
-  MakeUnconstrainedModel(&model);
-  AddWeldConstraints(&model);
+TEST_P(WeldConstraintsPoolParamTestD, LimitMallocOnReduceInto) {
+  AddWeldConstraints(&model_);
 
   IcfModel<double> reduced_model;
   ReducedMapping mapping;
 
   // Do a not-smaller reduction to allocate memory in the reduced model.
-  MakeModelReducible(&model, {});
-  model.ReduceInto(&reduced_model, &mapping);
+  MakeModelReducible(&model_, {});
+  model_.ReduceInto(&reduced_model, &mapping);
 
   // Given prior allocation of a big enough model, the constraint pool
   // reduction does not allocate.
   {
     drake::test::LimitMalloc guard;
-    model.weld_constraints_pool().ReduceInto(
+    model_.weld_constraints_pool().ReduceInto(
         mapping, &reduced_model.weld_constraints_pool());
   }
 }
 
 /* Verifies that weld constraints produce correct data. */
-GTEST_TEST(WeldConstraintsPool, Data) {
-  IcfModel<AutoDiffXd> model;
-  MakeUnconstrainedModel(&model);
-  model.SetSparsityPattern();
-  EXPECT_EQ(model.num_cliques(), 3);
-  EXPECT_EQ(model.num_velocities(), 18);
-  EXPECT_EQ(model.num_constraints(), 0);
+TEST_P(WeldConstraintsPoolParamTestAd, Data) {
+  model_.SetSparsityPattern();
+  EXPECT_EQ(model_.num_cliques(), 3);
+  EXPECT_EQ(model_.num_velocities(), 18);
+  EXPECT_EQ(model_.num_constraints(), 0);
 
   IcfData<AutoDiffXd> data;
-  model.ResizeData(&data);
-  EXPECT_EQ(data.num_velocities(), model.num_velocities());
+  model_.ResizeData(&data);
+  EXPECT_EQ(data.num_velocities(), model_.num_velocities());
   EXPECT_EQ(data.weld_constraints_data().num_constraints(), 0);
 
   // At this point there should be no weld constraints.
-  EXPECT_EQ(model.num_weld_constraints(), 0);
-  EXPECT_EQ(model.num_constraints(), 0);
+  EXPECT_EQ(model_.num_weld_constraints(), 0);
+  EXPECT_EQ(model_.num_constraints(), 0);
 
   // Add weld constraints.
-  AddWeldConstraints(&model);
-  EXPECT_EQ(model.num_weld_constraints(), 2);
-  EXPECT_EQ(model.num_constraints(), 2);
+  AddWeldConstraints(&model_);
+  EXPECT_EQ(model_.num_weld_constraints(), 2);
+  EXPECT_EQ(model_.num_constraints(), 2);
 
   // Re-set sparsity since weld constraints introduce cross-clique coupling.
-  model.SetSparsityPattern();
+  model_.SetSparsityPattern();
 
   // Resize data to include weld constraints data.
-  model.ResizeData(&data);
+  model_.ResizeData(&data);
   EXPECT_EQ(data.weld_constraints_data().num_constraints(), 2);
 
-  const int nv = model.num_velocities();
+  const int nv = model_.num_velocities();
   VectorXd v_value = VectorXd::LinSpaced(nv, -10, 10.0);
   VectorX<AutoDiffXd> v(nv);
   math::InitializeAutoDiff(v_value, &v);
-  model.CalcData(v, &data);
+  model_.CalcAllData(v, &data);
 
   const WeldConstraintsDataPool<AutoDiffXd>& weld_data =
       data.weld_constraints_data();
   EXPECT_EQ(weld_data.num_constraints(), 2);
 
   // The weld constraints should add positive cost (non-zero constraint error).
-  EXPECT_GT(weld_data.cost().value(), 0.0);
+  EXPECT_GT(weld_data.ComputeCost().value(), 0.0);
 
   // Impulses should be finite and non-zero.
   for (int k = 0; k < 2; ++k) {
@@ -130,16 +155,21 @@ GTEST_TEST(WeldConstraintsPool, Data) {
   }
 
   // The total cost should include the weld contribution.
-  EXPECT_GT(data.cost().value(), data.momentum_cost().value());
+  EXPECT_GT(data.ComputeCost().value(), data.ComputeMomentumCost().value());
 
   // Verify accumulated total cost and gradients via AutoDiff.
-  const VectorXd total_cost_derivatives = data.cost().derivatives();
+  const VectorXd total_cost_derivatives = data.ComputeCost().derivatives();
   const VectorXd total_gradient_value = math::ExtractValue(data.gradient());
   EXPECT_TRUE(CompareMatrices(total_gradient_value, total_cost_derivatives,
                               2 * kEpsilon, MatrixCompareType::relative));
 
   // Verify contributions to Hessian.
-  auto weld_hessian = model.MakeHessian(data);
+  std::vector<IcfHessian<AutoDiffXd>> island_hessians;
+  for (int i = 0; i < model_.partition().num_islands(); ++i) {
+    island_hessians.emplace_back(*model_.MakeHessian(i, data));
+  }
+  auto weld_hessian = CombineSubHessians(model_.sparsity_pattern(),
+                                         model_.partition(), island_hessians);
   MatrixXd weld_hessian_value =
       math::ExtractValue(weld_hessian->MakeDenseMatrix());
   MatrixXd weld_gradient_derivatives = math::ExtractGradient(data.gradient());
@@ -154,24 +184,34 @@ GTEST_TEST(WeldConstraintsPool, Data) {
   // Check CalcCostAlongLine for weld constraints.
   const VectorX<AutoDiffXd> w = VectorX<AutoDiffXd>::LinSpaced(
       nv, 0.1, -0.2);  // Arbitrary search direction.
-  IcfSearchDirectionData<AutoDiffXd> search_data;
 
   // Set data with constant value of v.
   VectorX<AutoDiffXd> v_constant =
       VectorX<AutoDiffXd>::LinSpaced(nv, -10, 10.0);
-  model.CalcData(v_constant, &data);
-  model.CalcSearchDirectionData(data, w, &search_data);
+  model_.CalcAllData(v_constant, &data);
+  std::vector<IcfSearchDirectionData<AutoDiffXd>> search_data{3};
+  for (int i = 0; i < model_.partition().num_islands(); ++i) {
+    model_.CalcSearchDirectionData(data, w, i, &search_data[i]);
+  }
 
   const AutoDiffXd alpha = {
       0.35 /* arbitrary value */,
       VectorXd::Ones(1) /* This is the independent variable */};
-  AutoDiffXd dcost, d2cost;
-  const AutoDiffXd cost =
-      model.CalcCostAlongLine(alpha, data, search_data, &dcost, &d2cost);
+  AutoDiffXd total_dcost = 0, total_d2cost = 0;
+  AutoDiffXd total_cost = 0;
+  for (int i = 0; i < model_.partition().num_islands(); ++i) {
+    AutoDiffXd dcost, d2cost;
+    total_cost += model_.CalcCostAlongLine(alpha, data, i, search_data[i],
+                                           &dcost, &d2cost);
+    total_dcost += dcost;
+    total_d2cost += d2cost;
+  }
 
-  const double scale = std::abs(dcost.value());
-  EXPECT_NEAR(dcost.value(), cost.derivatives()[0], scale * kEpsilon);
-  EXPECT_NEAR(d2cost.value(), dcost.derivatives()[0], scale * kEpsilon);
+  const double scale = std::abs(total_dcost.value());
+  EXPECT_NEAR(total_dcost.value(), total_cost.derivatives()[0],
+              scale * kEpsilon);
+  EXPECT_NEAR(total_d2cost.value(), total_dcost.derivatives()[0],
+              scale * kEpsilon);
 }
 
 /* Sets up a simple model with 3 bodies in separate cliques, suitable for
@@ -234,11 +274,10 @@ void MakeModelForWeld(IcfModel<T>* model, double time_step = 0.01) {
 }
 
 /* Verifies basic construction and accessors. */
-GTEST_TEST(WeldConstraintsPool, BasicConstruction) {
-  IcfModel<double> model;
-  MakeModelForWeld(&model);
+TEST_P(WeldConstraintsPoolParamTestD, BasicConstruction) {
+  MakeModelForWeld(&model_);
 
-  WeldConstraintsPool<double>& welds = model.weld_constraints_pool();
+  WeldConstraintsPool<double>& welds = model_.weld_constraints_pool();
   EXPECT_EQ(welds.num_constraints(), 0);
 
   welds.Resize(2);
@@ -250,10 +289,10 @@ gradient, and Hessian for a simple case: a weld between a floating body
 (body 1) and the world (body 0, anchored). Expected values are computed
 by hand from the weld constraint formulation. */
 GTEST_TEST(WeldConstraintsPool, WeldToWorld) {
-  IcfModel<double> model;
-  MakeModelForWeld(&model);
+  IcfModel<double> model_;
+  MakeModelForWeld(&model_);
 
-  WeldConstraintsPool<double>& welds = model.weld_constraints_pool();
+  WeldConstraintsPool<double>& welds = model_.weld_constraints_pool();
   welds.Resize(1);
 
   // Small constraint error: P and Q are slightly offset.
@@ -266,22 +305,22 @@ GTEST_TEST(WeldConstraintsPool, WeldToWorld) {
   welds.Set(0, /*bodyA=*/0, /*bodyB=*/1, p_AP_W, p_BQ_W, p_PoQo_W, a_PQ_W);
 
   // Set the sparsity pattern (required for Hessian).
-  model.SetSparsityPattern();
+  model_.SetSparsityPattern();
 
   // Set up data.
   IcfData<double> data;
-  model.ResizeData(&data);
+  model_.ResizeData(&data);
 
   // Use v = v0 for simplicity.
-  const VectorXd& v0 = model.v0();
+  const VectorXd& v0 = model_.v0();
   const VectorXd v = v0;
-  model.CalcData(v, &data);
+  model_.CalcAllData(v, &data);
 
   // --- Hand calculation of expected weld constraint values ---
   //
   // Body 1 is floating in clique 0, so V_WB[1] = v0[0:6].
-  const double dt = model.time_step();
-  const double mass_B = model.body_mass(1);
+  const double dt = model_.time_step();
+  const double mass_B = model_.body_mass(1);
 
   // Body B spatial velocity components (body 1, floating).
   const Vector3<double> w_WB = v0.head<3>();       // angular
@@ -325,10 +364,10 @@ GTEST_TEST(WeldConstraintsPool, WeldToWorld) {
   // Expected momentum cost for v = v0.
   // A = M + dt*D (block diagonal), r = A*v0 - dt*k0.
   // momentum_cost = v0ᵀ(½A v0 - r).
-  MatrixXd A_mat = model.M0();
-  A_mat.diagonal() += dt * model.D0();
+  MatrixXd A_mat = model_.M0();
+  A_mat.diagonal() += dt * model_.D0();
   const VectorXd Av0 = A_mat * v0;
-  const VectorXd r = Av0 - dt * model.k0();
+  const VectorXd r = Av0 - dt * model_.k0();
   const double expected_momentum_cost = v0.dot(0.5 * Av0 - r);
   const double expected_total_cost =
       expected_momentum_cost + expected_weld_cost;
@@ -339,13 +378,13 @@ GTEST_TEST(WeldConstraintsPool, WeldToWorld) {
   EXPECT_TRUE(CompareMatrices(gamma, expected_gamma, 4 * kEpsilon,
                               MatrixCompareType::relative));
 
-  const double weld_cost = data.weld_constraints_data().cost();
+  const double weld_cost = data.weld_constraints_data().ComputeCost();
   EXPECT_NEAR(weld_cost, expected_weld_cost,
               4 * kEpsilon * std::abs(expected_weld_cost));
 
-  EXPECT_NEAR(data.momentum_cost(), expected_momentum_cost,
+  EXPECT_NEAR(data.ComputeMomentumCost(), expected_momentum_cost,
               4 * kEpsilon * std::abs(expected_momentum_cost));
-  EXPECT_NEAR(data.cost(), expected_total_cost,
+  EXPECT_NEAR(data.ComputeCost(), expected_total_cost,
               4 * kEpsilon * std::abs(expected_total_cost));
 
   // --- Hand calculation of expected Hessian block for body B (clique 0) ---
@@ -379,7 +418,14 @@ GTEST_TEST(WeldConstraintsPool, WeldToWorld) {
   const Matrix6<double> expected_hessian_block = A_clique0 + expected_H_BB;
 
   // Build Hessian, verify it is finite, and check the result for bodyB.
-  const MatrixXd hessian = model.MakeHessian(data)->MakeDenseMatrix();
+  std::vector<IcfHessian<double>> island_hessians;
+  for (int i = 0; i < model_.partition().num_islands(); ++i) {
+    island_hessians.emplace_back(*model_.MakeHessian(i, data));
+  }
+  const MatrixXd hessian =
+      CombineSubHessians(model_.sparsity_pattern(), model_.partition(),
+                         island_hessians)
+          ->MakeDenseMatrix();
   EXPECT_TRUE(hessian.allFinite());
 
   const Matrix6<double> hessian_block_B = hessian.block<6, 6>(0, 0);
@@ -421,16 +467,21 @@ TEST_P(CrossCliqueWeldTest, CrossCliqueWeld) {
   IcfData<double> data;
   model.ResizeData(&data);
   const VectorXd v = model.v0();
-  model.CalcData(v, &data);
+  model.CalcAllData(v, &data);
 
   // Verify cost and impulse.
-  EXPECT_GT(data.weld_constraints_data().cost(), 0.0);
+  EXPECT_GT(data.weld_constraints_data().ComputeCost(), 0.0);
   const Vector6<double>& gamma = data.weld_constraints_data().gamma(0);
   EXPECT_TRUE(gamma.allFinite());
   EXPECT_GT(gamma.norm(), 0.0);
 
   // Build Hessian and verify it has off-diagonal blocks.
-  auto hessian = model.MakeHessian(data);
+  std::vector<IcfHessian<double>> island_hessians;
+  for (int i = 0; i < model.partition().num_islands(); ++i) {
+    island_hessians.emplace_back(*model.MakeHessian(i, data));
+  }
+  auto hessian = CombineSubHessians(model.sparsity_pattern(), model.partition(),
+                                    island_hessians);
   const MatrixXd H_dense = hessian->MakeDenseMatrix();
   EXPECT_TRUE(H_dense.allFinite());
 
@@ -449,11 +500,10 @@ INSTANTIATE_TEST_SUITE_P(
 AutoDiff. For each sampled α value, we verify the cost, first derivative, and
 second derivative by comparing CalcCostAlongLine outputs against the
 full-precision AutoDiff result obtained by evaluating CalcData at v + α·w. */
-GTEST_TEST(WeldConstraintsPool, CalcCostAlongLine) {
-  IcfModel<AutoDiffXd> model;
-  MakeModelForWeld(&model);
+TEST_P(WeldConstraintsPoolParamTestAd, CalcCostAlongLine) {
+  MakeModelForWeld(&model_);
 
-  WeldConstraintsPool<AutoDiffXd>& welds = model.weld_constraints_pool();
+  WeldConstraintsPool<AutoDiffXd>& welds = model_.weld_constraints_pool();
   welds.Resize(1);
 
   const Vector3<AutoDiffXd> p_AP_W(0.1, 0.0, 0.0);
@@ -463,23 +513,25 @@ GTEST_TEST(WeldConstraintsPool, CalcCostAlongLine) {
 
   welds.Set(0, 0, 1, p_AP_W, p_BQ_W, p_PoQo_W, a_PQ_W);
 
-  model.SetSparsityPattern();
+  model_.SetSparsityPattern();
 
-  const int nv = model.num_velocities();
+  const int nv = model_.num_velocities();
   IcfData<AutoDiffXd> data, scratch;
-  model.ResizeData(&data);
-  model.ResizeData(&scratch);
+  model_.ResizeData(&data);
+  model_.ResizeData(&scratch);
 
   // Compute data at the base point v = v0.
   const VectorX<AutoDiffXd> v = VectorXd::LinSpaced(nv, -1.0, 1.0);
-  model.CalcData(v, &data);
+  model_.CalcAllData(v, &data);
 
   // Arbitrary search direction.
   const VectorX<AutoDiffXd> w = VectorX<AutoDiffXd>::LinSpaced(nv, 0.1, 0.5);
 
   // Precompute search direction data.
-  IcfSearchDirectionData<AutoDiffXd> search_data;
-  model.CalcSearchDirectionData(data, w, &search_data);
+  std::vector<IcfSearchDirectionData<AutoDiffXd>> search_data{3};
+  for (int i = 0; i < model_.partition().num_islands(); ++i) {
+    model_.CalcSearchDirectionData(data, w, i, &search_data[i]);
+  }
 
   // Verify at several α values.
   for (double alpha_value : {-0.45, 0.0, 0.15, 0.34, 0.93, 1.32}) {
@@ -488,31 +540,36 @@ GTEST_TEST(WeldConstraintsPool, CalcCostAlongLine) {
 
     // Compute the expected cost and its derivative w.r.t. α via AutoDiff.
     const VectorX<AutoDiffXd> v_alpha = v + alpha * w;
-    model.CalcData(v_alpha, &scratch);
-    const double cost_expected = scratch.cost().value();
-    const double dcost_expected = scratch.cost().derivatives()[0];
+    model_.CalcAllData(v_alpha, &scratch);
+    const double cost_expected = scratch.ComputeCost().value();
+    const double dcost_expected = scratch.ComputeCost().derivatives()[0];
     const VectorXd w_times_H = math::ExtractGradient(scratch.gradient());
     const double d2cost_expected = w_times_H.dot(math::ExtractValue(w));
 
     // Compare against CalcCostAlongLine.
-    AutoDiffXd dcost, d2cost;
-    const AutoDiffXd cost =
-        model.CalcCostAlongLine(alpha, data, search_data, &dcost, &d2cost);
-    EXPECT_NEAR(cost.value(), cost_expected,
+    AutoDiffXd total_dcost = 0, total_d2cost = 0;
+    AutoDiffXd total_cost = 0;
+    for (int i = 0; i < model_.partition().num_islands(); ++i) {
+      AutoDiffXd dcost, d2cost;
+      total_cost += model_.CalcCostAlongLine(alpha, data, i, search_data[i],
+                                             &dcost, &d2cost);
+      total_dcost += dcost;
+      total_d2cost += d2cost;
+    }
+    EXPECT_NEAR(total_cost.value(), cost_expected,
                 8 * kEpsilon * std::abs(cost_expected));
-    EXPECT_NEAR(dcost.value(), dcost_expected,
+    EXPECT_NEAR(total_dcost.value(), dcost_expected,
                 8 * kEpsilon * std::abs(dcost_expected));
-    EXPECT_NEAR(d2cost.value(), d2cost_expected,
+    EXPECT_NEAR(total_d2cost.value(), d2cost_expected,
                 8 * kEpsilon * std::abs(d2cost_expected));
   }
 }
 
 /* Verifies gradient consistency using AutoDiff. */
-GTEST_TEST(WeldConstraintsPool, GradientConsistency) {
-  IcfModel<AutoDiffXd> model;
-  MakeModelForWeld(&model);
+TEST_P(WeldConstraintsPoolParamTestAd, GradientConsistency) {
+  MakeModelForWeld(&model_);
 
-  WeldConstraintsPool<AutoDiffXd>& welds = model.weld_constraints_pool();
+  WeldConstraintsPool<AutoDiffXd>& welds = model_.weld_constraints_pool();
   welds.Resize(1);
 
   const Vector3<AutoDiffXd> p_AP_W(0.1, 0.0, 0.0);
@@ -522,20 +579,20 @@ GTEST_TEST(WeldConstraintsPool, GradientConsistency) {
 
   welds.Set(0, 0, 1, p_AP_W, p_BQ_W, p_PoQo_W, a_PQ_W);
 
-  model.SetSparsityPattern();
+  model_.SetSparsityPattern();
 
-  const int nv = model.num_velocities();
+  const int nv = model_.num_velocities();
   IcfData<AutoDiffXd> data;
-  model.ResizeData(&data);
+  model_.ResizeData(&data);
 
-  const VectorXd v_values = math::ExtractValue(model.v0());
+  const VectorXd v_values = math::ExtractValue(model_.v0());
   VectorX<AutoDiffXd> v(nv);
   math::InitializeAutoDiff(v_values, &v);
 
-  model.CalcData(v, &data);
+  model_.CalcAllData(v, &data);
 
   // The AutoDiff derivatives of the cost give the full-precision gradient.
-  const VectorXd cost_derivatives = data.cost().derivatives();
+  const VectorXd cost_derivatives = data.ComputeCost().derivatives();
   const VectorXd gradient_value = math::ExtractValue(data.gradient());
 
   EXPECT_TRUE(CompareMatrices(gradient_value, cost_derivatives, 100 * kEpsilon,
@@ -543,26 +600,25 @@ GTEST_TEST(WeldConstraintsPool, GradientConsistency) {
 }
 
 /* Verifies that reducing the weld constraint pool produces correct data. */
-GTEST_TEST(WeldConstraintsPool, Reduce) {
-  IcfModel<double> model;
-  MakeUnconstrainedModel(&model);
-  AddWeldConstraints(&model);
+TEST_P(WeldConstraintsPoolParamTestD, Reduce) {
+  AddWeldConstraints(&model_);
+  model_.SetSparsityPattern();
 
   IcfData<double> data;
-  model.ResizeData(&data);
-  const int nv = model.num_velocities();
+  model_.ResizeData(&data);
+  const int nv = model_.num_velocities();
   const VectorXd v = VectorXd::LinSpaced(nv, -10, 10.0);
-  model.CalcData(v, &data);
+  model_.CalcAllData(v, &data);
 
   auto check_reduced = [&](const std::vector<int>& locked_dofs) {
     SCOPED_TRACE(fmt::format("locked_dofs [{}]", fmt::join(locked_dofs, ", ")));
-    MakeModelReducible(&model, locked_dofs);
+    MakeModelReducible(&model_, locked_dofs);
     IcfModel<double> reduced_model;
     ReducedMapping mapping;
-    model.ReduceInto(&reduced_model, &mapping);
+    model_.ReduceInto(&reduced_model, &mapping);
 
     // Check the data transmitted by pool.ReduceInto().
-    const auto& full_pool = model.weld_constraints_pool();
+    const auto& full_pool = model_.weld_constraints_pool();
     const auto& reduced_pool = reduced_model.weld_constraints_pool();
 
     int r_k{0};  // Reduced constraints cursor.
@@ -570,8 +626,8 @@ GTEST_TEST(WeldConstraintsPool, Reduce) {
       SCOPED_TRACE(
           fmt::format("full constraint {} vs. reduced constraint {}", k, r_k));
       const auto& [a, b] = full_pool.body_pairs()[k];
-      const int clique_b = model.params().body_to_clique[b];
-      const int clique_a = model.params().body_to_clique[a];
+      const int clique_b = model_.params().body_to_clique[b];
+      const int clique_a = model_.params().body_to_clique[a];
       const bool have_b = mapping.clique_subsequence.participates(clique_b);
       const bool have_a =
           clique_a >= 0 && mapping.clique_subsequence.participates(clique_a);
@@ -625,10 +681,15 @@ GTEST_TEST(WeldConstraintsPool, Reduce) {
   check_reduced(clique2_locked);
 
   // Lock everything.
-  std::vector<int> all_locked(model.num_velocities());
+  std::vector<int> all_locked(model_.num_velocities());
   std::iota(all_locked.begin(), all_locked.end(), 0);
   check_reduced(all_locked);
 }
+
+INSTANTIATE_TEST_SUITE_P(FlipIslandsD, WeldConstraintsPoolParamTestD,
+                         ::testing::Bool());
+INSTANTIATE_TEST_SUITE_P(FlipIslandsAd, WeldConstraintsPoolParamTestAd,
+                         ::testing::Bool());
 
 }  // namespace
 }  // namespace internal

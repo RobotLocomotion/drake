@@ -58,39 +58,50 @@ int IcfPartition::Find(int x) {
 }
 
 void IcfPartition::Compute(
-    const contact_solvers::internal::BlockSparsityPattern& pattern) {
+    const contact_solvers::internal::BlockSparsityPattern& pattern,
+    bool use_islands) {
   const std::vector<std::vector<int>>& neighbors = pattern.neighbors();
   num_cliques_ = std::ssize(neighbors);
 
-  // Initialize the union-find forest with every clique as its own root.
-  parent_.resize(num_cliques_);
-  for (int c = 0; c < num_cliques_; ++c) parent_[c] = c;
+  if (num_cliques_ == 0) {
+    // No cliques means no islands, regardless of use_islands.
+    num_islands_ = 0;
+    clique_to_island_.clear();
+  } else if (!use_islands) {
+    // Force use of only one island, and skip all of the union-find work.
+    num_islands_ = 1;
+    clique_to_island_.assign(num_cliques_, 0);
+  } else {
+    // Initialize the union-find forest with every clique as its own root.
+    parent_.resize(num_cliques_);
+    for (int c = 0; c < num_cliques_; ++c) parent_[c] = c;
 
-  // Union cliques across every off-diagonal edge. neighbors[j] lists the rows
-  // i ≥ j of the nonzero blocks in column j (with neighbors[j][0] == j), so
-  // iterating all (j, i) with i != j visits every edge exactly once.
-  for (int j = 0; j < num_cliques_; ++j) {
-    for (int i : neighbors[j]) {
-      if (i == j) continue;
-      const int ri = Find(i);
-      const int rj = Find(j);
-      // We are deliberately not doing union-by-rank here, but we do have
-      // path compression. Worst-case performance will therefore be
-      // O(log(n)), rather than O(α(n)).
-      if (ri != rj) parent_[ri] = rj;
+    // Union cliques across every off-diagonal edge. neighbors[j] lists the rows
+    // i ≥ j of the nonzero blocks in column j (with neighbors[j][0] == j), so
+    // iterating all (j, i) with i != j visits every edge exactly once.
+    for (int j = 0; j < num_cliques_; ++j) {
+      for (int i : neighbors[j]) {
+        if (i == j) continue;
+        const int ri = Find(i);
+        const int rj = Find(j);
+        // We are deliberately not doing union-by-rank here, but we do have
+        // path compression. Worst-case performance will therefore be
+        // O(log(n)), rather than O(α(n)).
+        if (ri != rj) parent_[ri] = rj;
+      }
     }
-  }
 
-  // Assign island ids. Numbering cliques in increasing order makes island i
-  // the component whose smallest clique index is the i-th smallest overall,
-  // giving a deterministic labeling.
-  root_to_island_.assign(num_cliques_, -1);
-  clique_to_island_.resize(num_cliques_);
-  num_islands_ = 0;
-  for (int c = 0; c < num_cliques_; ++c) {
-    const int r = Find(c);
-    if (root_to_island_[r] < 0) root_to_island_[r] = num_islands_++;
-    clique_to_island_[c] = root_to_island_[r];
+    // Assign island ids. Numbering cliques in increasing order makes island i
+    // the component whose smallest clique index is the i-th smallest overall,
+    // giving a deterministic labeling.
+    root_to_island_.assign(num_cliques_, -1);
+    clique_to_island_.resize(num_cliques_);
+    num_islands_ = 0;
+    for (int c = 0; c < num_cliques_; ++c) {
+      const int r = Find(c);
+      if (root_to_island_[r] < 0) root_to_island_[r] = num_islands_++;
+      clique_to_island_[c] = root_to_island_[r];
+    }
   }
 
   island_cliques_.Build(num_islands_, clique_to_island());

@@ -433,11 +433,38 @@ void AddDistanceConstraints(IcfModel<T>* model) {
   }
 }
 
+template <typename T>
+std::unique_ptr<IcfHessian<T>> CombineSubHessians(
+    const contact_solvers::internal::BlockSparsityPattern& sparsity_pattern,
+    const IcfPartition& partition, std::vector<IcfHessian<T>> sub_hessians) {
+  DRAKE_DEMAND(ssize(sub_hessians) == partition.num_islands());
+
+  auto full_hessian = std::make_unique<IcfHessian<T>>(sparsity_pattern);
+
+  for (int i = 0; i < partition.num_islands(); ++i) {
+    const auto& sub_hessian = sub_hessians[i];
+    DRAKE_DEMAND(sub_hessian.block_cols() ==
+                 ssize(partition.island_cliques(i)));
+    for (int c = 0; c < sub_hessian.block_cols(); ++c) {
+      int clique = partition.island_cliques(i)[c];
+      full_hessian->SetBlock(clique, clique, sub_hessian.block(c, c));
+      for (int r = c + 1; r < sub_hessian.block_rows(); ++r) {
+        int linked_clique = partition.island_cliques(i)[r];
+        if (sub_hessian.HasBlock(r, c)) {
+          full_hessian->SetBlock(linked_clique, clique,
+                                 sub_hessian.block(r, c));
+        }
+      }
+    }
+  }
+  return full_hessian;
+}
+
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
     (&MakeUnconstrainedModel<T>, &MakeModelReducible<T>,
      &AddCouplerConstraint<T>, &AddGainConstraints<T>, &AddLimitConstraints<T>,
      &AddPatchConstraints<T>, &AddWeldConstraints<T>, &AddBallConstraints<T>,
-     &AddDistanceConstraints<T>));
+     &AddDistanceConstraints<T>, &CombineSubHessians<T>));
 
 }  // namespace internal
 }  // namespace icf

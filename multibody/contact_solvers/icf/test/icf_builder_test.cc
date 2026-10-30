@@ -1,10 +1,13 @@
 #include "drake/multibody/contact_solvers/icf/icf_builder.h"
 
+#include <algorithm>
 #include <limits>
 #include <memory>
+#include <string>
 #include <utility>
 #include <vector>
 
+#include <fmt/format.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
@@ -251,6 +254,321 @@ GTEST_TEST(IcfBuilder, WeldConstraint) {
   EXPECT_EQ(pool.body_pairs()[0].second, 2);
 }
 
+// A single SpanningForest tree can hold several dynamically independent
+// sub-mechanisms when they branch off bodies that are welded to the world: with
+// weld joints modeled explicitly (the default), a body welded to World seeds a
+// tree, and everything mobilized off it joins that same tree. Such branches are
+// inertially decoupled (they share only anchored, zero-velocity ancestors), so
+// ICF must split the tree into one clique per branch -- otherwise the whole
+// mechanism collapses into a single clique/island. This mirrors the hero_demo
+// scenario where two robots and several free bodies all mount on a table welded
+// to the world.
+GTEST_TEST(IcfBuilder, MultipleCliquesPerTree) {
+  systems::DiagramBuilder<double> diagram_builder;
+  multibody::MultibodyPlantConfig plant_config{.time_step = 0.0};
+
+  MultibodyPlant<double>& plant =
+      multibody::AddMultibodyPlant(plant_config, &diagram_builder);
+  const auto M_B = SpatialInertia<double>::MakeUnitary();
+
+  // A table welded to the world via an explicit weld joint (so it is anchored,
+  // but not merged into the World mobod), with two independent pendulums
+  // hanging off it. The result is a single tree with two decoupled branches.
+  const RigidBody<double>& table = plant.AddRigidBody("table", M_B);
+  const RigidBody<double>& p1 = plant.AddRigidBody("p1", M_B);
+  const RigidBody<double>& p2 = plant.AddRigidBody("p2", M_B);
+  plant.AddJoint<WeldJoint>("weld_table", plant.world_body(), RigidTransformd(),
+                            table, RigidTransformd(), RigidTransformd());
+  plant.AddJoint<RevoluteJoint>("j1", table, RigidTransformd(), p1,
+                                RigidTransformd(), Vector3d::UnitY());
+  plant.AddJoint<RevoluteJoint>("j2", table, RigidTransformd(), p2,
+                                RigidTransformd(), Vector3d::UnitY());
+  plant.Finalize();
+  EXPECT_EQ(plant.num_velocities(), 2);
+
+  auto diagram = diagram_builder.Build();
+  auto diagram_context = diagram->CreateDefaultContext();
+  const auto& plant_context = plant.GetMyContextFromRoot(*diagram_context);
+
+  const double time_step = 0.01;
+  IcfBuilder<double> builder(&plant);
+  IcfModel<double> model;
+  builder.UpdateModel(plant_context, time_step, nullptr, nullptr, &model);
+
+  // The two pendulums are inertially decoupled, so they land in separate
+  // cliques even though Drake models them as a single spanning tree.
+  EXPECT_EQ(model.num_cliques(), 2);
+  EXPECT_EQ(model.num_velocities(), plant.num_velocities());
+  EXPECT_EQ(model.clique_size(0), 1);
+  EXPECT_EQ(model.clique_size(1), 1);
+
+  // The two cliques are uncoupled (no constraints), so the partition reports
+  // two independent islands.
+  EXPECT_EQ(model.partition().num_islands(),
+            model.params().use_islands ? 2 : 1);
+
+  // The anchored table maps to no clique; each pendulum body maps to its own.
+  EXPECT_EQ(model.body_to_clique(plant.GetBodyByName("table").index()), -1);
+  const int c1 = model.body_to_clique(plant.GetBodyByName("p1").index());
+  const int c2 = model.body_to_clique(plant.GetBodyByName("p2").index());
+  EXPECT_GE(c1, 0);
+  EXPECT_GE(c2, 0);
+  EXPECT_NE(c1, c2);
+}
+
+// A table welded to the world, with three decoupled branches of two dofs each
+// hanging off it, so that one SpanningForest tree is split into three cliques:
+//  - a: a double pendulum, a1 -> a2.
+//  - b: a pendulum b1, welded to another *movable* body b2, with a pendulum b3
+//    hanging off b2. The weld is a rigid coupling, so b1, b2, and b3 must all
+//    land in one clique.
+//  - c: a double pendulum, c1 -> c2.
+// The joints are offset so that the Jacobians depend on the configuration.
+class IcfBuilderSplitTreeTest : public testing::Test {
+ protected:
+  void SetUp() override {
+    systems::DiagramBuilder<double> diagram_builder;
+    multibody::MultibodyPlantConfig plant_config{.time_step = 0.0};
+    MultibodyPlant<double>& plant =
+        multibody::AddMultibodyPlant(plant_config, &diagram_builder);
+    plant_ = &plant;
+    const auto M_B = SpatialInertia<double>::MakeUnitary();
+    const RigidTransformd X_PF(Vector3d(0.1, 0.0, -0.5));
+
+    auto add_body = [&](const std::string& name) -> const RigidBody<double>& {
+      return plant_->AddRigidBody(name, M_B);
+    };
+    auto add_pendulum = [&](const std::string& name,
+                            const RigidBody<double>& parent,
+                            const RigidBody<double>& child) {
+      plant_->AddJoint<RevoluteJoint>(name, parent, X_PF, child,
+                                      RigidTransformd(), Vector3d::UnitY());
+    };
+
+    const RigidBody<double>& table = add_body("table");
+    plant_->AddJoint<WeldJoint>("weld_table", plant_->world_body(),
+                                RigidTransformd(), table, RigidTransformd(),
+                                RigidTransformd());
+    const RigidBody<double>& a1 = add_body("a1");
+    const RigidBody<double>& a2 = add_body("a2");
+    add_pendulum("ja1", table, a1);
+    add_pendulum("ja2", a1, a2);
+
+    const RigidBody<double>& b1 = add_body("b1");
+    const RigidBody<double>& b2 = add_body("b2");
+    const RigidBody<double>& b3 = add_body("b3");
+    add_pendulum("jb1", table, b1);
+    plant_->AddJoint<WeldJoint>("weld_b", b1, RigidTransformd(), b2,
+                                RigidTransformd(), RigidTransformd());
+    add_pendulum("jb3", b2, b3);
+
+    const RigidBody<double>& c1 = add_body("c1");
+    const RigidBody<double>& c2 = add_body("c2");
+    add_pendulum("jc1", table, c1);
+    add_pendulum("jc2", c1, c2);
+    plant_->Finalize();
+    ASSERT_EQ(plant_->num_velocities(), 6);
+
+    diagram_ = diagram_builder.Build();
+    context_ = diagram_->CreateDefaultContext();
+    plant_context_ = &plant_->GetMyMutableContextFromRoot(context_.get());
+  }
+
+  void UpdateModel(IcfModel<double>* model) {
+    IcfBuilder<double> builder(plant_);
+    builder.UpdateModel(*plant_context_, 0.01, nullptr, nullptr, model);
+  }
+
+  int clique_of(const IcfModel<double>& model, const std::string& body) const {
+    return model.body_to_clique(plant_->GetBodyByName(body).index());
+  }
+
+  MultibodyPlant<double>* plant_{};
+  std::unique_ptr<systems::Diagram<double>> diagram_;
+  std::unique_ptr<systems::Context<double>> context_;
+  systems::Context<double>* plant_context_{};
+};
+
+// Each movable body inherits the clique of its inboard body, including across
+// a weld to another movable body, and each branch off the anchored table starts
+// a clique of its own.
+TEST_F(IcfBuilderSplitTreeTest, CliquesInheritInboardClique) {
+  IcfModel<double> model;
+  UpdateModel(&model);
+  ASSERT_EQ(model.num_cliques(), 3);
+  EXPECT_EQ(model.num_velocities(), 6);
+  EXPECT_EQ(model.clique_starts(), (std::vector<int>{0, 2, 4, 6}));
+
+  EXPECT_EQ(clique_of(model, "table"), -1);
+  const int a = clique_of(model, "a1");
+  const int b = clique_of(model, "b1");
+  const int c = clique_of(model, "c1");
+  EXPECT_EQ(clique_of(model, "a2"), a);
+  EXPECT_EQ(clique_of(model, "b2"), b);
+  EXPECT_EQ(clique_of(model, "b3"), b);
+  EXPECT_EQ(clique_of(model, "c2"), c);
+  EXPECT_NE(a, b);
+  EXPECT_NE(a, c);
+  EXPECT_NE(b, c);
+  for (const int clique : {a, b, c}) {
+    EXPECT_EQ(model.clique_size(clique), 2);
+  }
+  EXPECT_EQ(model.partition().num_islands(),
+            model.params().use_islands ? 3 : 1);
+}
+
+// The Jacobian of a body in any clique (in particular, one that doesn't start
+// at velocity 0) is the slice of the plant's full Jacobian for the clique's
+// velocities. All of the other columns of the full Jacobian are zero, since the
+// branches are decoupled.
+TEST_F(IcfBuilderSplitTreeTest, JacobianIsCliqueSlice) {
+  plant_->SetPositions(
+      plant_context_,
+      (Eigen::VectorXd(6) << 0.3, -0.5, 0.7, 1.1, -0.9, 0.2).finished());
+  IcfModel<double> model;
+  UpdateModel(&model);
+  ASSERT_EQ(model.num_cliques(), 3);
+
+  bool tested_nonzero_start = false;
+  for (const std::string name : {"a1", "a2", "b1", "b2", "b3", "c1", "c2"}) {
+    SCOPED_TRACE(name);
+    const RigidBody<double>& body = plant_->GetBodyByName(name);
+    const int clique = clique_of(model, name);
+    ASSERT_GE(clique, 0);
+    const int start = model.clique_starts()[clique];
+    const int nv = model.clique_size(clique);
+
+    Eigen::Matrix<double, 6, Eigen::Dynamic> J_full(6,
+                                                    plant_->num_velocities());
+    plant_->CalcJacobianSpatialVelocity(
+        *plant_context_, JacobianWrtVariable::kV, body.body_frame(),
+        Vector3d::Zero(), plant_->world_frame(), plant_->world_frame(),
+        &J_full);
+
+    const Eigen::MatrixXd J_model = model.J_WB(body.index());
+    EXPECT_TRUE(CompareMatrices(J_model, J_full.middleCols(start, nv), 1e-14));
+    EXPECT_GT(J_model.norm(), 0.0);
+    EXPECT_NEAR(J_full.leftCols(start).norm(), 0.0, 1e-14);
+    EXPECT_NEAR(J_full.rightCols(J_full.cols() - start - nv).norm(), 0.0,
+                1e-14);
+    tested_nonzero_start |= start > 0;
+  }
+  EXPECT_TRUE(tested_nonzero_start);
+}
+
+// A joint locked inside a split tree is recorded by its clique-local index, not
+// its global velocity index, and ReduceInto() slices the Jacobians accordingly.
+TEST_F(IcfBuilderSplitTreeTest, LockedJointInSplitTree) {
+  // jb3 is the second dof of clique b, and jc1 is the first dof of clique c.
+  const Joint<double>& jb3 = plant_->GetJointByName("jb3");
+  const Joint<double>& jc1 = plant_->GetJointByName("jc1");
+  jb3.Lock(plant_context_);
+  jc1.Lock(plant_context_);
+  IcfModel<double> model;
+  UpdateModel(&model);
+  ASSERT_EQ(model.num_cliques(), 3);
+
+  const int a = clique_of(model, "a1");
+  const int b = clique_of(model, "b1");
+  const int c = clique_of(model, "c1");
+  // Locking is only interesting if the locked dofs' global indices differ from
+  // their clique-local ones.
+  ASSERT_GT(model.clique_starts()[b], 0);
+  ASSERT_GT(model.clique_starts()[c], 0);
+  EXPECT_EQ(jb3.velocity_start(), model.clique_starts()[b] + 1);
+  EXPECT_EQ(jc1.velocity_start(), model.clique_starts()[c]);
+
+  const auto& reduction = model.params().reduction;
+  EXPECT_EQ(reduction.per_clique_unlocked_dofs[a], (std::vector<int>{0, 1}));
+  EXPECT_EQ(reduction.per_clique_unlocked_dofs[b], (std::vector<int>{0}));
+  EXPECT_EQ(reduction.per_clique_unlocked_dofs[c], (std::vector<int>{1}));
+  std::vector<int> expected_unlocked;
+  for (int v = 0; v < plant_->num_velocities(); ++v) {
+    if (v != jb3.velocity_start() && v != jc1.velocity_start()) {
+      expected_unlocked.push_back(v);
+    }
+  }
+  EXPECT_EQ(reduction.unlocked_dofs, expected_unlocked);
+
+  // The reduced model keeps the unlocked columns of each Jacobian.
+  ASSERT_TRUE(model.is_reducible());
+  IcfModel<double> reduced;
+  ReducedMapping mapping;
+  model.ReduceInto(&reduced, &mapping);
+  EXPECT_EQ(reduced.num_velocities(), 4);
+  EXPECT_EQ(reduced.num_cliques(), 3);
+  const auto J_b3 = model.J_WB(plant_->GetBodyByName("b3").index());
+  const auto J_c2 = model.J_WB(plant_->GetBodyByName("c2").index());
+  const Eigen::MatrixXd J_b3_reduced =
+      reduced.J_WB(plant_->GetBodyByName("b3").index());
+  const Eigen::MatrixXd J_c2_reduced =
+      reduced.J_WB(plant_->GetBodyByName("c2").index());
+  EXPECT_TRUE(CompareMatrices(J_b3_reduced, J_b3.col(0), 0.0));
+  EXPECT_TRUE(CompareMatrices(J_c2_reduced, J_c2.col(1), 0.0));
+}
+
+// A coupler between two branches of the same tree (which would otherwise be
+// split into separate cliques, see MultipleCliquesPerTree) is supported: the
+// coupled branches share a clique, while an uncoupled branch keeps its own.
+GTEST_TEST(IcfBuilder, CouplerAcrossBranchesOfOneTree) {
+  systems::DiagramBuilder<double> diagram_builder;
+  multibody::MultibodyPlantConfig plant_config{.time_step = 0.0};
+
+  MultibodyPlant<double>& plant =
+      multibody::AddMultibodyPlant(plant_config, &diagram_builder);
+  const auto M_B = SpatialInertia<double>::MakeUnitary();
+
+  const RigidBody<double>& table = plant.AddRigidBody("table", M_B);
+  const RigidBody<double>& p1 = plant.AddRigidBody("p1", M_B);
+  const RigidBody<double>& p2 = plant.AddRigidBody("p2", M_B);
+  const RigidBody<double>& p3 = plant.AddRigidBody("p3", M_B);
+  plant.AddJoint<WeldJoint>("weld_table", plant.world_body(), RigidTransformd(),
+                            table, RigidTransformd(), RigidTransformd());
+  const auto& j1 = plant.AddJoint<RevoluteJoint>(
+      "j1", table, RigidTransformd(), p1, RigidTransformd(), Vector3d::UnitY());
+  const auto& j2 = plant.AddJoint<RevoluteJoint>(
+      "j2", table, RigidTransformd(), p2, RigidTransformd(), Vector3d::UnitY());
+  plant.AddJoint<RevoluteJoint>("j3", table, RigidTransformd(), p3,
+                                RigidTransformd(), Vector3d::UnitY());
+  plant.AddCouplerConstraint(j1, j2, 0.8);
+  plant.Finalize();
+
+  auto diagram = diagram_builder.Build();
+  auto diagram_context = diagram->CreateDefaultContext();
+  const auto& plant_context = plant.GetMyContextFromRoot(*diagram_context);
+
+  IcfBuilder<double> builder(&plant);
+  IcfSolverParameters solver_params;
+  IcfModel<double> model;
+  for (bool use_islands : {false, true}) {
+    SCOPED_TRACE(fmt::format("use_islands = {}", use_islands));
+    solver_params.use_islands = use_islands;
+    builder.SetSolverParameters(solver_params);
+    builder.UpdateModel(plant_context, 0.01, nullptr, nullptr, &model);
+
+    EXPECT_EQ(model.num_cliques(), 2);
+    EXPECT_EQ(model.num_velocities(), plant.num_velocities());
+    const int c1 = model.body_to_clique(p1.index());
+    const int c2 = model.body_to_clique(p2.index());
+    const int c3 = model.body_to_clique(p3.index());
+    EXPECT_EQ(c1, c2);
+    EXPECT_NE(c1, c3);
+    EXPECT_EQ(model.clique_size(c1), 2);
+    EXPECT_EQ(model.clique_size(c3), 1);
+    EXPECT_EQ(model.partition().num_islands(), use_islands ? 2 : 1);
+
+    // The coupler's DOFs are local to the merged clique.
+    ASSERT_EQ(model.num_coupler_constraints(), 1);
+    const auto& pool = model.coupler_constraints_pool();
+    EXPECT_EQ(pool.constraint_to_clique()[0], c1);
+    const int dof0 = pool.dofs()[0].first;
+    const int dof1 = pool.dofs()[0].second;
+    EXPECT_NE(dof0, dof1);
+    EXPECT_GE(std::min(dof0, dof1), 0);
+    EXPECT_LT(std::max(dof0, dof1), 2);
+  }
+}
+
 GTEST_TEST(IcfBuilder, NoWeldBetweenAnchoredBodies) {
   systems::DiagramBuilder<double> diagram_builder;
   multibody::MultibodyPlantConfig plant_config{.time_step = 0.0};
@@ -293,7 +611,7 @@ GTEST_TEST(IcfBuilder, CouplerBad) {
 
   Parser(&plant, "Pendulum1").AddModelsFromString(kRobotXml, "xml");
   Parser(&plant, "Pendulum2").AddModelsFromString(kRobotXml, "xml");
-  // The bad coupler selects joints from different trees.
+  // The bad coupler selects joints from different cliques.
   plant.AddCouplerConstraint(plant.get_joint(JointIndex(0)),
                              plant.get_joint(JointIndex(3)), 0.8);
   plant.Finalize();
@@ -397,7 +715,7 @@ GTEST_TEST(IcfBuilder, RetryStep) {
     check_gain_constraints(actuation_feedback, external_feedback);
     IcfData<double> data1;
     model.ResizeData(&data1);
-    model.CalcData(v, &data1);
+    model.CalcAllData(v, &data1);
 
     // Do an equivalent step to produce the expected values.
     builder.UpdateModel(plant_context, time_step, actuation_feedback,
@@ -405,13 +723,13 @@ GTEST_TEST(IcfBuilder, RetryStep) {
     check_gain_constraints(actuation_feedback, external_feedback);
     IcfData<double> data2;
     model.ResizeData(&data2);
-    model.CalcData(v, &data2);
+    model.CalcAllData(v, &data2);
 
     // Resulting data should match.
     EXPECT_EQ(data1.v(), data2.v());
     EXPECT_EQ(data1.Av(), data2.Av());
-    EXPECT_EQ(data1.momentum_cost(), data2.momentum_cost());
-    EXPECT_EQ(data1.cost(), data2.cost());
+    EXPECT_EQ(data1.ComputeMomentumCost(), data2.ComputeMomentumCost());
+    EXPECT_EQ(data1.ComputeCost(), data2.ComputeCost());
     EXPECT_EQ(data1.gradient(), data2.gradient());
     ASSERT_EQ(data1.V_WB().size(), data2.V_WB().size());
     for (int m = 0; m < data1.V_WB().size(); ++m) {
@@ -800,6 +1118,30 @@ GTEST_TEST(IcfBuilder, JointLockingSupport) {
 
     ASSERT_EQ(model.num_cliques(), 1);
     EXPECT_EQ(r.per_clique_unlocked_dofs[0], expected_unlocked_dofs);
+  }
+}
+
+GTEST_TEST(IcfBuilder, IslandConfig) {
+  systems::DiagramBuilder<double> diagram_builder;
+  multibody::MultibodyPlantConfig plant_config{.time_step = 0.0};
+  MultibodyPlant<double>& plant =
+      multibody::AddMultibodyPlant(plant_config, &diagram_builder);
+  plant.Finalize();
+
+  auto diagram = diagram_builder.Build();
+  auto diagram_context = diagram->CreateDefaultContext();
+  auto& plant_context =
+      plant.GetMyMutableContextFromRoot(diagram_context.get());
+
+  IcfBuilder<double> dut(&plant);
+  IcfSolverParameters solver_params;
+  IcfModel<double> model;
+
+  for (bool use_islands : {false, true}) {
+    solver_params.use_islands = use_islands;
+    dut.SetSolverParameters(solver_params);
+    dut.UpdateModel(plant_context, 0.01, nullptr, nullptr, &model);
+    EXPECT_EQ(model.params().use_islands, use_islands);
   }
 }
 
