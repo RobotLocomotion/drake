@@ -129,6 +129,13 @@ is the input dimension.
    automatically sets threadsafe to false.
 )";
 
+  // This class deliberately owns its Python callable. Do not switch it to
+  // borrow it (e.g., via ensure_callback_lifetime), because it is a copyable
+  // value type that C++ copies freely (e.g., into IrisZoOptions and
+  // IrisNp2Options), and a keep-alive link on the Python wrapper cannot follow
+  // those copies; they would be left with dangling pointers. The cost is that
+  // a callable that refers back to the function forms a reference cycle that
+  // leaks. That leak is pinned in memory_leak_test.py.
   class_<IrisParameterizationFunction> iris_parameterization_function(
       m, "IrisParameterizationFunction", cls_doc.doc);
   iris_parameterization_function  // BR
