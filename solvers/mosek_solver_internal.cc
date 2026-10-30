@@ -5,7 +5,10 @@
 #include <atomic>
 #include <cstdio>
 #include <limits>
+#include <optional>
+#include <string>
 
+#include <fmt/format.h>
 #include <fmt/ostream.h>
 
 #include "drake/common/never_destroyed.h"
@@ -1142,8 +1145,37 @@ MSKrescodee MosekSolverProgram::AddQuadraticCostAsLinearCost(
   // license, which is incompatible with Drake's license, so we convert the
   // sparse Q_lower matrix to a dense matrix, and use the dense Cholesky
   // decomposition instead.
-  const Eigen::MatrixXd L = math::DecomposePSDmatrixIntoXtransposeTimesX(
-      Eigen::MatrixXd(Q_lower), std::numeric_limits<double>::epsilon());
+  Eigen::MatrixXd L;
+  const std::optional<std::string> psd_error =
+      math::MaybeDecomposePSDmatrixIntoXtransposeTimesX(
+          Eigen::MatrixXd(Q_lower), std::numeric_limits<double>::epsilon(),
+          &L);
+  if (psd_error.has_value()) {
+    // Identify which quadratic costs are not PSD so the message names them.
+    std::string non_psd_costs;
+    for (const auto& binding : prog.quadratic_costs()) {
+      Eigen::MatrixXd unused;
+      if (math::MaybeDecomposePSDmatrixIntoXtransposeTimesX(
+              binding.evaluator()->Q(),
+              std::numeric_limits<double>::epsilon(), &unused)
+              .has_value()) {
+        non_psd_costs += fmt::format("\n{}", binding.to_string());
+      }
+    }
+    if (non_psd_costs.empty()) {
+      throw std::runtime_error(fmt::format(
+          "Failed to convert quadratic costs to a second-order cone "
+          "constraint because the aggregated Hessian is not positive "
+          "semidefinite. {}",
+          *psd_error));
+    }
+    throw std::runtime_error(fmt::format(
+        "Failed to convert quadratic costs to a second-order cone "
+        "constraint because a quadratic cost Hessian is not positive "
+        "semidefinite. {} The following quadratic cost(s) may not be "
+        "positive semidefinite:{}",
+        *psd_error, non_psd_costs));
+  }
   MSKint32t num_mosek_vars = 0;
   rescode = MSK_getnumvar(task_, &num_mosek_vars);
   if (rescode != MSK_RES_OK) {
