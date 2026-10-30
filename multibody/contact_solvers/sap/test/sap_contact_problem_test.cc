@@ -738,9 +738,11 @@ GTEST_TEST(ContactProblem, CalcConstraintMultibodyForces) {
   }
 }
 
-// ToDouble() of a reduced problem keeps the reduced Jacobians. The constraints
-// below build their Jacobian from clique and DOF indices, which MakeReduced()
-// does not change.
+// ToDouble() of a reduced problem must preserve the reduced Jacobian of each
+// constraint. Each constraint below builds its Jacobian from per-clique data it
+// was constructed with (DOF indices, or DOF coefficients for the tendon) rather
+// than taking a Jacobian, so this test guards against a conversion that
+// rebuilds the Jacobian from that data and loses the reduction.
 GTEST_TEST(ContactProblem, ToDoubleOfReducedProblem) {
   const double time_step = 0.01;
   const int nv = 3;

@@ -258,9 +258,8 @@ class SapConstraint {
    where gradients were discarded. */
   std::unique_ptr<SapConstraint<double>> ToDouble() const {
     std::unique_ptr<SapConstraint<double>> result = DoToDouble();
-    // Some constraints build a new Jacobian in DoToDouble() from the DOF index
-    // they got at construction. MakeReduced() removes columns from J_ but does
-    // not update that index, so we copy J_ to get the right Jacobian.
+    // TODO(#25158): Overwriting J_ here is a workaround for issue 25158. Remove
+    // it when the issue is resolved.
     result->J_ = J_.ToDouble();
     return result;
   }
@@ -349,6 +348,7 @@ class SapConstraint {
 
  private:
   // Lets ToDouble() set J_ of the SapConstraint<double> it returns.
+  // TODO(#25158): Remove along with the workaround in ToDouble().
   template <typename>
   friend class SapConstraint;
 
