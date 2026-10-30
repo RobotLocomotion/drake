@@ -4907,6 +4907,23 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
                                                 frame_E, Js_V_ABp_E);
   }
 
+  /// For one point Bp fixed/welded to a frame B, calculates HJ𝑠_V_ABp_E, whose
+  /// iᵗʰ element is the partial derivative with respect to the iᵗʰ "speed" 𝑠ᵢ
+  /// of ᴱd/dt(J𝑠_V_ABp_E), the time derivative in frame E of J𝑠_V_ABp_E, which
+  /// is Bp's spatial velocity Jacobian in frame A with respect to 𝑠, expressed
+  /// in frame E (see CalcJacobianSpatialVelocity()).
+  /// <pre>
+  ///      HJ𝑠_V_ABp_E ≜ [ D₁(J𝑠_V_ABp_E), ... Dₙ(J𝑠_V_ABp_E) ]   (n is j or k)
+  ///      Dᵢ(J𝑠_V_ABp_E) ≜ ∂(ᴱd/dt J𝑠_V_ABp_E)/∂𝑠ᵢ
+  /// </pre>
+  /// The special prefix HJ signifies derivatives of a Jacobian. Unlike a 
+  /// conventional Hessian, HJ𝑠_V_ABp_E is generally not symmetric, i.e., column
+  /// j of Dᵢ(J𝑠_V_ABp_E) generally differs from column i of Dⱼ(J𝑠_V_ABp_E).
+  /// Asymmetry arises in its angular rows because angular velocity is generally
+  /// not the time derivative of any quantity. Its translational rows are a 
+  /// conventional Hessian, i.e., ∂²(p_AoBp_A)/∂qᵢ∂qⱼ, only when E = A and
+  /// 𝑠 = q̇ (or 𝑠 = v = q̇).
+  ///
   /// For one point Bp fixed/welded to a frame B, calculates H𝑠_V_ABp, the
   /// derivatives along each of the "speeds" 𝑠 of J𝑠_V_ABp, Bp's spatial
   /// velocity Jacobian in frame A with respect to 𝑠 (see
