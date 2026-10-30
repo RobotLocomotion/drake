@@ -78,4 +78,4 @@ lief==1.0.0 \
     --hash=sha256:f6c2007bf96704cedc5cee8ae303ba7008840b9a2214ca9f4f43a6faa703834f \
     --hash=sha256:fbaf64c338086da0a5d67b0e440b7010f2fd4b1d6edc68db303693759320ebfb \
     --hash=sha256:fcaf9a28f004bc5f49637dd1a5cdfb8f937feb58febb5f70ebec29c0c1c3584c
-    # via -r setup/python/lief/requirements.in
+    # via -r requirements.in

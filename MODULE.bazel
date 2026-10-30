@@ -25,6 +25,13 @@ bazel_dep(name = "rules_rs", version = "0.0.112")  # Keep this in sync with cmak
 bazel_dep(name = "rules_shell", version = "0.8.0")
 bazel_dep(name = "with_cfg.bzl", version = "1.0.0")
 
+single_version_override(
+    module_name = "rules_python",
+    patches = [
+        "//tools/workspace/rules_python:patches/upstream/abs_interpreter_path.patch",  # noqa
+    ],
+)
+
 # Configure the Rust toolchain.
 
 rules_rust = use_extension("@rules_rs//rs:rules_rust.bzl", "rules_rust")
