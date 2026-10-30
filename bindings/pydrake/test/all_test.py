@@ -1,3 +1,4 @@
+import importlib.metadata
 import inspect
 import os
 import sys
@@ -11,6 +12,15 @@ del os.environ["MPLBACKEND"]  # noqa
 
 
 class TestAll(unittest.TestCase):
+    def test_version(self):
+        import pydrake
+
+        try:
+            expected = importlib.metadata.version("drake")
+        except importlib.metadata.PackageNotFoundError:
+            expected = "0.0.0"
+        self.assertEqual(pydrake.__version__, expected)
+
     # N.B. Synchronize code snippets with `doc/_pages/python_bindings.md`.
     def test_000_import_warnings(self):
         """Prints if we encounter any warnings (primarily from `pybind11`) when
