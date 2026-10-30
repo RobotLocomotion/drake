@@ -129,6 +129,11 @@ is the input dimension.
    automatically sets threadsafe to false.
 )";
 
+  // N.B. Unlike other bindings that store callbacks (#24162), this class owns
+  // its Python callable, so a callable that refers back to the function leaks.
+  // The function is a copyable value type that is copied into
+  // IrisZoOptions and IrisNp2Options (themselves copyable), so borrowing the
+  // callable would leave those copies with dangling pointers.
   class_<IrisParameterizationFunction> iris_parameterization_function(
       m, "IrisParameterizationFunction", cls_doc.doc);
   iris_parameterization_function  // BR

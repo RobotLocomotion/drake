@@ -498,6 +498,11 @@ struct Impl {
       constexpr auto& cls_doc = doc.FunctionHandleTrajectory;
       auto cls = DefineTemplateClassWithDefault<Class, Trajectory<T>>(
           m, "FunctionHandleTrajectory", param, cls_doc.doc);
+      // N.B. Unlike other bindings that store callbacks (#24162), this class
+      // owns its Python callables, so a callable that refers back to the
+      // trajectory leaks. The trajectory is a copyable value type that many
+      // C++ classes copy, so borrowing the callables would leave those copies
+      // with dangling pointers.
       cls  // BR
           .def(py::init<const std::function<MatrixX<T>(const T&)>&, int, int,
                    double, double>(),

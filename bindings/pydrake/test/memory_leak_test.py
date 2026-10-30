@@ -22,11 +22,18 @@ import textwrap
 import unittest
 import weakref
 
+import numpy as np
+
 from pydrake.common import RandomGenerator
 from pydrake.common.schema import Rotation, Transform
+from pydrake.common.value import Value
+from pydrake.examples import PendulumPlant
 from pydrake.geometry import Meshcat, SceneGraphConfig
-from pydrake.lcm import DrakeLcmParams
+from pydrake.lcm import DrakeLcm, DrakeLcmParams
 from pydrake.manipulation import ApplyDriverConfigs, IiwaDriver
+from pydrake.multibody.inverse_kinematics import (
+    DifferentialInverseKinematicsSystem,
+)
 from pydrake.multibody.parsing import (
     LoadModelDirectivesFromString,
     ProcessModelDirectives,
@@ -36,16 +43,35 @@ from pydrake.multibody.plant import (
     AddMultibodyPlantSceneGraph,
     MultibodyPlantConfig,
 )
-from pydrake.planning import RobotDiagramBuilder
+from pydrake.planning import (
+    CollisionCheckerParams,
+    DirectCollocation,
+    IrisParameterizationFunction,
+    RobotDiagramBuilder,
+    SceneGraphCollisionChecker,
+)
+from pydrake.solvers import (
+    GurobiSolver,
+    MathematicalProgram,
+    MinimumValueLowerBoundConstraint,
+    MinimumValueUpperBoundConstraint,
+    ProjectedGradientDescentSolver,
+)
 from pydrake.systems.analysis import (
     ApplySimulatorConfig,
     Simulator,
     SimulatorConfig,
 )
-from pydrake.systems.framework import DiagramBuilder, LeafSystem
+from pydrake.systems.framework import (
+    DiagramBuilder,
+    InputPortSelection,
+    LeafSystem,
+    ValueProducer,
+)
 from pydrake.systems.lcm import ApplyLcmBusConfig
 from pydrake.systems.primitives import ConstantVectorSource
 from pydrake.systems.sensors import ApplyCameraConfig, CameraConfig
+from pydrake.trajectories import FunctionHandleTrajectory
 from pydrake.visualization import ApplyVisualizationConfig, VisualizationConfig
 
 # Developer-only configuration.
@@ -298,6 +324,276 @@ def _dut_mypyleafsystem():
     return _make_sentinels_from_locals("mypyleafsystem", locals())
 
 
+def _global_callback(*args):
+    """A callback that refers to nothing in particular."""
+    del args
+
+
+def _make_callback(owner, cyclic: bool, result=None):
+    """Returns a callback for the #24162 devices under test below, which
+    returns `result` when called. When `cyclic` is true, the callback refers
+    back to `owner`, so storing it in C++ within `owner` forms a reference
+    cycle that garbage collection must be able to see. Otherwise, the callback
+    does not refer to `owner`.
+    """
+    if not cyclic:
+        return lambda *args: result
+
+    def callback(*args):
+        del args
+        assert owner is not None  # Refers to `owner`, to capture it.
+        return result
+
+    return callback
+
+
+def _sentinels_for(dut_name, owner):
+    return {_make_sentinel(owner, dut_name)}
+
+
+# The following devices under test each store a callback inside some pydrake
+# object, using one of the bindings identified in #24162.
+
+
+def _dut_abstract_output_port(cyclic):
+    system = LeafSystem()
+    system.DeclareAbstractOutputPort(
+        "y",
+        lambda: Value[object](None),
+        _make_callback(system, cyclic),
+    )
+    return _sentinels_for("abstract_output_port", system)
+
+
+def _dut_cache_entry(cyclic):
+    system = LeafSystem()
+    system.DeclareCacheEntry(
+        description="cache",
+        value_producer=ValueProducer(
+            allocate=lambda: Value[object](None),
+            calc=_make_callback(system, cyclic),
+        ),
+    )
+    return _sentinels_for("cache_entry", system)
+
+
+def _dut_simulator_monitor(cyclic):
+    simulator = Simulator(ConstantVectorSource([1.0]))
+    simulator.set_monitor(_make_callback(simulator, cyclic))
+    return _sentinels_for("simulator_monitor", simulator)
+
+
+def _make_program():
+    prog = MathematicalProgram()
+    return prog, prog.NewContinuousVariables(2)
+
+
+def _dut_program_cost(cyclic):
+    prog, x = _make_program()
+    prog.AddCost(_make_callback(prog, cyclic), x)
+    return _sentinels_for("program_cost", prog)
+
+
+def _dut_program_constraint(cyclic):
+    prog, x = _make_program()
+    prog.AddConstraint(_make_callback(prog, cyclic), [0.0], [1.0], x)
+    return _sentinels_for("program_constraint", prog)
+
+
+def _dut_program_visualization_callback(cyclic):
+    prog, x = _make_program()
+    prog.AddVisualizationCallback(_make_callback(prog, cyclic), x)
+    return _sentinels_for("program_visualization_callback", prog)
+
+
+def _dut_lcm_subscribe(cyclic):
+    lcm = DrakeLcm("memq://")
+    lcm.Subscribe("CHANNEL", _make_callback(lcm, cyclic))
+    return _sentinels_for("lcm_subscribe", lcm)
+
+
+def _dut_lcm_subscribe_multichannel(cyclic):
+    lcm = DrakeLcm("memq://")
+    lcm.SubscribeMultichannel("CHAN.*", _make_callback(lcm, cyclic))
+    return _sentinels_for("lcm_subscribe_multichannel", lcm)
+
+
+def _dut_lcm_subscribe_all_channels(cyclic):
+    lcm = DrakeLcm("memq://")
+    lcm.SubscribeAllChannels(_make_callback(lcm, cyclic))
+    return _sentinels_for("lcm_subscribe_all_channels", lcm)
+
+
+def _dut_function_handle_trajectory(cyclic):
+    # The trajectory doesn't store a reference to anything that could store
+    # it in turn, so we need a mutable holder to form the cycle.
+    holder = []
+    trajectory = FunctionHandleTrajectory(
+        _make_callback(holder, cyclic, result=np.zeros((1, 1))), rows=1
+    )
+    holder.append(trajectory)
+    return _sentinels_for("function_handle_trajectory", trajectory)
+
+
+def _dut_minimum_value_constraint(cyclic):
+    holder = []
+    constraint = MinimumValueLowerBoundConstraint(
+        num_vars=1,
+        minimum_value_lower=0.1,
+        influence_value_offset=0.1,
+        max_num_values=1,
+        value_function=_make_callback(holder, cyclic),
+    )
+    holder.append(constraint)
+    return _sentinels_for("minimum_value_constraint", constraint)
+
+
+def _dut_minimum_value_penalty_function(cyclic):
+    constraint = MinimumValueUpperBoundConstraint(
+        num_vars=1,
+        minimum_value_upper=0.1,
+        influence_value_offset=0.1,
+        max_num_values=1,
+        value_function=_global_callback,
+    )
+    constraint.set_penalty_function(
+        _make_callback(constraint, cyclic, result=(0.0, 0.0))
+    )
+    return _sentinels_for("minimum_value_penalty_function", constraint)
+
+
+def _dut_iris_parameterization_function(cyclic):
+    holder = []
+    parameterization = IrisParameterizationFunction(
+        _make_callback(holder, cyclic), dimension=1
+    )
+    holder.append(parameterization)
+    return _sentinels_for("iris_parameterization_function", parameterization)
+
+
+def _dut_projected_gradient_descent_projection(cyclic):
+    solver = ProjectedGradientDescentSolver()
+    solver.SetCustomProjectionFunction(_make_callback(solver, cyclic))
+    return _sentinels_for("projected_gradient_descent_projection", solver)
+
+
+def _dut_projected_gradient_descent_gradient(cyclic):
+    solver = ProjectedGradientDescentSolver()
+    solver.SetCustomGradientFunction(_make_callback(solver, cyclic))
+    return _sentinels_for("projected_gradient_descent_gradient", solver)
+
+
+def _make_collision_checker(distance_function=lambda q1, q2: 0.0):
+    builder = RobotDiagramBuilder()
+    (model_instance,) = builder.parser().AddModelsFromString(
+        textwrap.dedent("""
+    <?xml version="1.0"?>
+    <sdf version="1.7">
+      <model name="robot">
+        <link name="base"/>
+        <link name="arm"/>
+        <joint name="shoulder" type="revolute">
+          <parent>base</parent>
+          <child>arm</child>
+          <axis><xyz>0 0 1</xyz></axis>
+        </joint>
+      </model>
+    </sdf>
+    """).strip(),
+        "sdf",
+    )
+    plant = builder.plant()
+    plant.WeldFrames(plant.world_frame(), plant.GetFrameByName("base"))
+    params = CollisionCheckerParams()
+    params.model = builder.Build()
+    params.robot_model_instances = [model_instance]
+    params.edge_step_size = 0.1
+    params.configuration_distance_function = distance_function
+    return SceneGraphCollisionChecker(params)
+
+
+def _dut_collision_checker_distance_function(cyclic):
+    checker = _make_collision_checker()
+    checker.SetConfigurationDistanceFunction(
+        _make_callback(checker, cyclic, result=0.0)
+    )
+    return _sentinels_for("collision_checker_distance_function", checker)
+
+
+def _dut_collision_checker_interpolation_function(cyclic):
+    checker = _make_collision_checker()
+    checker.SetConfigurationInterpolationFunction(
+        _make_callback(checker, cyclic, result=np.zeros(1))
+    )
+    return _sentinels_for("collision_checker_interpolation_function", checker)
+
+
+def _dut_collision_checker_params_distance_function(cyclic):
+    # Here the callback is stored in the params struct (and copied from there
+    # into the checker), instead of being set on the checker directly.
+    owner_box = []
+    checker = _make_collision_checker(
+        _make_callback(owner_box, cyclic, result=0.0)
+    )
+    owner_box.append(checker)
+    return _sentinels_for("collision_checker_params_distance_function", checker)
+
+
+def _make_direct_collocation():
+    plant = PendulumPlant()
+    return DirectCollocation(
+        plant,
+        plant.CreateDefaultContext(),
+        num_time_samples=3,
+        minimum_time_step=0.2,
+        maximum_time_step=0.5,
+        input_port_index=InputPortSelection.kUseFirstInputIfItExists,
+        assume_non_continuous_states_are_fixed=False,
+    )
+
+
+def _dut_dircol_input_callback(cyclic):
+    dircol = _make_direct_collocation()
+    dircol.AddInputTrajectoryCallback(_make_callback(dircol, cyclic))
+    return _sentinels_for("dircol_input_callback", dircol)
+
+
+def _dut_dircol_state_callback(cyclic):
+    dircol = _make_direct_collocation()
+    dircol.AddStateTrajectoryCallback(_make_callback(dircol, cyclic))
+    return _sentinels_for("dircol_state_callback", dircol)
+
+
+def _dut_dircol_complete_callback(cyclic):
+    dircol = _make_direct_collocation()
+    dircol.NewSequentialVariable(rows=1, name="test")
+    dircol.AddCompleteTrajectoryCallback(
+        _make_callback(dircol, cyclic), names=["test"]
+    )
+    return _sentinels_for("dircol_complete_callback", dircol)
+
+
+def _dut_gurobi_mip_node_callback(cyclic):
+    solver = GurobiSolver()
+    solver.AddMipNodeCallback(_make_callback(solver, cyclic))
+    return _sentinels_for("gurobi_mip_node_callback", solver)
+
+
+def _dut_gurobi_mip_sol_callback(cyclic):
+    solver = GurobiSolver()
+    solver.AddMipSolCallback(_make_callback(solver, cyclic))
+    return _sentinels_for("gurobi_mip_sol_callback", solver)
+
+
+def _dut_diff_ik_select_data(cyclic):
+    Ingredient = DifferentialInverseKinematicsSystem.CollisionConstraint
+    constraint = Ingredient(Ingredient.Config())
+    constraint.SetSelectDataForCollisionConstraintFunction(
+        _make_callback(constraint, cyclic)
+    )
+    return _sentinels_for("diff_ik_select_data", constraint)
+
+
 def _repeat(*, dut: callable, count: int):
     """Calls dut() for count times in a row, performing a full garbage
     collection before and after each call. Tracks memory leaks of interest; the
@@ -358,6 +654,69 @@ class TestPythonMemoryLeaks(unittest.TestCase):
 
     def test_mypyleafsystem(self):
         self.do_test(dut=_dut_mypyleafsystem, count=1)
+
+    def test_stored_callbacks(self):
+        """Checks bindings that store Python callbacks in C++ (#24162). With
+        a non-cyclic callback, nothing may leak. With a cyclic callback, each
+        of these currently leaks; when one gets fixed, its `leaks_required`
+        here will fail, and should be changed to 0.
+        """
+        duts = [
+            _dut_abstract_output_port,
+            _dut_cache_entry,
+            _dut_simulator_monitor,
+            _dut_program_cost,
+            _dut_program_constraint,
+            _dut_program_visualization_callback,
+            _dut_lcm_subscribe,
+            _dut_lcm_subscribe_multichannel,
+            _dut_lcm_subscribe_all_channels,
+            _dut_minimum_value_constraint,
+            _dut_minimum_value_penalty_function,
+            _dut_projected_gradient_descent_projection,
+            _dut_projected_gradient_descent_gradient,
+            _dut_collision_checker_distance_function,
+            _dut_collision_checker_interpolation_function,
+            _dut_collision_checker_params_distance_function,
+            _dut_dircol_input_callback,
+            _dut_dircol_state_callback,
+            _dut_dircol_complete_callback,
+            _dut_gurobi_mip_node_callback,
+            _dut_gurobi_mip_sol_callback,
+            _dut_diff_ik_select_data,
+        ]
+        for dut in duts:
+            with self.subTest(dut=dut.__name__, cyclic=False):
+                self.do_test(dut=functools.partial(dut, cyclic=False), count=1)
+            with self.subTest(dut=dut.__name__, cyclic=True):
+                # TODO(#24162) These should not leak.
+                self.do_test(
+                    dut=functools.partial(dut, cyclic=True),
+                    count=1,
+                    leaks_allowed=1,
+                    leaks_required=1,
+                )
+
+        # FunctionHandleTrajectory is a copyable value type, and many C++
+        # classes (TrajectorySource, CompositeTrajectory, etc.) copy it. We
+        # can't borrow its callables without protecting every one of those
+        # copies, so it deliberately owns them, and cyclic callbacks leak.
+        #
+        # IrisParameterizationFunction is the same, because it is copied into
+        # IrisZoOptions and IrisNp2Options.
+        for dut in [
+            _dut_function_handle_trajectory,
+            _dut_iris_parameterization_function,
+        ]:
+            with self.subTest(dut=dut.__name__, cyclic=False):
+                self.do_test(dut=functools.partial(dut, cyclic=False), count=1)
+            with self.subTest(dut=dut.__name__, cyclic=True):
+                self.do_test(
+                    dut=functools.partial(dut, cyclic=True),
+                    count=1,
+                    leaks_allowed=1,
+                    leaks_required=1,
+                )
 
 
 class Mallinfo2(ctypes.Structure):
