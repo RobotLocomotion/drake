@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<sdf version="1.7">
+  <model name="mouse_pad">
+    <link name="base_link">
+      </link>
+  </model>
+</sdf>
