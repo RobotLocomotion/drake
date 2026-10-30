@@ -1,5 +1,6 @@
 #include "drake/geometry/proximity/distance_to_shape_callback.h"
 
+#include <cmath>
 #include <limits>
 #include <memory>
 #include <unordered_map>
@@ -75,6 +76,48 @@ GTEST_TEST(SignedDistanceCallbackTests, ExpressionUnsupported) {
                                            max_dist),
       "Signed distance queries between shapes 'Box' and 'Box' are not "
       "supported for scalar type drake::symbolic::Expression.*");
+}
+
+// Regression test for #21675: two boxes that FCL reports as penetrating by
+// less than the touching tolerance.
+GTEST_TEST(SignedDistanceCallbackTests, BoxBoxBarelyPenetrating) {
+  Eigen::Matrix3d R_WA;
+  R_WA << 1.0000000000000044, 2.2886701630728595e-19, 0.0,
+      1.0581860424029641e-20, 1.0000000000000044, 0.0, 0.0, 0.0, 1.0;
+  Eigen::Matrix3d R_WB;
+  R_WB << 1.0, 0.0, 0.0, 0.0, -0.16393107388774433, 0.9864717953464309, 0.0,
+      -0.9864717953464309, -0.16393107388774433;
+  const RigidTransformd X_WA(
+      RotationMatrixd(R_WA),
+      Vector3d(3.5000000000000107, 2.2500000000000027, 0.15));
+  const RigidTransformd X_WB(
+      RotationMatrixd(R_WB),
+      Vector3d(3.2750000000000203, 2.6252702917956396, 0.16073032646376256));
+  // The callback orders the pair by id, so A gets the smaller id.
+  const GeometryId id_A = GeometryId::get_new_id();
+  const GeometryId id_B = GeometryId::get_new_id();
+  std::unique_ptr<fcl::CollisionObjectd> obj_A =
+      MakeFclObject(Box(0.05, 0.55, 0.3), id_A, /* is_dynamic= */ true, X_WA);
+  std::unique_ptr<fcl::CollisionObjectd> obj_B =
+      MakeFclObject(Box(0.4, 0.3, 0.2), id_B, /* is_dynamic= */ true, X_WB);
+
+  const unordered_map<GeometryId, RigidTransformd> X_WGs{{id_A, X_WA},
+                                                         {id_B, X_WB}};
+  std::vector<SignedDistancePair<double>> pairs;
+  shape_distance::CallbackData<double> data{nullptr, &X_WGs, kInf, &pairs};
+  data.request = MakeProximityEngineRequest();
+  double max_dist = kInf;
+  shape_distance::Callback<double>(obj_A.get(), obj_B.get(), &data, max_dist);
+  ASSERT_EQ(pairs.size(), 1);
+  EXPECT_TRUE(pairs[0].nhat_BA_W.allFinite());
+  // FCL's distance depends on the platform and FCL version.
+  if (std::abs(pairs[0].distance) >= 1e-14) {
+    GTEST_SKIP() << fmt::format(
+        "FCL reports distance {}, outside the touching tolerance, so "
+        "BoxBoxGradient() is not exercised.",
+        pairs[0].distance);
+  }
+  EXPECT_TRUE(CompareMatrices(pairs[0].nhat_BA_W, Vector3d::UnitX(), 1e-14));
 }
 
 // Confirms that non-positive thresholds produce the right value. Creates three

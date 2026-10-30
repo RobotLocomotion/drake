@@ -13,6 +13,61 @@ namespace shape_distance {
 using Eigen::Vector3d;
 using math::RigidTransformd;
 
+namespace {
+
+// Returns the fifteen separating-axis candidates: the three axes of each box,
+// followed by their cross products. The cross products are not normalized.
+std::vector<Vector3d> MakeSeparatingAxisCandidates(
+    const RigidTransformd& X_WA, const RigidTransformd& X_WB) {
+  std::vector<Vector3d> v_Ws;
+  for (int i = 0; i < 3; ++i) {
+    v_Ws.push_back(X_WA.rotation().col(i));
+  }
+  for (int j = 0; j < 3; ++j) {
+    v_Ws.push_back(X_WB.rotation().col(j));
+  }
+  for (int i = 0; i < 3; ++i) {
+    for (int j = 0; j < 3; ++j) {
+      v_Ws.push_back(X_WA.rotation().col(i).cross(X_WB.rotation().col(j)));
+    }
+  }
+  return v_Ws;
+}
+
+// Returns nhat_BA_W along the direction in `v_Ws` in which box_A moves the
+// least to separate from box_B.
+Vector3d CalcMinimumOverlapNormal(const fcl::Boxd& box_A,
+                                  const fcl::Boxd& box_B,
+                                  const RigidTransformd& X_WA,
+                                  const RigidTransformd& X_WB,
+                                  const std::vector<Vector3d>& v_Ws) {
+  constexpr double kEps = 1e-14;
+  double min_overlap = std::numeric_limits<double>::infinity();
+  Vector3d nhat_BA_W = X_WA.rotation().col(0);
+  for (const Vector3d& v_W : v_Ws) {
+    const double v_W_norm = v_W.norm();
+    if (v_W_norm < kEps) {
+      continue;
+    }
+    const Vector3d unit_vector_W = v_W / v_W_norm;
+    const auto [min_A, max_A] = ProjectedMinMax(box_A, X_WA, unit_vector_W);
+    const auto [min_B, max_B] = ProjectedMinMax(box_B, X_WB, unit_vector_W);
+    // Moving A by (max_B - min_A) along +unit_vector_W, or by (max_A - min_B)
+    // along -unit_vector_W, separates the boxes.
+    if (max_B - min_A < min_overlap) {
+      min_overlap = max_B - min_A;
+      nhat_BA_W = unit_vector_W;
+    }
+    if (max_A - min_B < min_overlap) {
+      min_overlap = max_A - min_B;
+      nhat_BA_W = -unit_vector_W;
+    }
+  }
+  return nhat_BA_W;
+}
+
+}  // namespace
+
 Vector3d CalcGradientWhenTouching(const fcl::CollisionObjectd& a,
                                   const math::RigidTransformd& X_WA,
                                   const fcl::CollisionObjectd& b,
@@ -97,9 +152,9 @@ std::optional<Vector3d> MaybeMakeSeparatingVector(
     const auto [min_A, max_A] = ProjectedMinMax(box_A, X_WA, unit_vector_W);
     const auto [min_B, max_B] = ProjectedMinMax(box_B, X_WB, unit_vector_W);
 
-    // The caller (BoxBoxGradient()) already tested that the two witness points
-    // are closer than kEps, so the two touching boxes should numerically
-    // overlap within that order of precision along the separating vector.
+    // The caller only uses this for boxes whose signed distance is within
+    // kEps of zero, so the two touching boxes should numerically overlap
+    // within that order of precision along the separating vector.
     // Empirically we found that we lost three more bits of precisions from
     // the projection procedures, so we use the 8 * kEps threshold.
     if (max_A < min_B + 8 * kEps) {
@@ -117,9 +172,7 @@ Vector3d BoxBoxGradient(const fcl::Boxd& box_A, const fcl::Boxd& box_B,
                         const math::RigidTransformd& X_WB,
                         const Eigen::Vector3d& p_ACa,
                         const Eigen::Vector3d& p_BCb) {
-  // Verify that the witness points co-locate.
   const double kEps = 1e-14;
-  DRAKE_DEMAND((X_WA * p_ACa - X_WB * p_BCb).norm() < kEps);
 
   const Vector3d v_A = PointOnBoxSurfaceHelper(p_ACa, box_A);
   const Vector3d v_B = PointOnBoxSurfaceHelper(p_BCb, box_B);
@@ -208,24 +261,15 @@ Vector3d BoxBoxGradient(const fcl::Boxd& box_A, const fcl::Boxd& box_B,
   // Unlike other cases above, first we search for a separating vector from
   // the three axes of each box. If the search fail, we search from their
   // cross products.
-  std::optional<Vector3d> nhat_BA_W = MaybeMakeSeparatingVector(
-      box_A, box_B, X_WA, X_WB,
-      {X_WA.rotation().col(0), X_WA.rotation().col(1), X_WA.rotation().col(2),
-       X_WB.rotation().col(0), X_WB.rotation().col(1), X_WB.rotation().col(2)});
+  const std::vector<Vector3d> v_Ws = MakeSeparatingAxisCandidates(X_WA, X_WB);
+  const std::optional<Vector3d> nhat_BA_W =
+      MaybeMakeSeparatingVector(box_A, box_B, X_WA, X_WB, v_Ws);
   if (nhat_BA_W.has_value()) {
     return nhat_BA_W.value();
   }
-  for (int i = 0; i < 3; ++i) {
-    for (int j = 0; j < 3; ++j) {
-      nhat_BA_W = MaybeMakeSeparatingVector(
-          box_A, box_B, X_WA, X_WB,
-          {X_WA.rotation().col(i).cross(X_WB.rotation().col(j))});
-      if (nhat_BA_W.has_value()) {
-        return nhat_BA_W.value();
-      }
-    }
-  }
-  DRAKE_UNREACHABLE();
+  // Defensive: e.g., witness points too far from the boxes' surfaces to
+  // identify a touching feature.
+  return CalcMinimumOverlapNormal(box_A, box_B, X_WA, X_WB, v_Ws);
 }
 
 }  // namespace shape_distance

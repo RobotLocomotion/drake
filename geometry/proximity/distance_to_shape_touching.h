@@ -125,9 +125,13 @@ std::optional<Eigen::Vector3d> MaybeMakeSeparatingVector(
 
  @note In some cases, the gradient is not unique, and we choose arbitrarily.
 
+ @note The witness points are used to identify the touching features. If they
+       don't identify any (e.g., they are too far from the boxes' surfaces),
+       returns the direction in which box_A moves the least to separate from
+       box_B.
+
  @pre The signed distance between the two boxes is zero (or within an
-      internal tolerance), i.e., the two witness points are at the same
-      location (or within an internal tolerance) in World frame. */
+      internal tolerance). The witness points need not coincide exactly. */
 Eigen::Vector3d BoxBoxGradient(const fcl::Boxd& box_A, const fcl::Boxd& box_B,
                                const math::RigidTransformd& X_WA,
                                const math::RigidTransformd& X_WB,
