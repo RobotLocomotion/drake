@@ -16,6 +16,9 @@ requires_python = ">=3.13"
 [[metadata.targets]]
 requires_python = ">=3.14"
 
+[[metadata.targets]]
+requires_python = ">=3.15"
+
 [[package]]
 name = "altgraph"
 version = "0.17.5"
