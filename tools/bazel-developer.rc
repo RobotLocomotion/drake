@@ -130,6 +130,8 @@ build:memcheck --test_timeout=1500,7500,22500,90000
 # N.B. Use `-O2` despite https://docs.nersc.gov/tools/debug/valgrind/ since
 # otherwise CI builds would take an unreasonably long amount of time.
 build:memcheck --copt=-O2
+# However, don't inline strncmp using SIMD because it causes false positives.
+build:memcheck --copt=-fno-builtin-strncmp
 # We need not check the binary-only Gurobi and MOSEK libraries, since we are
 # unable to patch any memcheck complaints discovered in them. (These are already
 # off by default in non-everything builds, but setting them redundantly doesn't
