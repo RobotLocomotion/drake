@@ -135,6 +135,53 @@ class TestNamedView(unittest.TestCase):
         self.assertEqual(view.a, 0)
         self.assertEqual(view.b, 0)
 
+    def test_array_dtype(self):
+        MyView = namedview("MyView", ["a", "b"])
+        value = np.array([1.0, 2.0])
+        view = MyView(value)
+        converted = np.asarray(view, dtype=np.float32)
+        self.assertEqual(converted.dtype, np.float32)
+        np.testing.assert_equal(converted, value)
+        self.assertFalse(np.shares_memory(converted, value))
+        self.assertTrue(
+            is_same_array(value, np.asarray(view, dtype=value.dtype))
+        )
+
+    def test_array_copy(self):
+        MyView = namedview("MyView", ["a", "b"])
+        value = np.array([1.0, 2.0, 3.0, 4.0])[::2]
+        view = MyView(value)
+        alias = np.array(view, copy=False)
+        self.assertTrue(is_same_array(value, alias))
+        alias[0] = 5.0
+        self.assertEqual(view.a, 5.0)
+        for copied in (np.array(view), np.array(view, copy=True)):
+            np.testing.assert_equal(copied, value)
+            self.assertFalse(np.shares_memory(copied, value))
+            copied[0] = 10.0
+            self.assertEqual(view.a, 5.0)
+
+    def test_array_copy_requires_allocation(self):
+        MyView = namedview("MyView", ["a", "b"])
+        # Match NumPy's copy policy for the backing value, including the
+        # stricter copy=False behavior introduced in NumPy 2.
+        for value, dtype in (
+            ([1.0, 2.0], None),
+            (np.array([1.0, 2.0]), np.float32),
+        ):
+            view = MyView(value)
+            for copy in (False, True):
+                with self.subTest(value=value, dtype=dtype, copy=copy):
+                    try:
+                        expected = np.array(value, dtype=dtype, copy=copy)
+                    except ValueError:
+                        with self.assertRaises(ValueError):
+                            np.array(view, dtype=dtype, copy=copy)
+                    else:
+                        actual = np.array(view, dtype=dtype, copy=copy)
+                        self.assertEqual(actual.dtype, expected.dtype)
+                        np.testing.assert_equal(actual, expected)
+
     def test_name_sanitation(self):
         MyView = namedview(
             "MyView", ["$xyz_base", "iiwa::iiwa", "no spaces", "2vär"]
