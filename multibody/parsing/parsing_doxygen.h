@@ -161,13 +161,15 @@ frame J, implying that Jp and Jc coincide with J. J is located by the joint's
 `<pose>`, by default relative to the frame named by `<child>`, while the frame
 named by `<parent>` serves only to identify the parent link. To support Drake's
 less-restrictive model, we provide the `<drake:independent_frames/>` tag. A
-joint that contains it uses the frames named by its `<parent>` and `<child>`
-tags as Jp and Jc.
+joint that contains it has _independent frames_: it uses the frames named by
+its `<parent>` and `<child>` tags as Jp and Jc.
 
 Drake provides some non-standard joints introduced by the `<drake:joint>`
-tag. For those joints, the contained `<drake:parent>` and `<drake:child>`
-tags always specify Jp and Jc directly, so the `<drake:independent_frames/>`
-tag is not needed there, and using it is an error.
+tag. For now, those joints always have independent frames: Jp and Jc are the
+frames named by their `<drake:parent>` and `<drake:child>` tags, whether or not
+`<drake:independent_frames/>` is present. It is allowed there, and including it
+keeps that meaning if this default changes (see
+[issue #25109](https://github.com/RobotLocomotion/drake/issues/25109)).
 
 @see @ref tag_drake_independent_frames for details.
 
@@ -1300,7 +1302,8 @@ visuals.
 
 @subsection tag_drake_independent_frames drake:independent_frames
 
-- SDFormat path: `//joint/drake:independent_frames`
+- SDFormat path: `//joint/drake:independent_frames` or
+  `//model/drake:joint/drake:independent_frames`
 - URDF path: N/A
 - Syntax: Empty element.
 
@@ -1314,8 +1317,8 @@ by `<parent>` then serves only to identify the parent link. As a result, a model
 parsed from SDFormat is always assembled at its zero configuration.
 
 The presence of `<drake:independent_frames/>` in a joint instead makes the
-frames named by its `<parent>` and `<child>` _be_ Jp and Jc, as with
-@ref tag_drake_joint. Each may name a link, an explicit frame, a model (meaning
+frames named by its `<parent>` and `<child>` _be_ Jp and Jc, giving the joint
+independent frames. Each may name a link, an explicit frame, a model (meaning
 its implicit model frame), or (for `<parent>`) `world`, possibly using a scoped
 name. Neither may name:
 
@@ -1325,7 +1328,7 @@ name. Neither may name:
   canonical link because the link is deformable or comes from an included URDF
   or MJCF model (name a rigid link instead); or
 - a frame of a model with no links, such as a static model with only frames, or
-  a frame attached to one, though @ref tag_drake_parent allows those.
+  a frame attached to one.
 
 The joint still connects the links to which SDFormat attaches the named frames;
 the element changes only where Jp and Jc are on them. Since Jp and Jc are
@@ -1350,7 +1353,14 @@ frame named by `<child>`, which need not be the model declaring the joint: for
 The element may appear only once per joint and must be empty, with no
 attributes. Its presence alone has this effect.
 
-@see @ref sdf_joint_frames, @ref tag_drake_parent, @ref tag_drake_child
+A @ref tag_drake_joint may contain the element too, under the same rules. For
+now, such a joint always has independent frames, Jp and Jc being the frames
+named by its `<drake:parent>` and `<drake:child>`, so the element changes
+nothing there; including it keeps that meaning if this default changes (see
+[issue #25109](https://github.com/RobotLocomotion/drake/issues/25109)).
+
+@see @ref sdf_joint_frames, @ref tag_drake_joint, @ref tag_drake_parent,
+@ref tag_drake_child
 
 @subsection tag_drake_initial_tangent drake:initial_tangent
 
@@ -1403,6 +1413,9 @@ semantics are the same as for a standard joint.
 
 In SDFormat, the supported `type` values are `curvilinear` and `planar`. The element must
 contain nested `drake:parent`, `drake:child`, and `drake:damping` elements.
+For now, a `drake:joint` always has independent frames, so it may contain a
+`drake:independent_frames` element but doesn't need one (see
+@ref tag_drake_independent_frames).
 
 In URDF, supported `type` values are one of `ball`, `curvilinear`, `planar`, `screw` or
 `universal`. The nested elements are the same as those defined by the standard
@@ -1417,7 +1430,8 @@ joint moves, specified as the following:
 - `drake:is_periodic`: A boolean value specifying whether the curve is periodic, allowing
   the joint to traverse multiple laps of the curve without hitting joint limits.
 
-@see @ref tag_drake_parent, @ref tag_drake_child, @ref tag_drake_damping,
+@see @ref tag_drake_parent, @ref tag_drake_child,
+@ref tag_drake_independent_frames, @ref tag_drake_damping,
 @ref tag_drake_screw_thread_pitch, @ref tag_drake_initial_tangent,
 @ref tag_drake_plane_normal, @ref tag_drake_curves, @ref tag_drake_is_periodic
 

@@ -832,16 +832,16 @@ const Frame<double>* FindFrame(const SDFormatDiagnostic& diagnostic,
 }
 
 // Returns the frame that `frame_name`, given by the <`element_name`> child of
-// a joint with <drake:independent_frames/>, refers to; see FindFrame(). Reports
-// an error and returns nullptr if there is no such frame, or if it can't be a
-// joint frame.
+// a <joint> with <drake:independent_frames/>, refers to; see FindFrame().
+// Reports an error and returns nullptr if there is no such frame, or if it
+// can't be a joint frame.
 //
-// Unlike a <drake:joint>, such a joint can't name a frame of a model with no
-// links, such as a static model with only frames, or a frame attached to one.
-// SDFormat attaches those to the model rather than to a link, and an ordinary
-// joint can't name them either. A frame attached to one belongs to the model
-// that declares it, which may have links, so this checks the model of each
-// frame along the chain of attachments, as FindFrame() does.
+// Such a joint can't name a frame of a model with no links, such as a static
+// model with only frames, or a frame attached to one. SDFormat attaches those
+// to the model rather than to a link, and an ordinary joint can't name them
+// either. A frame attached to one belongs to the model that declares it, which
+// may have links, so this checks the model of each frame along the chain of
+// attachments, as FindFrame() does.
 // TODO(#25151) Allow those in <parent> once an ordinary joint can name them.
 const Frame<double>* FindIndependentJointFrame(
     const SDFormatDiagnostic& diagnostic, const sdf::Joint& joint_spec,
@@ -991,25 +991,21 @@ std::optional<JointFrames> ResolveJointFramesAtJ(
                      .X_CJc = X_CJ};
 }
 
-// Returns the frames of a joint with <drake:independent_frames/>: as for a
-// <drake:joint>, Jp and Jc are the frames named by its <parent> and <child>,
-// as seen from the joint's `scope`. Reports an error and returns nullopt if
-// that can't be done.
-std::optional<JointFrames> FindIndependentJointFrames(
-    const SDFormatDiagnostic& diagnostic, const sdf::Joint& joint_spec,
-    const FrameNameScope& scope, ModelInstanceIndex model_instance,
-    const MultibodyPlant<double>& plant) {
-  const sdf::ElementPtr node = joint_spec.Element();
-  // Only the element's presence matters, so any text, nested element, or
-  // attribute (such as enabled="false") would be misleading.
+// Reports an error and returns false if the joint `node` has more than one
+// <drake:independent_frames> element, or one that isn't empty. Only the
+// element's presence matters, so any text, nested element, or attribute (such
+// as enabled="false") would be misleading.
+bool CheckIndependentFramesElement(const SDFormatDiagnostic& diagnostic,
+                                   const sdf::ElementPtr node) {
   const sdf::ElementPtr independent_frames =
       node->FindElement("drake:independent_frames");
+  if (independent_frames == nullptr) return true;
   if (const sdf::ElementPtr duplicate =
           independent_frames->GetNextElement("drake:independent_frames")) {
     diagnostic.Error(duplicate,
                      "<drake:independent_frames> may appear only once per "
                      "joint.");
-    return std::nullopt;
+    return false;
   }
   // libsdformat gives an unknown element a value only if it has text (see
   // copyChildren() in its src/Utils.cc), so an empty one has none.
@@ -1018,8 +1014,21 @@ std::optional<JointFrames> FindIndependentJointFrames(
       independent_frames->GetAttributeCount() > 0) {
     diagnostic.Error(independent_frames,
                      "<drake:independent_frames> must be empty and have no "
-                     "attributes; its presence alone takes the joint's frames "
-                     "from <parent> and <child>.");
+                     "attributes; only its presence matters.");
+    return false;
+  }
+  return true;
+}
+
+// Returns the independent frames of a <joint> with <drake:independent_frames/>:
+// Jp and Jc are the frames named by its <parent> and <child>, as seen from the
+// joint's `scope`. Reports an error and returns nullopt if that can't be done.
+std::optional<JointFrames> FindIndependentJointFrames(
+    const SDFormatDiagnostic& diagnostic, const sdf::Joint& joint_spec,
+    const FrameNameScope& scope, ModelInstanceIndex model_instance,
+    const MultibodyPlant<double>& plant) {
+  const sdf::ElementPtr node = joint_spec.Element();
+  if (!CheckIndependentFramesElement(diagnostic, node)) {
     return std::nullopt;
   }
   if (!CheckJointHasNoPose(diagnostic, node, joint_spec.Name(), "parent",
@@ -2159,6 +2168,7 @@ bool AddDrakeJointFromSpecification(const SDFormatDiagnostic& diagnostic,
   const std::set<std::string> supported_joint_elements{
       "drake:parent",
       "drake:child",
+      "drake:independent_frames",
       "drake:damping",
       "drake:initial_tangent",
       "drake:plane_normal",
@@ -2186,6 +2196,12 @@ bool AddDrakeJointFromSpecification(const SDFormatDiagnostic& diagnostic,
   }
   const std::string joint_name = node->Get<std::string>("name");
 
+  // For now a <drake:joint> always has independent frames, so a
+  // <drake:independent_frames/> element changes nothing here, but it is held to
+  // the same rules as in a <joint>.
+  if (!CheckIndependentFramesElement(diagnostic, node)) {
+    return false;
+  }
   if (!CheckJointHasNoPose(diagnostic, node, joint_name, "drake:parent",
                            "drake:child")) {
     return false;

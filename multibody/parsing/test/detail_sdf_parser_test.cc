@@ -1574,7 +1574,7 @@ TEST_F(SdfParserTest, NamingModelFixedToWorldError) {
 // A static model with no links has its implicit frame fixed to the world,
 // rightly, unlike the models in NamingModelFixedToWorldError. So a reference
 // may name that frame, by the model's name or as s::__model__, as well as the
-// model's explicit frames, and each is where SDFormat puts it. (A joint with
+// model's explicit frames, and each is where SDFormat puts it. (A <joint> with
 // <drake:independent_frames/> may not; see
 // IndependentFramesModelWithoutLinksError.)
 TEST_F(SdfParserTest, FramesOfStaticModelWithoutLinks) {
@@ -1656,59 +1656,82 @@ TEST_F(SdfParserTest, DrakeJointLinksError) {
 
 // A joint with <drake:independent_frames/> must not have a <pose>, and the
 // element must be empty, with no attributes, and appear only once, since a
-// value, nested element, or attribute might seem to turn it off. Nor is it
-// allowed in a <drake:joint>, whose frames always come from <drake:parent> and
-// <drake:child>.
+// value, nested element, or attribute might seem to turn it off. The same
+// rules hold in a <drake:joint>, where the element changes nothing for now.
 TEST_F(SdfParserTest, IndependentFramesErrors) {
   const std::string kEmpty =
       "<drake:independent_frames> must be empty and have no attributes";
   const std::string kOnce =
       "<drake:independent_frames> may appear only once per joint";
-  const std::vector<std::pair<std::string, std::string>> cases{
-      {"<drake:independent_frames/><pose>1 2 3 0 0 0</pose>",
-       "Joint 'joint' cannot have a <pose> because its frames are the ones "
-       "named by <parent> and <child>"},
-      {"<drake:independent_frames>false</drake:independent_frames>", kEmpty},
-      {"<drake:independent_frames><drake:disabled/>"
-       "</drake:independent_frames>",
-       kEmpty},
-      {"<drake:independent_frames enabled='false'/>", kEmpty},
-      {"<drake:independent_frames/><drake:independent_frames/>", kOnce},
-      {"<drake:independent_frames/>"
-       "<drake:independent_frames enabled='false'/>",
-       kOnce}};
-  for (const auto& [elements, error] : cases) {
-    ParseTestString(fmt::format(R"""(
-<model name='m{}'>
+  // A <drake:joint>'s tags are spelled with this prefix.
+  for (const std::string prefix : {"", "drake:"}) {
+    const std::vector<std::pair<std::string, std::string>> cases{
+        {"<drake:independent_frames/><pose>1 2 3 0 0 0</pose>",
+         fmt::format("Joint 'joint' cannot have a <pose> because its frames "
+                     "are the ones named by <{0}parent> and <{0}child>",
+                     prefix)},
+        {"<drake:independent_frames>false</drake:independent_frames>", kEmpty},
+        {"<drake:independent_frames><drake:disabled/>"
+         "</drake:independent_frames>",
+         kEmpty},
+        {"<drake:independent_frames enabled='false'/>", kEmpty},
+        {"<drake:independent_frames/><drake:independent_frames/>", kOnce},
+        {"<drake:independent_frames/>"
+         "<drake:independent_frames enabled='false'/>",
+         kOnce}};
+    for (const auto& [elements, error] : cases) {
+      SCOPED_TRACE(fmt::format("{}joint {}", prefix, elements));
+      ParseTestString(
+          fmt::format(
+              R"""(
+<model name='m{0}'>
   <link name='P'/>
   <link name='C'/>
-  <joint name='joint' type='fixed'>
-    {}
-    <parent>P</parent>
-    <child>C</child>
-  </joint>
+  <{1}joint name='joint' type='{2}'>
+    {3}
+    <{1}parent>P</{1}parent>
+    <{1}child>C</{1}child>
+    {4}
+  </{1}joint>
 </model>)""",
-                                plant_.num_model_instances(), elements),
-                    "1.9");
-    EXPECT_THAT(TakeError(), MatchesRegex(".*" + error + ".*"));
+              plant_.num_model_instances(), prefix,
+              prefix.empty() ? "fixed" : "planar", elements,
+              prefix.empty() ? "" : "<drake:damping>0 0 0</drake:damping>"),
+          "1.9");
+      EXPECT_THAT(TakeError(), MatchesRegex(".*" + error + ".*"));
+      EXPECT_FALSE(plant_.HasJointNamed("joint"));
+    }
   }
-  ParseTestString(R"""(
-<model name='custom'>
-  <link name='a'/>
-  <link name='b'/>
-  <drake:joint type='planar' name='joint_name'>
-    <drake:independent_frames/>
-    <drake:parent>a</drake:parent>
-    <drake:child>b</drake:child>
-    <drake:damping>0.1 0.1 0.1</drake:damping>
-  </drake:joint>
-</model>)""");
-  EXPECT_THAT(TakeError(),
-              MatchesRegex(".*Unsupported SDFormat element in drake:joint: "
-                           "drake:independent_frames.*"));
 
   // What the failed models left in the plant must still be sound.
   plant_.Finalize();
+}
+
+// A <drake:joint> may contain <drake:independent_frames/>. For now, such a
+// joint always has independent frames, so the element changes nothing: Jp and
+// Jc are still the frames named by <drake:parent> and <drake:child>.
+TEST_F(SdfParserTest, DrakeJointIndependentFrames) {
+  ParseTestString(R"""(
+<model name='m'>
+  <link name='A'/>
+  <link name='B'/>
+  <frame name='Fa' attached_to='A'>
+    <pose>1 2 3 0 0 0</pose>
+  </frame>
+  <frame name='Fb' attached_to='B'>
+    <pose>4 5 6 0 0 0</pose>
+  </frame>
+  <drake:joint name='joint' type='planar'>
+    <drake:independent_frames/>
+    <drake:parent>Fa</drake:parent>
+    <drake:child>Fb</drake:child>
+    <drake:damping>0 0 0</drake:damping>
+  </drake:joint>
+</model>)""",
+                  "1.9");
+  const Joint<double>& joint = plant_.GetJointByName("joint");
+  EXPECT_EQ(&joint.frame_on_parent(), &plant_.GetFrameByName("Fa"));
+  EXPECT_EQ(&joint.frame_on_child(), &plant_.GetFrameByName("Fb"));
 }
 
 // Drake names the frames it adds for a joint j "j_parent" and "j_child", so an
@@ -1757,11 +1780,11 @@ TEST_F(SdfParserTest, JointFrameNameCollisionError) {
 }
 
 // With <drake:independent_frames/>, the frames named by a joint's <parent> and
-// <child> are the joint's frames Jp and Jc themselves, just as with
-// <drake:joint>. That's so for every joint type that doesn't build its axes
-// into its frames; see IndependentFramesUniversalJoint for one that does. The
-// links' poses don't assemble those frames, so at the zero configuration the
-// child link goes wherever the joint puts it rather than where its <pose> did.
+// <child> are the joint's frames Jp and Jc themselves. That's so for every
+// joint type that doesn't build its axes into its frames; see
+// IndependentFramesUniversalJoint for one that does. The links' poses don't
+// assemble those frames, so at the zero configuration the child link goes
+// wherever the joint puts it rather than where its <pose> did.
 TEST_F(SdfParserTest, IndependentFramesAreTheJointFrames) {
   const std::vector<std::string> joint_types{
       "fixed", "revolute", "continuous", "prismatic", "screw", "ball"};
@@ -2080,12 +2103,13 @@ TEST_F(SdfParserTest, IndependentFramesIgnorePreexistingModels) {
             &GetModelFrameByName(plant_, "bar"));
 }
 
-// Unlike a <drake:joint> (see FramesOfStaticModelWithoutLinks), a joint with
-// <drake:independent_frames/> must not name a frame of a model with no links,
-// whether the model's implicit frame or one of its explicit frames, in either
-// <parent> or <child>. Nor may it name a frame attached to one, here G and H,
-// or K through H, even though such a frame belongs to the model that declares
-// it, which has links: the joint's model, or at world scope, the world.
+// A <joint> with <drake:independent_frames/> must not name a frame of a model
+// with no links, whether the model's implicit frame or one of its explicit
+// frames, in either <parent> or <child>. Nor may it name a frame attached to
+// one, here G and H, or K through H, even though such a frame belongs to the
+// model that declares it, which has links: the joint's model, or at world
+// scope, the world. (Other references may; see
+// FramesOfStaticModelWithoutLinks.)
 TEST_F(SdfParserTest, IndependentFramesModelWithoutLinksError) {
   struct Case {
     std::string name;
