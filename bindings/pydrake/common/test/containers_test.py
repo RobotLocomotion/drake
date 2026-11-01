@@ -128,13 +128,6 @@ class TestNamedView(unittest.TestCase):
         with self.assertRaisesRegex(AttributeError, ".*('a', 'b').*"):
             view.c = 42
 
-    def test_Zero(self):
-        MyView = namedview("MyView", ["a", "b"])
-        view = MyView.Zero()
-        self.assertEqual(len(view), 2)
-        self.assertEqual(view.a, 0)
-        self.assertEqual(view.b, 0)
-
     def test_array_dtype(self):
         MyView = namedview("MyView", ["a", "b"])
         value = np.array([1.0, 2.0])
@@ -144,7 +137,7 @@ class TestNamedView(unittest.TestCase):
         np.testing.assert_equal(converted, value)
         self.assertFalse(np.shares_memory(converted, value))
         self.assertTrue(
-            is_same_array(value, np.asarray(view, dtype=value.dtype))
+            is_same_array(np.asarray(view, dtype=value.dtype), value)
         )
 
     def test_array_copy(self):
@@ -152,7 +145,7 @@ class TestNamedView(unittest.TestCase):
         value = np.array([1.0, 2.0, 3.0, 4.0])[::2]
         view = MyView(value)
         alias = np.array(view, copy=False)
-        self.assertTrue(is_same_array(value, alias))
+        self.assertTrue(is_same_array(alias, value))
         alias[0] = 5.0
         self.assertEqual(view.a, 5.0)
         for copied in (np.array(view), np.array(view, copy=True)):
@@ -171,16 +164,26 @@ class TestNamedView(unittest.TestCase):
         ):
             view = MyView(value)
             for copy in (False, True):
+                try:
+                    expected = np.array(value, dtype=dtype, copy=copy)
+                    expect_raise = False
+                except ValueError:
+                    expect_raise = True
                 with self.subTest(value=value, dtype=dtype, copy=copy):
-                    try:
-                        expected = np.array(value, dtype=dtype, copy=copy)
-                    except ValueError:
+                    if expect_raise:
                         with self.assertRaises(ValueError):
                             np.array(view, dtype=dtype, copy=copy)
                     else:
                         actual = np.array(view, dtype=dtype, copy=copy)
                         self.assertEqual(actual.dtype, expected.dtype)
                         np.testing.assert_equal(actual, expected)
+
+    def test_Zero(self):
+        MyView = namedview("MyView", ["a", "b"])
+        view = MyView.Zero()
+        self.assertEqual(len(view), 2)
+        self.assertEqual(view.a, 0)
+        self.assertEqual(view.b, 0)
 
     def test_name_sanitation(self):
         MyView = namedview(
