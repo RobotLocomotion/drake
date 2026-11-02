@@ -723,6 +723,8 @@ GTEST_TEST(ClosedTopologyTest, LoopJointIsRetargetedToTheShadowLink) {
   EXPECT_EQ(shadow_frame->source_frame().index(),
             loop_joint.frame_on_parent().index());
   EXPECT_TRUE(shadow_frame->is_ephemeral());
+  // It is fixed to the shadow link's frame, not to its source frame.
+  EXPECT_EQ(shadow_frame->GetParentFrameIfAny(), &shadow.link_frame());
 
   // The mobilizer modeling this joint moves the shadow link, not the coupler.
   // The shadow is reached through the rocker, so this mobilizer is reversed

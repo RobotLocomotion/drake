@@ -775,7 +775,8 @@ const Frame<double>* FindFrame(const SDFormatDiagnostic& diagnostic,
   // TODO(#25129) Allow those frames once Drake attaches the model's frame to a
   // canonical link that comes from an included URDF or MJCF model.
   auto check_frame = [&](const Frame<double>& frame) -> const Frame<double>* {
-    for (const Frame<double>* f = &frame; f != nullptr;) {
+    for (const Frame<double>* f = &frame; f != nullptr;
+         f = f->GetParentFrameIfAny()) {
       if (scope.misplaced_model_frames->contains(f->index())) {
         diagnostic.Error(
             node,
@@ -789,9 +790,6 @@ const Frame<double>* FindFrame(const SDFormatDiagnostic& diagnostic,
                 plant.GetModelInstanceName(f->model_instance())));
         return nullptr;
       }
-      const auto* offset_frame =
-          dynamic_cast<const FixedOffsetFrame<double>*>(f);
-      f = offset_frame != nullptr ? &offset_frame->parent_frame() : nullptr;
     }
     return &frame;
   };
@@ -857,7 +855,8 @@ const Frame<double>* FindIndependentJointFrame(
   if (frame == nullptr || &frame->body() != &plant.world_body()) {
     return frame;
   }
-  for (const Frame<double>* f = frame; f != nullptr;) {
+  for (const Frame<double>* f = frame; f != nullptr;
+       f = f->GetParentFrameIfAny()) {
     if (plant.GetBodyIndices(f->model_instance()).empty()) {
       diagnostic.Error(
           node,
@@ -870,8 +869,6 @@ const Frame<double>* FindIndependentJointFrame(
                       plant.GetModelInstanceName(f->model_instance())));
       return nullptr;
     }
-    const auto* offset_frame = dynamic_cast<const FixedOffsetFrame<double>*>(f);
-    f = offset_frame != nullptr ? &offset_frame->parent_frame() : nullptr;
   }
   return frame;
 }
