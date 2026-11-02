@@ -232,6 +232,26 @@ class ProximityEngineTests : public ::testing::Test {
   unordered_map<GeometryId, RigidTransform<double>> X_WGs_;
 };
 
+// A half space's AABB spans +/-max() in its unbounded directions, so the
+// AABB's *extent* overflows to infinity. fcl's topdown rebalancing sorts and
+// merges leaves by those AABBs, and the resulting comparisons are not a strict
+// weak ordering, so std::nth_element reads out of bounds -- a segfault, not a
+// wrong answer. Whether the topdown path is reached depends on the tree's
+// shape, so this is order-sensitive and looks intermittent. Enough anchored
+// geometry in a scene containing a half space is sufficient.
+TEST_F(ProximityEngineTests, HalfSpaceDoesNotBreakTreeRebalancing) {
+  const Sphere sphere{0.5};
+  const int kCount = 100;  // Comfortably past fcl's bottom-up threshold of 16.
+
+  AddAnchored(HalfSpace(), V3{0, 0, 0});
+  for (int i = 0; i < kCount; ++i) {
+    AddAnchored(sphere, V3{2.0 * i, 0, 1});
+  }
+  EXPECT_EQ(engine_.num_anchored(), kCount + 1);
+  // The tree is still usable.
+  DRAKE_EXPECT_NO_THROW(engine_.ComputePointPairPenetration(X_WGs_));
+}
+
 // Test simple addition of dynamic and anchored geometry. Confirms that the
 // added geometries are reflected in the bookkeeping.
 TEST_F(ProximityEngineTests, AddGeometry) {

@@ -1217,6 +1217,31 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     object->computeAABB();
   }
 
+  // fcl's topdown rebalancing sorts and merges leaves by their AABBs. A half
+  // space's AABB spans +/-max() in the unbounded directions, so its *extent*
+  // overflows to infinity, and the resulting comparisons are not a strict weak
+  // ordering; std::nth_element then reads out of bounds. Whether it is reached
+  // depends on the tree's shape, hence on insertion order, which makes it look
+  // intermittent.
+  //
+  // Once such an object is in a tree, pin that tree to incremental rebalancing
+  // so the topdown path is never chosen for it. The tree stays less balanced
+  // than it might, but a tree containing an infinite AABB was never going to
+  // be well balanced.
+  //
+  // TODO(SeanCurtis-TRI): This belongs in fcl, or in how we bound half spaces.
+  // ~100 anchored geometries in a scene containing a half space is enough to
+  // hit it.
+  static void DisableTopdownRebalanceIfUnbounded(
+      const CollisionObjectd& object,
+      fcl::DynamicAABBTreeCollisionManager<double>* tree) {
+    const fcl::AABB<double>& aabb = object.getAABB();
+    if (!std::isfinite(aabb.width()) || !std::isfinite(aabb.height()) ||
+        !std::isfinite(aabb.depth())) {
+      tree->max_tree_nonbalanced_level = std::numeric_limits<int>::max();
+    }
+  }
+
   void AddGeometry(
       const Shape& shape, const RigidTransformd& X_WG, GeometryId id,
       const ProximityProperties& props, bool is_dynamic,
@@ -1235,6 +1260,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     EncodedData encoding(id, is_dynamic);
     encoding.write_to(data.fcl_object.get());
 
+    DisableTopdownRebalanceIfUnbounded(*data.fcl_object, tree);
     tree->registerObject(data.fcl_object.get());
     tree->update();
     (*objects)[id] = std::move(data.fcl_object);
