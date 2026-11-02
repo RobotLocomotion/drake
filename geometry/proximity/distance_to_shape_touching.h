@@ -90,26 +90,31 @@ std::pair<double, double> ProjectedMinMax(const fcl::Boxd& box_A,
                                           const math::RigidTransformd& X_WA,
                                           const Eigen::Vector3d& unit_vector_W);
 
-/* Returns the unit vector nhat_BA_W--out of box_B into box_A expressed in
- World frame--parallel to a vector in `v_Ws` that can make a separating axis
- between two touching boxes. If no vector in `v_Ws` can make it, returns
+/* Returns the unit vector nhat_BA_A--out of box_B into box_A expressed in
+ box_A's frame--parallel to a vector in `v_As` that can make a separating axis
+ between two touching boxes. If no vector in `v_As` can make it, returns
  std::nullopt.
 
  See https://en.wikipedia.org/wiki/Hyperplane_separation_theorem for the
  definition of separating axis.
 
- @note If there are multiple vectors in `v_Ws` that can make a separating
+ @param box_A  The first box expressed in its frame A.
+ @param box_B  The second box expressed in its frame B.
+ @param X_AB   The pose of box_B in box_A's frame.
+ @param v_As   The candidate vectors, expressed in box_A's frame.
+
+ @note If there are multiple vectors in `v_As` that can make a separating
        axis, we use the first one in the list.
 
- @note A vector in `v_Ws` doesn't have to be a unit vector. It can even be a
+ @note A vector in `v_As` doesn't have to be a unit vector. It can even be a
        zero (or near-zero) vector, which will be ignored.
 
  @pre The signed distance between the two boxes is zero (or within an
       internal tolerance), i.e., the two boxes barely touch.  */
 std::optional<Eigen::Vector3d> MaybeMakeSeparatingVector(
     const fcl::Boxd& box_A, const fcl::Boxd& box_B,
-    const math::RigidTransformd& X_WA, const math::RigidTransformd& X_WB,
-    const std::vector<Eigen::Vector3d>& v_Ws);
+    const math::RigidTransformd& X_AB,
+    const std::vector<Eigen::Vector3d>& v_As);
 
 /* Computes the signed-distance gradient between two touching boxes.
 
@@ -125,9 +130,11 @@ std::optional<Eigen::Vector3d> MaybeMakeSeparatingVector(
 
  @note In some cases, the gradient is not unique, and we choose arbitrarily.
 
- @pre The signed distance between the two boxes is zero (or within an
-      internal tolerance), i.e., the two witness points are at the same
-      location (or within an internal tolerance) in World frame. */
+ @note The boxes are intended to be touching, i.e., their signed distance is
+       zero (within an internal tolerance). The witness points need not
+       co-locate in World frame; numerical error can introduce discrepancies.
+       If the boxes penetrate beyond the tolerance, the result is the direction
+       of the minimum translation that separates them. */
 Eigen::Vector3d BoxBoxGradient(const fcl::Boxd& box_A, const fcl::Boxd& box_B,
                                const math::RigidTransformd& X_WA,
                                const math::RigidTransformd& X_WB,
