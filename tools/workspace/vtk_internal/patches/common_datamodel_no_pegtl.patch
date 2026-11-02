@@ -14,10 +14,10 @@ Reasoning for not upstreaming this patch: Drake-specific build option.
 
 --- Common/DataModel/vtk.module
 +++ Common/DataModel/vtk.module
-@@ -26,7 +26,6 @@ DEPENDS
- PRIVATE_DEPENDS
+@@ -27,7 +27,6 @@
    VTK::CommonMisc
    VTK::CommonSystem
+   VTK::nanoflann
 -  VTK::pegtl
    VTK::pugixml
    VTK::vtksys
