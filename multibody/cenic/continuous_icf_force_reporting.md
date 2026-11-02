@@ -107,7 +107,7 @@ context still holds the solve's start state and its kinematics caches are
 valid. It:
 
 1. Re-evaluates the **full** (unreduced) model at `v₁` with
-   `IcfModel::CalcData` so constraints touching locked bodies still report
+   `IcfModel::CalcAllData` so constraints touching locked bodies still report
    their impulses. Full-model `γ` equals reduced-model `γ` at the same `v`.
 2. Builds the applied `MultibodyForces`: force elements (gravity, springs,
    damping) and the `applied_*` input ports at the start state; actuation as

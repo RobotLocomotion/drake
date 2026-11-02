@@ -892,6 +892,123 @@ const ContactResults<double>& EvalContactResults(
       context);
 }
 
+/* Checks that the sampled output ports report the same contact forces whether
+or not the ICF problem is partitioned into islands. Two balls resting on the
+table, far from each other, are two independent islands; each one's contact
+force must be reported (here, via the generalized contact forces ports, contact
+results, reaction forces and accelerations). */
+GTEST_TEST(CenicIntegrator, SampledPortsWithIslands) {
+  struct Result {
+    std::vector<VectorXd> tau_contact;
+    std::vector<Eigen::Vector3d> contact_force;
+    VectorXd vdot;
+    std::vector<SpatialForce<double>> reactions;
+    double weight{};
+  };
+  auto simulate = [](bool use_islands) {
+    DiagramBuilder<double> builder;
+    auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.0);
+    Parser parser(&plant);
+    parser.SetAutoRenaming(true);
+    parser.AddModelsFromString(kBallOnTableMjcf, "xml");
+    // A second ball (and no second table), to share the first model's floor.
+    parser.AddModelsFromString(R"""(
+      <?xml version="1.0"?>
+      <mujoco model="ball_2">
+        <worldbody>
+          <body name="link1" pos="0 0 1.0">
+            <joint name="joint1" type="free"/>
+            <geom type="sphere" size="0.1" pos="0 0 0"/>
+          </body>
+        </worldbody>
+      </mujoco>)""",
+                               "xml");
+    plant.SetUseSampledOutputPorts(true);
+    plant.Finalize();
+    auto diagram = builder.Build();
+
+    Simulator<double> simulator(*diagram);
+    Context<double>& plant_context =
+        plant.GetMyMutableContextFromRoot(&simulator.get_mutable_context());
+    // Rest the balls on the table, one meter apart.
+    const double radius = 0.1;
+    VectorXd q = plant.GetPositions(plant_context);
+    DRAKE_DEMAND(q.size() == 14);
+    q[6] = radius;
+    q[7 + 4] = 1.0;  // Second ball's x.
+    q[7 + 6] = radius;
+    plant.SetPositions(&plant_context, q);
+
+    auto& integrator = simulator.reset_integrator<CenicIntegrator<double>>();
+    integrator.set_maximum_step_size(0.01);
+    integrator.set_fixed_step_mode(true);
+    IcfSolverParameters params = integrator.get_solver_parameters();
+    params.use_islands = use_islands;
+    integrator.SetSolverParameters(params);
+    simulator.AdvanceTo(0.5);
+
+    Result result;
+    for (const char* name : {"robot", "ball_2"}) {
+      result.tau_contact.push_back(
+          plant
+              .get_generalized_contact_forces_output_port(
+                  plant.GetModelInstanceByName(name))
+              .Eval(plant_context));
+    }
+    const ContactResults<double>& contact_results =
+        EvalContactResults(plant, plant_context);
+    EXPECT_EQ(contact_results.num_point_pair_contacts(), 2);
+    for (int i = 0; i < contact_results.num_point_pair_contacts(); ++i) {
+      const PointPairContactInfo<double>& info =
+          contact_results.point_pair_contact_info(i);
+      // The force on the ball: contact_force() is the force on body B.
+      const bool ball_is_b =
+          plant.get_body(info.bodyB_index()).name() == "link1";
+      result.contact_force.push_back((ball_is_b ? 1.0 : -1.0) *
+                                     info.contact_force());
+    }
+    result.vdot =
+        plant.get_generalized_acceleration_output_port().Eval(plant_context);
+    result.reactions = EvalReactionForces(plant, plant_context);
+    result.weight =
+        plant.GetBodyByName("link1", plant.GetModelInstanceByName("robot"))
+            .get_mass(plant_context) *
+        UniformGravityFieldElement<double>::kDefaultStrength;
+    return result;
+  };
+
+  const Result with_islands = simulate(true);
+  const Result without_islands = simulate(false);
+  const double weight = with_islands.weight;
+  const double tolerance = 0.05 * weight;
+  const VectorXd expected_tau_contact =
+      (VectorXd(6) << 0, 0, 0, 0, 0, weight).finished();
+  ASSERT_EQ(with_islands.tau_contact.size(), 2);
+  for (int i = 0; i < 2; ++i) {
+    // Each ball's contact force balances its weight, in both modes, and the
+    // modes agree up to the solver's convergence tolerance.
+    EXPECT_TRUE(CompareMatrices(with_islands.tau_contact[i],
+                                expected_tau_contact, tolerance));
+    EXPECT_TRUE(CompareMatrices(with_islands.tau_contact[i],
+                                without_islands.tau_contact[i], 1e-3 * weight));
+  }
+  ASSERT_EQ(with_islands.contact_force.size(), 2);
+  for (int i = 0; i < 2; ++i) {
+    EXPECT_TRUE(CompareMatrices(with_islands.contact_force[i],
+                                Eigen::Vector3d(0, 0, weight), tolerance));
+    EXPECT_TRUE(CompareMatrices(with_islands.contact_force[i],
+                                without_islands.contact_force[i],
+                                1e-3 * weight));
+  }
+  EXPECT_TRUE(CompareMatrices(with_islands.vdot, without_islands.vdot, 1e-2));
+  ASSERT_EQ(with_islands.reactions.size(), without_islands.reactions.size());
+  for (int i = 0; i < std::ssize(with_islands.reactions); ++i) {
+    EXPECT_TRUE(CompareMatrices(with_islands.reactions[i].get_coeffs(),
+                                without_islands.reactions[i].get_coeffs(),
+                                1e-3 * weight));
+  }
+}
+
 /* Checks the sampled dynamics output ports of a continuous plant integrated by
 CENIC, for a system without contact or constraints. */
 TEST_P(DoublePendulum, SampledOutputPorts) {

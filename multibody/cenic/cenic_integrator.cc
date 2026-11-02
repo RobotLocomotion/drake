@@ -569,7 +569,7 @@ void CenicIntegrator<T>::RecordStepMemory(const IcfModel<T>& model,
   // constraint evaluation, much cheaper than a solve.
   IcfData<T>& data = scratch_.report_data;
   model.ResizeData(&data);
-  model.CalcData(v, &data);
+  model.CalcAllData(v, &data);
 
   // Assemble the forces applied to the plant during this step:
   //  - force elements (gravity, springs, dampers, etc.),
@@ -659,16 +659,24 @@ void CenicIntegrator<T>::RecordStepMemory(const IcfModel<T>& model,
 
   // Joint limits and couplers act in generalized coordinates. Each pool's
   // AccumulateGradient() adds ∇ℓ = -Jᵀγ, so the generalized force is -∇ℓ/δt.
+  // The pools accumulate per island, so visit every island's constraints.
+  const int num_islands = model.partition().num_islands();
   VectorX<T>& g = scratch_.generalized_forces;  // Done with tau_u.
   g.setZero();
-  model.limit_constraints_pool().AccumulateGradient(data, &g);
-  model.coupler_constraints_pool().AccumulateGradient(data, &g);
+  for (int i = 0; i < num_islands; ++i) {
+    model.limit_constraints_pool().AccumulateGradient(
+        data, model.island_limits().items(i), &g);
+    model.coupler_constraints_pool().AccumulateGradient(
+        data, model.island_couplers().items(i), &g);
+  }
   tau -= g / dt;
 
   // Generalized contact forces, for the generalized_contact_forces ports.
   VectorX<T>& tau_contact = scratch_.tau_contact;
   g.setZero();
-  patches.AccumulateGradient(data, &g);
+  for (int i = 0; i < num_islands; ++i) {
+    patches.AccumulateGradient(data, model.island_patches().items(i), &g);
+  }
   tau_contact = -g / dt;
 
   // The step's generalized accelerations.
