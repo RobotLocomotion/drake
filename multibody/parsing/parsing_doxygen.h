@@ -1334,21 +1334,21 @@ The joint still connects the links to which SDFormat attaches the named frames;
 the element changes only where Jp and Jc are on them. Since Jp and Jc are
 located independently, the links' poses don't assemble them: at the zero
 configuration a child link goes wherever the joint puts it, and a closed
-kinematic loop can be described that is not assembled as written (see
-MultibodyPlant::SetEnableLoopTopology(), currently for internal use only).
+kinematic loop can be described that is not assembled as written.
 
 A joint with `<drake:independent_frames/>` must not have a `<pose>`, so J
 coincides with the frame named by `<child>`. Except for a universal joint
 (below), that frame is Jc: the joint's axis is resolved into Jc and has the same
 components in Jp. An `expressed_in` frame only says how to read the `<xyz>`
 components; they are converted using the poses as written in the file. A
-universal joint builds its axes into its frames, so Drake adds frames named
-after the joint, `{name}_parent` and `{name}_child`, fixed to the named ones and
-rotated to put `<axis>` along x and `<axis2>` along y.
+universal joint builds its axes into its frames, so Drake adds new frames to
+serve as Jp and Jc, fixed to the named ones and rotated to put `<axis>` along x
+and `<axis2>` along y.
 
 The joint, and any frames Drake adds for it, belong to the model instance of the
 frame named by `<child>`, which need not be the model declaring the joint: for
-`<child>nested::F</child>` they belong to `nested`.
+`<child>arm::F</child>`, where `arm` is a model nested in the one declaring the
+joint, they belong to `arm`.
 
 The element may appear only once per joint and must be empty, with no
 attributes. Its presence alone has this effect.

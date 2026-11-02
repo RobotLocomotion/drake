@@ -699,9 +699,11 @@ struct FrameNameScope {
 // Returns the frame that `frame_name`, given by the <`element_name`> child of
 // `node`, refers to from within the scope of `model_instance`. That is either
 // "world" or the name of a link, frame, or model (meaning its __model__ frame)
-// in that scope, possibly scoped into a nested model. It must not name a joint
-// (see `scope`). Reports an error and returns nullptr if there is no such
-// frame.
+// in that scope, possibly scoped into a nested model. Returns nullptr only
+// after reporting an error: if the name is empty or names a joint (see
+// `scope`), if there is no such frame, or if the frame, or one it is attached
+// to, is a model's __model__ frame that Drake fixed to the world rather than
+// to the model's canonical link.
 const Frame<double>* FindFrame(const SDFormatDiagnostic& diagnostic,
                                const sdf::ElementPtr node,
                                const char* element_name,
@@ -833,8 +835,8 @@ const Frame<double>* FindFrame(const SDFormatDiagnostic& diagnostic,
 
 // Returns the frame that `frame_name`, given by the <`element_name`> child of
 // a <joint> with <drake:independent_frames/>, refers to; see FindFrame().
-// Reports an error and returns nullptr if there is no such frame, or if it
-// can't be a joint frame.
+// Returns nullptr only after reporting an error: wherever FindFrame() does, or
+// if the frame can't be a joint frame (see below).
 //
 // Such a joint can't name a frame of a model with no links, such as a static
 // model with only frames, or a frame attached to one. SDFormat attaches those
@@ -851,6 +853,7 @@ const Frame<double>* FindIndependentJointFrame(
   const sdf::ElementPtr node = joint_spec.Element();
   const Frame<double>* frame = FindFrame(
       diagnostic, node, element_name, frame_name, scope, model_instance, plant);
+  // If FindFrame() returned nullptr, it has already reported why.
   if (frame == nullptr || &frame->body() != &plant.world_body()) {
     return frame;
   }
@@ -873,9 +876,9 @@ const Frame<double>* FindIndependentJointFrame(
   return frame;
 }
 
-// A joint whose frames Jp and Jc are the ones named by its `parent_tag` and
-// `child_tag` elements has nothing left for a <pose> to locate. Reports an
-// error and returns false if the joint `node` has a <pose> anyway.
+// Returns true if the joint `node` has no <pose>. Otherwise reports an error
+// saying that its frames are the ones named by its <`parent_tag`> and
+// <`child_tag`>, and returns false.
 bool CheckJointHasNoPose(const SDFormatDiagnostic& diagnostic,
                          const sdf::ElementPtr node,
                          const std::string& joint_name, const char* parent_tag,
