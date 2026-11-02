@@ -18,7 +18,7 @@ import urllib.parse
 
 from python import runfiles
 
-EXPECTED_BAZELISK = "1.29.0"
+EXPECTED_BAZELISK = "1.30.0"
 EXPECTED_KCOV = "43+dfsg-1"
 
 
