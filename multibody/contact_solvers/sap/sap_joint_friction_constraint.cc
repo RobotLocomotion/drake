@@ -22,7 +22,8 @@ SapJointFrictionConstraint<T>::SapJointFrictionConstraint(int clique,
     : SapConstraint<T>(CalcConstraintJacobian(clique, clique_dof, clique_nv),
                        {}),
       parameters_(std::move(parameters)),
-      clique_dof_(clique_dof) {
+      clique_dof_(clique_dof),
+      clique_nv_(clique_nv) {
   DRAKE_DEMAND(parameters_.tau_c > 0.0);
   DRAKE_DEMAND(parameters_.sigma > 0.0);
 }
@@ -122,9 +123,8 @@ SapJointFrictionConstraint<T>::DoToDouble() const {
       ExtractDoubleOrThrow(parameters_.tau_c), parameters_.sigma};
   // N.B. Joint friction constraints always act on a single clique.
   const int clique = this->first_clique();
-  const int clique_nv = this->num_velocities(0);
   return std::make_unique<SapJointFrictionConstraint<double>>(
-      clique, clique_dof(), clique_nv, std::move(p_to_double));
+      clique, clique_dof(), clique_nv_, std::move(p_to_double));
 }
 
 }  // namespace internal

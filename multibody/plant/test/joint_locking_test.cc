@@ -8,8 +8,10 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/geometry/proximity_properties.h"
 #include "drake/geometry/query_results/penetration_as_point_pair.h"
+#include "drake/math/autodiff.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/plant/multibody_plant_config_functions.h"
@@ -720,6 +722,47 @@ GTEST_TEST(JointLockingTest, WorldContactDoesNotCrash) {
   }
 
   EXPECT_NO_THROW(simulator.AdvanceTo(kTimestep));
+}
+
+// With a locked DOF in a tree, the discrete update of a MultibodyPlant on
+// AutoDiffXd gives the same next state as on double. The elbow moves into its
+// upper limit with the shoulder locked, so the limit constraint acts on the
+// part of the tree that is not locked.
+GTEST_TEST(JointLockingTest, AutoDiffXdWithLimitInPartlyLockedTree) {
+  MultibodyPlant<double> plant(kTimestep);
+  plant.mutable_gravity_field().set_gravity_vector(Vector3d::Zero());
+  const RigidBody<double>& link1 = plant.AddRigidBody(
+      "link1", SpatialInertia<double>::SolidCubeWithMass(1.0, 0.1));
+  const RigidBody<double>& link2 = plant.AddRigidBody(
+      "link2", SpatialInertia<double>::SolidCubeWithMass(1.0, 0.1));
+  const RevoluteJoint<double>& shoulder = plant.AddJoint<RevoluteJoint>(
+      "shoulder", plant.world_body(), std::nullopt, link1, std::nullopt,
+      Vector3d::UnitZ());
+  const RevoluteJoint<double>& elbow = plant.AddJoint<RevoluteJoint>(
+      "elbow", link1, RigidTransformd(Vector3d(0.5, 0.0, 0.0)), link2,
+      std::nullopt, Vector3d::UnitZ(), /* pos_lower_limit = */ -0.1,
+      /* pos_upper_limit = */ 0.1, /* damping = */ 0.0);
+  plant.Finalize();
+
+  auto context = plant.CreateDefaultContext();
+  shoulder.Lock(context.get());
+  elbow.set_angle(context.get(), 0.1);
+  elbow.set_angular_rate(context.get(), 1.0);
+
+  std::unique_ptr<MultibodyPlant<AutoDiffXd>> plant_ad =
+      systems::System<double>::ToAutoDiffXd(plant);
+  auto context_ad = plant_ad->CreateDefaultContext();
+  context_ad->SetTimeStateAndParametersFrom(*context);
+
+  plant.ExecuteForcedEvents(context.get(), /* publish = */ false);
+  plant_ad->ExecuteForcedEvents(context_ad.get(), /* publish = */ false);
+
+  const Eigen::VectorXd x_next = plant.GetPositionsAndVelocities(*context);
+  EXPECT_TRUE(CompareMatrices(
+      math::ExtractValue(plant_ad->GetPositionsAndVelocities(*context_ad)),
+      x_next, 1.0e-12 * x_next.norm()));
+  // The limit reduces the elbow rate.
+  EXPECT_LT(elbow.get_angular_rate(*context), 0.5);
 }
 
 }  // namespace

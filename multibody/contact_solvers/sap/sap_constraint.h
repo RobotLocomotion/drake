@@ -257,7 +257,11 @@ class SapConstraint {
    deep-copy of `this` jacobian. When T = AutoDiffXd this method returns a copy
    where gradients were discarded. */
   std::unique_ptr<SapConstraint<double>> ToDouble() const {
-    return DoToDouble();
+    std::unique_ptr<SapConstraint<double>> result = DoToDouble();
+    // TODO(#25158): Overwriting J_ here is a workaround for issue 25158. Remove
+    // it when the issue is resolved.
+    result->J_ = J_.ToDouble();
+    return result;
   }
 
   /* Creates a "reduced" clone of this constraint by removing known DoFs from
@@ -343,6 +347,11 @@ class SapConstraint {
   // @}
 
  private:
+  // Lets ToDouble() set J_ of the SapConstraint<double> it returns.
+  // TODO(#25158): Remove along with the workaround in ToDouble().
+  template <typename>
+  friend class SapConstraint;
+
   SapConstraintJacobian<T> J_;
   std::vector<int> objects_;
 };
