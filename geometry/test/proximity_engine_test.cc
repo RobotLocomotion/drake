@@ -232,6 +232,83 @@ class ProximityEngineTests : public ::testing::Test {
   unordered_map<GeometryId, RigidTransform<double>> X_WGs_;
 };
 
+// Confirms that updating a tree with a half space does not lead to a segfault
+// (see DisableTopdownRebalanceIfUnbounded() docs in proximity_engine.cc for
+// more details).
+//
+// The test is hard to write deterministically; but empirically, adding a large
+// number of anchored geometries after a half space seems to be enough to
+// trigger the issue. Until resolved upstream in FCL, it is possible that FCL
+// changes could cause this test to pass even without actually fixing the
+// problem.
+//
+// Copies and scalar conversions should likewise be segfault free.
+TEST_F(ProximityEngineTests, HalfSpaceDoesNotBreakTreeRebalancing) {
+  const Sphere sphere{0.5};
+  const int kCount = 100;  // Comfortably past fcl's bottom-up threshold of 16.
+
+  AddAnchored(HalfSpace(), V3{0, 0, 0});
+  for (int i = 0; i < kCount; ++i) {
+    AddAnchored(sphere, V3{2.0 * i, 0, 1});
+  }
+  EXPECT_EQ(engine_.num_anchored(), kCount + 1);
+
+  // Anchored-anchored pairs are never reported, so we need a dynamic geometry
+  // to query the anchored tree. This one penetrates the half space and the
+  // first anchored sphere (and nothing else).
+  AddDynamic(sphere, V3{0, 0, 0.25});
+  engine_.UpdateWorldPoses(X_WGs_);
+
+  // The tree is still usable.
+  EXPECT_EQ(engine_.ComputePointPairPenetration(X_WGs_).size(), 2);
+
+  // A copy's rebuilt tree has a different shape than its source, so it may not
+  // reach the topdown path on its own. Growing it as above will.
+  ProximityEngine<double> copy(engine_);
+  auto ad_engine = engine_.ToScalarType<AutoDiffXd>();
+  for (int i = 0; i < kCount; ++i) {
+    const GeometryId id = GeometryId::get_new_id();
+    const RigidTransformd X_WG(V3{2.0 * i, 5, 1});
+    X_WGs_.insert({id, X_WG});
+    copy.AddAnchoredGeometry(sphere, X_WG, id, {});
+    ad_engine->AddAnchoredGeometry(sphere, X_WG, id, {});
+  }
+  EXPECT_EQ(copy.ComputePointPairPenetration(X_WGs_).size(), 2);
+
+  unordered_map<GeometryId, RigidTransform<AutoDiffXd>> X_WGs_ad;
+  for (const auto& [id, X_WG] : X_WGs_) {
+    X_WGs_ad[id] = X_WG.cast<AutoDiffXd>();
+  }
+  EXPECT_EQ(ad_engine->ComputePointPairPenetration(X_WGs_ad).size(), 2);
+}
+
+// Deactivating a dynamic half space moves it into a separate tree; that tree
+// must likewise be protected.
+TEST_F(ProximityEngineTests, InactiveHalfSpaceDoesNotBreakTreeRebalancing) {
+  const Sphere sphere{0.5};
+  const int kCount = 100;
+
+  const GeometryId half_space_id = AddDynamic(HalfSpace(), V3{0, 0, 0});
+  std::vector<GeometryId> sphere_ids;
+  for (int i = 0; i < kCount; ++i) {
+    sphere_ids.push_back(AddDynamic(sphere, V3{2.0 * i, 0, 1}));
+  }
+
+  // Populate the inactive tree in the same order (and with the same updates)
+  // that crashes an unprotected anchored tree. Each pose change marks the
+  // inactive tree stale, so the subsequent query updates it.
+  Deactivate({half_space_id});
+  for (const GeometryId id : sphere_ids) {
+    Deactivate({id});
+    engine_.UpdateWorldPoses(X_WGs_);
+    ASSERT_TRUE(Tester::is_inactive_dynamic_stale(engine_));
+    engine_.ComputeSignedDistanceToPoint(V3{0, 0, 5}, X_WGs_);
+  }
+  // The half space and every sphere are reported.
+  EXPECT_EQ(engine_.ComputeSignedDistanceToPoint(V3{0, 0, 5}, X_WGs_).size(),
+            kCount + 1);
+}
+
 // Test simple addition of dynamic and anchored geometry. Confirms that the
 // added geometries are reflected in the bookkeeping.
 TEST_F(ProximityEngineTests, AddGeometry) {

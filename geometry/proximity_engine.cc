@@ -104,12 +104,15 @@ void CopyFclObjectsOrThrow(
 
 // Builds into the target AABB tree manager based on the reference "other"
 // manager and the lookup table from other's collision objects to the target's
-// collision objects (the map populated by CopyFclObjectsOrThrow()).
+// collision objects (the map populated by CopyFclObjectsOrThrow()). The
+// reference's rebalancing limit is carried over (see
+// DisableTopdownRebalanceIfUnbounded()).
 void BuildTreeFromReference(
     const fcl::DynamicAABBTreeCollisionManager<double>& other,
     const std::unordered_map<const CollisionObjectd*, CollisionObjectd*>&
         copy_map,
     fcl::DynamicAABBTreeCollisionManager<double>* target) {
+  target->max_tree_nonbalanced_level = other.max_tree_nonbalanced_level;
   std::vector<CollisionObjectd*> other_objects;
   other.getObjects(other_objects);
   for (auto* other_object : other_objects) {
@@ -322,6 +325,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
         // has an up-to-date AABB.
         object->computeAABB();
       }
+      DisableTopdownRebalanceIfUnbounded(*object, &inactive_dynamic_tree_);
       inactive_dynamic_tree_.registerObject(object);
     }
     for (const GeometryId id : change.activated) {
@@ -336,6 +340,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
         // AABB.
         object->computeAABB();
       }
+      DisableTopdownRebalanceIfUnbounded(*object, &dynamic_tree_);
       dynamic_tree_.registerObject(object);
     }
   }
@@ -1217,6 +1222,24 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     object->computeAABB();
   }
 
+  // FCL's rebalancing algorithm dies when a half space is in the tree (the
+  // infinite extents confuses it). We can patch around it by allowing the tree
+  // to be arbitrarily unbalanced (thus the rebalancing algorithm won't get
+  // triggered).
+  //
+  // TODO(SeanCurtis-TRI): This would better be addressed in FCL; FCL should
+  // rebalance without dying on half spaces. We should confirm Coal's behavior
+  // in this regard as well.
+  static void DisableTopdownRebalanceIfUnbounded(
+      const CollisionObjectd& object,
+      fcl::DynamicAABBTreeCollisionManager<double>* tree) {
+    const fcl::AABB<double>& aabb = object.getAABB();
+    if (!std::isfinite(aabb.width()) || !std::isfinite(aabb.height()) ||
+        !std::isfinite(aabb.depth())) {
+      tree->max_tree_nonbalanced_level = std::numeric_limits<int>::max();
+    }
+  }
+
   void AddGeometry(
       const Shape& shape, const RigidTransformd& X_WG, GeometryId id,
       const ProximityProperties& props, bool is_dynamic,
@@ -1235,6 +1258,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     EncodedData encoding(id, is_dynamic);
     encoding.write_to(data.fcl_object.get());
 
+    DisableTopdownRebalanceIfUnbounded(*data.fcl_object, tree);
     tree->registerObject(data.fcl_object.get());
     tree->update();
     (*objects)[id] = std::move(data.fcl_object);
