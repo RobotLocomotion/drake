@@ -1998,6 +1998,8 @@ TEST_F(SdfParserTest, IndependentFramesUniversalJoint) {
   ASSERT_NE(frame_Jc, nullptr);
   EXPECT_EQ(&frame_Jp->parent_frame(), &frame_Fp);
   EXPECT_EQ(&frame_Jc->parent_frame(), &frame_Fc);
+  EXPECT_EQ(frame_Jp->name(), "joint_parent");
+  EXPECT_EQ(frame_Jc->name(), "joint_child");
 
   // The columns of R_FJ are <axis>, <axis2>, and their cross product, as
   // expressed in either named frame F.
