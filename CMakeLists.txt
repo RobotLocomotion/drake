@@ -96,7 +96,7 @@ if(APPLE)
 endif()
 
 # This version number should match bazel_compatibility in MODULE.bazel.
-set(MINIMUM_BAZEL_VERSION 8.6.0)
+set(MINIMUM_BAZEL_VERSION 8.7.0)
 find_package(Bazel ${MINIMUM_BAZEL_VERSION} MODULE)
 if(NOT Bazel_FOUND)
   set(Bazel_EXECUTABLE "${PROJECT_SOURCE_DIR}/third_party/com_github_bazelbuild_bazelisk/bazelisk.py")
