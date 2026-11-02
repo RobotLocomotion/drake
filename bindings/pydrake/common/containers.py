@@ -132,9 +132,11 @@ class NamedViewBase:
     def __iter__(self):
         return iter(self._value)
 
-    def __array__(self):
+    def __array__(self, dtype=None, copy=None):
         """Proxy for use with NumPy."""
-        return np.asarray(self._value)
+        if copy is None:
+            return np.asarray(self._value, dtype=dtype)
+        return np.array(self._value, dtype=dtype, copy=copy)
 
     def _str_like(self, *, per_field_op):
         """Provides human-readable breakout of each field and value."""
