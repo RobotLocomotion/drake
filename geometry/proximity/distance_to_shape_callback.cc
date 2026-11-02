@@ -84,12 +84,7 @@ void CalcDistanceFallback<double>(const fcl::CollisionObjectd& a,
   pair_data->p_BCb = X_WB.inverse() * p_WCb;
 
   // Setting the normal.
-  // TODO(DamrongGuoy): We should set the tolerance through SceneGraph for
-  //  determining whether the two geometries are touching or not. For now, we
-  //  use this number.
-  const double kEps = 1e-14;
-
-  if (std::abs(result.min_distance) < kEps) {
+  if (std::abs(result.min_distance) < kTouchingTolerance) {
     pair_data->nhat_BA_W = CalcGradientWhenTouching(
         a, X_WA, b, X_WB, pair_data->p_ACa, pair_data->p_BCb);
   } else {
