@@ -50,6 +50,7 @@ const struct _zip_err_info _zip_err_str[] = {
     { N, "Unexpected length of data" },
     { N, "Not allowed in torrentzip" },
     { N, "Possibly truncated or corrupted zip archive" },
+    { N, "Extra fields too large" },
 };
 
 const int _zip_err_str_count = sizeof(_zip_err_str)/sizeof(_zip_err_str[0]);
@@ -81,6 +82,8 @@ const struct _zip_err_info _zip_err_details[] = {
     { E, "UTF-8 filename is ASCII and doesn't match filename" },
     { E, "UTF-8 comment is ASCII and doesn't match comment" },
     { G, "garbage at end of compressed data" },
+    { E, "NUL byte in file name" },
+    { E, "missing Zip64 extra field" },
 };
 
 const int _zip_err_details_count = sizeof(_zip_err_details)/sizeof(_zip_err_details[0]);

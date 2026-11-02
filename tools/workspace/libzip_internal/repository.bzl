@@ -7,8 +7,8 @@ def libzip_internal_repository(
         name = name,
         repository = "nih-at/libzip",
         upgrade_type = "release",
-        commit = "v1.11.4",
-        sha256 = "4844595615e2436e3cf1ed46a1b260fbdaf8b8fa8f2b594e8b5d8162c696b8b2",  # noqa
+        commit = "v1.12.1",
+        sha256 = "eb660b05d6d98742fd0466c416fb7867e9c1c101f00502f1efee0a2c089ad5c4",  # noqa
         build_file = ":package.BUILD.bazel",
         mirrors = mirrors,
     )
