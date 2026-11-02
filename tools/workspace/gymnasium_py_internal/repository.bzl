@@ -8,8 +8,8 @@ def gymnasium_py_internal_repository(
         repository = "Farama-Foundation/Gymnasium",
         upgrade_type = "release",
         exclude_tags_pattern = "v[0-9.]+a[0-9]+",
-        commit = "v1.3.0",
-        sha256 = "acdcc261cb0145d6692d0cef69c1b30eb3b78982269c3795b8b3141060fc13fd",  # noqa
+        commit = "v1.4.0",
+        sha256 = "c34c99e18d4121aff526b0768e50b30acbe23d05c7285fc681655406d527359c",  # noqa
         build_file = ":package.BUILD.bazel",
         mirrors = mirrors,
     )
