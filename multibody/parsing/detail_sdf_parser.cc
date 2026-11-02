@@ -901,26 +901,19 @@ struct JointFrames {
 };
 
 // Adds a joint of type JointType<double>, named `name`, between the frames Jp
-// and Jc described by `frames`, first adding any new frames that requires.
-// Like MultibodyPlant::AddJoint(), it names those after the joint and puts them
-// in the joint's model instance, which is that of `frames.C`.
+// and Jc described by `frames`, first having the plant add any new frames that
+// requires, named as AddJoint() names them. They go in the joint's model
+// instance, which is that of `frames.C`.
 template <template <typename> class JointType, typename... Args>
 const JointType<double>& AddJointBetweenFrames(MultibodyPlant<double>* plant,
                                                const std::string& name,
                                                const JointFrames& frames,
                                                Args&&... args) {
   const ModelInstanceIndex model_instance = frames.C->model_instance();
-  auto get_or_add_frame = [&](const Frame<double>& B,
-                              const std::optional<RigidTransformd>& X_BJ,
-                              const char* suffix) -> const Frame<double>& {
-    if (!X_BJ.has_value()) return B;
-    return plant->AddFrame(std::make_unique<FixedOffsetFrame<double>>(
-        fmt::format("{}_{}", name, suffix), B, *X_BJ, model_instance));
-  };
-  const Frame<double>& frame_Jp =
-      get_or_add_frame(*frames.P, frames.X_PJp, "parent");
-  const Frame<double>& frame_Jc =
-      get_or_add_frame(*frames.C, frames.X_CJc, "child");
+  const Frame<double>& frame_Jp = plant->AddOrGetJointFrame(
+      *frames.P, frames.X_PJp, model_instance, name, JointFrameSide::kParent);
+  const Frame<double>& frame_Jc = plant->AddOrGetJointFrame(
+      *frames.C, frames.X_CJc, model_instance, name, JointFrameSide::kChild);
   return plant->AddJoint(std::make_unique<JointType<double>>(
       name, frame_Jp, frame_Jc, std::forward<Args>(args)...));
 }
