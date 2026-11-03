@@ -383,6 +383,13 @@ def _dut_simulator_monitor(cyclic):
     return _sentinels_for("simulator_monitor", simulator)
 
 
+def _dut_simulator_monitor_round_trip(cyclic):
+    simulator = Simulator(ConstantVectorSource([1.0]))
+    simulator.set_monitor(_make_callback(simulator, cyclic))
+    simulator.set_monitor(simulator.get_monitor())
+    return _sentinels_for("simulator_monitor_round_trip", simulator)
+
+
 def _make_program():
     prog = MathematicalProgram()
     return prog, prog.NewContinuousVariables(2)
@@ -661,10 +668,23 @@ class TestPythonMemoryLeaks(unittest.TestCase):
         of these currently leaks; when one gets fixed, its `leaks_required`
         here will fail, and should be changed to 0.
         """
-        duts = [
+        fixed_duts = [
             _dut_abstract_output_port,
             _dut_cache_entry,
             _dut_simulator_monitor,
+            _dut_simulator_monitor_round_trip,
+        ]
+        for dut in fixed_duts:
+            for cyclic in [False, True]:
+                with self.subTest(dut=dut.__name__, cyclic=cyclic):
+                    self.do_test(
+                        dut=functools.partial(dut, cyclic=cyclic),
+                        count=1,
+                        leaks_allowed=0,
+                        leaks_required=0,
+                    )
+
+        duts = [
             _dut_program_cost,
             _dut_program_constraint,
             _dut_program_visualization_callback,

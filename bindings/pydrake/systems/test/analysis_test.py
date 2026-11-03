@@ -359,6 +359,66 @@ class TestAnalysis(unittest.TestCase):
         # Clearing the context is allowed.
         simulator.reset_context(context=None)
 
+    def test_simulator_monitor_lifetime(self):
+        """The simulator borrows its monitor, so a monitor fetched by
+        get_monitor() must keep the simulator (and thus the callable) alive.
+        """
+        calls = []
+
+        def make_monitor():
+            simulator = Simulator(ConstantVectorSource([1.0]))
+            simulator.set_monitor(lambda context: calls.append(1))
+            return simulator.get_monitor()
+
+        monitor = make_monitor()
+        gc.collect()
+        context = Simulator(ConstantVectorSource([1.0])).get_context()
+        status = monitor(context)
+        self.assertEqual(status.severity(), EventStatus.Severity.kDidNothing)
+        self.assertEqual(calls, [1])
+
+    def test_simulator_monitor_replacement(self):
+        """Replacing or clearing the monitor releases the previous one."""
+
+        class Monitor:
+            def __call__(self, context):
+                return EventStatus.DidNothing()
+
+        simulator = Simulator(ConstantVectorSource([1.0]))
+        first = Monitor()
+        first_ref = weakref.ref(first)
+        simulator.set_monitor(first)
+        del first
+        gc.collect()
+        self.assertIsNotNone(first_ref())
+
+        second = Monitor()
+        second_ref = weakref.ref(second)
+        simulator.set_monitor(second)
+        del second
+        gc.collect()
+        self.assertIsNone(first_ref())
+        self.assertIsNotNone(second_ref())
+
+        simulator.clear_monitor()
+        gc.collect()
+        self.assertIsNone(second_ref())
+        self.assertIsNone(simulator.get_monitor())
+
+    def test_simulator_monitor_round_trip(self):
+        """A monitor fetched by get_monitor() doesn't keep the simulator
+        alive, so installing it again can't create an uncollectable cycle.
+        """
+        simulator = Simulator(ConstantVectorSource([1.0]))
+        simulator.set_monitor(lambda context: None)
+        monitor = simulator.get_monitor()
+        simulator_ref = weakref.ref(simulator)
+        simulator.set_monitor(monitor)
+        del simulator
+        del monitor
+        gc.collect()
+        self.assertIsNone(simulator_ref())
+
     def test_simulator_default_context_no_cpp_leak(self):
         """Regression test for #23924"""
         gc.collect()
