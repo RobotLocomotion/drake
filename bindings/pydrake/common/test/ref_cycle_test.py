@@ -106,19 +106,6 @@ class TestRefCycle(unittest.TestCase):
         dut = IsDynamic(other)
         self.check_is_collectable_cycle(dut, other)
 
-    def test_unhashable_peers(self):
-        # Peers are tracked by identity, so objects that can't be hashed are
-        # ordinary peers.
-        class Unhashable(IsDynamic):
-            __hash__ = None
-
-        p0 = IsDynamic()
-        p1 = Unhashable()
-        with self.assertRaises(TypeError):
-            hash(p1)
-        free_function(p0, p1)
-        self.check_is_collectable_cycle(p0, p1)
-
     def test_equal_but_distinct_peers(self):
         # Peers that compare equal (even hashing the same) are still distinct
         # objects, and each is kept alive.

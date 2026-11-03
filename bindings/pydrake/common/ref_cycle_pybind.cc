@@ -15,16 +15,15 @@ namespace internal {
 
 namespace {
 
-// Create a one-way reference link from `a` to `b`. `a` will have a new/updated
-// attribute, containing a dict of handles. Insert `b` into `a`'s handle dict.
-// Create the dict first if it is not yet existing.
+// Creates a one-way reference link from `a` to `b`. Gives `a` a new/updated
+// attribute, containing a dict of handles. Inserts `b` into `a`'s handle dict.
+// Creates the dict first if it does not yet exist.
 //
 // The dict is keyed by the address of each handle, so peers are tracked by
-// identity. The peers are never hashed or compared, so they may be unhashable
-// (e.g., a callable object that defines `__eq__` but not `__hash__`). Peers
-// that compare equal but are distinct objects (e.g., two separately created
-// bound methods of the same method) are each kept alive. Adding the very same
-// object twice has no further effect.
+// identity. The peers are never hashed or compared, so they need not be
+// hashable. Peers that compare equal but are distinct objects (e.g., two
+// separately created bound methods of the same method) are each kept alive.
+// Adding the very same object twice has no further effect.
 //
 // Using the address as the key is sound because the dict holds a strong
 // reference to each peer that it contains, and never removes any. Hence an
