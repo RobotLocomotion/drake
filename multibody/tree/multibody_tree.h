@@ -95,6 +95,10 @@ class Mobilizer;
 template <typename T>
 class QuaternionFloatingMobilizer;
 
+// Which of a joint's two frames, Jp (on the parent) or Jc (on the child), a
+// frame from MultibodyTree::AddOrGetJointFrame() is for.
+enum class JointFrameSide { kParent, kChild };
+
 // MultibodyTree provides a representation for a physical system consisting of a
 // collection of interconnected rigid bodies. As such, it owns and manages
 // each of the elements that belong to this physical system. Multibody
@@ -444,6 +448,14 @@ class MultibodyTree {
       const std::optional<math::RigidTransform<double>>& X_PJp,
       const Link<T>& child,
       const std::optional<math::RigidTransform<double>>& X_CJc, Args&&... args);
+
+  // See MultibodyPlant documentation. AddJoint() gets its frames this way, so
+  // this is the only place that knows how the frames it adds are named.
+  const Frame<T>& AddOrGetJointFrame(
+      const Frame<T>& frame_B,
+      const std::optional<math::RigidTransform<double>>& X_BF,
+      ModelInstanceIndex joint_instance, std::string_view joint_name,
+      JointFrameSide side);
 
   // See MultibodyPlant documentation.
   void RemoveJoint(const Joint<T>& joint);
@@ -2622,15 +2634,6 @@ class MultibodyTree {
 
   [[noreturn]] void ThrowJointSubtypeMismatch(const Joint<T>&,
                                               std::string_view) const;
-
-  // If X_BF is nullopt, returns the body frame of `body`. Otherwise, adds a
-  // FixedOffsetFrame (named based on the joint_name and frame_suffix) to `body`
-  // and returns it.
-  const Frame<T>& AddOrGetJointFrame(
-      const RigidBody<T>& body,
-      const std::optional<math::RigidTransform<double>>& X_BF,
-      ModelInstanceIndex joint_instance, std::string_view joint_name,
-      std::string_view frame_suffix);
 
   // At Finalize(), this method performs all other finalization that is not
   // topological. This includes for instance the creation of BodyNode objects.
