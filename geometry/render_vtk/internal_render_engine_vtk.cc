@@ -1160,7 +1160,7 @@ void RenderEngineVtk::InitializePipelines() {
         parameters_.shadow_map_size);
     // The shadow map pass gets the full render sequence so that we get opaque
     // and transparent objects included in shadows.
-    shadows->SetOpaqueSequence(full_seq);
+    shadows->SetDelegatePass(full_seq);
     passes->AddItem(shadows);
     camera_seq = vtkNew<vtkSequencePass>();
     camera_seq->SetPasses(passes);
