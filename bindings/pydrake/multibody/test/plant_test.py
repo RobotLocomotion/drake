@@ -1,7 +1,9 @@
 import collections
 import copy
+import gc
 import itertools
 import pickle
+from types import SimpleNamespace
 import unittest
 import weakref
 
@@ -135,6 +137,7 @@ from pydrake.systems.framework import (
     LeafSystem_,
     OutputPort_,
     System_,
+    ValueProducer,
 )
 from pydrake.systems.lcm import LcmPublisherSystem
 from pydrake.systems.scalar_conversion import TemplateSystem
@@ -4466,6 +4469,46 @@ class TestPlant(unittest.TestCase):
         numpy_compare.assert_float_equal(
             copy.deepcopy(dut).EvaluateAt(context, p_WQ), value
         )
+
+    def test_force_density_field_cache_entry_lifetime(self):
+        """The cache entry borrows the callables of its ValueProducer, so the
+        plant must keep the producer alive.
+        """
+        # Deformables do not support AutoDiffXd currently.
+        T = float
+        entries = []
+
+        class CacheEntryField(ForceDensityField_[T]):
+            def __init__(self):
+                super().__init__()
+
+            def DoClone(self):
+                return CacheEntryField()
+
+            def DoDeclareCacheEntries(self, plant):
+                # The producer and its callables are temporaries, so only the
+                # plant keeps them alive.
+                entries.append(
+                    ForceDensityField_[T].DeclareCacheEntry(
+                        plant,
+                        "test_entry",
+                        ValueProducer(
+                            allocate=lambda: Value(SimpleNamespace()),
+                            calc=lambda context, output: setattr(
+                                output.get_mutable_value(), "answer", 42
+                            ),
+                        ),
+                        {plant.nothing_ticket()},
+                    )
+                )
+
+        builder = DiagramBuilder_[T]()
+        plant, _ = AddMultibodyPlantSceneGraph(builder, 0.01)
+        plant.mutable_deformable_model().AddExternalForce(CacheEntryField())
+        plant.Finalize()
+        gc.collect()
+        context = plant.CreateDefaultContext()
+        self.assertEqual(entries[0].Eval(context).answer, 42)
 
     def test_force_density_field_with_parent(self):
         # Deformables do not support AutoDiffXd currently.

@@ -265,16 +265,18 @@ void DoScalarIndependentDefinitions(py::module_ m) {
   {
     using Class = ValueProducer;
     constexpr auto& cls_doc = doc.ValueProducer;
-    class_<Class>(m, "ValueProducer", cls_doc.doc)
+    // The dynamic_attr allows ensure_callback_lifetime to attach the callbacks.
+    class_<Class>(m, "ValueProducer", py::dynamic_attr(), cls_doc.doc)
         .def(
             "__init__",
             [](Class* self, py::callable allocate,
-                std::function<void(py::object, py::object)> calc) {
-              new (self)
-                  Class(MakeCppCompatibleAllocateCallback(std::move(allocate)),
-                      MakeCppCompatibleCalcCallback(std::move(calc)));
+                PyCalcAbstractCallback calc) {
+              new (self) Class(MakeBorrowedAllocateCallback(allocate.ptr()),
+                  MakeBorrowedCalcCallback(calc.ptr()));
             },
-            py::arg("allocate"), py::arg("calc"), cls_doc.ctor.doc_overload_5d)
+            internal::ensure_callback_lifetime<1, 2>(),
+            internal::ensure_callback_lifetime<1, 3>(), py::arg("allocate"),
+            py::arg("calc"), cls_doc.ctor.doc_overload_5d)
         .def_static("NoopCalc", &Class::NoopCalc, cls_doc.NoopCalc.doc);
   }
 
