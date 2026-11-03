@@ -47,7 +47,7 @@ GTEST_TEST(CollisionFilterMemoryTest, MemoryGrowth) {
 
     for (int i = 0; i < num_geometries; ++i) {
       ids.push_back(GeometryId::get_new_id());
-      filter.AddGeometry(ids.back());
+      filter.AddGeometry(ids.back(), /* is_anchored = */ false);
     }
 
     /* If we generally allow CollisionFilter to make 10 allocations per

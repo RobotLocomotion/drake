@@ -85,7 +85,7 @@ class PenetrationAsPointPairCallbackTest : public ::testing::Test {
     auto encode_data = [this](GeometryId id, CollisionObjectd* shape) {
       const EncodedData data(id, true);
       data.write_to(shape);
-      this->collision_filter_.AddGeometry(data.id());
+      this->collision_filter_.AddGeometry(data.id(), /* is_anchored = */ false);
     };
     encode_data(id_A_, &sphere_A_);
     encode_data(id_B_, &sphere_B_);
@@ -529,7 +529,7 @@ TEST_F(PenetrationAsPointPairCallbackTest, UnsupportedHalfSpaceHalfSpace) {
   const GeometryId hs2_id = GeometryId::get_new_id();
   const EncodedData data(hs2_id, true);
   data.write_to(&halfspace2);
-  this->collision_filter_.AddGeometry(data.id());
+  this->collision_filter_.AddGeometry(data.id(), /* is_anchored = */ false);
   UnsupportedGeometry<double>(this->halfspace_, halfspace2, this->id_halfspace_,
                               hs2_id);
   UnsupportedGeometry<AutoDiffXd>(this->halfspace_, halfspace2,

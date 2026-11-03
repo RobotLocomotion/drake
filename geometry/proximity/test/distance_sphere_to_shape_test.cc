@@ -488,8 +488,8 @@ class CallbackScalarSupport : public ::testing::Test {
     const GeometryId id_B = GeometryId::get_new_id();
     EncodedData data_A(id_A, true);
     EncodedData data_B(id_B, true);
-    collision_filter_.AddGeometry(data_A.id());
-    collision_filter_.AddGeometry(data_B.id());
+    collision_filter_.AddGeometry(data_A.id(), /* is_anchored = */ false);
+    collision_filter_.AddGeometry(data_B.id(), /* is_anchored = */ false);
     X_WGs_[id_A] = RigidTransform<T>{Eigen::Translation<T, 3>{10, 11, 12}};
     X_WGs_[id_B] = RigidTransform<T>::Identity();
 
@@ -626,8 +626,8 @@ GTEST_TEST(Callback, ScalarSupportWithFilters) {
 
   EncodedData data_A(id_A, true);
   EncodedData data_B(id_B, true);
-  collision_filter.AddGeometry(data_A.id());
-  collision_filter.AddGeometry(data_B.id());
+  collision_filter.AddGeometry(data_A.id(), /* is_anchored = */ false);
+  collision_filter.AddGeometry(data_B.id(), /* is_anchored = */ false);
 
   // Filter the pair (A, B); we'll put the ids in a set and simply return that
   // set for the extract ids function.
@@ -671,8 +671,8 @@ GTEST_TEST(Callback, RespectCollisionFiltering) {
 
   std::vector<SignedDistancePair<double>> results;
   CollisionFilter collision_filter;
-  collision_filter.AddGeometry(data_A.id());
-  collision_filter.AddGeometry(data_B.id());
+  collision_filter.AddGeometry(data_A.id(), /* is_anchored = */ false);
+  collision_filter.AddGeometry(data_B.id(), /* is_anchored = */ false);
 
   CallbackData<double> data{&collision_filter, &X_WGs, kInf, &results};
 
@@ -720,8 +720,8 @@ GTEST_TEST(Callback, ABOrdering) {
       {id_A, RigidTransformd{Vector3d{10, 11, 12}}},
       {id_B, RigidTransformd::Identity()}};
   CollisionFilter collision_filter;
-  collision_filter.AddGeometry(data_A.id());
-  collision_filter.AddGeometry(data_B.id());
+  collision_filter.AddGeometry(data_A.id(), /* is_anchored = */ false);
+  collision_filter.AddGeometry(data_B.id(), /* is_anchored = */ false);
   double threshold = std::numeric_limits<double>::max();
 
   // Pass in the two geometries in order (A, B).
@@ -764,8 +764,8 @@ TYPED_TEST(CallbackMaxDistanceTest, MaxDistanceThreshold) {
   const GeometryId id_B = GeometryId::get_new_id();
   EncodedData data_A(id_A, true);
   EncodedData data_B(id_B, true);
-  collision_filter.AddGeometry(data_A.id());
-  collision_filter.AddGeometry(data_B.id());
+  collision_filter.AddGeometry(data_A.id(), /* is_anchored = */ false);
+  collision_filter.AddGeometry(data_B.id(), /* is_anchored = */ false);
 
   // Two spheres with arbitrary radii. One is at the origin and the other is
   // placed at two distances: one just inside the max distance and one just

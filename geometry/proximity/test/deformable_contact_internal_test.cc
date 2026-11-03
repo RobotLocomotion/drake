@@ -401,7 +401,7 @@ GTEST_TEST(GeometriesTest, ComputeDeformableContact_DeformableRigid) {
       MakeBoxVolumeMesh<double>(Box::MakeCube(1.0), 1.0);
   const int num_vertices = deformable_mesh.num_vertices();
   AddDeformableGeometry(deformable_id, std::move(deformable_mesh), &geometries);
-  collision_filter.AddGeometry(deformable_id);
+  collision_filter.AddGeometry(deformable_id, /* is_anchored = */ false);
 
   /* There is no geometry to collide with the deformable geometry yet. */
   contact_data = geometries.ComputeDeformableContact(collision_filter);
@@ -412,7 +412,7 @@ GTEST_TEST(GeometriesTest, ComputeDeformableContact_DeformableRigid) {
   math::RigidTransform<double> X_WR(Vector3d(0, -2.0, 0));
   geometries.MaybeAddRigidGeometry(Box::MakeCube(1.0), rigid_id,
                                    rigid_properties, X_WR);
-  collision_filter.AddGeometry(rigid_id);
+  collision_filter.AddGeometry(rigid_id, /* is_anchored = */ false);
 
   /* The deformable box and the rigid box are not in contact yet. */
   contact_data = geometries.ComputeDeformableContact(collision_filter);
@@ -500,8 +500,8 @@ class DeformableDeformableContactTest : public ::testing::Test {
  protected:
   // Set up two deformable geometries in contact.
   void SetUp() override {
-    collision_filter_.AddGeometry(deformable0_id_);
-    collision_filter_.AddGeometry(deformable1_id_);
+    collision_filter_.AddGeometry(deformable0_id_, /* is_anchored = */ false);
+    collision_filter_.AddGeometry(deformable1_id_, /* is_anchored = */ false);
 
     // Use Box meshes with medial axis because they have no zero interpolated
     // signed distance in the interior volume. For simplicity, we use two long
@@ -593,7 +593,7 @@ TEST_F(DeformableDeformableContactTest, MultipleContactPairs) {
   //
   {
     const GeometryId deformable2_id = GeometryId::get_new_id();
-    collision_filter_.AddGeometry(deformable2_id);
+    collision_filter_.AddGeometry(deformable2_id, /* is_anchored = */ false);
     VolumeMesh<double> mesh2 =
         MakeBoxVolumeMeshWithMa<double>(Box(0.01, 0.3, 0.01));
     AddDeformableGeometry(deformable2_id, std::move(mesh2), &geometries_);
