@@ -39,9 +39,10 @@ class ObjectFactoryLintTest(unittest.TestCase):
             "drake/tools/workspace/vtk_internal/gen/"
             "vtkRenderingOpenGL2ObjectFactory.cxx"
         )
-        pattern = r"^{}VTK_CREATE_CREATE_FUNCTION\((\w+)\)"
-        registered = set(re.findall(pattern.format(""), factory, re.MULTILINE))
-        removed = set(re.findall(pattern.format("// "), factory, re.MULTILINE))
+        pattern = r"^(// )?VTK_CREATE_CREATE_FUNCTION\((\w+)\)"
+        matches = re.findall(pattern, factory, re.MULTILINE)
+        registered = {name for prefix, name in matches if not prefix}
+        removed = {name for prefix, name in matches if prefix}
         return registered, removed
 
     def test_overrides_up_to_date(self):
