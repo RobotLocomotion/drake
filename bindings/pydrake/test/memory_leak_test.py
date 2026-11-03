@@ -678,7 +678,10 @@ class TestPythonMemoryLeaks(unittest.TestCase):
             for cyclic in [False, True]:
                 with self.subTest(dut=dut.__name__, cyclic=cyclic):
                     self.do_test(
-                        dut=functools.partial(dut, cyclic=cyclic), count=1
+                        dut=functools.partial(dut, cyclic=cyclic),
+                        count=1,
+                        leaks_allowed=0,
+                        leaks_required=0,
                     )
 
         duts = [
