@@ -96,6 +96,49 @@ alter output formatting, etc.
 Documentation for command line arguments is here:
 https://github.com/google/benchmark#command-line
 
+# hydroelastic_clutter
+
+Measures hydroelastic-with-fallback contact on a cluttered, procedurally
+generated desk scene, with no model files. The scene is built to be expensive in
+the same ways as a real cluttered tabletop: anchored furniture made of many
+small, oriented rigid pieces (many geometries that are near, but not in,
+contact), and free manipulands that each have one compliant convex hull plus
+several rigid convex parts (so that there is a mix of compliant-rigid,
+compliant-compliant, and point-pair fallback contact). All geometry is
+generated in code with a platform-independent random sequence. All contact
+materials use a Hunt-Crossley dissipation of 1 s/m, so numbers from earlier
+versions of this benchmark (which used 1e-3) are not comparable.
+
+Two things are timed, on the scene after it has settled: the geometry query
+`ComputeContactSurfacesWithFallback()` alone (`ContactSurfaces`), and one full
+discrete step including contact-pair assembly and the SAP solve
+(`SimulationStep`). The Args are the number of columns of free bodies and the
+edge length (mm) of the desk pieces:
+
+  - `3/60`: nv = 36 with about 20 hydroelastic contacts. A tiny case that
+    exists only for the smoke test.
+  - `12/60`: nv = 144 with about 80 hydroelastic contacts and a few
+    point-pair contacts. The reference case.
+  - `12/250`: the same free bodies, sticks and initial poses on a coarser desk
+    (about 40 hydroelastic contacts; fewer, larger contacting pairs); useful
+    for telling apart optimizations that scale with the number of small
+    contacting pairs.
+  - `64/60`: nv = 768 with about 450 hydroelastic contacts; useful for costs
+    that scale with the number of degrees of freedom (e.g., Jacobian assembly).
+
+The reported counters `nv`, `hydro_contacts`, and `point_pair_contacts` give the
+size of each problem, and `settled_max_speed` (the largest generalized velocity
+after the warmup) shows how close to rest the scene is. Building and settling a
+scene takes seconds, and Google Benchmark repeats that while it searches for an
+iteration count; pass `--benchmark_min_time=<N>x` to bound the number of runs.
+The smoke test fails if the scene has no contacts at all.
+
+The desk tiles, the sticks and the free bodies come from independent random
+sequences, so changing the desk piece size changes nothing else. As with the
+other benchmarks here, wall-clock times are specific to a machine; prefer to
+compare before and after on the same machine (for example, with instruction
+counts from `perf stat`, which are far less noisy than times).
+
 # iiwa_relaxed_pos_ik
 
 A benchmark for InverseKinematics.
