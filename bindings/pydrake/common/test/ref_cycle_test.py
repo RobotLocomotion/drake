@@ -26,7 +26,8 @@ class TestRefCycle(unittest.TestCase):
         # The edges of the cycle are:
         # p0 -> p0.__dict__ -> p0._pydrake_internal_ref_cycle_peers \
         #  -> p1 -> p1.__dict__ -> p1._pydrake_internal_ref_cycle_peers -> p0
-        # where the object at each _pydrake_internal_ref_cycle_peers is a set.
+        # where the object at each _pydrake_internal_ref_cycle_peers is a dict,
+        # keyed by the address of each peer.
         #
         # It is impractical to check the counts of p0 and p1 here because
         # callers may hold an arbitrary number of references.
@@ -43,8 +44,12 @@ class TestRefCycle(unittest.TestCase):
             self.assertTrue(gc.is_tracked(x._pydrake_internal_ref_cycle_peers))
 
         # Check that the peers refer to each other.
-        self.assertTrue(p1 in p0._pydrake_internal_ref_cycle_peers)
-        self.assertTrue(p0 in p1._pydrake_internal_ref_cycle_peers)
+        self.assertTrue(self.has_peer(p0, p1))
+        self.assertTrue(self.has_peer(p1, p0))
+
+    def has_peer(self, owner, peer):
+        peers = owner._pydrake_internal_ref_cycle_peers.values()
+        return any(x is peer for x in peers)
 
     def check_no_cycle(self, p0, p1):
         for x in [p0, p1]:
@@ -100,6 +105,48 @@ class TestRefCycle(unittest.TestCase):
         other = IsDynamic()
         dut = IsDynamic(other)
         self.check_is_collectable_cycle(dut, other)
+
+    def test_unhashable_peers(self):
+        # Peers are tracked by identity, so objects that can't be hashed are
+        # ordinary peers.
+        class Unhashable(IsDynamic):
+            __hash__ = None
+
+        p0 = IsDynamic()
+        p1 = Unhashable()
+        with self.assertRaises(TypeError):
+            hash(p1)
+        free_function(p0, p1)
+        self.check_is_collectable_cycle(p0, p1)
+
+    def test_equal_but_distinct_peers(self):
+        # Peers that compare equal (even hashing the same) are still distinct
+        # objects, and each is kept alive.
+        class AlwaysEqual(IsDynamic):
+            def __eq__(self, other):
+                return True
+
+            def __hash__(self):
+                return 0
+
+        p0 = IsDynamic()
+        p1 = AlwaysEqual()
+        p2 = AlwaysEqual()
+        refs = [weakref.ref(p1), weakref.ref(p2)]
+        free_function(p0, p1)
+        free_function(p0, p2)
+        self.assertEqual(len(p0._pydrake_internal_ref_cycle_peers), 2)
+        del p1, p2
+        gc.collect()
+        self.assertTrue(all(ref() is not None for ref in refs))
+
+    def test_same_peer_twice(self):
+        p0 = IsDynamic()
+        p1 = IsDynamic()
+        free_function(p0, p1)
+        free_function(p0, p1)
+        self.assertEqual(len(p0._pydrake_internal_ref_cycle_peers), 1)
+        self.check_is_collectable_cycle(p0, p1)
 
     def test_not_dynamic_add(self):
         dut = NotDynamic()

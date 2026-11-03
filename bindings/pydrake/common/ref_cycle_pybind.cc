@@ -1,5 +1,7 @@
 #include "drake/bindings/pydrake/common/ref_cycle_pybind.h"
 
+#include <cstdint>
+
 #include <fmt/format.h>
 
 #include "drake/common/drake_assert.h"
@@ -14,21 +16,39 @@ namespace internal {
 namespace {
 
 // Create a one-way reference link from `a` to `b`. `a` will have a new/updated
-// attribute, containing a set of handles. Insert `b` into `a`'s handle
-// set. Create the set first if it is not yet existing.
+// attribute, containing a dict of handles. Insert `b` into `a`'s handle dict.
+// Create the dict first if it is not yet existing.
+//
+// The dict is keyed by the address of each handle, so peers are tracked by
+// identity. The peers are never hashed or compared, so they may be unhashable
+// (e.g., a callable object that defines `__eq__` but not `__hash__`). Peers
+// that compare equal but are distinct objects (e.g., two separately created
+// bound methods of the same method) are each kept alive. Adding the very same
+// object twice has no further effect.
+//
+// Using the address as the key is sound because the dict holds a strong
+// reference to each peer that it contains, and never removes any. Hence an
+// address cannot be reused while its entry is in the dict.
 void make_link(handle a, handle b) {
   static const char refcycle_peers[] = "_pydrake_internal_ref_cycle_peers";
   if (!hasattr(a, refcycle_peers)) {
-    py::set new_set;
-    DRAKE_DEMAND(PyType_IS_GC(Py_TYPE(new_set.ptr())));
-    a.attr(refcycle_peers) = new_set;
+    py::dict new_dict;
+    DRAKE_DEMAND(PyType_IS_GC(Py_TYPE(new_dict.ptr())));
+    a.attr(refcycle_peers) = new_dict;
   }
   handle peers = a.attr(refcycle_peers);
-  // Ensure the proper ref count on the `peers` set. If it is > 1, the
+  // Ensure the proper ref count on the `peers` dict. If it is > 1, the
   // objects will live forever. If it is < 1, the cycle will just be deleted
   // immediately.
   DRAKE_DEMAND(Py_REFCNT(peers.ptr()) == 1);
-  PySet_Add(peers.ptr(), b.ptr());
+  py::int_ key(reinterpret_cast<uintptr_t>(b.ptr()));
+  if (PyDict_SetItem(peers.ptr(), key.ptr(), b.ptr()) != 0) {
+#ifdef PYDRAKE_USE_PYBIND11
+    throw py::error_already_set();
+#else  // PYDRAKE_USE_NANOBIND
+    throw py::python_error();
+#endif
+  }
 }
 
 void make_ref_cycle(handle p0, handle p1) {

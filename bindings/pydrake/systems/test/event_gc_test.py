@@ -79,8 +79,8 @@ class MethodLeafSystem(LeafSystem):
         self._count = 0
         # It turns out that evaluating `self._callback` multiple times (which
         # creates a new bound method object each time) triggers unusual
-        # pybind11 memory behavior that needs to be tested. See
-        # UniquelyWrapCallback() in ensure_callback_lifetime_pybind.cc.
+        # pybind11 memory behavior that needs to be tested. The callbacks are
+        # kept alive by identity, not equality; see ref_cycle_pybind.cc.
         DeclareAllEvents(self, lambda: self._callback)
 
     def _callback(self, *args, **kwargs):
@@ -123,6 +123,29 @@ class ClosureCallbackLeafSystem(LeafSystem):
 
     def count(self):
         return self._count
+
+
+class UnhashableCallbackLeafSystem(LeafSystem):
+    """System with callbacks implemented via a callable that can't be hashed."""
+
+    class Callback:
+        # Defining __eq__ without __hash__ makes instances unhashable.
+        def __init__(self):
+            self.count = 0
+
+        def __eq__(self, other):
+            return self is other
+
+        def __call__(self, *args, **kwargs):
+            self.count += 1
+
+    def __init__(self):
+        super().__init__()
+        self._callback = self.Callback()
+        DeclareAllEvents(self, lambda: self._callback)
+
+    def count(self):
+        return self._callback.count
 
 
 class TestPeriodicEventGarbageCollection(unittest.TestCase):
@@ -179,3 +202,7 @@ class TestPeriodicEventGarbageCollection(unittest.TestCase):
     def test_closure_callback_leaf_system_is_collectible(self):
         """Callbacks via closures don't prevent garbage collection."""
         self.do_test_is_collectible(ClosureCallbackLeafSystem)
+
+    def test_unhashable_callback_leaf_system_is_collectible(self):
+        """Callbacks that can't be hashed are supported."""
+        self.do_test_is_collectible(UnhashableCallbackLeafSystem)
