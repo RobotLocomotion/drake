@@ -63,7 +63,10 @@ auto RegisterBinding(py::handle* scope) {
   constexpr auto& cls_doc = pydrake_doc_solvers.drake.solvers.Binding;
   typedef Binding<C> B;
   const string pyname = TemporaryClassName<B>();
-  class_<B> binding_cls(*scope, pyname.c_str());
+  // Dynamic attributes let a Binding keep the Python object of an evaluator
+  // that borrows Python callables alive; see
+  // CastBindingKeepingEvaluatorAlive() in solvers_py_mathematicalprogram.cc.
+  class_<B> binding_cls(*scope, pyname.c_str(), py::dynamic_attr());
   AddTemplateClass(*scope, "Binding", binding_cls, GetPyParam<C>());
   binding_cls  // BR
       .def(
@@ -791,8 +794,8 @@ void BindEvaluatorsAndBindings(py::module_ m) {
   RegisterBinding<ExpressionCost>(&m);
 
   class_<VisualizationCallback, EvaluatorBase,
-      std::shared_ptr<VisualizationCallback>>(
-      m, "VisualizationCallback", doc.VisualizationCallback.doc);
+      std::shared_ptr<VisualizationCallback>>(m, "VisualizationCallback",
+      py::dynamic_attr(), doc.VisualizationCallback.doc);
 
   RegisterBinding<VisualizationCallback>(&m);
 }  // NOLINT(readability/fn_size)
