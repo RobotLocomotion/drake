@@ -33,6 +33,13 @@ exports_files(
     ],
 )
 
+# Necessary for @drake//tools/workspace/vtk_internal:object_factory_lint_test.
+exports_files(
+    [
+        "Rendering/OpenGL2/CMakeLists.txt",
+    ],
+)
+
 # When the rules.bzl needs to declare an objc_library, it adds this to `deps`
 # to improve the error messages in case of a mis-configured build.
 cc_library(

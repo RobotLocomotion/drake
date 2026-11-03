@@ -3,12 +3,17 @@ This directory contains copies of CMake-generated source code that is too
 difficult to re-generate from Bazel.
 
 - vtkRenderingOpenGL2ObjectFactory: supports the vtkAutoInit dependency
-injection framework as related to VTK rendering. The `*.cc` file has further
-been customized by hand to comment out mentions of COCOA vs X.
+injection framework as related to VTK rendering. The `*.cxx` file has further
+been customized by hand to comment out the overrides for classes that Drake
+doesn't compile (see `srcs_glob_exclude` in settings.bzl) and for the render
+window (the choice of which is platform-specific).
+
+The `object_factory_lint_test` cross-checks the overrides in Drake's copy
+against the VTK source; if it fails, these files need to be refreshed.
 
 TODO(jwnimmer-tri) Add some kind of vtk-upgrade helper script, that refreshes
-these files and/or cross-checks the result. In the meantime, when upgrading VTK
-you can refresh these files by hand:
+these files. In the meantime, when upgrading VTK you can refresh these files by
+hand:
 
 (1) Get the VTK source (e.g., clone VTK and check out the git sha you want, or
 unzip the VTK archive that the bazel workspace refers to).
