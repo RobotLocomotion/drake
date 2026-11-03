@@ -7,8 +7,8 @@ def dm_control_internal_repository(
         name = name,
         repository = "deepmind/dm_control",
         upgrade_type = "release",
-        commit = "1.0.47",
-        sha256 = "87e189ebcba1bd9a30e5cb95ca8b149b3175ab7dc317b9e1e90eb4bc099e254f",  # noqa
+        commit = "1.0.50",
+        sha256 = "27b6f88ba9ff3da88e679d5aea81a5cacf74d8a1d7c47fb252d7b2146bc0762c",  # noqa
         build_file = ":package.BUILD.bazel",
         mirrors = mirrors,
     )

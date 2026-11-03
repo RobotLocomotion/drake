@@ -7,8 +7,8 @@ def libpng_internal_repository(
         name = name,
         repository = "pnggroup/libpng",
         upgrade_type = "tag",
-        commit = "v1.6.58",
-        sha256 = "a9d4df463d36a6e5f9c29bd6f4967312d17e996c1854f3511f833924eb1993cf",  # noqa
+        commit = "v1.6.59",
+        sha256 = "2540302a1844ad2b2b501977abecfa850f265f97b78f065a712ab4074a89f5b5",  # noqa
         build_file = ":package.BUILD.bazel",
         mirrors = mirrors,
     )
