@@ -2,6 +2,7 @@
 #include <vector>
 
 #include "drake/bindings/generated_docstrings/multibody_inverse_kinematics.h"
+#include "drake/bindings/pydrake/common/ensure_callback_lifetime_pybind.h"
 #include "drake/bindings/pydrake/common/serialize_pybind.h"
 #include "drake/bindings/pydrake/multibody/inverse_kinematics_py.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
@@ -303,7 +304,10 @@ void DefineDifferentialIkSystem(py::module_ m) {
 
   {
     constexpr auto nested_cls_doc = cls_doc.Ingredient;
-    class_<Ingredient>(cls, "Ingredient", nested_cls_doc.doc);
+    // N.B. The dynamic_attr (inherited by the derived classes) lets an
+    // ingredient keep alive the Python callables that it borrows.
+    class_<Ingredient>(
+        cls, "Ingredient", nested_cls_doc.doc, py::dynamic_attr());
     // We're explicitly not binding `AddToProgram` because we expect only the
     // C++ DifferentialInverseKinematicsSystem would call it.
   }
@@ -402,9 +406,25 @@ void DefineDifferentialIkSystem(py::module_ m) {
     PyClassIngredient<NestedClass> nested_cls = BindIngredient<NestedClass>(
         "CollisionConstraint", nested_cls_doc, &cls);
     nested_cls  // BR
-        .def("SetSelectDataForCollisionConstraintFunction",
-            &NestedClass::SetSelectDataForCollisionConstraintFunction,
+        .def(
+            "SetSelectDataForCollisionConstraintFunction",
+            [](NestedClass* self, py::callable select_data) {
+              // The ingredient borrows the callable; ensure_callback_lifetime
+              // keeps it alive in a way that Python's GC can see.
+              PyObject* ptr = select_data.ptr();
+              self->SetSelectDataForCollisionConstraintFunction(
+                  [ptr](const planning::DofMask& active_dof,
+                      const planning::RobotClearance& robot_clearance,
+                      Eigen::VectorXd* dist_out,
+                      Eigen::MatrixXd* ddist_dq_out) {
+                    py::gil_scoped_acquire guard;
+                    py::handle callback = ptr;
+                    callback(
+                        active_dof, robot_clearance, dist_out, ddist_dq_out);
+                  });
+            },
             py::arg("select_data_for_collision_constraint"),
+            internal::ensure_callback_lifetime<1, 2>(),
             nested_cls_doc.SetSelectDataForCollisionConstraintFunction.doc);
   }
 
