@@ -192,6 +192,11 @@ std::unique_ptr<Frame<T>> Frame<T>::DoShallowClone() const {
                                      NiceTypeName::Get(*this)));
 }
 
+template <typename T>
+const Frame<T>* Frame<T>::DoGetParentFrameIfAny() const {
+  return is_link_frame() ? nullptr : &link().link_frame();
+}
+
 }  // namespace multibody
 }  // namespace drake
 

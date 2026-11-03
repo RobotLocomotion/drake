@@ -26,7 +26,7 @@ PACKAGE_INFO = get_pybind_package_info(base_package = "//bindings")
 drake_cc_library(
     name = "optimization_pybind",
     hdrs = ["optimization_pybind.h"],
-    declare_installed_headers = 0,
+    declare_installed_headers = False,
 )
 
 drake_pybind_library(

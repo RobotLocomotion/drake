@@ -2866,6 +2866,11 @@ Parameter ``name``:
     same name already exists in the model. See
     HasModelInstanceNamed().)""";
         } AddModelInstance;
+        // Symbol: drake::multibody::MultibodyPlant::AddOrGetJointFrame
+        struct /* AddOrGetJointFrame */ {
+          // Source: drake/multibody/plant/multibody_plant.h
+          const char* doc = R"""()""";
+        } AddOrGetJointFrame;
         // Symbol: drake::multibody::MultibodyPlant::AddRigidBody
         struct /* AddRigidBody */ {
           // Source: drake/multibody/plant/multibody_plant.h

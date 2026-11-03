@@ -2,7 +2,7 @@
     {
         "type": "download_deb",
         "name": "bazelisk",
-        "version": "1.29.0",
+        "version": "1.30.0",
         "arches": [
             "amd64"
         ],
@@ -10,17 +10,17 @@
             "noble",
             "resolute"
         ],
-        "sha256": "186d78a20e1a64f59ba08987791a989892d142c9d3a9f9cc0c5c35e201f53924",
+        "sha256": "883f9f78db06a2f36b77104dc726b03b0bb6b96bf80e688c5a92fd3ebf9b18e9",
         "urls": [
-            "https://github.com/bazelbuild/bazelisk/releases/download/v1.29.0/bazelisk-amd64.deb",
-            "https://drake-mirror.csail.mit.edu/github/bazelbuild/bazelisk/v1.29.0/bazelisk-amd64.deb",
-            "https://s3.amazonaws.com/drake-mirror/github/bazelbuild/bazelisk/v1.29.0/bazelisk-amd64.deb"
+            "https://github.com/bazelbuild/bazelisk/releases/download/v1.30.0/bazelisk-amd64.deb",
+            "https://drake-mirror.csail.mit.edu/github/bazelbuild/bazelisk/v1.30.0/bazelisk-amd64.deb",
+            "https://s3.amazonaws.com/drake-mirror/github/bazelbuild/bazelisk/v1.30.0/bazelisk-amd64.deb"
         ]
     },
     {
         "type": "download_deb",
         "name": "bazelisk",
-        "version": "1.29.0",
+        "version": "1.30.0",
         "arches": [
             "arm64"
         ],
@@ -28,11 +28,11 @@
             "noble",
             "resolute"
         ],
-        "sha256": "db8ada89c841afd2cb33db7d13aa98ea4fb14612579a8bae84722250caa84272",
+        "sha256": "538d84bc8bd2375896e568cedd67a19d52d29dd5b1893aea9580364e76059afc",
         "urls": [
-            "https://github.com/bazelbuild/bazelisk/releases/download/v1.29.0/bazelisk-arm64.deb",
-            "https://drake-mirror.csail.mit.edu/github/bazelbuild/bazelisk/v1.29.0/bazelisk-arm64.deb",
-            "https://s3.amazonaws.com/drake-mirror/github/bazelbuild/bazelisk/v1.29.0/bazelisk-arm64.deb"
+            "https://github.com/bazelbuild/bazelisk/releases/download/v1.30.0/bazelisk-arm64.deb",
+            "https://drake-mirror.csail.mit.edu/github/bazelbuild/bazelisk/v1.30.0/bazelisk-arm64.deb",
+            "https://s3.amazonaws.com/drake-mirror/github/bazelbuild/bazelisk/v1.30.0/bazelisk-arm64.deb"
         ]
     },
     {

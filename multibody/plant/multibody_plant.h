@@ -1620,6 +1620,25 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   }
   // clang-format on
 
+#ifndef DRAKE_DOXYGEN_CXX
+  // (Internal use only) Returns the frame that a joint named `joint_name` in
+  // model instance `joint_instance` should use as its frame Jp or Jc (per
+  // `side`): `frame_B` itself if `X_BF` is nullopt, or else a new frame fixed
+  // to `frame_B` at pose `X_BF`, named the way the AddJoint() overload that
+  // takes poses names the frames it adds. This lets a caller add a joint
+  // between frames of its choosing, using the AddJoint() overload that takes
+  // a joint, without knowing how those frames are named.
+  const Frame<T>& AddOrGetJointFrame(
+      const Frame<T>& frame_B,
+      const std::optional<math::RigidTransform<double>>& X_BF,
+      ModelInstanceIndex joint_instance, std::string_view joint_name,
+      internal::JointFrameSide side) {
+    DRAKE_MBP_THROW_IF_FINALIZED();
+    return this->mutable_tree().AddOrGetJointFrame(
+        frame_B, X_BF, joint_instance, joint_name, side);
+  }
+#endif
+
   /// Removes and deletes `joint` from this %MultibodyPlant. Any existing
   /// references to `joint` will become invalid, and future calls to
   /// `get_joint(joint_index)` will throw an exception. Other elements

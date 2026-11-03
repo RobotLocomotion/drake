@@ -111,6 +111,8 @@ class FixedOffsetFrame final : public Frame<T> {
 
   std::unique_ptr<Frame<T>> DoShallowClone() const override;
 
+  const Frame<T>* DoGetParentFrameIfAny() const override;
+
   math::RigidTransform<T> DoCalcPoseInBodyFrame(
       const systems::Parameters<T>& parameters) const override;
 

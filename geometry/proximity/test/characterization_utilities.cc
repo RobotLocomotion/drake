@@ -615,7 +615,7 @@ GeometryId CharacterizeResultTest<T>::EncodeData(fcl::CollisionObjectd* obj) {
   const GeometryId id = GeometryId::get_new_id();
   const EncodedData data(id, true);
   data.write_to(obj);
-  collision_filter_.AddGeometry(data.id());
+  collision_filter_.AddGeometry(data.id(), /* is_anchored = */ false);
   return id;
 }
 

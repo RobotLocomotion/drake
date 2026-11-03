@@ -498,6 +498,14 @@ struct Impl {
       constexpr auto& cls_doc = doc.FunctionHandleTrajectory;
       auto cls = DefineTemplateClassWithDefault<Class, Trajectory<T>>(
           m, "FunctionHandleTrajectory", param, cls_doc.doc);
+      // This class deliberately owns its Python callables. Do not switch it to
+      // borrow them (e.g., via ensure_callback_lifetime), because it is a
+      // copyable value type that C++ copies freely (e.g., into
+      // TrajectorySource and CompositeTrajectory), and a keep-alive link on
+      // the Python wrapper cannot follow those copies; they would be left with
+      // dangling pointers. The cost is that a callable that refers back to the
+      // trajectory forms a reference cycle that leaks. That leak is pinned in
+      // memory_leak_test.py.
       cls  // BR
           .def(py::init<const std::function<MatrixX<T>(const T&)>&, int, int,
                    double, double>(),

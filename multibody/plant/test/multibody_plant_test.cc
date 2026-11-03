@@ -2103,6 +2103,52 @@ GTEST_TEST(MultibodyPlantTest, UnsupportedReversedJoint) {
       ".*prismatic.*revolute.*weld.*Reverse.*ordering.*");
 }
 
+// Verifies that AddOrGetJointFrame() adds a frame only when given a pose, names
+// it as AddJoint() names the frames it adds, and may fix it to any frame, not
+// just a link's.
+GTEST_TEST(MultibodyPlantTest, AddOrGetJointFrame) {
+  using internal::JointFrameSide;
+  MultibodyPlant<double> plant(0.0);
+  const ModelInstanceIndex instance = plant.AddModelInstance("instance");
+  const RigidBody<double>& link = plant.AddRigidBody(
+      "link", instance, SpatialInertia<double>::MakeUnitary());
+  const Frame<double>& frame_B =
+      plant.AddFrame(std::make_unique<FixedOffsetFrame<double>>(
+          "B", link, RigidTransformd(Vector3d(1, 2, 3))));
+  const RigidTransformd X_BF(RollPitchYawd(0.1, 0.2, 0.3), Vector3d(4, 5, 6));
+
+  // With no pose, frame B itself is the joint frame.
+  const int num_frames = plant.num_frames();
+  EXPECT_EQ(&plant.AddOrGetJointFrame(frame_B, std::nullopt, instance, "joint",
+                                      JointFrameSide::kParent),
+            &frame_B);
+  EXPECT_EQ(plant.num_frames(), num_frames);
+
+  for (const auto& [side, name] :
+       {std::pair{JointFrameSide::kParent, "joint_parent"},
+        std::pair{JointFrameSide::kChild, "joint_child"}}) {
+    SCOPED_TRACE(name);
+    const Frame<double>& frame =
+        plant.AddOrGetJointFrame(frame_B, X_BF, instance, "joint", side);
+    EXPECT_EQ(frame.name(), name);
+    EXPECT_EQ(frame.model_instance(), instance);
+    const auto* offset_frame =
+        dynamic_cast<const FixedOffsetFrame<double>*>(&frame);
+    ASSERT_NE(offset_frame, nullptr);
+    EXPECT_EQ(&offset_frame->parent_frame(), &frame_B);
+    EXPECT_TRUE(frame.GetFixedPoseInBodyFrame().IsExactlyEqualTo(
+        frame_B.GetFixedPoseInBodyFrame() * X_BF));
+  }
+
+  // AddJoint() names the frames it adds the same way.
+  const RigidBody<double>& link2 = plant.AddRigidBody(
+      "link2", instance, SpatialInertia<double>::MakeUnitary());
+  const WeldJoint<double>& weld = plant.AddJoint<WeldJoint>(
+      "weld", link, X_BF, link2, X_BF, RigidTransformd());
+  EXPECT_EQ(weld.frame_on_parent().name(), "weld_parent");
+  EXPECT_EQ(weld.frame_on_child().name(), "weld_child");
+}
+
 // This test verifies that these two issues are fixed:
 //  - #9939 (duplicate welds give a bad error message)
 //  - #17429 (can't weld anything but base link)

@@ -863,15 +863,17 @@ const Mobilizer<T>& MultibodyTree<T>::GetFreeBodyMobilizerOrThrow(
 
 template <typename T>
 const Frame<T>& MultibodyTree<T>::AddOrGetJointFrame(
-    const RigidBody<T>& body, const std::optional<RigidTransform<double>>& X_BF,
+    const Frame<T>& frame_B, const std::optional<RigidTransform<double>>& X_BF,
     ModelInstanceIndex joint_instance, std::string_view joint_name,
-    std::string_view frame_suffix) {
+    JointFrameSide side) {
   if (X_BF.has_value()) {
+    const std::string_view suffix =
+        side == JointFrameSide::kParent ? "parent" : "child";
     return this->AddFrame<FixedOffsetFrame>(
-        fmt::format("{}_{}", joint_name, frame_suffix), body.body_frame(),
-        *X_BF, joint_instance);
+        fmt::format("{}_{}", joint_name, suffix), frame_B, *X_BF,
+        joint_instance);
   }
-  return body.body_frame();
+  return frame_B;
 }
 
 template <typename T>
