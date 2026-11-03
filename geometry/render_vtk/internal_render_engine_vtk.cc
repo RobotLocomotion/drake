@@ -10,7 +10,7 @@
 
 // To ease build system upkeep, we annotate VTK includes with their deps.
 #include <vtkCamera.h>                // vtkRenderingCore
-#include <vtkCameraPass.h>            // vtkRenderingOpenGL2
+#include <vtkCameraPass.h>            // vtkRenderingCore
 #include <vtkCylinderSource.h>        // vtkFiltersSources
 #include <vtkGLTFImporter.h>          // vtkIOImport
 #include <vtkHDRReader.h>             // vtkIOImage

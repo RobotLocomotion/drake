@@ -5,6 +5,7 @@ load(
     "drake_cc_googletest",
     "drake_cc_library",
 )
+load("//tools/skylark:drake_py.bzl", "drake_py_unittest")
 
 exports_files(
     [
@@ -47,6 +48,27 @@ drake_cc_googletest(
         "//common:find_resource",
         "//common:find_runfiles",
         "@vtk_internal//:vtkRenderingOpenGL2",
+    ],
+)
+
+drake_cc_googletest(
+    name = "object_factory_test",
+    deps = [
+        ":vtk_opengl_init",
+        "@vtk_internal//:vtkCommonCore",
+        "@vtk_internal//:vtkRenderingCore",
+    ],
+)
+
+drake_py_unittest(
+    name = "object_factory_lint_test",
+    data = [
+        ":gen/vtkRenderingOpenGL2ObjectFactory.cxx",
+        "@vtk_internal//:Rendering/OpenGL2/CMakeLists.txt",
+    ],
+    tags = ["lint"],
+    deps = [
+        "@rules_python//python/runfiles",
     ],
 )
 
