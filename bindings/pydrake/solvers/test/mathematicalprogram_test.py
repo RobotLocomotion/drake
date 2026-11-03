@@ -1,4 +1,5 @@
 import copy
+import gc
 import textwrap
 import unittest
 import weakref
@@ -13,6 +14,9 @@ from pydrake.common.yaml import yaml_dump_typed, yaml_load_typed
 from pydrake.math import ge
 import pydrake.solvers as mp
 from pydrake.solvers import (
+    Binding,
+    Constraint,
+    Cost,
     GurobiSolver,
     LinearConstraint,
     MathematicalProgramResult,
@@ -1822,6 +1826,213 @@ class TestMathematicalProgram(unittest.TestCase):
         count = prog.RemoveVisualizationCallback(callback=callback)
         self.assertEqual(count, 1)
         self.assertEqual(len(prog.visualization_callbacks()), 0)
+
+    def _make_cyclic_program(self):
+        """Returns a program with Python callbacks that capture it."""
+        return self._make_cyclic_callbacks(return_program=True)
+
+    def _make_cyclic_callbacks(self, *, return_program=False):
+        """Returns bindings for Python callbacks that capture their program.
+        The program is not otherwise returned, so only the bindings (and
+        whatever they keep alive) refer to it.
+        """
+        prog = mp.MathematicalProgram()
+        x = prog.NewContinuousVariables(2)
+        cost = prog.AddCost(lambda v: v[0] ** 2 + prog.num_vars() * 0, x)
+        constraint = prog.AddConstraint(
+            lambda v: np.array([v[0] + prog.num_vars() * 0]), [0.0], [1.0], x
+        )
+        visualization = prog.AddVisualizationCallback(
+            lambda v: prog.num_vars(), x
+        )
+        if return_program:
+            return prog
+        return cost, constraint, visualization
+
+    def test_bindings_outlive_program(self):
+        """A binding keeps the Python callables of its evaluator alive, even
+        after its program is gone and garbage collection has run. (Calling a
+        callable that was freed would crash, so this also checks the evaluator
+        object, which owns the callables, before using it.)
+        """
+        x = np.array([1.0, 2.0])
+
+        def check(cost, constraint, visualization):
+            gc.collect()
+            self.assertTrue(hasattr(cost.evaluator(), "_user_evaluator_funcs"))
+            self.assertTrue(
+                hasattr(constraint.evaluator(), "_user_evaluator_funcs")
+            )
+            self.assertEqual(cost.evaluator().Eval(x), 1.0)
+            self.assertEqual(constraint.evaluator().Eval(x), 1.0)
+            visualization.evaluator().Eval(x)
+
+        # Bindings returned by the Add methods.
+        check(*self._make_cyclic_callbacks())
+
+        # Bindings obtained from the getters.
+        for getters in [
+            lambda p: (
+                p.generic_costs()[0],
+                p.generic_constraints()[0],
+                p.visualization_callbacks()[0],
+            ),
+            lambda p: (
+                p.GetAllCosts()[0],
+                p.GetAllConstraints()[0],
+                p.visualization_callbacks()[0],
+            ),
+        ]:
+            prog = self._make_cyclic_callbacks(return_program=True)
+            bindings = getters(prog)
+            del prog
+            check(*bindings)
+
+    def test_clones_are_released(self):
+        """A clone keeps its original alive, but not the other way around, so
+        discarded clones are freed even while the original lives."""
+        prog = mp.MathematicalProgram()
+        x = prog.NewContinuousVariables(2)
+        prog.AddLinearCost(x[0] + x[1])
+        for make_clone in [
+            prog.Clone,
+            lambda: copy.copy(prog),
+            lambda: copy.deepcopy(prog),
+        ]:
+            refs = [weakref.ref(make_clone()) for _ in range(5)]
+            gc.collect()
+            self.assertEqual([r() for r in refs], [None] * 5)
+
+        # A clone shares the original's Python callables, so it must keep them
+        # alive after the original is gone.
+        original = self._make_cyclic_callbacks(return_program=True)
+        clone = original.Clone()
+        del original
+        gc.collect()
+        evaluator = clone.generic_costs()[0].evaluator()
+        self.assertEqual(evaluator.Eval(np.array([1.0, 2.0])), 1.0)
+
+    def test_python_callback_lifetimes(self):
+        """The C++ side of Python callbacks borrows them (see #24162). Checks
+        that the callbacks stay alive for as long as anything that might call
+        them, even when they form reference cycles that garbage collection
+        must find.
+        """
+
+        # Evaluating a bound method twice yields distinct, but equal, callables.
+        # Each must be kept alive.
+        class Counter:
+            def __init__(self):
+                self.calls = 0
+
+            def callback(self, x):
+                self.calls += 1
+
+        counter = Counter()
+        prog0 = mp.MathematicalProgram()
+        x0 = prog0.NewContinuousVariables(2)
+        evaluators = [
+            prog0.AddVisualizationCallback(counter.callback, x0).evaluator()
+            for _ in range(2)
+        ]
+        gc.collect()
+        for evaluator in evaluators:
+            evaluator.Eval(np.array([1.0, 2.0]))
+        self.assertEqual(counter.calls, 2)
+
+        # An evaluator that outlives the program and the binding.
+        cost, constraint, visualization = self._make_cyclic_callbacks()
+        cost_evaluator = cost.evaluator()
+        constraint_evaluator = constraint.evaluator()
+        visualization_evaluator = visualization.evaluator()
+        del cost, constraint, visualization
+        gc.collect()
+        x = np.array([1.0, 2.0])
+        self.assertEqual(cost_evaluator.Eval(x), 1.0)
+        self.assertEqual(constraint_evaluator.Eval(x), 1.0)
+        visualization_evaluator.Eval(x)
+
+        # A binding that is added to a different program, when the original
+        # program is otherwise unreachable.
+        cost, constraint, _ = self._make_cyclic_callbacks()
+        prog2 = mp.MathematicalProgram()
+        prog2.AddDecisionVariables(cost.variables())
+        prog2.AddCost(cost)
+        prog2.AddConstraint(constraint)
+        del cost, constraint
+        gc.collect()
+        self.assertEqual(
+            mp.Solve(prog2).get_solution_result(),
+            mp.SolutionResult.kSolutionFound,
+        )
+
+        # A MinimumValue constraint borrows its callables from its Python
+        # object, which a program must keep alive. Its callables refer back to
+        # a holder that refers to the constraint, which forms a cycle.
+        def make_minimum_value_program():
+            holder = []
+
+            def value_function(x, influence_value):
+                assert holder is not None  # Captures `holder`.
+                return np.array([1.0])
+
+            def penalty_function(x, compute_grad):
+                assert holder is not None  # Captures `holder`.
+                return (0.0, 0.0) if compute_grad else (0.0, None)
+
+            constraint = mp.MinimumValueUpperBoundConstraint(
+                num_vars=1,
+                minimum_value_upper=2.0,
+                influence_value_offset=1.0,
+                max_num_values=1,
+                value_function=value_function,
+                value_function_double=value_function,
+            )
+            constraint.set_penalty_function(penalty_function)
+            holder.append(constraint)
+            prog = mp.MathematicalProgram()
+            x = prog.NewContinuousVariables(1)
+            binding = prog.AddConstraint(constraint, x)
+            prog2 = mp.MathematicalProgram()
+            prog2.AddDecisionVariables(x)
+            prog2.AddConstraint(binding)
+            return prog2
+
+        prog5 = make_minimum_value_program()
+        gc.collect()
+        (binding,) = prog5.GetAllConstraints()
+        # We only care that the callbacks still work (not that they satisfy
+        # the constraint).
+        self.assertIsInstance(
+            binding.evaluator().CheckSatisfied(np.array([0.0])), bool
+        )
+
+        # A clone shares the evaluators of the original program.
+        prog4 = self._make_cyclic_program().Clone()
+        gc.collect()
+        self.assertEqual(
+            mp.Solve(prog4).get_solution_result(),
+            mp.SolutionResult.kSolutionFound,
+        )
+        prog5 = copy.deepcopy(self._make_cyclic_program())
+        gc.collect()
+        self.assertEqual(
+            mp.Solve(prog5).get_solution_result(),
+            mp.SolutionResult.kSolutionFound,
+        )
+
+        # Evaluators that are added to a different program.
+        cost, constraint, _ = self._make_cyclic_callbacks()
+        prog3 = mp.MathematicalProgram()
+        x3 = prog3.NewContinuousVariables(2)
+        prog3.AddCost(Binding[Cost](cost.evaluator(), x3))
+        prog3.AddConstraint(Binding[Constraint](constraint.evaluator(), x3))
+        del cost, constraint
+        gc.collect()
+        self.assertEqual(
+            mp.Solve(prog3).get_solution_result(),
+            mp.SolutionResult.kSolutionFound,
+        )
 
     def test_get_program_type(self):
         prog = mp.MathematicalProgram()
