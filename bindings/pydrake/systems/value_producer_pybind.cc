@@ -6,42 +6,59 @@
 namespace drake {
 namespace pydrake {
 
+namespace {
+
+// Calls the Python `allocate` callable, and returns a clone of its result.
+// The GIL must be held.
+std::unique_ptr<AbstractValue> CallAllocate(py::handle allocate) {
+  // Invoke the Python allocate function.
+  py::object result_py = allocate();
+  if (result_py.is_none()) {
+    throw std::runtime_error(
+        fmt::format("The allocate callback function {} must return a "
+                    "pydrake.common.value.Value[...] or "
+                    "pydrake.common.value.AbstractValue object, not None",
+            py::cast<std::string>(py::repr(allocate))));
+  }
+
+  // Verify its return type.
+  const AbstractValue* result_cpp;
+  try {
+    result_cpp = py::cast<const AbstractValue*>(result_py);
+  } catch (const py::cast_error& e) {
+#ifdef PYDRAKE_USE_PYBIND11
+    py::str type_name = py::str(py::type::handle_of(result_py));
+#else
+    py::str type_name = py::inst_name(result_py);
+#endif
+    throw std::runtime_error(
+        fmt::format("The allocate callback function {} must return a "
+                    "pydrake.common.value.Value[...] or "
+                    "pydrake.common.value.AbstractValue object, not {}",
+            py::cast<std::string>(py::repr(allocate)),
+            py::cast<std::string>(type_name)));
+  }
+
+  // Our signature requires returning a unique_ptr; the only way we can do
+  // that is via cloning.
+  return result_cpp->Clone();
+}
+
+}  // namespace
+
 std::function<std::unique_ptr<AbstractValue>()>
 MakeCppCompatibleAllocateCallback(py::callable allocate) {
   return [allocate = std::move(allocate)]() -> std::unique_ptr<AbstractValue> {
     py::gil_scoped_acquire guard;
+    return CallAllocate(allocate);
+  };
+}
 
-    // Invoke the Python allocate function.
-    py::object result_py = allocate();
-    if (result_py.is_none()) {
-      throw std::runtime_error(
-          fmt::format("The allocate callback function {} must return a "
-                      "pydrake.common.value.Value[...] or "
-                      "pydrake.common.value.AbstractValue object, not None",
-              py::cast<std::string>(py::repr(allocate))));
-    }
-
-    // Verify its return type.
-    const AbstractValue* result_cpp;
-    try {
-      result_cpp = py::cast<const AbstractValue*>(result_py);
-    } catch (const py::cast_error& e) {
-#ifdef PYDRAKE_USE_PYBIND11
-      py::str type_name = py::str(py::type::handle_of(result_py));
-#else
-      py::str type_name = py::inst_name(result_py);
-#endif
-      throw std::runtime_error(
-          fmt::format("The allocate callback function {} must return a "
-                      "pydrake.common.value.Value[...] or "
-                      "pydrake.common.value.AbstractValue object, not {}",
-              py::cast<std::string>(py::repr(allocate)),
-              py::cast<std::string>(type_name)));
-    }
-
-    // Our signature requires returning a unique_ptr; the only way we can do
-    // that is via cloning.
-    return result_cpp->Clone();
+std::function<std::unique_ptr<AbstractValue>()> MakeBorrowedAllocateCallback(
+    PyObject* allocate_ptr) {
+  return [allocate_ptr]() -> std::unique_ptr<AbstractValue> {
+    py::gil_scoped_acquire guard;
+    return CallAllocate(py::handle(allocate_ptr));
   };
 }
 
@@ -53,6 +70,18 @@ MakeCppCompatibleCalcCallback(
     py::gil_scoped_acquire guard;
     py::object context_py = py::cast(context_cpp, py_rvp::reference);
     py::object output_py = py::cast(output_cpp, py_rvp::reference);
+    calc(context_py, output_py);
+  };
+}
+
+std::function<void(const systems::ContextBase&, AbstractValue*)>
+MakeBorrowedCalcCallback(PyObject* calc_ptr) {
+  return [calc_ptr](const systems::ContextBase& context_cpp,
+             AbstractValue* output_cpp) -> void {
+    py::gil_scoped_acquire guard;
+    py::object context_py = py::cast(context_cpp, py_rvp::reference);
+    py::object output_py = py::cast(output_cpp, py_rvp::reference);
+    py::handle calc = calc_ptr;
     calc(context_py, output_py);
   };
 }

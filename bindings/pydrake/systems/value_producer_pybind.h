@@ -10,6 +10,16 @@
 namespace drake {
 namespace pydrake {
 
+// The `calc` callback of an abstract output port or value producer, which
+// receives a context and an output AbstractValue.
+#ifdef PYDRAKE_USE_PYBIND11
+using PyCalcAbstractCallback =
+    py::typing::Callable<void(py::object, py::object)>;
+#else   // PYDRAKE_USE_NANOBIND
+using PyCalcAbstractCallback =
+    py::typed<py::callable, void(py::object, py::object)>;
+#endif  // PYDRAKE_USE_PYBIND11
+
 // The C++ framework uses ValueProducer::AllocateCallback to allocate storage
 // for values in the Context, and that function returns a unique_ptr. Python
 // cannot return unique_ptr, so we need to wrap the call to match signatures.
@@ -23,6 +33,18 @@ MakeCppCompatibleAllocateCallback(py::callable allocate);
 // case the `allocate` callback.
 std::function<void(const systems::ContextBase&, AbstractValue*)>
 MakeCppCompatibleCalcCallback(std::function<void(py::object, py::object)> calc);
+
+// The "borrowed" variants below are like the functions above, except that the
+// returned C++ callback holds only a non-owning pointer to the Python callable.
+// Holding a strong reference inside a std::function is invisible to Python's
+// garbage collection, so a callable that captures its owner would leak the
+// owner. Callers must guarantee the callable's lifetime elsewhere, e.g., by
+// using internal::ensure_callback_lifetime in the binding.
+std::function<std::unique_ptr<AbstractValue>()> MakeBorrowedAllocateCallback(
+    PyObject* allocate_ptr);
+
+std::function<void(const systems::ContextBase&, AbstractValue*)>
+MakeBorrowedCalcCallback(PyObject* calc_ptr);
 
 }  // namespace pydrake
 }  // namespace drake

@@ -359,6 +359,24 @@ class TestAnalysis(unittest.TestCase):
         # Clearing the context is allowed.
         simulator.reset_context(context=None)
 
+    def test_simulator_monitor_lifetime(self):
+        """The simulator borrows its monitor, so a monitor fetched by
+        get_monitor() must keep the simulator (and thus the callable) alive.
+        """
+        calls = []
+
+        def make_monitor():
+            simulator = Simulator(ConstantVectorSource([1.0]))
+            simulator.set_monitor(lambda context: calls.append(1))
+            return simulator.get_monitor()
+
+        monitor = make_monitor()
+        gc.collect()
+        context = Simulator(ConstantVectorSource([1.0])).get_context()
+        status = monitor(context)
+        self.assertEqual(status.severity(), EventStatus.Severity.kDidNothing)
+        self.assertEqual(calls, [1])
+
     def test_simulator_default_context_no_cpp_leak(self):
         """Regression test for #23924"""
         gc.collect()

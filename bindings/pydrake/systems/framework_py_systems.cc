@@ -806,18 +806,19 @@ Note: The above is for the C++ documentation. For Python, use
         .def(
             "DeclareAbstractOutputPort",
             [](Class* self, const std::string& name, py::callable alloc,
-                std::function<void(py::object, py::object)> calc,
+                PyCalcAbstractCallback calc,
                 const std::set<DependencyTicket>& prerequisites_of_calc)
                 -> const OutputPort<T>& {
               return GetAlias<PyClass>(self)->DeclareAbstractOutputPort(name,
-                  MakeCppCompatibleAllocateCallback(std::move(alloc)),
-                  MakeCppCompatibleCalcCallback(std::move(calc)),
-                  prerequisites_of_calc);
+                  MakeBorrowedAllocateCallback(alloc.ptr()),
+                  MakeBorrowedCalcCallback(calc.ptr()), prerequisites_of_calc);
             },
             // Use a ref_cycle (rather than the implicit keep-alive of
             // reference_internal) to avoid immortality hazards like #22515.
-            internal::ref_cycle<0, 1>(), py_rvp::reference, py::arg("name"),
-            py::arg("alloc"), py::arg("calc"),
+            internal::ref_cycle<0, 1>(),
+            internal::ensure_callback_lifetime<1, 3>(),
+            internal::ensure_callback_lifetime<1, 4>(), py_rvp::reference,
+            py::arg("name"), py::arg("alloc"), py::arg("calc"),
             py::arg("prerequisites_of_calc") =
                 std::set<DependencyTicket>{SystemBase::all_sources_ticket()},
             doc.LeafSystem.DeclareAbstractOutputPort
@@ -1404,7 +1405,10 @@ void DoScalarIndependentDefinitions(py::module_ m) {
         >.operator()<Class>(&SystemBasePublic::DeclareCacheEntry);
     // clang-format on
     cls  // BR
-        .def("DeclareCacheEntry", DeclareCacheEntry, py_rvp::reference_internal,
+        .def("DeclareCacheEntry", DeclareCacheEntry,
+            // The cache entry holds a copy of the producer's callbacks, which
+            // are borrowed from the Python ValueProducer object.
+            internal::ref_cycle<1, 3>(), py_rvp::reference_internal,
             py::arg("description"), py::arg("value_producer"),
             py::arg("prerequisites_of_calc") =
                 std::set<DependencyTicket>{Class::all_sources_ticket()},

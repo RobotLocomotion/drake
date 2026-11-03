@@ -661,10 +661,19 @@ class TestPythonMemoryLeaks(unittest.TestCase):
         of these currently leaks; when one gets fixed, its `leaks_required`
         here will fail, and should be changed to 0.
         """
-        duts = [
+        fixed_duts = [
             _dut_abstract_output_port,
             _dut_cache_entry,
             _dut_simulator_monitor,
+        ]
+        for dut in fixed_duts:
+            for cyclic in [False, True]:
+                with self.subTest(dut=dut.__name__, cyclic=cyclic):
+                    self.do_test(
+                        dut=functools.partial(dut, cyclic=cyclic), count=1
+                    )
+
+        duts = [
             _dut_program_cost,
             _dut_program_constraint,
             _dut_program_visualization_callback,

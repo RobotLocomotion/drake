@@ -7,6 +7,7 @@
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/deprecation_pybind.h"
+#include "drake/bindings/pydrake/common/ensure_callback_lifetime_pybind.h"
 #include "drake/bindings/pydrake/common/serialize_pybind.h"
 #include "drake/bindings/pydrake/common/wrap_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
@@ -287,12 +288,8 @@ PYDRAKE_MODULE(analysis, m) {
             // Keep alive, reference: `self` keeps `context` alive.
             py::keep_alive<1, 3>(), doc.RungeKutta3Integrator.ctor.doc);
 
-    // See equivalent note about EventCallback in `framework_py_systems.cc`.
-    using MonitorCallback =
-        std::function<std::optional<EventStatus>(const Context<T>&)>;
-
-    auto cls = DefineTemplateClassWithDefault<Simulator<T>>(
-        m, "Simulator", GetPyParam<T>(), doc.Simulator.doc);
+    auto cls = DefineTemplateClassWithDefault<Simulator<T>>(m, "Simulator",
+        GetPyParam<T>(), doc.Simulator.doc, std::nullopt, py::dynamic_attr());
     cls  // BR
         .def(
             "__init__",
@@ -374,16 +371,40 @@ Parameter ``interruptible``:
                 .c_str())
         .def("AdvancePendingEvents", &Simulator<T>::AdvancePendingEvents,
             doc.Simulator.AdvancePendingEvents.doc)
-        .def("set_monitor",
-            WrapCallbacks([](Simulator<T>* self, MonitorCallback monitor) {
-              self->set_monitor([monitor](const Context<T>& context) {
-                return monitor(context).value_or(EventStatus::DidNothing());
+        .def(
+            "set_monitor",
+            [](Simulator<T>* self, py::callable monitor) {
+              // The simulator borrows the callable; ensure_callback_lifetime
+              // keeps it alive in a way that Python's GC can see.
+              PyObject* monitor_ptr = monitor.ptr();
+              self->set_monitor([monitor_ptr](const Context<T>& context) {
+                py::gil_scoped_acquire guard;
+                py::handle callback = monitor_ptr;
+                py::object result =
+                    callback(py::cast(context, py_rvp::reference));
+                return py::cast<std::optional<EventStatus>>(result).value_or(
+                    EventStatus::DidNothing());
               });
-            }),
-            py::arg("monitor"), doc.Simulator.set_monitor.doc)
+            },
+            py::arg("monitor"), internal::ensure_callback_lifetime<1, 2>(),
+            doc.Simulator.set_monitor.doc)
         .def("clear_monitor", &Simulator<T>::clear_monitor,
             doc.Simulator.clear_monitor.doc)
-        .def("get_monitor", &Simulator<T>::get_monitor,
+        .def(
+            "get_monitor",
+            [](py::object self_py) {
+              using Monitor = std::function<EventStatus(const Context<T>&)>;
+              const Monitor& monitor =
+                  py::cast<Simulator<T>&>(self_py).get_monitor();
+              if (!monitor) {
+                return Monitor{};
+              }
+              // The monitor borrows its Python callable from the simulator, so
+              // the returned function must keep the simulator alive.
+              return Monitor([self_py, monitor](const Context<T>& context) {
+                return monitor(context);
+              });
+            },
             doc.Simulator.get_monitor.doc)
         .def("get_context", &Simulator<T>::get_context,
             py_rvp::reference_internal, doc.Simulator.get_context.doc)
