@@ -42,8 +42,14 @@ void ensure_callback_lifetime_impl(size_t Nurse, size_t CallbackPatient,
   handle nurse = info.GetArg(ret, Nurse, policy);
   py::object callback_patient =
       py::borrow<py::object>(info.GetArg(ret, CallbackPatient, policy));
-  internal::make_arbitrary_ref_link(
-      nurse, UniquelyWrapCallback(callback_patient), info.FunctionName());
+  make_arbitrary_callback_lifetime(
+      nurse, callback_patient, info.FunctionName());
+}
+
+void make_arbitrary_callback_lifetime(
+    py::handle nurse, py::handle callback, const std::string& location_hint) {
+  make_arbitrary_ref_link(nurse,
+      UniquelyWrapCallback(py::borrow<py::object>(callback)), location_hint);
 }
 
 }  // namespace internal
