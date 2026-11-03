@@ -7,7 +7,6 @@
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/deprecation_pybind.h"
-#include "drake/bindings/pydrake/common/ensure_callback_lifetime_pybind.h"
 #include "drake/bindings/pydrake/common/serialize_pybind.h"
 #include "drake/bindings/pydrake/common/wrap_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
@@ -275,6 +274,26 @@ PYDRAKE_MODULE(analysis, m) {
   };
   type_visit(bind_scalar_types, CommonScalarPack{});
 
+  {
+    // The callable returned by Simulator.get_monitor(). It holds the user's
+    // monitor in an attribute (rather than in a C++ capture), so that Python
+    // garbage collection can see through it. It does not refer to the
+    // simulator.
+    struct SimulatorMonitor {};
+    class_<SimulatorMonitor> cls(m, "_SimulatorMonitor", py::dynamic_attr(),
+        "Wraps a Python simulator monitor so that it always returns an "
+        "EventStatus.");
+    cls.def(py::init<>());
+    cls.def(
+        "__call__",
+        [](py::object self, py::object context) {
+          py::object result = self.attr("monitor")(context);
+          return py::cast<std::optional<EventStatus>>(result).value_or(
+              EventStatus::DidNothing());
+        },
+        py::arg("context"));
+  }
+
   auto bind_nonsymbolic_scalar_types = [&m](auto dummy) {
     using T = decltype(dummy);
 
@@ -373,11 +392,14 @@ Parameter ``interruptible``:
             doc.Simulator.AdvancePendingEvents.doc)
         .def(
             "set_monitor",
-            [](Simulator<T>* self, py::callable monitor) {
-              // The simulator borrows the callable; ensure_callback_lifetime
-              // keeps it alive in a way that Python's GC can see.
+            [](py::object self_py, py::callable monitor) {
+              // The simulator borrows the callable. The Python object of the
+              // simulator keeps it alive in a single slot, in a way that
+              // Python's GC can see. Replacing the monitor releases the
+              // previous one.
+              Simulator<T>& self = py::cast<Simulator<T>&>(self_py);
               PyObject* monitor_ptr = monitor.ptr();
-              self->set_monitor([monitor_ptr](const Context<T>& context) {
+              self.set_monitor([monitor_ptr](const Context<T>& context) {
                 py::gil_scoped_acquire guard;
                 py::handle callback = monitor_ptr;
                 py::object result =
@@ -385,25 +407,31 @@ Parameter ``interruptible``:
                 return py::cast<std::optional<EventStatus>>(result).value_or(
                     EventStatus::DidNothing());
               });
+              self_py.attr("_monitor") = monitor;
             },
-            py::arg("monitor"), internal::ensure_callback_lifetime<1, 2>(),
-            doc.Simulator.set_monitor.doc)
-        .def("clear_monitor", &Simulator<T>::clear_monitor,
+            py::arg("monitor"), doc.Simulator.set_monitor.doc)
+        .def(
+            "clear_monitor",
+            [](py::object self_py) {
+              py::cast<Simulator<T>&>(self_py).clear_monitor();
+              self_py.attr("_monitor") = py::none();
+            },
             doc.Simulator.clear_monitor.doc)
         .def(
             "get_monitor",
-            [](py::object self_py) {
-              using Monitor = std::function<EventStatus(const Context<T>&)>;
-              const Monitor& monitor =
-                  py::cast<Simulator<T>&>(self_py).get_monitor();
-              if (!monitor) {
-                return Monitor{};
+            [](py::object self_py) -> py::object {
+              if (!py::cast<Simulator<T>&>(self_py).get_monitor()) {
+                return py::none();
               }
-              // The monitor borrows its Python callable from the simulator, so
-              // the returned function must keep the simulator alive.
-              return Monitor([self_py, monitor](const Context<T>& context) {
-                return monitor(context);
-              });
+              // Wrap the Python callable, not the simulator, so that the
+              // result does not keep the simulator alive. In particular,
+              // `simulator.set_monitor(simulator.get_monitor())` doesn't make
+              // a reference cycle that is invisible to Python's GC.
+              py::object wrapper =
+                  py::module_::import_("pydrake.systems.analysis")
+                      .attr("_SimulatorMonitor")();
+              wrapper.attr("monitor") = self_py.attr("_monitor");
+              return wrapper;
             },
             doc.Simulator.get_monitor.doc)
         .def("get_context", &Simulator<T>::get_context,
