@@ -67,7 +67,9 @@ void DefineSolversGurobi(py::module_ m) {
                     Eigen::VectorXd* vals, VectorXDecisionVariable* vars) {
                   py::gil_scoped_acquire guard;
                   py::handle callback_handle = ptr;
-                  callback_handle(prog, callback_info, vals, vars);
+                  // Pass references as pointers, so that Python sees the
+                  // original objects (a MathematicalProgram can't be copied).
+                  callback_handle(&prog, &callback_info, vals, vars);
                 });
           },
           py::arg("callback"), internal::ensure_callback_lifetime<1, 2>(),
@@ -81,7 +83,9 @@ void DefineSolversGurobi(py::module_ m) {
                     const GurobiSolver::SolveStatusInfo& callback_info) {
                   py::gil_scoped_acquire guard;
                   py::handle callback_handle = ptr;
-                  callback_handle(prog, callback_info);
+                  // Pass references as pointers, so that Python sees the
+                  // original objects (a MathematicalProgram can't be copied).
+                  callback_handle(&prog, &callback_info);
                 });
           },
           py::arg("callback"), internal::ensure_callback_lifetime<1, 2>(),
