@@ -1,4 +1,4 @@
-from importlib.machinery import SourceFileLoader
+import importlib.machinery
 import importlib.util
 import io
 import os
@@ -8,15 +8,19 @@ import sys
 import tempfile
 import unittest
 
-bazel_wrapper_loader = SourceFileLoader(
-    "bazel_wrapper", "tools/clion/bazel_wrapper"
+
+def _load_module(*, name, source_file):
+    loader = importlib.machinery.SourceFileLoader(name, source_file)
+    spec = importlib.util.spec_from_loader(name, loader)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+bazel_wrapper = _load_module(
+    name="bazel_wrapper", source_file="tools/clion/bazel_wrapper"
 )
-bazel_wrapper_spec = importlib.util.spec_from_loader(
-    "bazel_wrapper", bazel_wrapper_loader
-)
-bazel_wrapper = importlib.util.module_from_spec(bazel_wrapper_spec)
-sys.modules["bazel_wrapper"] = bazel_wrapper
-bazel_wrapper_spec.loader.exec_module(bazel_wrapper)
 
 
 class ExecDetail(Exception):

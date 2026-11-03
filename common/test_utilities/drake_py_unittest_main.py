@@ -4,6 +4,7 @@ should NOT be called directly by anything else.
 """
 
 import argparse
+import importlib.machinery
 import importlib.util
 import os
 from pathlib import Path
@@ -20,6 +21,15 @@ try:
     has_pydrake = True
 except ImportError:
     has_pydrake = False
+
+
+def _load_module(*, name, source_file):
+    loader = importlib.machinery.SourceFileLoader(name, source_file)
+    spec = importlib.util.spec_from_loader(name, loader)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[name] = module
+    spec.loader.exec_module(module)
+    return module
 
 
 def _unittest_main(*, module, argv, testRunner):
@@ -119,12 +129,7 @@ def main():
     if has_pydrake:
         warnings.simplefilter("error", DrakeDeprecationWarning)
 
-    spec = importlib.util.spec_from_file_location(
-        test_name, runfiles_test_filename
-    )
-    module = importlib.util.module_from_spec(spec)
-    sys.modules[test_name] = module
-    spec.loader.exec_module(module)
+    module = _load_module(name=test_name, source_file=runfiles_test_filename)
 
     # Figure out which arguments are for unittest and which are for the module
     # under test.
