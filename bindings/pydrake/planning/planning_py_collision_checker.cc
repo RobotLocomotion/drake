@@ -5,6 +5,8 @@
 #include <vector>
 
 #include "drake/bindings/generated_docstrings/planning.h"
+#include "drake/bindings/pydrake/common/ensure_callback_lifetime_pybind.h"
+#include "drake/bindings/pydrake/common/ref_cycle_pybind.h"
 #include "drake/bindings/pydrake/common/wrap_pybind.h"
 #include "drake/bindings/pydrake/planning/planning_py.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
@@ -21,6 +23,23 @@ using multibody::BodyIndex;
 using multibody::Frame;
 using multibody::RigidBody;
 
+namespace {
+
+// Returns a Python clone of `self`, which keeps `self` alive. See the comment
+// at the definition of the Clone() binding.
+py::object CloneKeepingOriginalAlive(
+    const planning::CollisionChecker* self, const std::string& location_hint) {
+  py::object clone_py =
+      py::cast(self->Clone().release(), py_rvp::take_ownership);
+  make_arbitrary_ref_link(clone_py,
+      py::cast(
+          const_cast<planning::CollisionChecker*>(self), py_rvp::reference),
+      location_hint);
+  return clone_py;
+}
+
+}  // namespace
+
 void DefinePlanningCollisionChecker(py::module_ m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::planning;
@@ -29,7 +48,7 @@ void DefinePlanningCollisionChecker(py::module_ m) {
   {
     using Class = CollisionChecker;
     constexpr auto& cls_doc = doc.CollisionChecker;
-    class_<Class> cls(m, "CollisionChecker", cls_doc.doc);
+    class_<Class> cls(m, "CollisionChecker", cls_doc.doc, py::dynamic_attr());
     cls  // BR
         .def("model", &Class::model, py_rvp::reference_internal,
             cls_doc.model.doc)
@@ -203,9 +222,21 @@ void DefinePlanningCollisionChecker(py::module_ m) {
             &Class::distance_and_interpolation_provider,
             py_rvp::reference_internal,
             cls_doc.distance_and_interpolation_provider.doc)
-        .def("SetConfigurationDistanceFunction",
-            WrapCallbacks(&Class::SetConfigurationDistanceFunction),
+        .def(
+            "SetConfigurationDistanceFunction",
+            [](Class* self, py::callable distance_function) {
+              // The checker borrows the callable; ensure_callback_lifetime
+              // keeps it alive in a way that Python's GC can see.
+              PyObject* ptr = distance_function.ptr();
+              self->SetConfigurationDistanceFunction(
+                  [ptr](const Eigen::VectorXd& q1, const Eigen::VectorXd& q2) {
+                    py::gil_scoped_acquire guard;
+                    py::handle callback = ptr;
+                    return py::cast<double>(callback(q1, q2));
+                  });
+            },
             py::arg("distance_function"),
+            internal::ensure_callback_lifetime<1, 2>(),
             cls_doc.SetConfigurationDistanceFunction.doc)
         .def("ComputeConfigurationDistance",
             &Class::ComputeConfigurationDistance, py::arg("q1"), py::arg("q2"),
@@ -213,9 +244,25 @@ void DefinePlanningCollisionChecker(py::module_ m) {
         .def("MakeStandaloneConfigurationDistanceFunction",
             &Class::MakeStandaloneConfigurationDistanceFunction,
             cls_doc.MakeStandaloneConfigurationDistanceFunction.doc)
-        .def("SetConfigurationInterpolationFunction",
-            WrapCallbacks(&Class::SetConfigurationInterpolationFunction),
+        .def(
+            "SetConfigurationInterpolationFunction",
+            [](Class* self, py::object interpolation_function) {
+              if (interpolation_function.is_none()) {
+                // None selects the default function.
+                self->SetConfigurationInterpolationFunction(nullptr);
+                return;
+              }
+              PyObject* ptr = interpolation_function.ptr();
+              self->SetConfigurationInterpolationFunction(
+                  [ptr](const Eigen::VectorXd& q1, const Eigen::VectorXd& q2,
+                      double ratio) {
+                    py::gil_scoped_acquire guard;
+                    py::handle callback = ptr;
+                    return py::cast<Eigen::VectorXd>(callback(q1, q2, ratio));
+                  });
+            },
             py::arg("interpolation_function"),
+            internal::ensure_callback_lifetime<1, 2>(),
             cls_doc.SetConfigurationInterpolationFunction.doc)
         .def("InterpolateBetweenConfigurations",
             &Class::InterpolateBetweenConfigurations, py::arg("q1"),
@@ -286,8 +333,27 @@ void DefinePlanningCollisionChecker(py::module_ m) {
             &Class::ClassifyContextBodyCollisions, py::arg("model_context"),
             py::arg("q"), cls_doc.ClassifyContextBodyCollisions.doc)
         .def("SupportsParallelChecking", &Class::SupportsParallelChecking,
-            cls_doc.SupportsParallelChecking.doc);
-    DefClone(&cls);
+            cls_doc.SupportsParallelChecking.doc)
+        // The clone shares the original's distance and interpolation
+        // providers, which borrow Python callables from the original, so the
+        // clone must keep the original alive. The link goes one way only, so
+        // that the original does not keep every clone ever made alive. (We
+        // can't use DefClone here because it has no such link.)
+        .def(
+            "Clone",
+            [](const Class* self) {
+              return CloneKeepingOriginalAlive(self, "CollisionChecker.Clone");
+            },
+            cls_doc.Clone.doc)
+        .def("__copy__",
+            [](const Class* self) {
+              return CloneKeepingOriginalAlive(
+                  self, "CollisionChecker.__copy__");
+            })
+        .def("__deepcopy__", [](const Class* self, py::dict /* memo */) {
+          return CloneKeepingOriginalAlive(
+              self, "CollisionChecker.__deepcopy__");
+        });
   }
 
   {
