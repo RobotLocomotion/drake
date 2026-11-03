@@ -865,6 +865,16 @@ class MujocoParser {
       }
       if (mesh_.contains(mesh)) {
         geom.shape = mesh_.at(mesh)->Clone();
+        // Frames: M is the mesh file frame (where the vertices in the file are
+        // expressed); R is the mesh asset's reference frame, given by MuJoCo's
+        // refpos/refquat as X_MR. MuJoCo expresses the geom's vertices in R,
+        // so the pose parsed from the XML is really X_BR (despite the "G"
+        // name), but Drake's Mesh keeps its vertices in M. Re-expressing the
+        // pose as X_BM = X_BR * X_RM keeps the vertices at the same place in B.
+        if (X_mesh_ref_pose_.contains(mesh)) {
+          const RigidTransformd& X_MR = X_mesh_ref_pose_.at(mesh);
+          geom.X_BG = geom.X_BG * X_MR.inverse();
+        }
       } else {
         Warning(
             *node,
@@ -1392,8 +1402,6 @@ class MujocoParser {
       WarnUnsupportedAttribute(*mesh_node, "vertex");
       // Note: "normal", "face", and "texcoord" are not supported either, but
       // that lack of support is implied by us not supporting "vertex".
-      WarnUnsupportedAttribute(*mesh_node, "refpos");
-      WarnUnsupportedAttribute(*mesh_node, "refquat");
       WarnUnsupportedElement(*mesh_node, "plugin");
 
       std::string file;
@@ -1457,7 +1465,38 @@ class MujocoParser {
                          ::tolower);
           // TODO(russt): Support .vtk files.
           if (extension == ".obj") {
+            Vector3d refpos{0, 0, 0};
+            ParseVectorAttribute(mesh_node, "refpos", &refpos);
+            // MuJoCo refquat is w, x, y, z.
+            Vector4d refquat{1, 0, 0, 0};
+            ParseVectorAttribute(mesh_node, "refquat", &refquat);
+            const Eigen::Quaternion<double> q_MR(refquat[0], refquat[1],
+                                                 refquat[2], refquat[3]);
+            // MuJoCo normalizes refquat, so only its direction matters; but a
+            // zero quaternion has no direction.
+            if (!(q_MR.norm() >= 1e-10)) {
+              Error(*mesh_node,
+                    "The mesh asset refquat must be finite and have non-zero "
+                    "norm.");
+              continue;
+            }
+            const RotationMatrixd R_MR(q_MR.normalized());
+            // MuJoCo maps file vertices v to scale * R_MR⁻¹ * (v - p_MR), i.e.,
+            // refpos is in unscaled file units and the scale is applied last.
+            // Drake scales the vertices when it loads the mesh, so we must
+            // scale refpos to match. That is exact only when the scale is
+            // uniform or refquat is the identity; otherwise, the mapping is not
+            // a rigid transform.
+            if (!R_MR.IsNearlyIdentity(1e-12) &&
+                !(scale[0] == scale[1] && scale[1] == scale[2])) {
+              Warning(*mesh_node,
+                      "Mesh asset uses a refquat together with a non-uniform "
+                      "scale; Drake cannot represent that exactly, so the mesh "
+                      "vertex placement will not match MuJoCo.");
+            }
+            const RigidTransformd X_MR(R_MR, scale.cwiseProduct(refpos));
             mesh_[name] = std::make_unique<geometry::Mesh>(filename, scale);
+            X_mesh_ref_pose_[name] = X_MR;
           } else {
             Error(
                 *node,
@@ -2146,6 +2185,9 @@ class MujocoParser {
   std::optional<std::filesystem::path> meshdir_{};
   std::string eulerseq_{"xyz"};
   std::map<std::string, std::unique_ptr<geometry::Mesh>> mesh_{};
+  // X_MR for each mesh asset (M: mesh file frame; R: reference frame) from
+  // MuJoCo refpos/refquat.
+  std::map<std::string, RigidTransformd> X_mesh_ref_pose_{};
   // Spatial inertia of mesh assets assuming density = 1.
   std::map<std::string, SpatialInertia<double>> mesh_inertia_{};
   std::map<JointIndex, double> armature_{};

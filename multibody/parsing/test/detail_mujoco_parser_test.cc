@@ -768,6 +768,235 @@ TEST_F(BoxMeshTest, MeshFileScaleViaDefault) {
   TestBoxMesh(box_obj_, mesh_asset, defaults, Vector3d(2, 3, 4));
 }
 
+TEST_F(MujocoParserTest, MeshFileReferencePose) {
+  // refpos/refquat shift the mesh asset frame; Drake applies the inverse to
+  // the geom pose so vertices match MuJoCo (#22488).
+  const std::string xml = fmt::format(R"""(
+<mujoco model="test">
+  <asset>
+    <mesh name="box" file="{}" refpos="1 2 3" refquat="0 1 0 0"/>
+  </asset>
+  <worldbody>
+    <geom name="box_geom" type="mesh" mesh="box"/>
+  </worldbody>
+</mujoco>
+)""",
+                                      box_obj_);
+
+  AddModelFromString(xml, "test");
+  const auto& inspector = scene_graph_->model_inspector();
+  const GeometryId geom_id = inspector.GetGeometryIdByName(
+      inspector.world_frame_id(), Role::kProximity, "box_geom");
+  const RigidTransformd expected(Eigen::Quaternion<double>(0, 1, 0, 0),
+                                 Vector3d(-1, 2, 3));
+  EXPECT_TRUE(
+      inspector.GetPoseInFrame(geom_id).IsNearlyEqualTo(expected, 1e-14));
+}
+
+TEST_F(MujocoParserTest, MeshFileReferencePoseWithScale) {
+  // MuJoCo computes scale * R⁻¹ * (v - refpos), so refpos is in unscaled file
+  // units. Drake scales the vertices at load time, so the parser must scale
+  // refpos to match. A uniform scale with a non-identity refquat is exact, so
+  // there must be no warning (the fixture fails on unconsumed warnings).
+  const std::string xml = fmt::format(R"""(
+<mujoco model="test">
+  <asset>
+    <mesh name="box" file="{}" scale="2 2 2" refpos="1 2 3" refquat="0 1 0 0"/>
+  </asset>
+  <worldbody>
+    <geom name="box_geom" type="mesh" mesh="box"/>
+  </worldbody>
+</mujoco>
+)""",
+                                      box_obj_);
+
+  AddModelFromString(xml, "test");
+  const auto& inspector = scene_graph_->model_inspector();
+  const GeometryId geom_id = inspector.GetGeometryIdByName(
+      inspector.world_frame_id(), Role::kProximity, "box_geom");
+  const RigidTransformd expected(Eigen::Quaternion<double>(0, 1, 0, 0),
+                                 Vector3d(-2, 4, 6));
+  EXPECT_TRUE(
+      inspector.GetPoseInFrame(geom_id).IsNearlyEqualTo(expected, 1e-14));
+}
+
+TEST_F(MujocoParserTest, MeshFileReferencePoseNonUniformScaleWarns) {
+  // A refquat combined with a non-uniform scale is not a rigid transform, so
+  // we warn.
+  const std::string xml = fmt::format(R"""(
+<mujoco model="test">
+  <asset>
+    <mesh name="box" file="{}" scale="1 2 3" refpos="1 2 3" refquat="0 1 0 0"/>
+  </asset>
+  <worldbody>
+    <geom name="box_geom" type="mesh" mesh="box"/>
+  </worldbody>
+</mujoco>
+)""",
+                                      box_obj_);
+
+  AddModelFromString(xml, "test");
+  EXPECT_THAT(TakeWarning(), MatchesRegex(".*refquat.*non-uniform scale.*"));
+}
+
+TEST_F(MujocoParserTest, MeshFileReferencePoseNonUniformScaleNoRefquat) {
+  // With an identity refquat, a non-uniform scale is exactly representable (no
+  // warning), and refpos is scaled component-wise.
+  const std::string xml = fmt::format(R"""(
+<mujoco model="test">
+  <asset>
+    <mesh name="box" file="{}" scale="1 2 3" refpos="1 2 3"/>
+  </asset>
+  <worldbody>
+    <geom name="box_geom" type="mesh" mesh="box"/>
+  </worldbody>
+</mujoco>
+)""",
+                                      box_obj_);
+
+  AddModelFromString(xml, "test");
+  const auto& inspector = scene_graph_->model_inspector();
+  const GeometryId geom_id = inspector.GetGeometryIdByName(
+      inspector.world_frame_id(), Role::kProximity, "box_geom");
+  EXPECT_TRUE(inspector.GetPoseInFrame(geom_id).IsNearlyEqualTo(
+      RigidTransformd(Vector3d(-1, -4, -9)), 1e-14));
+}
+
+TEST_F(MujocoParserTest, MeshFileReferencePoseOnlyRefpos) {
+  const std::string xml = fmt::format(R"""(
+<mujoco model="test">
+  <asset>
+    <mesh name="box" file="{}" refpos="1 2 3"/>
+  </asset>
+  <worldbody>
+    <geom name="box_geom" type="mesh" mesh="box"/>
+  </worldbody>
+</mujoco>
+)""",
+                                      box_obj_);
+
+  AddModelFromString(xml, "test");
+  const auto& inspector = scene_graph_->model_inspector();
+  const GeometryId geom_id = inspector.GetGeometryIdByName(
+      inspector.world_frame_id(), Role::kProximity, "box_geom");
+  EXPECT_TRUE(inspector.GetPoseInFrame(geom_id).IsNearlyEqualTo(
+      RigidTransformd(Vector3d(-1, -2, -3)), 1e-14));
+}
+
+TEST_F(MujocoParserTest, MeshFileReferencePoseComposedWithGeomPose) {
+  // The geom's own pose X_BG must compose as X_BG * X_MR⁻¹. A non-trivial X_BG
+  // makes the product order matter.
+  const std::string xml = fmt::format(R"""(
+<mujoco model="test">
+  <asset>
+    <mesh name="box" file="{}" refpos="1 2 3" refquat="0 1 0 0"/>
+  </asset>
+  <worldbody>
+    <geom name="box_geom" type="mesh" mesh="box" pos="0.5 -1 2"
+          quat="0.7071067811865476 0 0 0.7071067811865476"/>
+  </worldbody>
+</mujoco>
+)""",
+                                      box_obj_);
+
+  AddModelFromString(xml, "test");
+  const auto& inspector = scene_graph_->model_inspector();
+  const GeometryId geom_id = inspector.GetGeometryIdByName(
+      inspector.world_frame_id(), Role::kProximity, "box_geom");
+  const RigidTransformd X_BG(
+      Eigen::Quaternion<double>(std::sqrt(0.5), 0, 0, std::sqrt(0.5)),
+      Vector3d(0.5, -1, 2));
+  const RigidTransformd X_MR(Eigen::Quaternion<double>(0, 1, 0, 0),
+                             Vector3d(1, 2, 3));
+  const RigidTransformd expected = X_BG * X_MR.inverse();
+  EXPECT_TRUE(
+      inspector.GetPoseInFrame(geom_id).IsNearlyEqualTo(expected, 1e-14));
+  // Guard against the test being insensitive to the order.
+  EXPECT_FALSE((X_MR.inverse() * X_BG).IsNearlyEqualTo(expected, 1e-6));
+}
+
+TEST_F(MujocoParserTest, MeshFileReferencePoseNegatedIdentityQuat) {
+  // refquat="-1 0 0 0" is the identity rotation, so a non-uniform scale is
+  // exact and must not warn.
+  const std::string xml = fmt::format(R"""(
+<mujoco model="test">
+  <asset>
+    <mesh name="box" file="{}" scale="1 2 3" refquat="-1 0 0 0"/>
+  </asset>
+  <worldbody>
+    <geom name="box_geom" type="mesh" mesh="box"/>
+  </worldbody>
+</mujoco>
+)""",
+                                      box_obj_);
+
+  AddModelFromString(xml, "test");
+}
+
+TEST_F(MujocoParserTest, MeshFileReferencePoseZeroRefquat) {
+  const std::string xml = fmt::format(R"""(
+<mujoco model="test">
+  <asset>
+    <mesh name="box" file="{}" refquat="0 0 0 0"/>
+  </asset>
+  <worldbody>
+    <geom name="box_geom" type="mesh" mesh="box"/>
+  </worldbody>
+</mujoco>
+)""",
+                                      box_obj_);
+
+  AddModelFromString(xml, "test");
+  EXPECT_THAT(TakeError(), MatchesRegex(".*refquat.*non-zero.*"));
+  // The mesh was skipped, so the geom refers to an unknown mesh.
+  EXPECT_THAT(TakeWarning(), MatchesRegex(".*unknown mesh.*"));
+}
+
+TEST_F(MujocoParserTest, MeshFileReferencePoseBadFileOnlyReportsFileError) {
+  // A bad refquat on a mesh whose file can't be loaded must not add diagnostics
+  // beyond the file error.
+  const std::string xml = R"""(
+<mujoco model="test">
+  <asset>
+    <mesh name="box" file="does_not_exist.obj" refquat="0 0 0 0"/>
+  </asset>
+  <worldbody>
+    <geom name="box_geom" type="mesh" mesh="box"/>
+  </worldbody>
+</mujoco>
+)""";
+
+  AddModelFromString(xml, "test");
+  EXPECT_THAT(TakeError(), MatchesRegex(".*could not be found.*"));
+  EXPECT_THAT(TakeWarning(), MatchesRegex(".*unknown mesh.*"));
+}
+
+TEST_F(MujocoParserTest, MeshFileReferencePoseInertia) {
+  // The inertia is computed from the Drake mesh (in frame M), so with the geom
+  // frame shifted to M the body's center of mass must follow X_BM. The box
+  // mesh is centered at M's origin, so p_BCom = X_BM * 0 = -R⁻¹ * p_MR.
+  const std::string xml = fmt::format(R"""(
+<mujoco model="test">
+  <asset>
+    <mesh name="box" file="{}" refpos="1 2 3" refquat="0 1 0 0"/>
+  </asset>
+  <worldbody>
+    <body name="b">
+      <geom name="box_geom" type="mesh" mesh="box" mass="1.0"/>
+    </body>
+  </worldbody>
+</mujoco>
+)""",
+                                      box_obj_);
+
+  AddModelFromString(xml, "test");
+  plant_->Finalize();
+  auto context = plant_->CreateDefaultContext();
+  const SpatialInertia<double> M_BBo_B =
+      plant_->GetBodyByName("b").CalcSpatialInertiaInBodyFrame(*context);
+  EXPECT_TRUE(CompareMatrices(M_BBo_B.get_com(), Vector3d(-1, 2, 3), 1e-14));
+}
+
 // CalcSpatialInertia() cannot necessarily compute a physical spatial inertia
 // for meshes which don't adhere to its requirements. The parser detects this
 // and provides a fallback so that it doesn't choke.
