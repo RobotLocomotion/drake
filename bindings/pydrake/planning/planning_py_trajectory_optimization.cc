@@ -5,6 +5,8 @@
 #include <vector>
 
 #include "drake/bindings/generated_docstrings/planning_trajectory_optimization.h"
+#include "drake/bindings/pydrake/common/ensure_callback_lifetime_pybind.h"
+#include "drake/bindings/pydrake/common/ref_cycle_pybind.h"
 #include "drake/bindings/pydrake/geometry/optimization_pybind.h"
 #include "drake/bindings/pydrake/planning/planning_py.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
@@ -39,6 +41,53 @@ void RegisterAddConstraintToAllKnotPoints(
       doc.MultipleShooting.AddConstraintToAllKnotPoints.doc_shared_ptr);
 }
 
+namespace {
+
+// The trajectory callbacks below are borrowed by the C++ program, which
+// cannot own a Python callable without hiding reference cycles from garbage
+// collection. The callable is instead kept alive by the callback evaluator's
+// Python object, which in turn is kept alive by the `MultipleShooting` object
+// that owns the program. Returns `binding`.
+solvers::Binding<solvers::VisualizationCallback> KeepCallbackAlive(
+    py::handle self_py,
+    solvers::Binding<solvers::VisualizationCallback> binding,
+    const py::callable& callback, const std::string& location_hint) {
+  py::object evaluator_py = py::cast(binding.evaluator());
+  internal::make_arbitrary_ref_link(self_py, evaluator_py, location_hint);
+  internal::make_arbitrary_callback_lifetime(
+      evaluator_py, callback, location_hint);
+  return binding;
+}
+
+drake::planning::trajectory_optimization::MultipleShooting::TrajectoryCallback
+BorrowTrajectoryCallback(const py::callable& callback) {
+  PyObject* ptr = callback.ptr();
+  return [ptr](const Eigen::Ref<const Eigen::VectorXd>& sample_times,
+             const Eigen::Ref<const Eigen::MatrixXd>& values) {
+    py::gil_scoped_acquire guard;
+    py::handle callback_handle = ptr;
+    callback_handle(Eigen::VectorXd(sample_times), Eigen::MatrixXd(values));
+  };
+}
+
+drake::planning::trajectory_optimization::MultipleShooting::
+    CompleteTrajectoryCallback
+    BorrowCompleteTrajectoryCallback(const py::callable& callback) {
+  PyObject* ptr = callback.ptr();
+  return [ptr](const Eigen::Ref<const Eigen::VectorXd>& sample_times,
+             const Eigen::Ref<const Eigen::MatrixXd>& states,
+             const Eigen::Ref<const Eigen::MatrixXd>& inputs,
+             const std::vector<Eigen::Ref<const Eigen::MatrixXd>>& values) {
+    py::gil_scoped_acquire guard;
+    py::handle callback_handle = ptr;
+    std::vector<Eigen::MatrixXd> values_copy(values.begin(), values.end());
+    callback_handle(Eigen::VectorXd(sample_times), Eigen::MatrixXd(states),
+        Eigen::MatrixXd(inputs), values_copy);
+  };
+}
+
+}  // namespace
+
 void DefinePlanningTrajectoryOptimization(py::module_ m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::planning::trajectory_optimization;
@@ -52,7 +101,7 @@ void DefinePlanningTrajectoryOptimization(py::module_ m) {
   {
     using Class = MultipleShooting;
     constexpr auto& cls_doc = doc.MultipleShooting;
-    class_<Class> cls(m, "MultipleShooting", cls_doc.doc);
+    class_<Class> cls(m, "MultipleShooting", cls_doc.doc, py::dynamic_attr());
     cls  // BR
         .def("time", &Class::time, cls_doc.time.doc)
         .def("prog", overload_cast_explicit<MathematicalProgram&>(&Class::prog),
@@ -159,13 +208,38 @@ void DefinePlanningTrajectoryOptimization(py::module_ m) {
                 const Eigen::Ref<const MatrixX<symbolic::Expression>>&>(
                 &Class::AddFinalCost),
             py::arg("matrix"), cls_doc.AddFinalCost.doc_1args_matrix)
-        .def("AddInputTrajectoryCallback", &Class::AddInputTrajectoryCallback,
+        .def(
+            "AddInputTrajectoryCallback",
+            [](py::object self_py, py::callable callback) {
+              Class& self = py::cast<Class&>(self_py);
+              return KeepCallbackAlive(self_py,
+                  self.AddInputTrajectoryCallback(
+                      BorrowTrajectoryCallback(callback)),
+                  callback, "MultipleShooting.AddInputTrajectoryCallback");
+            },
             py::arg("callback"), cls_doc.AddInputTrajectoryCallback.doc)
-        .def("AddStateTrajectoryCallback", &Class::AddStateTrajectoryCallback,
+        .def(
+            "AddStateTrajectoryCallback",
+            [](py::object self_py, py::callable callback) {
+              Class& self = py::cast<Class&>(self_py);
+              return KeepCallbackAlive(self_py,
+                  self.AddStateTrajectoryCallback(
+                      BorrowTrajectoryCallback(callback)),
+                  callback, "MultipleShooting.AddStateTrajectoryCallback");
+            },
             py::arg("callback"), cls_doc.AddStateTrajectoryCallback.doc)
-        .def("AddCompleteTrajectoryCallback",
-            &Class::AddCompleteTrajectoryCallback, py::arg("callback"),
-            py::arg("names"), cls_doc.AddCompleteTrajectoryCallback.doc)
+        .def(
+            "AddCompleteTrajectoryCallback",
+            [](py::object self_py, py::callable callback,
+                const std::vector<std::string>& names) {
+              Class& self = py::cast<Class&>(self_py);
+              return KeepCallbackAlive(self_py,
+                  self.AddCompleteTrajectoryCallback(
+                      BorrowCompleteTrajectoryCallback(callback), names),
+                  callback, "MultipleShooting.AddCompleteTrajectoryCallback");
+            },
+            py::arg("callback"), py::arg("names"),
+            cls_doc.AddCompleteTrajectoryCallback.doc)
         .def("SetInitialTrajectory", &Class::SetInitialTrajectory,
             py::arg("traj_init_u"), py::arg("traj_init_x"),
             cls_doc.SetInitialTrajectory.doc)

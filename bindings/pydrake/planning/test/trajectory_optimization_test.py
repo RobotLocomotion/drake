@@ -1,3 +1,4 @@
+import gc
 import unittest
 import weakref
 
@@ -185,6 +186,63 @@ class TestTrajectoryOptimization(unittest.TestCase):
         )
         self.assertEqual(dircol.prog(), dircol2.prog())
         self.assertEqual(prog.num_vars(), num_vars + num_initial_vars)
+
+    def test_trajectory_callback_lifetimes(self):
+        """The program borrows the Python callbacks (see #24162), so they must
+        stay alive for as long as anything that might call them, even when
+        they refer back to the multiple shooting object in a cycle.
+        """
+        calls = []
+
+        def make_dircol():
+            plant = PendulumPlant()
+            dircol = DirectCollocation(
+                plant,
+                plant.CreateDefaultContext(),
+                num_time_samples=3,
+                minimum_time_step=0.2,
+                maximum_time_step=0.5,
+                input_port_index=InputPortSelection.kUseFirstInputIfItExists,
+                assume_non_continuous_states_are_fixed=False,
+            )
+            dircol.NewSequentialVariable(rows=1, name="test")
+
+            def input_callback(t, u):
+                calls.append(("input", dircol is not None))
+
+            def state_callback(t, x):
+                calls.append(("state", dircol is not None))
+
+            def complete_callback(t, x, u, v):
+                calls.append(("complete", dircol is not None))
+
+            bindings = [
+                dircol.AddInputTrajectoryCallback(input_callback),
+                dircol.AddStateTrajectoryCallback(state_callback),
+                dircol.AddCompleteTrajectoryCallback(
+                    complete_callback, names=["test"]
+                ),
+            ]
+            # Return only the program (which keeps `dircol` alive), and the
+            # callback evaluators (which don't).
+            return dircol.prog(), [b.evaluator() for b in bindings]
+
+        prog, evaluators = make_dircol()
+        gc.collect()
+
+        # The program is still usable.
+        mp.Solve(prog)
+        self.assertEqual(
+            {name for name, _ in calls}, {"input", "state", "complete"}
+        )
+
+        # The evaluators alone are still usable.
+        del prog
+        gc.collect()
+        calls.clear()
+        for evaluator in evaluators:
+            evaluator.Eval(np.zeros(evaluator.num_vars()))
+        self.assertEqual(len(calls), 3)
 
     def test_all_knot_points_constraint_python_wrapper_lost(self):
         # Ensure constraints' python wrappers are kept alive when added to a

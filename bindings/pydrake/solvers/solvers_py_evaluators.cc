@@ -791,8 +791,8 @@ void BindEvaluatorsAndBindings(py::module_ m) {
   RegisterBinding<ExpressionCost>(&m);
 
   class_<VisualizationCallback, EvaluatorBase,
-      std::shared_ptr<VisualizationCallback>>(
-      m, "VisualizationCallback", doc.VisualizationCallback.doc);
+      std::shared_ptr<VisualizationCallback>>(m, "VisualizationCallback",
+      py::dynamic_attr(), doc.VisualizationCallback.doc);
 
   RegisterBinding<VisualizationCallback>(&m);
 }  // NOLINT(readability/fn_size)
