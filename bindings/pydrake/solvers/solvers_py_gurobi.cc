@@ -1,6 +1,6 @@
 #include "drake/bindings/generated_docstrings/solvers.h"
+#include "drake/bindings/pydrake/common/ensure_callback_lifetime_pybind.h"
 #include "drake/bindings/pydrake/common/value_pybind.h"
-#include "drake/bindings/pydrake/common/wrap_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/solvers/solvers_py.h"
 #include "drake/bindings/pydrake/solvers/solvers_pybind.h"
@@ -17,7 +17,7 @@ void DefineSolversGurobi(py::module_ m) {
   constexpr auto& doc = pydrake_doc_solvers.drake.solvers;
 
   class_<GurobiSolver, SolverInterface> cls(
-      m, "GurobiSolver", doc.GurobiSolver.doc);
+      m, "GurobiSolver", doc.GurobiSolver.doc, py::dynamic_attr());
   cls  // BR
       .def(py::init<>(), doc.GurobiSolver.ctor.doc)
       .def_static("id", &GurobiSolver::id, doc.GurobiSolver.id.doc);
@@ -54,12 +54,38 @@ void DefineSolversGurobi(py::module_ m) {
           &GurobiSolver::SolveStatusInfo::feasible_solutions_count,
           doc.GurobiSolver.SolveStatusInfo.feasible_solutions_count.doc);
 
+  // The solver borrows the callbacks; ensure_callback_lifetime keeps them alive
+  // in a way that Python's GC can see.
   cls  // BR
-      .def("AddMipNodeCallback",
-          WrapCallbacks(&GurobiSolver::AddMipNodeCallback), py::arg("callback"),
+      .def(
+          "AddMipNodeCallback",
+          [](GurobiSolver* self, py::callable callback) {
+            PyObject* ptr = callback.ptr();
+            self->AddMipNodeCallback(
+                [ptr](const MathematicalProgram& prog,
+                    const GurobiSolver::SolveStatusInfo& callback_info,
+                    Eigen::VectorXd* vals, VectorXDecisionVariable* vars) {
+                  py::gil_scoped_acquire guard;
+                  py::handle callback_handle = ptr;
+                  callback_handle(prog, callback_info, vals, vars);
+                });
+          },
+          py::arg("callback"), internal::ensure_callback_lifetime<1, 2>(),
           doc.GurobiSolver.AddMipNodeCallback.doc)
-      .def("AddMipSolCallback", WrapCallbacks(&GurobiSolver::AddMipSolCallback),
-          py::arg("callback"), doc.GurobiSolver.AddMipSolCallback.doc);
+      .def(
+          "AddMipSolCallback",
+          [](GurobiSolver* self, py::callable callback) {
+            PyObject* ptr = callback.ptr();
+            self->AddMipSolCallback(
+                [ptr](const MathematicalProgram& prog,
+                    const GurobiSolver::SolveStatusInfo& callback_info) {
+                  py::gil_scoped_acquire guard;
+                  py::handle callback_handle = ptr;
+                  callback_handle(prog, callback_info);
+                });
+          },
+          py::arg("callback"), internal::ensure_callback_lifetime<1, 2>(),
+          doc.GurobiSolver.AddMipSolCallback.doc);
 }
 
 }  // namespace internal

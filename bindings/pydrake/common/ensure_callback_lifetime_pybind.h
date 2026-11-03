@@ -86,6 +86,14 @@ NB_INLINE void func_extra_apply(
 }
 #endif  // PYDRAKE_USE_NANOBIND
 
+/* This function does what the call policy does, for arbitrary handles. It may
+be needed in special cases where the ordinary call-policy annotation won't work,
+e.g., when the nurse is created inside a binding rather than passed to it. The
+`location_hint` will appear in any exception messages; it should help
+developers locate where and why this function was called. */
+void make_arbitrary_callback_lifetime(
+    py::handle nurse, py::handle callback, const std::string& location_hint);
+
 }  // namespace internal
 }  // namespace pydrake
 }  // namespace drake

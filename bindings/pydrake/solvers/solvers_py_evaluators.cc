@@ -8,6 +8,7 @@
 #include "drake/bindings/pydrake/common/cpp_param_pybind.h"
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/eigen_pybind.h"
+#include "drake/bindings/pydrake/common/ensure_callback_lifetime_pybind.h"
 #include "drake/bindings/pydrake/common/wrap_function.h"
 #include "drake/bindings/pydrake/common/wrap_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
@@ -154,6 +155,57 @@ void DefTesting(py::module_ m) {
       .def("AcceptBindingConstraint",
           [](const Binding<Constraint>& arg) { return arg; });
 }
+
+namespace {
+
+// The following helpers adapt Python callables for the MinimumValue
+// constraints. The constraint borrows the callable; the constraint's Python
+// object keeps it alive (see ensure_callback_lifetime at the binding sites).
+// Because the constraint may be shared with programs, MathematicalProgram's
+// bindings keep the Python object alive wherever the program goes (see
+// KeepPyFunctionEvaluatorAlive).
+
+std::function<AutoDiffVecXd(const AutoDiffVecXd&, double)> BorrowValueFunction(
+    const py::callable& value_function) {
+  PyObject* ptr = value_function.ptr();
+  return [ptr](const AutoDiffVecXd& x, double influence_value) {
+    py::gil_scoped_acquire guard;
+    py::handle callback = ptr;
+    return py::cast<AutoDiffVecXd>(callback(x, influence_value));
+  };
+}
+
+std::function<Eigen::VectorXd(const Eigen::Ref<const Eigen::VectorXd>&, double)>
+BorrowValueFunctionDouble(const py::object& value_function_double) {
+  if (value_function_double.is_none()) {
+    return {};
+  }
+  PyObject* ptr = value_function_double.ptr();
+  return [ptr](const Eigen::Ref<const Eigen::VectorXd>& x,
+             double influence_value) {
+    py::gil_scoped_acquire guard;
+    py::handle callback = ptr;
+    const Eigen::VectorXd x_copy = x;
+    return py::cast<Eigen::VectorXd>(callback(x_copy, influence_value));
+  };
+}
+
+solvers::MinimumValuePenaltyFunction BorrowPenaltyFunction(
+    const py::callable& penalty_function) {
+  PyObject* ptr = penalty_function.ptr();
+  return [ptr](double x, double* penalty, double* dpenalty) {
+    py::gil_scoped_acquire guard;
+    py::handle callback = ptr;
+    py::tuple penalty_tuple =
+        py::cast<py::tuple>(callback(x, dpenalty != nullptr));
+    *penalty = py::cast<double>(penalty_tuple[0]);
+    if (dpenalty) {
+      *dpenalty = py::cast<double>(penalty_tuple[1]);
+    }
+  };
+}
+
+}  // namespace
 
 void BindEvaluatorsAndBindings(py::module_ m) {
   constexpr auto& doc = pydrake_doc_solvers.drake.solvers;
@@ -485,50 +537,35 @@ void BindEvaluatorsAndBindings(py::module_ m) {
     using Class = MinimumValueLowerBoundConstraint;
     constexpr auto& cls_doc = doc.MinimumValueLowerBoundConstraint;
     class_<Class, Constraint, std::shared_ptr<Class>>(
-        m, "MinimumValueLowerBoundConstraint", cls_doc.doc)
+        m, "MinimumValueLowerBoundConstraint", cls_doc.doc, py::dynamic_attr())
         .def(
             "__init__",
             [](Class* self, int num_vars, double minimum_value_lower,
                 double influence_value_offset, int max_num_values,
-                // If I pass in const Eigen::Ref<const AutoDiffVecXd>& here then
-                // I got the RuntimeError: dtype=object arrays must be copied,
-                // and cannot be referenced.
-                std::function<AutoDiffVecXd(const AutoDiffVecXd&, double)>
-                    value_function,
-                std::function<Eigen::VectorXd(
-                    const Eigen::Ref<const Eigen::VectorXd>&, double)>
-                    value_function_double) {
+                py::callable value_function, py::object value_function_double) {
               new (self)
                   Class(num_vars, minimum_value_lower, influence_value_offset,
-                      max_num_values, value_function, value_function_double);
+                      max_num_values, BorrowValueFunction(value_function),
+                      BorrowValueFunctionDouble(value_function_double));
             },
             py::arg("num_vars"), py::arg("minimum_value_lower"),
             py::arg("influence_value_offset"), py::arg("max_num_values"),
             py::arg("value_function"),
-            py::arg("value_function_double").none() =
-                std::function<Eigen::VectorXd(
-                    const Eigen::Ref<const Eigen::VectorXd>&, double)>{},
-            cls_doc.ctor.doc)
+            py::arg("value_function_double").none() = py::none(),
+            internal::ensure_callback_lifetime<1, 6>(),
+            internal::ensure_callback_lifetime<1, 7>(), cls_doc.ctor.doc)
         .def("minimum_value_lower", &Class::minimum_value_lower,
             cls_doc.minimum_value_lower.doc)
         .def("influence_value", &Class::influence_value,
             cls_doc.influence_value.doc)
         .def(
             "set_penalty_function",
-            [](Class* self,
-                std::function<py::tuple(double, bool)> new_penalty_function) {
-              auto penalty_fun = [new_penalty_function](double x,
-                                     double* penalty, double* dpenalty) {
-                py::tuple penalty_tuple =
-                    new_penalty_function(x, dpenalty != nullptr);
-                *penalty = py::cast<double>(penalty_tuple[0]);
-                if (dpenalty) {
-                  *dpenalty = py::cast<double>(penalty_tuple[1]);
-                }
-              };
-              self->set_penalty_function(penalty_fun);
+            [](Class* self, py::callable new_penalty_function) {
+              self->set_penalty_function(
+                  BorrowPenaltyFunction(new_penalty_function));
             },
             py::arg("new_penalty_function"),
+            internal::ensure_callback_lifetime<1, 2>(),
             "Setter for the penalty function. The penalty function "
             "new_penalty_function(x: float, compute_grad: bool) -> "
             "tuple[float, Optional[float]] "
@@ -542,51 +579,35 @@ void BindEvaluatorsAndBindings(py::module_ m) {
     using Class = MinimumValueUpperBoundConstraint;
     constexpr auto& cls_doc = doc.MinimumValueUpperBoundConstraint;
     class_<Class, Constraint, std::shared_ptr<Class>>(
-        m, "MinimumValueUpperBoundConstraint", cls_doc.doc)
+        m, "MinimumValueUpperBoundConstraint", cls_doc.doc, py::dynamic_attr())
         .def(
             "__init__",
-            [](MinimumValueUpperBoundConstraint* self, int num_vars,
-                double minimum_value_upper, double influence_value_offset,
-                int max_num_values,
-                // If I pass in const Eigen::Ref<const AutoDiffVecXd>& here then
-                // I got the RuntimeError: dtype=object arrays must be copied,
-                // and cannot be referenced.
-                std::function<AutoDiffVecXd(const AutoDiffVecXd&, double)>
-                    value_function,
-                std::function<Eigen::VectorXd(
-                    const Eigen::Ref<const Eigen::VectorXd>&, double)>
-                    value_function_double) {
-              new (self) MinimumValueUpperBoundConstraint(num_vars,
-                  minimum_value_upper, influence_value_offset, max_num_values,
-                  value_function, value_function_double);
+            [](Class* self, int num_vars, double minimum_value_upper,
+                double influence_value_offset, int max_num_values,
+                py::callable value_function, py::object value_function_double) {
+              new (self)
+                  Class(num_vars, minimum_value_upper, influence_value_offset,
+                      max_num_values, BorrowValueFunction(value_function),
+                      BorrowValueFunctionDouble(value_function_double));
             },
             py::arg("num_vars"), py::arg("minimum_value_upper"),
             py::arg("influence_value_offset"), py::arg("max_num_values"),
             py::arg("value_function"),
-            py::arg("value_function_double").none() =
-                std::function<Eigen::VectorXd(
-                    const Eigen::Ref<const Eigen::VectorXd>&, double)>{},
-            cls_doc.ctor.doc)
+            py::arg("value_function_double").none() = py::none(),
+            internal::ensure_callback_lifetime<1, 6>(),
+            internal::ensure_callback_lifetime<1, 7>(), cls_doc.ctor.doc)
         .def("minimum_value_upper", &Class::minimum_value_upper,
             cls_doc.minimum_value_upper.doc)
         .def("influence_value", &Class::influence_value,
             cls_doc.influence_value.doc)
         .def(
             "set_penalty_function",
-            [](Class* self,
-                std::function<py::tuple(double, bool)> new_penalty_function) {
-              auto penalty_fun = [new_penalty_function](double x,
-                                     double* penalty, double* dpenalty) {
-                py::tuple penalty_tuple =
-                    new_penalty_function(x, dpenalty != nullptr);
-                *penalty = py::cast<double>(penalty_tuple[0]);
-                if (dpenalty) {
-                  *dpenalty = py::cast<double>(penalty_tuple[1]);
-                }
-              };
-              self->set_penalty_function(penalty_fun);
+            [](Class* self, py::callable new_penalty_function) {
+              self->set_penalty_function(
+                  BorrowPenaltyFunction(new_penalty_function));
             },
             py::arg("new_penalty_function"),
+            internal::ensure_callback_lifetime<1, 2>(),
             "Setter for the penalty function. The penalty function "
             "new_penalty_function(x: float, compute_grad: bool) -> "
             "tuple[float, Optional[float]] "
@@ -791,8 +812,8 @@ void BindEvaluatorsAndBindings(py::module_ m) {
   RegisterBinding<ExpressionCost>(&m);
 
   class_<VisualizationCallback, EvaluatorBase,
-      std::shared_ptr<VisualizationCallback>>(
-      m, "VisualizationCallback", doc.VisualizationCallback.doc);
+      std::shared_ptr<VisualizationCallback>>(m, "VisualizationCallback",
+      py::dynamic_attr(), doc.VisualizationCallback.doc);
 
   RegisterBinding<VisualizationCallback>(&m);
 }  // NOLINT(readability/fn_size)
