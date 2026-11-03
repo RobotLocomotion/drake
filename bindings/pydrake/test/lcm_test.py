@@ -1,4 +1,5 @@
 import copy
+import dataclasses
 import unittest
 
 from drake import lcmt_quaternion
@@ -76,6 +77,40 @@ class TestLcm(unittest.TestCase):
 
         data = received[0]
         self.assertEqual(data, self.quat.encode())
+
+    def test_unhashable_handlers(self):
+        """The handlers are borrowed by C++ and kept alive by the DrakeLcm
+        (see #24162). A callable need not be hashable to be a handler.
+        """
+
+        @dataclasses.dataclass
+        class Handler:
+            received: list
+
+            def __call__(self, *args):
+                self.received.append(args)
+
+        # Dataclasses with eq=True (the default) are not hashable.
+        self.assertIsNone(Handler.__hash__)
+
+        dut = DrakeLcm()
+        single = Handler([])
+        multi = Handler([])
+        every = Handler([])
+        dut.Subscribe(channel="UNHASHABLE_SINGLE", handler=single)
+        dut.SubscribeMultichannel(regex="UNHASHABLE_MULTI", handler=multi)
+        dut.SubscribeAllChannels(handler=every)
+        del single, multi, every  # DrakeLcm must keep the handlers alive.
+
+        # Look the handlers up again via the peers the DrakeLcm retains.
+        for channel in ["UNHASHABLE_SINGLE", "UNHASHABLE_MULTI"]:
+            for _ in range(10):
+                dut.Publish(channel=channel, buffer=self.quat.encode())
+                dut.HandleSubscriptions(timeout_millis=100)
+        peers = list(dut._pydrake_internal_ref_cycle_peers.values())
+        handlers = [x for x in peers if isinstance(x, Handler)]
+        self.assertEqual(len(handlers), 3)
+        self.assertTrue(all(len(h.received) > 0 for h in handlers))
 
     def test_round_trip_multi_channel(self):
         dut = DrakeLcm()

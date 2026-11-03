@@ -2,6 +2,7 @@
 #include <string>
 
 #include "drake/bindings/generated_docstrings/lcm.h"
+#include "drake/bindings/pydrake/common/ensure_callback_lifetime_pybind.h"
 #include "drake/bindings/pydrake/common/serialize_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/lcm/drake_lcm.h"
@@ -17,16 +18,16 @@ PYDRAKE_MODULE(lcm, m) {
 
   py::module_::import_("pydrake.common");
 
-  // Use `py::bytes` as a mid-point between C++ LCM (`void* + int` /
+  // The handlers below are borrowed by the C++ object, which cannot own a
+  // Python callable without hiding reference cycles from garbage collection.
+  // The calls to `ensure_callback_lifetime` keep them alive instead. We use
+  // `py::bytes` as a mid-point between C++ LCM (`void* + int` /
   // `vector<uint8_t>`) and Python LCM (`str`).
-  using PyHandlerFunction = std::function<void(py::bytes)>;
-  using PyMultichannelHandlerFunction =
-      std::function<void(std::string_view, py::bytes)>;
 
   {
     using Class = DrakeLcmInterface;
     constexpr auto& cls_doc = doc.DrakeLcmInterface;
-    class_<Class>(m, "DrakeLcmInterface", cls_doc.doc)
+    class_<Class>(m, "DrakeLcmInterface", cls_doc.doc, py::dynamic_attr())
         .def("get_lcm_url", &DrakeLcmInterface::get_lcm_url,
             cls_doc.get_lcm_url.doc)
         .def(
@@ -39,26 +40,30 @@ PYDRAKE_MODULE(lcm, m) {
             py::arg("time_sec") = py::none(), cls_doc.Publish.doc)
         .def(
             "Subscribe",
-            [](Class* self, const std::string& channel,
-                PyHandlerFunction handler) {
-              auto subscription = self->Subscribe(
-                  channel, [handler](const void* data, int size) {
-                    handler(py::bytes(static_cast<const char*>(data), size));
+            [](Class* self, const std::string& channel, py::callable handler) {
+              PyObject* ptr = handler.ptr();
+              auto subscription =
+                  self->Subscribe(channel, [ptr](const void* data, int size) {
+                    py::gil_scoped_acquire guard;
+                    py::handle callback = ptr;
+                    callback(py::bytes(static_cast<const char*>(data), size));
                   });
               if (subscription != nullptr) {
                 // This is already the default, but for clarity we'll repeat it.
                 subscription->set_unsubscribe_on_delete(false);
               }
             },
-            py::arg("channel"), py::arg("handler"), cls_doc.Subscribe.doc)
+            py::arg("channel"), py::arg("handler"),
+            internal::ensure_callback_lifetime<1, 3>(), cls_doc.Subscribe.doc)
         .def(
             "SubscribeMultichannel",
-            [](Class* self, const std::string& regex,
-                PyMultichannelHandlerFunction handler) {
-              auto subscription = self->SubscribeMultichannel(
-                  regex, [handler](std::string_view channel, const void* data,
-                             int size) {
-                    handler(channel,
+            [](Class* self, const std::string& regex, py::callable handler) {
+              PyObject* ptr = handler.ptr();
+              auto subscription = self->SubscribeMultichannel(regex,
+                  [ptr](std::string_view channel, const void* data, int size) {
+                    py::gil_scoped_acquire guard;
+                    py::handle callback = ptr;
+                    callback(channel,
                         py::bytes(static_cast<const char*>(data), size));
                   });
               if (subscription != nullptr) {
@@ -67,14 +72,17 @@ PYDRAKE_MODULE(lcm, m) {
               }
             },
             py::arg("regex"), py::arg("handler"),
+            internal::ensure_callback_lifetime<1, 3>(),
             cls_doc.SubscribeMultichannel.doc)
         .def(
             "SubscribeAllChannels",
-            [](Class* self, PyMultichannelHandlerFunction handler) {
-              auto subscription =
-                  self->SubscribeAllChannels([handler](std::string_view channel,
-                                                 const void* data, int size) {
-                    handler(channel,
+            [](Class* self, py::callable handler) {
+              PyObject* ptr = handler.ptr();
+              auto subscription = self->SubscribeAllChannels(
+                  [ptr](std::string_view channel, const void* data, int size) {
+                    py::gil_scoped_acquire guard;
+                    py::handle callback = ptr;
+                    callback(channel,
                         py::bytes(static_cast<const char*>(data), size));
                   });
               if (subscription != nullptr) {
@@ -82,7 +90,8 @@ PYDRAKE_MODULE(lcm, m) {
                 subscription->set_unsubscribe_on_delete(false);
               }
             },
-            py::arg("handler"), cls_doc.SubscribeAllChannels.doc)
+            py::arg("handler"), internal::ensure_callback_lifetime<1, 2>(),
+            cls_doc.SubscribeAllChannels.doc)
         .def("HandleSubscriptions", &DrakeLcmInterface::HandleSubscriptions,
             py::arg("timeout_millis"), cls_doc.HandleSubscriptions.doc);
   }
