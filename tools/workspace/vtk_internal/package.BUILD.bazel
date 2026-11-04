@@ -33,6 +33,13 @@ exports_files(
     ],
 )
 
+exports_files(
+    [
+        "Rendering/OpenGL2/CMakeLists.txt",
+    ],
+    visibility = ["@drake//tools/workspace/vtk_internal:__pkg__"],
+)
+
 # When the rules.bzl needs to declare an objc_library, it adds this to `deps`
 # to improve the error messages in case of a mis-configured build.
 cc_library(

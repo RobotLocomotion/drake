@@ -10,7 +10,7 @@
 
 // To ease build system upkeep, we annotate VTK includes with their deps.
 #include <vtkCamera.h>                // vtkRenderingCore
-#include <vtkCameraPass.h>            // vtkRenderingOpenGL2
+#include <vtkCameraPass.h>            // vtkRenderingCore
 #include <vtkCylinderSource.h>        // vtkFiltersSources
 #include <vtkGLTFImporter.h>          // vtkIOImport
 #include <vtkHDRReader.h>             // vtkIOImage
@@ -1158,9 +1158,9 @@ void RenderEngineVtk::InitializePipelines() {
     shadows->GetShadowMapBakerPass()->SetExponentialConstant(80.0);
     shadows->GetShadowMapBakerPass()->SetResolution(
         parameters_.shadow_map_size);
-    // The shadow map pass gets the full render sequence so that we get opaque
-    // and transparent objects included in shadows.
-    shadows->SetOpaqueSequence(full_seq);
+    // Delegate the full sequence (not just the opaque caster) so the shadow map
+    // pass renders the whole lit scene with shadows applied.
+    shadows->SetDelegatePass(full_seq);
     passes->AddItem(shadows);
     camera_seq = vtkNew<vtkSequencePass>();
     camera_seq->SetPasses(passes);

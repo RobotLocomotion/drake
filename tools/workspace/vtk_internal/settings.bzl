@@ -620,6 +620,14 @@ MODULE_SETTINGS = {
             "@libjpeg",
         ],
     },
+    "VTK::nanoflann": {
+        "cmake_defines": [
+            "VTK_MODULE_USE_EXTERNAL_VTK_nanoflann=1",
+        ],
+        "deps_extra": [
+            "@nanoflann_internal//:nanoflann",
+        ],
+    },
     "VTK::nlohmannjson": {
         "cmake_defines": [
             "VTK_MODULE_USE_EXTERNAL_vtknlohmannjson=1",
