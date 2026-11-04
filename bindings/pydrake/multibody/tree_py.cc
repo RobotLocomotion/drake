@@ -12,6 +12,7 @@
 #include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/eigen_pybind.h"
 #include "drake/bindings/pydrake/common/identifier_pybind.h"
+#include "drake/bindings/pydrake/common/ref_cycle_pybind.h"
 #include "drake/bindings/pydrake/common/serialize_pybind.h"
 #include "drake/bindings/pydrake/common/type_pack.h"
 #include "drake/bindings/pydrake/common/type_safe_index_pybind.h"
@@ -1332,8 +1333,11 @@ void DefineForceDensityField(py::module_ m, T) {
         .def_static("DeclareCacheEntry",
             &ForceDensityFieldPublic<T>::DeclareCacheEntry, py::arg("plant"),
             py::arg("description"), py::arg("value_producer"),
-            py::arg("prerequisites_of_calc"), py_rvp::reference_internal,
-            cls_doc.DeclareCacheEntry.doc)
+            py::arg("prerequisites_of_calc"),
+            // The cache entry holds a copy of the producer's callbacks, which
+            // are borrowed from the Python ValueProducer object.
+            internal::ref_cycle<1, 3>(), py_rvp::reference,
+            py::keep_alive<0, 1>(), cls_doc.DeclareCacheEntry.doc)
         .def_static("DeclareAbstractInputPort",
             &ForceDensityFieldPublic<T>::DeclareAbstractInputPort,
             py::arg("plant"), py::arg("name"), py::arg("model_value"),
