@@ -79,7 +79,7 @@ cc_binary(
     linkstatic = True,
     deps = [
         ":vtkRenderingOpenGL2",
-        "@drake//tools/workspace/vtk_internal:vtk_opengl_init",
+        "@drake//tools/workspace/vtk_internal:vtk_opengl_init_global",
     ],
 )
 

@@ -1,4 +1,5 @@
 load("//tools/lint:lint.bzl", "add_lint_tests")
+load("//tools/skylark:cc.bzl", "cc_library")
 load(
     "//tools/skylark:drake_cc.bzl",
     "cc_nolink_library",
@@ -26,11 +27,23 @@ cc_nolink_library(
 drake_cc_library(
     name = "vtk_opengl_init",
     srcs = ["vtk_opengl_init.cc"],
+    hdrs = ["vtk_opengl_init.h"],
     internal = True,
-    visibility = [
-        "//:__subpackages__",
-        "@vtk_internal//:__subpackages__",
+    visibility = ["//:__subpackages__"],
+    deps = [
+        "@vtk_internal//:vtkCommonCore",
+        "@vtk_internal//:vtkRenderingOpenGL2",
     ],
+)
+
+# The @vtk_internal//:vtkProbeOpenGLVersion debugging program uses VTK's own
+# main(), so it can't use :vtk_opengl_init. Instead, it uses this library with
+# a global VTK_MODULE_INIT. It must not be linked into libdrake.
+cc_library(
+    name = "vtk_opengl_init_global",
+    srcs = ["vtk_opengl_init_global.cc"],
+    linkstatic = True,
+    visibility = ["@vtk_internal//:__pkg__"],
     deps = [
         "@vtk_internal//:vtkCommonCore",
         "@vtk_internal//:vtkRenderingOpenGL2",
