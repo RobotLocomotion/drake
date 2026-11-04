@@ -822,11 +822,14 @@ TEST_F(MujocoParserTest, MeshFileReferencePoseWithScale) {
 
 TEST_F(MujocoParserTest, MeshFileReferencePoseNonUniformScaleWarns) {
   // A refquat combined with a non-uniform scale is not a rigid transform, so
-  // we warn.
+  // we warn. The rotation (120 degrees about (1, 1, 1)) permutes the axes, so
+  // it does not commute with the scale (unlike, say, a 180 degree rotation
+  // about an axis, which would be exactly representable).
   const std::string xml = fmt::format(R"""(
 <mujoco model="test">
   <asset>
-    <mesh name="box" file="{}" scale="1 2 3" refpos="1 2 3" refquat="0 1 0 0"/>
+    <mesh name="box" file="{}" scale="1 2 3" refpos="1 2 3"
+          refquat="0.5 0.5 0.5 0.5"/>
   </asset>
   <worldbody>
     <geom name="box_geom" type="mesh" mesh="box"/>
@@ -836,7 +839,9 @@ TEST_F(MujocoParserTest, MeshFileReferencePoseNonUniformScaleWarns) {
                                       box_obj_);
 
   AddModelFromString(xml, "test");
-  EXPECT_THAT(TakeWarning(), MatchesRegex(".*refquat.*non-uniform scale.*"));
+  EXPECT_THAT(
+      TakeWarning(),
+      MatchesRegex(".*refquat '0.5 0.5 0.5 0.5'.*non-uniform scale '1 2 3'.*"));
 }
 
 TEST_F(MujocoParserTest, MeshFileReferencePoseNonUniformScaleNoRefquat) {
@@ -884,7 +889,7 @@ TEST_F(MujocoParserTest, MeshFileReferencePoseOnlyRefpos) {
 }
 
 TEST_F(MujocoParserTest, MeshFileReferencePoseComposedWithGeomPose) {
-  // The geom's own pose X_BG must compose as X_BG * X_MR⁻¹. A non-trivial X_BG
+  // The geom's own pose X_BG must compose as X_BG * X_GR⁻¹. A non-trivial X_BG
   // makes the product order matter.
   const std::string xml = fmt::format(R"""(
 <mujoco model="test">
@@ -906,13 +911,13 @@ TEST_F(MujocoParserTest, MeshFileReferencePoseComposedWithGeomPose) {
   const RigidTransformd X_BG(
       Eigen::Quaternion<double>(std::sqrt(0.5), 0, 0, std::sqrt(0.5)),
       Vector3d(0.5, -1, 2));
-  const RigidTransformd X_MR(Eigen::Quaternion<double>(0, 1, 0, 0),
+  const RigidTransformd X_GR(Eigen::Quaternion<double>(0, 1, 0, 0),
                              Vector3d(1, 2, 3));
-  const RigidTransformd expected = X_BG * X_MR.inverse();
+  const RigidTransformd expected = X_BG * X_GR.inverse();
   EXPECT_TRUE(
       inspector.GetPoseInFrame(geom_id).IsNearlyEqualTo(expected, 1e-14));
   // Guard against the test being insensitive to the order.
-  EXPECT_FALSE((X_MR.inverse() * X_BG).IsNearlyEqualTo(expected, 1e-6));
+  EXPECT_FALSE((X_GR.inverse() * X_BG).IsNearlyEqualTo(expected, 1e-6));
 }
 
 TEST_F(MujocoParserTest, MeshFileReferencePoseNegatedIdentityQuat) {
@@ -947,9 +952,53 @@ TEST_F(MujocoParserTest, MeshFileReferencePoseZeroRefquat) {
                                       box_obj_);
 
   AddModelFromString(xml, "test");
-  EXPECT_THAT(TakeError(), MatchesRegex(".*refquat.*non-zero.*"));
+  EXPECT_THAT(TakeError(),
+              MatchesRegex(".*refquat.*non-zero.*got '0 0 0 0'.*"));
   // The mesh was skipped, so the geom refers to an unknown mesh.
   EXPECT_THAT(TakeWarning(), MatchesRegex(".*unknown mesh.*"));
+}
+
+TEST_F(MujocoParserTest, MeshFileReferencePoseNonFinite) {
+  // Non-finite text like "inf" or "nan" is rejected by the attribute parser
+  // before it gets to us. But finite inputs can still overflow: the refquat
+  // norm, or refpos after scaling. Those are errors that report the offending
+  // values, and the mesh is skipped.
+  const std::string xml = fmt::format(R"""(
+<mujoco model="test">
+  <asset>
+    <mesh name="big_refpos" file="{0}" scale="10 1 1" refpos="1e308 0 0"/>
+    <mesh name="big_refquat" file="{0}" refquat="1e200 1e200 0 0"/>
+  </asset>
+  <worldbody>
+    <geom name="g0" type="mesh" mesh="big_refpos"/>
+    <geom name="g1" type="mesh" mesh="big_refquat"/>
+  </worldbody>
+</mujoco>
+)""",
+                                      box_obj_);
+
+  AddModelFromString(xml, "test");
+  EXPECT_THAT(TakeError(), MatchesRegex(".*refpos must be finite.*got refpos "
+                                        "'1e\\+308 0 0' and scale '10 1 1'.*"));
+  EXPECT_THAT(TakeError(), MatchesRegex(".*refquat must be finite.*got "
+                                        "'1e\\+200 1e\\+200 0 0'.*"));
+  for (int i = 0; i < 2; ++i) {
+    EXPECT_THAT(TakeWarning(), MatchesRegex(".*unknown mesh.*"));
+  }
+}
+
+TEST_F(MujocoParserTest, MeshFileReferencePoseInfText) {
+  // Documents that non-finite text never reaches our own finiteness checks.
+  const std::string xml = fmt::format(R"""(
+<mujoco model="test">
+  <asset>
+    <mesh name="box" file="{}" refquat="inf 0 0 0"/>
+  </asset>
+</mujoco>
+)""",
+                                      box_obj_);
+  DRAKE_EXPECT_THROWS_MESSAGE(AddModelFromString(xml, "test"),
+                              ".*Expected 4 values for attribute refquat.*");
 }
 
 TEST_F(MujocoParserTest, MeshFileReferencePoseBadFileOnlyReportsFileError) {
@@ -972,9 +1021,10 @@ TEST_F(MujocoParserTest, MeshFileReferencePoseBadFileOnlyReportsFileError) {
 }
 
 TEST_F(MujocoParserTest, MeshFileReferencePoseInertia) {
-  // The inertia is computed from the Drake mesh (in frame M), so with the geom
-  // frame shifted to M the body's center of mass must follow X_BM. The box
-  // mesh is centered at M's origin, so p_BCom = X_BM * 0 = -R⁻¹ * p_MR.
+  // The inertia is computed from the Drake mesh (in its local frame G), so
+  // with the geom frame shifted to G the body's center of mass must follow
+  // X_BG = X_BR * X_GR⁻¹ (where X_BR is the identity here). The box mesh is
+  // centered at G's origin, so p_BCom = X_BG * 0 = -R_GR⁻¹ * p_GR.
   const std::string xml = fmt::format(R"""(
 <mujoco model="test">
   <asset>
