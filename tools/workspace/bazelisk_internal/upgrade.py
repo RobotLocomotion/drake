@@ -59,6 +59,18 @@ def main():
         json.dumps(packages, indent=4) + "\n"
     )
 
+    # Upgrade the expected version in setup/test/install_prereqs_test.py.
+    prereqs_test = drake_dir / "setup" / "test" / "install_prereqs_test.py"
+    old_content = prereqs_test.read_text(encoding="utf-8")
+    new_content, count = re.subn(
+        r'^EXPECTED_BAZELISK = "[^"]*"$',
+        f'EXPECTED_BAZELISK = "{new_version.removeprefix("v")}"',
+        old_content,
+        flags=re.MULTILINE,
+    )
+    assert count == 1, f"Could not find EXPECTED_BAZELISK in {prereqs_test}"
+    prereqs_test.write_text(new_content, encoding="utf-8")
+
     # Upgrade our third_party copy.
     manifest = runfiles.Create()
     bazelisk_license_path = os.environ["DRAKE_BAZELISK_LICENSE_PATH"]
