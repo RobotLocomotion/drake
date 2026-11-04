@@ -15,6 +15,7 @@
 #include <fmt/format.h>
 #include <tinyxml2.h>
 
+#include "drake/common/fmt_eigen.h"
 #include "drake/common/text_logging.h"
 #include "drake/geometry/proximity/obb.h"
 #include "drake/geometry/proximity/obj_to_surface_mesh.h"
@@ -1477,10 +1478,10 @@ class MujocoParser {
             if (!p_GR_scaled.allFinite()) {
               Error(*mesh_node,
                     fmt::format("The mesh asset refpos must be finite after "
-                                "applying the mesh scale; got refpos '{} {} "
-                                "{}' and scale '{} {} {}'.",
-                                refpos[0], refpos[1], refpos[2], scale[0],
-                                scale[1], scale[2]));
+                                "applying the mesh scale; got refpos {} and "
+                                "scale {}.",
+                                fmt_eigen(refpos.transpose()),
+                                fmt_eigen(scale.transpose())));
               continue;
             }
             // MuJoCo refquat is w, x, y, z.
@@ -1493,11 +1494,10 @@ class MujocoParser {
             // non-finite norm.)
             const double refquat_norm = q_GR.norm();
             if (!(std::isfinite(refquat_norm) && refquat_norm >= 1e-10)) {
-              Error(
-                  *mesh_node,
-                  fmt::format("The mesh asset refquat must be finite and "
-                              "have non-zero norm; got '{} {} {} {}'.",
-                              refquat[0], refquat[1], refquat[2], refquat[3]));
+              Error(*mesh_node,
+                    fmt::format("The mesh asset refquat must be finite and "
+                                "have non-zero norm; got {}.",
+                                fmt_eigen(refquat.transpose())));
               continue;
             }
             const Eigen::Quaternion<double> q_GR_unit = q_GR.normalized();
@@ -1517,12 +1517,12 @@ class MujocoParser {
                   std::abs(std::abs(q_GR_unit.w()) - 1.0) < 1e-12)) {
               Warning(*mesh_node,
                       fmt::format(
-                          "Mesh asset uses a refquat '{} {} {} {}' together "
-                          "with a non-uniform scale '{} {} {}'; Drake cannot "
-                          "represent that exactly, so the mesh vertex "
-                          "placement will not match MuJoCo.",
-                          refquat[0], refquat[1], refquat[2], refquat[3],
-                          scale[0], scale[1], scale[2]));
+                          "Mesh asset uses a refquat {} together with a "
+                          "non-uniform scale {}; Drake cannot represent that "
+                          "exactly, so the mesh vertex placement will not "
+                          "match MuJoCo.",
+                          fmt_eigen(refquat.transpose()),
+                          fmt_eigen(scale.transpose())));
             }
             // Technically, Drake really maps vertices as X_RG * scale * p_GV.
             // So, p_GR needs to be refactored into X_RG by pre-scaling it.

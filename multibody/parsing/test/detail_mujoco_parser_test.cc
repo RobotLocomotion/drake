@@ -823,8 +823,7 @@ TEST_F(MujocoParserTest, MeshFileReferencePoseWithScale) {
 TEST_F(MujocoParserTest, MeshFileReferencePoseNonUniformScaleWarns) {
   // A refquat combined with a non-uniform scale is not a rigid transform, so
   // we warn. The rotation (120 degrees about (1, 1, 1)) permutes the axes, so
-  // it does not commute with the scale (unlike, say, a 180 degree rotation
-  // about an axis, which would be exactly representable).
+  // it does not commute with the scale.
   const std::string xml = fmt::format(R"""(
 <mujoco model="test">
   <asset>
@@ -841,7 +840,8 @@ TEST_F(MujocoParserTest, MeshFileReferencePoseNonUniformScaleWarns) {
   AddModelFromString(xml, "test");
   EXPECT_THAT(
       TakeWarning(),
-      MatchesRegex(".*refquat '0.5 0.5 0.5 0.5'.*non-uniform scale '1 2 3'.*"));
+      MatchesRegex(".*refquat \\[0.5, 0.5, 0.5, 0.5\\].*non-uniform scale "
+                   "\\[1, 2, 3\\].*"));
 }
 
 TEST_F(MujocoParserTest, MeshFileReferencePoseNonUniformScaleNoRefquat) {
@@ -953,7 +953,7 @@ TEST_F(MujocoParserTest, MeshFileReferencePoseZeroRefquat) {
 
   AddModelFromString(xml, "test");
   EXPECT_THAT(TakeError(),
-              MatchesRegex(".*refquat.*non-zero.*got '0 0 0 0'.*"));
+              MatchesRegex(".*refquat.*non-zero.*got \\[0, 0, 0, 0\\].*"));
   // The mesh was skipped, so the geom refers to an unknown mesh.
   EXPECT_THAT(TakeWarning(), MatchesRegex(".*unknown mesh.*"));
 }
@@ -978,10 +978,11 @@ TEST_F(MujocoParserTest, MeshFileReferencePoseNonFinite) {
                                       box_obj_);
 
   AddModelFromString(xml, "test");
-  EXPECT_THAT(TakeError(), MatchesRegex(".*refpos must be finite.*got refpos "
-                                        "'1e\\+308 0 0' and scale '10 1 1'.*"));
+  EXPECT_THAT(TakeError(),
+              MatchesRegex(".*refpos must be finite.*got refpos "
+                           "\\[1e\\+308, 0, 0\\] and scale \\[10, 1, 1\\].*"));
   EXPECT_THAT(TakeError(), MatchesRegex(".*refquat must be finite.*got "
-                                        "'1e\\+200 1e\\+200 0 0'.*"));
+                                        "\\[1e\\+200, 1e\\+200, 0, 0\\].*"));
   for (int i = 0; i < 2; ++i) {
     EXPECT_THAT(TakeWarning(), MatchesRegex(".*unknown mesh.*"));
   }
