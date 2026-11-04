@@ -4957,23 +4957,43 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
                                                 frame_E, Js_V_ABp_E);
   }
 
-  /// For one point Bp fixed/welded to a frame B, calculates HJ𝑠_V_ABp_E, whose
-  /// iᵗʰ element is the partial derivative with respect to the iᵗʰ "speed" 𝑠ᵢ
-  /// of ᴱd/dt(J𝑠_V_ABp_E), the time derivative in frame E of J𝑠_V_ABp_E, which
-  /// is Bp's spatial velocity Jacobian in frame A with respect to 𝑠, expressed
-  /// in frame E (see CalcJacobianSpatialVelocity()).
+  /// For one point Bp fixed/welded to a frame B, calculates HJ𝑠_V_ABp_E, where
+  /// HJ is a "Hessian-like" quantity associated with J𝑠_V_ABp_E, Bp's spatial 
+  /// velocity Jacobian in frame A with respect to 𝑠, expressed in frame E 
+  /// (see CalcJacobianSpatialVelocity()). "Speeds" 𝑠 is either
+  /// q̇ ≜ [q̇₁ ... q̇ⱼ]ᵀ (j = num_positions()) or
+  /// v ≜ [v₁ ... vₖ]ᵀ (k = num_velocities()), where q̇ = N(q)⋅v.
   /// <pre>
-  ///      HJ𝑠_V_ABp_E ≜ [ D₁(J𝑠_V_ABp_E), ... Dₙ(J𝑠_V_ABp_E) ]   (n is j or k)
-  ///      Dᵢ(J𝑠_V_ABp_E) ≜ ∂(ᴱd/dt J𝑠_V_ABp_E)/∂𝑠ᵢ
+  ///   HJ𝑠_V_ABp_E ≜ [ D₁(J𝑠_V_ABp_E), ... Dₙ(J𝑠_V_ABp_E) ]   (n is j or k)
+  ///   Dᵢ(J𝑠_V_ABp_E) ≜ ∂(ᴱd/dt J𝑠_V_ABp_E)/∂𝑠ᵢ
+  ///                  = ᴱ∂(J𝑠_V_ABp_E)/∂qᵢ          when 𝑠 = q̇
+  ///                  = ᴱ∂(J𝑠_V_ABp_E)/∂qᵢ ⋅ N(q)   when 𝑠 = v  
   /// </pre>
-  /// The special prefix HJ signifies derivatives of a Jacobian. Unlike a 
-  /// conventional Hessian, HJ𝑠_V_ABp_E is generally not symmetric, i.e., column
-  /// j of Dᵢ(J𝑠_V_ABp_E) generally differs from column i of Dⱼ(J𝑠_V_ABp_E).
-  /// Asymmetry arises in its angular rows because angular velocity is generally
-  /// not the time derivative of any quantity. Its translational rows are a 
-  /// conventional Hessian, i.e., ∂²(p_AoBp_A)/∂qᵢ∂qⱼ, only when E = A and
-  /// 𝑠 = q̇ (or 𝑠 = v = q̇).
+  /// Dᵢ(J𝑠_V_ABp_E) is a "directional derivative" equivalent to evaluating 
+  /// ᴱd/dt(J𝑠_V_ABp_E) at 𝑠ᵢ = 1 with all other speeds zero.
   ///
+  /// HJ𝑠_V_ABp_E is related to Bp's spatial acceleration in A. When E = A,
+  /// <pre>
+  ///        V_ABp = J𝑠_V_ABp 𝑠
+  /// ᴬd/dt(V_ABp) = J𝑠_V_ABp 𝑠̇ + (ᴬd/dt J𝑠_V_ABp) 𝑠
+  ///              = J𝑠_V_ABp 𝑠̇ + (Σᵢ 𝑠ᵢ Dᵢ(J𝑠_V_ABp)) 𝑠
+  ///              = J𝑠_V_ABp 𝑠̇ + 𝑠ᵀ D 𝑠  where Dᵢⱼ ≜ column j of Dᵢ(J𝑠_V_ABp)
+  ///              = J𝑠_V_ABp 𝑠̇ + 𝑠ᵀ S 𝑠  where Sᵢⱼ ≜ ½(Dᵢⱼ + Dⱼᵢ), so Sᵢⱼ = Sⱼᵢ
+  /// </pre>
+  /// H and S are n × n arrays whose entries are spatial vectors, with
+  /// 𝑠ᵀ D 𝑠 ≜ Σᵢ Σⱼ 𝑠ᵢ Dᵢⱼ 𝑠ⱼ. D is HJ𝑠_V_ABp arranged as an n × n array, whose
+  /// iᵗʰ matrix Dᵢ(J𝑠_V_ABp) is returned by this function.
+  /// Bp's bias acceleration in A can be calculated (albeit inefficiently) as
+  /// A𝑠Bias_ABp = (ᴬd/dt J𝑠_V_ABp) 𝑠  =  𝑠ᵀ H 𝑠  =  𝑠ᵀ S 𝑠.
+  /// Reminder: S is symmetric whereas H is generally not symmetric.
+  ///
+  /// @note The special prefix HJ signifies derivatives of a Jacobian. Unlike a 
+  /// conventional Hessian, HJ𝑠_V_ABp_E is generally not symmetric. Asymmetry 
+  /// arises in its angular rows because angular velocity is generally not the
+  /// time derivative of any quantity. Its translational rows are the 
+  /// conventional Hessian ∂²(p_AoBp_A)/∂qᵢ∂qⱼ when E = A and 𝑠 = q̇, but are 
+  /// generally asymmetric otherwise. 
+
   /// For one point Bp fixed/welded to a frame B, calculates H𝑠_V_ABp, the
   /// derivatives along each of the "speeds" 𝑠 of J𝑠_V_ABp, Bp's spatial
   /// velocity Jacobian in frame A with respect to 𝑠 (see
