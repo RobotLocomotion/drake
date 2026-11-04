@@ -93,6 +93,26 @@ class TestRefCycle(unittest.TestCase):
         ):
             arbitrary_link_bad()
 
+    def test_dynamic_attr_dealloc(self):
+        # Anything stored in the instance dict of an object that has dynamic
+        # attributes must be released when the object is destroyed by reference
+        # counting. The ref_cycle machinery depends on this for one-way links
+        # whose nurse is not part of a cycle. (This is a regression test for a
+        # pybind11 defect with Python 3.14, which is fixed by a patch to
+        # pybind11, see tools/workspace/pybind11/patches/upstream.)
+        class Sentinel:
+            pass
+
+        sentinel = Sentinel()
+        sentinel_ref = weakref.ref(sentinel)
+        dut = IsDynamic()
+        dut.attr = sentinel
+        del sentinel
+        self.assertIsNotNone(sentinel_ref())
+        del dut
+        gc.collect()
+        self.assertIsNone(sentinel_ref())
+
     def test_free_function(self):
         p0 = IsDynamic()
         p1 = IsDynamic()

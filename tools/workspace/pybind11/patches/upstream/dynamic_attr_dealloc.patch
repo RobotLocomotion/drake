@@ -1,0 +1,41 @@
+[pybind11] Free instance dict contents on Python 3.14
+
+Backport of pybind/pybind11#5999 (fixes pybind/pybind11#5998), which is
+released in pybind11 3.0.3. The 2.13.6 release that we use does not have it.
+
+With Python 3.14, tp_free no longer clears the managed __dict__ of an
+object, so the contents of the instance dict of a py::dynamic_attr()
+object were never released when the object was destroyed by reference
+counting (as opposed to by the garbage collector). Anything referred to
+only from such a dict, e.g., the callbacks kept alive by pydrake's
+ensure_callback_lifetime<>, leaked.
+
+The upstream change also adds a unit test, which is omitted here. Drake
+covers this in bindings/pydrake/common/test/ref_cycle_test.py instead.
+
+TODO(rpoyner-tri): Ask upstream whether they would accept a backport of this
+fix to the 2.x series. If they decline, move this patch out of the upstream
+subdirectory.
+
+Retire this patch when upgrading to pybind11 3.0.3 or newer.
+
+--- include/pybind11/detail/class.h
++++ include/pybind11/detail/class.h
+@@ -469,6 +469,17 @@
+         PyObject_GC_UnTrack(self);
+     }
+ 
++#if PY_VERSION_HEX >= 0x030D0000
++    // PyObject_ClearManagedDict() is available from Python 3.13+. It must be
++    // called before tp_free() because on Python 3.14+ tp_free no longer
++    // implicitly clears the managed dict, which would abandon the refcounts of
++    // objects stored in __dict__ of py::dynamic_attr() types, causing permanent
++    // memory leaks.
++    if (PyType_HasFeature(type, Py_TPFLAGS_MANAGED_DICT)) {
++        PyObject_ClearManagedDict(self);
++    }
++#endif
++
+     clear_instance(self);
+ 
+     type->tp_free(self);
