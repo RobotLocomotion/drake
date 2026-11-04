@@ -1,0 +1,22 @@
+[vtk] Avoid a destructor on a function-local static
+
+Make it heap-allocated and never destroyed so that it does not register an
+atexit destructor.
+
+If any other issues arise with VTK's vendored dependencies, we should consider
+upstreaming this patch in a more general form (e.g., a template never-destroyed
+wrapper for function-local-statics).
+
+--- ThirdParty/pugixml/vtkpugixml/src/pugixml.cpp
++++ ThirdParty/pugixml/vtkpugixml/src/pugixml.cpp
+@@ -12967,8 +12967,8 @@
+ 	{
+ 		if (_type == xpath_type_node_set)
+ 			return static_cast<const impl::xpath_variable_node_set*>(this)->value;
+-		static const xpath_node_set dummy_node_set;
+-		return dummy_node_set;
++		static const xpath_node_set* const dummy_node_set = new xpath_node_set;
++		return *dummy_node_set;
+ 	}
+
+ 	PUGI_IMPL_FN bool xpath_variable::set(bool value)
