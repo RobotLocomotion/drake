@@ -79,8 +79,8 @@ class MethodLeafSystem(LeafSystem):
         self._count = 0
         # It turns out that evaluating `self._callback` multiple times (which
         # creates a new bound method object each time) triggers unusual
-        # pybind11 memory behavior that needs to be tested. See
-        # UniquelyWrapCallback() in ensure_callback_lifetime_pybind.cc.
+        # pybind11 memory behavior that needs to be tested. The callbacks are
+        # kept alive by identity, not equality; see ref_cycle_pybind.cc.
         DeclareAllEvents(self, lambda: self._callback)
 
     def _callback(self, *args, **kwargs):
