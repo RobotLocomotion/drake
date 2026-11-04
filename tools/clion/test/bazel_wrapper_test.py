@@ -1,14 +1,26 @@
-from importlib.machinery import SourceFileLoader
+import importlib.machinery
+import importlib.util
 import io
 import os
 import shutil
 import subprocess
+import sys
 import tempfile
 import unittest
 
-bazel_wrapper = SourceFileLoader(
-    "bazel_wrapper", "tools/clion/bazel_wrapper"
-).load_module("bazel_wrapper")
+
+def _load_module(*, name, source_file):
+    loader = importlib.machinery.SourceFileLoader(name, source_file)
+    spec = importlib.util.spec_from_loader(name, loader)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+bazel_wrapper = _load_module(
+    name="bazel_wrapper", source_file="tools/clion/bazel_wrapper"
+)
 
 
 class ExecDetail(Exception):

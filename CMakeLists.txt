@@ -258,7 +258,7 @@ if(PYTHON_EXECUTABLE AND NOT Python_EXECUTABLE)
     "compatibility only.")
   unset(PYTHON_EXECUTABLE CACHE)
 endif()
-find_package(Python 3.12...<3.15 MODULE REQUIRED
+find_package(Python 3.12...<3.16 MODULE REQUIRED
   COMPONENTS Development Interpreter
 )
 if(NOT Python_INTERPRETER_ID STREQUAL Python)
