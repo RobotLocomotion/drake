@@ -1480,8 +1480,7 @@ class MujocoParser {
                     fmt::format("The mesh asset refpos must be finite after "
                                 "applying the mesh scale; got refpos {} and "
                                 "scale {}.",
-                                fmt_eigen(refpos.transpose()),
-                                fmt_eigen(scale.transpose())));
+                                fmt_eigen(refpos), fmt_eigen(scale)));
               continue;
             }
             // MuJoCo refquat is w, x, y, z.
@@ -1497,7 +1496,7 @@ class MujocoParser {
               Error(*mesh_node,
                     fmt::format("The mesh asset refquat must be finite and "
                                 "have non-zero norm; got {}.",
-                                fmt_eigen(refquat.transpose())));
+                                fmt_eigen(refquat)));
               continue;
             }
             const Eigen::Quaternion<double> q_GR_unit = q_GR.normalized();
@@ -1521,8 +1520,7 @@ class MujocoParser {
                           "non-uniform scale {}; Drake cannot represent that "
                           "exactly, so the mesh vertex placement will not "
                           "match MuJoCo.",
-                          fmt_eigen(refquat.transpose()),
-                          fmt_eigen(scale.transpose())));
+                          fmt_eigen(refquat), fmt_eigen(scale)));
             }
             // Technically, Drake really maps vertices as X_RG * scale * p_GV.
             // So, p_GR needs to be refactored into X_RG by pre-scaling it.

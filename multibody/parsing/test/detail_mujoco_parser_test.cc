@@ -838,10 +838,9 @@ TEST_F(MujocoParserTest, MeshFileReferencePoseNonUniformScaleWarns) {
                                       box_obj_);
 
   AddModelFromString(xml, "test");
-  EXPECT_THAT(
-      TakeWarning(),
-      MatchesRegex(".*refquat \\[0.5, 0.5, 0.5, 0.5\\].*non-uniform scale "
-                   "\\[1, 2, 3\\].*"));
+  EXPECT_THAT(TakeWarning(),
+              MatchesRegex(".*refquat \\[0.5, 0.5, 0.5, 0.5\\]ᵀ.*non-uniform "
+                           "scale \\[1, 2, 3\\]ᵀ.*"));
 }
 
 TEST_F(MujocoParserTest, MeshFileReferencePoseNonUniformScaleNoRefquat) {
@@ -953,7 +952,7 @@ TEST_F(MujocoParserTest, MeshFileReferencePoseZeroRefquat) {
 
   AddModelFromString(xml, "test");
   EXPECT_THAT(TakeError(),
-              MatchesRegex(".*refquat.*non-zero.*got \\[0, 0, 0, 0\\].*"));
+              MatchesRegex(".*refquat.*non-zero.*got \\[0, 0, 0, 0\\]ᵀ.*"));
   // The mesh was skipped, so the geom refers to an unknown mesh.
   EXPECT_THAT(TakeWarning(), MatchesRegex(".*unknown mesh.*"));
 }
@@ -978,11 +977,12 @@ TEST_F(MujocoParserTest, MeshFileReferencePoseNonFinite) {
                                       box_obj_);
 
   AddModelFromString(xml, "test");
-  EXPECT_THAT(TakeError(),
-              MatchesRegex(".*refpos must be finite.*got refpos "
-                           "\\[1e\\+308, 0, 0\\] and scale \\[10, 1, 1\\].*"));
+  EXPECT_THAT(
+      TakeError(),
+      MatchesRegex(".*refpos must be finite.*got refpos "
+                   "\\[1e\\+308, 0, 0\\]ᵀ and scale \\[10, 1, 1\\]ᵀ.*"));
   EXPECT_THAT(TakeError(), MatchesRegex(".*refquat must be finite.*got "
-                                        "\\[1e\\+200, 1e\\+200, 0, 0\\].*"));
+                                        "\\[1e\\+200, 1e\\+200, 0, 0\\]ᵀ.*"));
   for (int i = 0; i < 2; ++i) {
     EXPECT_THAT(TakeWarning(), MatchesRegex(".*unknown mesh.*"));
   }
