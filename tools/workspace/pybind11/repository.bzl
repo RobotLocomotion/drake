@@ -23,6 +23,7 @@ def pybind11_repository(
         build_file = ":package.BUILD.bazel",
         patches = [
             ":patches/check_signature_infection.patch",
+            ":patches/upstream/dynamic_attr_dealloc.patch",
             ":patches/eigen_object_matrices.patch",
             ":patches/nanobind_spellings.patch",
             ":patches/shared_ptr_lifetime.patch",
