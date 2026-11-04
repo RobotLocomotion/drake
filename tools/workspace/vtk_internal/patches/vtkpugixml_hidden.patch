@@ -1,10 +1,12 @@
 [vtk] Use a custom hidden inline namespace for vtkpugixml
 
+Also, avoid a destructor on a function-local static.
+
 Reasoning for not upstreaming this patch: Drake-specific vendoring.
 
 --- ThirdParty/pugixml/vtkpugixml/src/pugixml.hpp
 +++ ThirdParty/pugixml/vtkpugixml/src/pugixml.hpp
-@@ -142,6 +142,7 @@
+@@ -155,6 +155,7 @@
  #	define PUGIXML_CHAR char
  #endif
  
@@ -12,7 +14,7 @@ Reasoning for not upstreaming this patch: Drake-specific vendoring.
  namespace pugi
  {
  	// Character type used for all internal storage and operations; depends on PUGIXML_WCHAR_MODE
-@@ -1456,6 +1459,7 @@ namespace pugi
+@@ -1539,6 +1540,7 @@
  	allocation_function PUGIXML_FUNCTION get_memory_allocation_function();
  	deallocation_function PUGIXML_FUNCTION get_memory_deallocation_function();
  }
@@ -23,7 +25,7 @@ Reasoning for not upstreaming this patch: Drake-specific vendoring.
 
 --- ThirdParty/pugixml/vtkpugixml/src/pugixml.cpp
 +++ ThirdParty/pugixml/vtkpugixml/src/pugixml.cpp
-@@ -1105,6 +1105,7 @@ namespace pugi
+@@ -1126,6 +1126,7 @@
  	};
  }
  #else
@@ -31,7 +33,7 @@ Reasoning for not upstreaming this patch: Drake-specific vendoring.
  namespace pugi
  {
  	struct xml_attribute_struct
-@@ -1129,6 +1130,7 @@ namespace pugi
+@@ -1166,6 +1167,7 @@
  		xml_attribute_struct* first_attribute;
  	};
  }
@@ -39,7 +41,7 @@ Reasoning for not upstreaming this patch: Drake-specific vendoring.
  #endif
  
  PUGI_IMPL_NS_BEGIN
-@@ -5067,6 +5069,7 @@ PUGI__NS_BEGIN
+@@ -5169,6 +5171,7 @@
  	};
  PUGI_IMPL_NS_END
  
@@ -47,7 +49,7 @@ Reasoning for not upstreaming this patch: Drake-specific vendoring.
  namespace pugi
  {
  	PUGI_IMPL_FN xml_writer::~xml_writer()
-@@ -7351,6 +7354,7 @@ namespace pugi
+@@ -7880,6 +7883,7 @@
  		return impl::xml_memory::deallocate;
  	}
  }
@@ -55,7 +57,7 @@ Reasoning for not upstreaming this patch: Drake-specific vendoring.
  
  #if !defined(PUGIXML_NO_STL) && (defined(_MSC_VER) || defined(__ICC))
  namespace std
-@@ -12162,6 +12166,7 @@ PUGI__NS_BEGIN
+@@ -12686,6 +12690,7 @@
  	}
  PUGI_IMPL_NS_END
  
@@ -63,7 +65,18 @@ Reasoning for not upstreaming this patch: Drake-specific vendoring.
  namespace pugi
  {
  #ifndef PUGIXML_NO_EXCEPTIONS
-@@ -12944,6 +12949,7 @@ namespace pugi
+@@ -12967,8 +12972,8 @@
+ 	{
+ 		if (_type == xpath_type_node_set)
+ 			return static_cast<const impl::xpath_variable_node_set*>(this)->value;
+-		static const xpath_node_set dummy_node_set;
+-		return dummy_node_set;
++		static const xpath_node_set* const dummy_node_set = new xpath_node_set;
++		return *dummy_node_set;
+ 	}
+ 
+ 	PUGI_IMPL_FN bool xpath_variable::set(bool value)
+@@ -13477,6 +13482,7 @@
  		return query.evaluate_node(*this);
  	}
  }

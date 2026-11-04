@@ -694,9 +694,6 @@ MODULE_SETTINGS = {
         ],
     },
     "VTK::pugixml": {
-        # TODO(jwnimmer-tri) The only user of pugixml is vtkDataAssembly.
-        # Possibly there is some way to disable XML I/O support on that
-        # class, so that we can drop this dependency.
         "cmake_undefines": [
             "VTK_MODULE_USE_EXTERNAL_vtkpugixml",
         ],
