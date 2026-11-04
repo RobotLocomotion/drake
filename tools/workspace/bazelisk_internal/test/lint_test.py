@@ -22,6 +22,9 @@ Additionally, you must update the bazelisk entries in
 setup/ubuntu/packages.json to match the new version, including the urls and
 sha256 checksums. To calculate a new checksum, download the deb file and use:
     shasum -a 256 'xxx.deb'
+
+Finally, update EXPECTED_BAZELISK in drake/setup/test/install_prereqs_test.py to
+match the new version.
 ************************************************************************
 """
 
