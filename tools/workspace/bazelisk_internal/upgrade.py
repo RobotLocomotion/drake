@@ -42,6 +42,7 @@ def main():
             new_version = m.group(1)
             break
     assert new_version.startswith("v")
+    new_version_number = new_version.removeprefix("v")
 
     # Upgrade setup/ubuntu/packages.json.
     ubuntu_dir = drake_dir / "setup" / "ubuntu"
@@ -53,11 +54,23 @@ def main():
             continue
         for i, url in enumerate(package["urls"]):
             package["urls"][i] = re.sub(r"v\d+\.\d+\.\d+", new_version, url)
-        package["version"] = new_version.removeprefix("v")
+        package["version"] = new_version_number
         package["sha256"] = _get_url_sha256(package["urls"][0])
     (ubuntu_dir / "packages.json").write_text(
         json.dumps(packages, indent=4) + "\n"
     )
+
+    # Upgrade the expected version in setup/test/install_prereqs_test.py.
+    prereqs_test = drake_dir / "setup" / "test" / "install_prereqs_test.py"
+    old_content = prereqs_test.read_text(encoding="utf-8")
+    new_content, count = re.subn(
+        r'^EXPECTED_BAZELISK = "[^"]*"$',
+        f'EXPECTED_BAZELISK = "{new_version_number}"',
+        old_content,
+        flags=re.MULTILINE,
+    )
+    assert count == 1, f"Could not find EXPECTED_BAZELISK in {prereqs_test}"
+    prereqs_test.write_text(new_content, encoding="utf-8")
 
     # Upgrade our third_party copy.
     manifest = runfiles.Create()
