@@ -4560,19 +4560,36 @@ Parameter ``frame_F``:
     expressed-in frame for the returned spatial inertia.
 
 Parameter ``body_indexes``:
-    Array of selected bodies. This method does not distinguish between
-    welded bodies, joint-connected bodies, etc.
+    Array of selected bodies. This method does not distinguish among
+    welded bodies, joint-connected bodies, etc. For a body that was
+    split to break a kinematic loop, all shards (primary link and
+    shadow links) contribute to the result if any one or more of them
+    is listed. So a list from GetBodyIndices(), which includes
+    shadows, works as is.
+
+Note:
+    The mass and inertia of the world_body() does not contribute to
+    the the returned spatial inertia, even if World is listed.
+
+Note:
+    Until a loop's weld constraint is satisfied, a split body
+    contributes as in the split model that the solver is simulating:
+    an equal share of its mass properties at the pose of its primary
+    and of each shadow. So then, for a primary body P,
+    ``CalcSpatialInertia(context, P.body_frame(), {P.index()})`` can
+    differ from ``P.CalcSpatialInertiaInBodyFrame(context)``, which
+    reports P's full, user-defined mass properties. Also, because
+    naming any copy counts the whole body, results don't add up across
+    lists that divide a split body's copies between them:
+    ``{primary}`` and ``{shadow}`` each give the whole body, as does
+    ``{primary, shadow}``.
 
 Raises:
     RuntimeError if ``frame_F`` does not belong to ``this`` plant.
 
 Raises:
     RuntimeError if body_indexes contains an invalid BodyIndex or if
-    there is a repeated BodyIndex.
-
-Note:
-    The mass and inertia of the world_body() does not contribute to
-    the the returned spatial inertia.)""";
+    there is a repeated BodyIndex.)""";
         } CalcSpatialInertia;
         // Symbol: drake::multibody::MultibodyPlant::CalcSpatialMomentumInWorldAboutPoint
         struct /* CalcSpatialMomentumInWorldAboutPoint */ {
@@ -5042,13 +5059,15 @@ Raises:
           // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Returns the currently-set choice for base body joint type, either for
-the global setting or for a specific model instance if provided. If a
-model instance is provided for which no explicit choice has been made,
-the global setting is returned. Any model instance index is acceptable
-here; if not recognized then the global setting is returned. This can
-be called any time -- pre-finalize it returns the joint type that will
-be used by Finalize(); post-finalize it returns the joint type that
-*was* used if there were any base bodies in need of a joint.
+the global setting or for a specific model instance if provided.
+
+Note:
+    This function can be called pre-Finalize() or post-Finalize().
+
+Parameter ``model_instance``:
+    (optional). If this argument is missing or not recognized, returns
+    the global setting. Otherwise returns the setting for this
+    specific model_instance.
 
 See also:
     SetBaseBodyJointType(), GetFuseWeldedLinks(), Finalize())""";
@@ -5191,7 +5210,9 @@ associated with that id (nullptr if there is no such body).)""";
         struct /* GetBodyIndices */ {
           // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
-R"""(Returns a list of body indices associated with ``model_instance``.)""";
+R"""(Returns a list of body indices associated with ``model_instance``.
+After Finalize(), the list includes any shadow bodies that Finalize()
+split from this model instance's bodies to break kinematic loops.)""";
         } GetBodyIndices;
         // Symbol: drake::multibody::MultibodyPlant::GetCollisionGeometriesForBody
         struct /* GetCollisionGeometriesForBody */ {
@@ -6879,7 +6900,7 @@ is *not* to deal with kinematic loops (if one is encountered, an
 exception is thrown).
 
 Note:
-    This feature is in development and is not yet functional.
+    This feature is in development and is not yet fully functional.
 
 To deal with loops automatically requires modifying the system's
 topology so that it is structured as a tree of links and joints, plus
@@ -6889,6 +6910,18 @@ the original ("primary") link and the new ("shadow") link. Then a weld
 constraint is added between the primary and shadow links to enforce
 loop closure. When the weld constraint is satisfied, the original
 physics is restored.
+
+A shadow link is a link like any other in most respects (it has a pose
+and a velocity, for example), but its mass properties are derived from
+its primary link, and will change if the primary's do. Any attempt to
+ask a shadow link about its mass properties will throw; ask its
+RigidBody∷primary_link() instead. The primary link reports the link's
+full, user-defined mass properties. Physically, however a primary and
+its shadows each carry an even share of the mass and inertia.
+Calculations that sum over several bodies (e.g., total mass, center of
+mass, spatial inertia and momentum, energy) obey the physics; for
+example, they take account of the individual poses of the primary and
+shadow links which can differ when a system is not fully assembled.
 
 Parameter ``enable``:
     Whether Finalize() should automatically model closed kinematic
@@ -8255,8 +8288,10 @@ R"""(Returns the total number of ball constraints specified by the user.)""";
         struct /* num_bodies */ {
           // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
-R"""(Returns the number of RigidBody elements in the model, including the
-"world" RigidBody, which is always part of the model.
+R"""(Returns the number of RigidBody (Link) elements in the model,
+including the "world" RigidBody, which is always part of the model.
+After Finalize() this includes any shadow bodies that Finalize() added
+to break kinematic loops; see num_user_bodies().
 
 See also:
     AddRigidBody().)""";
@@ -8389,6 +8424,15 @@ Raises:
           const char* doc =
 R"""(Returns the total number of tendon constraints specified by the user.)""";
         } num_tendon_constraints;
+        // Symbol: drake::multibody::MultibodyPlant::num_user_bodies
+        struct /* num_user_bodies */ {
+          // Source: drake/multibody/plant/multibody_plant.h
+          const char* doc =
+R"""(Returns the number of RigidBody (Link) elements in the model that are
+not shadow bodies: the "world" RigidBody plus every body added with
+AddRigidBody(). Finalize() adds a shadow body for each kinematic loop
+it breaks. This equals num_bodies() unless Finalize() broke a loop.)""";
+        } num_user_bodies;
         // Symbol: drake::multibody::MultibodyPlant::num_velocities
         struct /* num_velocities */ {
           // Source: drake/multibody/plant/multibody_plant.h
