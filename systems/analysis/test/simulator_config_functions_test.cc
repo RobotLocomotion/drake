@@ -94,7 +94,8 @@ TYPED_TEST(SimulatorConfigFunctionsTest, RoundTripTest) {
       "accuracy: 0.03\n"
       "use_error_control: true\n"
       "start_time: 0.5\n"
-      "target_realtime_rate: 3.0\n";
+      "target_realtime_rate: 3.0\n"
+      "integrator_params: ~\n";
 
   // Ensure that the string and the struct have the same fields.
   const auto bespoke = LoadYamlString<SimulatorConfig>(bespoke_str);
