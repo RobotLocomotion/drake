@@ -125,7 +125,14 @@ valid. It:
    reduced pools keep the original body indices, so their impulses also load
    the locked bodies. Constraints with no surviving body (e.g., a weld between
    two locked bodies) are not in the reduced model and report nothing; the
-   locked joints carry their loads.
+   locked joints carry their loads. Contact patches are the exception: the plant
+   filters contact by spanning tree but reduction works per clique, so a patch
+   whose bodies are all locked can still be in the geometry list. Such patches
+   (the reduced pool records `original_patches()` to tell) are reported from
+   the full model, so contact results keep one entry per point pair or surface.
+   The generalized contact forces are the same patch impulses mapped through
+   the *full* model's Jacobians, so a locked coordinate still carries the load
+   its body feels (expanding the reduced gradient would put zeros there).
 2. Builds the applied `MultibodyForces`: force elements (gravity, springs,
    damping) and the `applied_*` input ports at the start state; actuation as
    the gain-constraint impulse `γ_u/δt` when effort limits are active,
@@ -228,7 +235,9 @@ rejected by CENIC itself (see above), since it is never stepped.
   rejected trial's sample; a ball on a shelf welded to the world (the weld
   reports both weights); a whole locked tree whose ball constraint to a free
   body must report the impulse that was solved (not the full model's), and the
-  contact analog; reinitializing with a fresh context; the deprecation warning for CENIC without sampled ports (own test binary, run
+  contact analog; reinitializing with a fresh context; a locked sphere whose contact patch reduction drops, next to an unlocked
+  branch (one contact result per point pair) and the locked slider's generalized
+  contact force; the deprecation warning for CENIC without sampled ports (own test binary, run
   at error severity); sampled ports requiring a recording integrator (and the recorder attaching again after a context
   reset); a system with no continuous state; and the stiff external
   force limitation above.

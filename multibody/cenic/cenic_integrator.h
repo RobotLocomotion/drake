@@ -209,7 +209,9 @@ class CenicIntegrator final : public systems::IntegratorBase<T> {
     contact_solvers::icf::internal::IcfData<T> report_data;
     /* Same, for the reduced model when joint locking reduced the problem. */
     contact_solvers::icf::internal::IcfData<T> reduced_report_data;
-    VectorX<T> reduced_gradient;
+    /* For each patch of the full model, its index in the reduced model, or -1
+    if reduction dropped it. */
+    std::vector<int> reduced_patch_of;
     std::unique_ptr<MultibodyForces<T>> applied_forces;
     VectorX<T> vdot;
     VectorX<T> generalized_forces;

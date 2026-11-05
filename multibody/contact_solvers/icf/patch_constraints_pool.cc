@@ -557,6 +557,8 @@ void PatchConstraintsPool<T>::ReduceInto(
   reduced_pool->Resize({});
 
   reduced_pool->stiction_tolerance_ = stiction_tolerance_;
+  reduced_pool->original_patches_.clear();
+  reduced_pool->original_patches_.reserve(num_constraints());
 
   int pair_data_cursor{0};
   for (int k = 0; k < num_constraints(); ++k) {
@@ -580,6 +582,7 @@ void PatchConstraintsPool<T>::ReduceInto(
     // require flipping the direction of the patch and pairs.
     bool need_flip = (r_num_cliques == 1 && have_r_c_a);
     const int r_k = reduced_pool->num_constraints();
+    reduced_pool->original_patches_.push_back(k);
 
     // Fill in the reduced constraint.
     reduced_pool->num_pairs_.push_back(num_pairs_[k]);

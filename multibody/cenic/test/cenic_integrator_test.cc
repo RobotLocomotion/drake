@@ -1705,6 +1705,87 @@ GTEST_TEST(CenicIntegrator, SampledContactReactionsWithWholeTreeLocked) {
                                        plant.GetModelInstanceByName("m"))
                                    .Eval(plant_context);
   EXPECT_NEAR(tau_contact[tau_contact.size() - 1], g, 0.01 * g);
+  // The ball presses down on the platform with the same force, which the
+  // platform's locked slider still carries.
+  EXPECT_NEAR(tau_contact[slide.velocity_start()], -g, 0.01 * g);
+}
+
+/* Joint locking drops contact patches whose bodies are all locked, but the
+plant still lists their geometry (it filters contact by tree, not by clique), so
+the reported contact results must still have an entry per point pair. A locked
+sphere rests (slightly penetrating) on the floor next to an unlocked sibling
+branch that keeps the contact in the geometry list. */
+GTEST_TEST(CenicIntegrator, SampledContactResultsWithDroppedPatch) {
+  DiagramBuilder<double> builder;
+  auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.0);
+  Parser(&plant).AddModelsFromString(R"""(
+    <sdf version="1.9">
+      <model name="m">
+        <link name="floor">
+          <pose>0 0 -0.1 0 0 0</pose>
+          <collision name="floor_collision">
+            <geometry><box><size>2 2 0.2</size></box></geometry>
+          </collision>
+        </link>
+        <joint name="floor_weld" type="fixed">
+          <parent>world</parent><child>floor</child>
+        </joint>
+        <link name="base"/>
+        <joint name="base_weld" type="fixed">
+          <parent>world</parent><child>base</child>
+        </joint>
+        <link name="locked_sphere">
+          <pose>0 0 0.09 0 0 0</pose>
+          <inertial><mass>1</mass>
+            <inertia><ixx>0.01</ixx><iyy>0.01</iyy><izz>0.01</izz>
+              <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz></inertia></inertial>
+          <collision name="sphere_collision">
+            <geometry><sphere><radius>0.1</radius></sphere></geometry>
+          </collision>
+        </link>
+        <joint name="locked_slider" type="prismatic">
+          <parent>base</parent><child>locked_sphere</child>
+          <axis><xyz>0 0 1</xyz></axis>
+        </joint>
+        <link name="free_body">
+          <pose>1 0 0.5 0 0 0</pose>
+          <inertial><mass>1</mass>
+            <inertia><ixx>0.01</ixx><iyy>0.01</iyy><izz>0.01</izz>
+              <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz></inertia></inertial>
+        </link>
+        <joint name="free_slider" type="prismatic">
+          <parent>base</parent><child>free_body</child>
+          <axis><xyz>0 0 1</xyz></axis>
+        </joint>
+      </model>
+    </sdf>)""",
+                                     "sdf");
+  plant.SetUseSampledOutputPorts(true);
+  plant.Finalize();
+  auto diagram = builder.Build();
+
+  Simulator<double> simulator(*diagram);
+  auto& integrator = simulator.reset_integrator<CenicIntegrator<double>>();
+  integrator.set_maximum_step_size(0.01);
+  integrator.set_fixed_step_mode(true);
+  const auto& slider = plant.GetJointByName<PrismaticJoint>("locked_slider");
+  Context<double>& plant_context =
+      plant.GetMyMutableContextFromRoot(&simulator.get_mutable_context());
+  slider.Lock(&plant_context);
+  simulator.Initialize();
+  simulator.AdvanceTo(0.01);
+
+  const ContactResults<double>& results =
+      EvalContactResults(plant, plant_context);
+  EXPECT_EQ(results.num_point_pair_contacts(), 1);
+  // The locked sphere's slider carries the contact load, shared with its own
+  // weight: the contact pushes up on the sphere, so the generalized contact
+  // force on the slider is positive and nonzero.
+  const VectorXd tau_contact = plant
+                                   .get_generalized_contact_forces_output_port(
+                                       plant.GetModelInstanceByName("m"))
+                                   .Eval(plant_context);
+  EXPECT_GT(tau_contact[slider.velocity_start()], 0.0);
 }
 
 /* A system with no continuous state is never stepped, so sampled output ports

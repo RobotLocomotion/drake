@@ -641,8 +641,11 @@ void CenicIntegrator<T>::RecordStepMemory(const IcfModel<T>& model,
   // friction from the remaining cliques), so the full model's impulses at the
   // same velocity are not the ones that advanced the state. For those we use
   // the reduced model that was solved. It keeps the original body indices, so
-  // its impulses also load the locked bodies. Each evaluation is a single
-  // constraint evaluation, much cheaper than a solve.
+  // its impulses also load the locked bodies. A constraint that reduction drops
+  // (no body in a participating clique) wasn't part of the solve; contact
+  // patches among those still need reporting, so they come from the full
+  // model. Each evaluation is a single constraint evaluation, much cheaper
+  // than a solve.
   IcfData<T>& data = scratch_.report_data;
   model.ResizeData(&data);
   model.CalcAllData(v, &data);
@@ -717,19 +720,59 @@ void CenicIntegrator<T>::RecordStepMemory(const IcfModel<T>& model,
   };
 
   // Contact patches: the pool stores the spatial impulse Γ_Bo_W on body B; the
-  // impulse on body A is its negation shifted to Ao.
-  const auto& patches = constraint_model.patch_constraints_pool();
-  const auto& patch_data = constraint_data.patch_constraints_data();
-  for (int p = 0; p < patches.num_patches(); ++p) {
-    const int body_b = patches.bodies()[p].first;
-    const int body_a = patches.bodies()[p].second;
-    const Vector6<T> Gamma_Bo_W = patch_data.Gamma_Bo_W_pool()[p];
-    add_body_impulse(body_b, Gamma_Bo_W);
+  // impulse on body A is its negation shifted to Ao. Each patch comes from the
+  // reduced model if it survived reduction, else from the full model, so
+  // `patch_of(p)` locates full-model patch p's pool, data and index there.
+  // The generalized contact forces are the same impulses through the *full*
+  // model's Jacobians, so that locked coordinates still carry their loads.
+  const auto& full_patches = model.patch_constraints_pool();
+  const int num_patches = full_patches.num_patches();
+  std::vector<int>& reduced_patch_of = scratch_.reduced_patch_of;
+  reduced_patch_of.assign(num_patches, -1);
+  if (is_reduced) {
+    const auto original =
+        reduced_model_.patch_constraints_pool().original_patches();
+    for (int r = 0; r < ssize(original); ++r) {
+      reduced_patch_of[original[r]] = r;
+    }
+  }
+  struct PatchRef {
+    const contact_solvers::icf::internal::PatchConstraintsPool<T>* pool;
+    const contact_solvers::icf::internal::PatchConstraintsDataPool<T>* data;
+    int k;
+  };
+  auto patch_of = [&](int p) {
+    const int r = reduced_patch_of[p];
+    if (r >= 0) {
+      return PatchRef{&reduced_model_.patch_constraints_pool(),
+                      &constraint_data.patch_constraints_data(), r};
+    }
+    return PatchRef{&full_patches, &data.patch_constraints_data(), p};
+  };
+  VectorX<T>& tau_contact = scratch_.tau_contact;
+  tau_contact.setZero(model.num_velocities());
+  auto add_contact_impulse = [&](int icf_body, const Vector6<T>& Gamma_Bo_W) {
+    add_body_impulse(icf_body, Gamma_Bo_W);
+    if (model.is_anchored(icf_body)) return;
+    auto segment = model.mutable_clique_segment(model.body_to_clique(icf_body),
+                                                &tau_contact);
+    if (model.is_floating(icf_body)) {
+      segment += Gamma_Bo_W / dt;
+    } else {
+      segment += model.J_WB(icf_body).transpose() * Gamma_Bo_W / dt;
+    }
+  };
+  for (int p = 0; p < num_patches; ++p) {
+    const PatchRef patch = patch_of(p);
+    const int body_b = patch.pool->bodies()[patch.k].first;
+    const int body_a = patch.pool->bodies()[patch.k].second;
+    const Vector6<T> Gamma_Bo_W = patch.data->Gamma_Bo_W_pool()[patch.k];
+    add_contact_impulse(body_b, Gamma_Bo_W);
     if (body_a != world_index()) {
-      const Vector3<T> p_BoAo_W = -Vector3<T>(patches.p_AB_W()[p]);
+      const Vector3<T> p_BoAo_W = -Vector3<T>(patch.pool->p_AB_W()[patch.k]);
       const SpatialForce<T> Gamma_Ao_W =
           SpatialForce<T>(Vector6<T>(-Gamma_Bo_W)).Shift(p_BoAo_W);
-      add_body_impulse(body_a, Gamma_Ao_W.get_coeffs());
+      add_contact_impulse(body_a, Gamma_Ao_W.get_coeffs());
     }
   }
 
@@ -762,25 +805,6 @@ void CenicIntegrator<T>::RecordStepMemory(const IcfModel<T>& model,
   }
   tau -= g / dt;
 
-  // Generalized contact forces, for the generalized_contact_forces ports. These
-  // come from the model the contact impulses came from; when that is the
-  // reduced model, the gradient is in reduced velocities (locked dofs carry no
-  // generalized contact force here).
-  VectorX<T>& tau_contact = scratch_.tau_contact;
-  VectorX<T>& g_contact = is_reduced ? scratch_.reduced_gradient : g;
-  g_contact.setZero(constraint_model.num_velocities());
-  for (int i = 0; i < constraint_model.partition().num_islands(); ++i) {
-    patches.AccumulateGradient(constraint_data,
-                               constraint_model.island_patches().items(i),
-                               &g_contact);
-  }
-  if (is_reduced) {
-    tau_contact = ExpandRows(VectorX<T>(-g_contact / dt),
-                             model.num_velocities(), reduced_dofs);
-  } else {
-    tau_contact = -g_contact / dt;
-  }
-
   // The step's generalized accelerations.
   VectorX<T>& vdot = scratch_.vdot;
   vdot = (v - model.v0()) / dt;
@@ -794,10 +818,10 @@ void CenicIntegrator<T>::RecordStepMemory(const IcfModel<T>& model,
   const auto& surfaces = geometry_contact_data.get().surfaces;
   const int num_point_pairs = std::ssize(point_pairs);
   const int num_surfaces = std::ssize(surfaces);
-  DRAKE_DEMAND(patches.num_patches() == num_point_pairs + num_surfaces);
+  DRAKE_DEMAND(num_patches == num_point_pairs + num_surfaces);
   std::vector<PointPairContactInfo<T>> point_pair_infos;
   std::vector<HydroelasticContactInfo<T>> hydroelastic_infos;
-  if (patches.num_patches() > 0) {
+  if (num_patches > 0) {
     const geometry::SceneGraphInspector<T>& inspector =
         mbp.EvalSceneGraphInspector(context);
     auto body_of_geometry = [&](geometry::GeometryId id) {
@@ -819,16 +843,17 @@ void CenicIntegrator<T>::RecordStepMemory(const IcfModel<T>& model,
       // The pool's body B is the dynamic body, which may be either of the
       // point pair's bodies. Contact results report the force on body B of the
       // point pair.
-      const int pool_body_b = patches.bodies()[p].first;
-      const int pair = patches.patch_pair_index(p, 0);
-      const Vector6<T> Gamma_Bo_W = patch_data.Gamma_Bo_W_pool()[p];
+      const PatchRef patch = patch_of(p);
+      const int pool_body_b = patch.pool->bodies()[patch.k].first;
+      const int pair = patch.pool->patch_pair_index(patch.k, 0);
+      const Vector6<T> Gamma_Bo_W = patch.data->Gamma_Bo_W_pool()[patch.k];
       const Vector3<T> f_poolB_W = Gamma_Bo_W.template tail<3>() / dt;
       const Vector3<T> f_Bc_W =
           (pool_body_b == bodyB_index) ? f_poolB_W : Vector3<T>(-f_poolB_W);
       const Vector3<T> p_WC =
-          p_WBo_of(pool_body_b) + Vector3<T>(patches.p_BC_W()[pair]);
-      const Vector3<T> v_AcBc_W = patch_data.v_AcBc_W_pool()[pair];
-      const Vector3<T> nhat_W = patches.normal_W()[pair];
+          p_WBo_of(pool_body_b) + Vector3<T>(patch.pool->p_BC_W()[pair]);
+      const Vector3<T> v_AcBc_W = patch.data->v_AcBc_W_pool()[pair];
+      const Vector3<T> nhat_W = patch.pool->normal_W()[pair];
       const T separation_speed = v_AcBc_W.dot(nhat_W);
       const T slip_speed =
           (v_AcBc_W - separation_speed * nhat_W).norm();  // Symmetric in A, B.
@@ -839,12 +864,13 @@ void CenicIntegrator<T>::RecordStepMemory(const IcfModel<T>& model,
     for (int s = 0; s < num_surfaces; ++s) {
       const geometry::ContactSurface<T>& surface = surfaces[s];
       const int p = num_point_pairs + s;
-      const int pool_body_b = patches.bodies()[p].first;
+      const PatchRef patch = patch_of(p);
+      const int pool_body_b = patch.pool->bodies()[patch.k].first;
       const BodyIndex bodyM_index = body_of_geometry(surface.id_M());
       // Contact results report the spatial force on body M (the surface's
       // first body), applied at the surface centroid O.
       const SpatialForce<T> F_poolB_Bo_W(
-          Vector6<T>(patch_data.Gamma_Bo_W_pool()[p]) / dt);
+          Vector6<T>(patch.data->Gamma_Bo_W_pool()[patch.k]) / dt);
       const Vector3<T> p_BoO_W = surface.centroid() - p_WBo_of(pool_body_b);
       const SpatialForce<T> F_poolB_O_W = F_poolB_Bo_W.Shift(p_BoO_W);
       const SpatialForce<T> F_Mo_W =
