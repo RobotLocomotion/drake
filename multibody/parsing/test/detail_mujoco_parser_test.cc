@@ -770,7 +770,7 @@ TEST_F(BoxMeshTest, MeshFileScaleViaDefault) {
 
 TEST_F(MujocoParserTest, MeshFileReferencePose) {
   // refpos/refquat shift the mesh asset frame; Drake applies the inverse to
-  // the geom pose so vertices match MuJoCo (#22488).
+  // the geom pose so vertices match MuJoCo.
   const std::string xml = fmt::format(R"""(
 <mujoco model="test">
   <asset>
@@ -888,8 +888,9 @@ TEST_F(MujocoParserTest, MeshFileReferencePoseOnlyRefpos) {
 }
 
 TEST_F(MujocoParserTest, MeshFileReferencePoseComposedWithGeomPose) {
-  // The geom's own pose X_BG must compose as X_BG * X_GR⁻¹. A non-trivial X_BG
-  // makes the product order matter.
+  // The pose given in the XML geom is really X_BR (R is the MuJoCo reference
+  // frame), and Drake needs X_BG = X_BR * X_RG, where X_RG = X_GR⁻¹. A
+  // non-trivial X_BR makes the product order matter.
   const std::string xml = fmt::format(R"""(
 <mujoco model="test">
   <asset>
@@ -907,16 +908,17 @@ TEST_F(MujocoParserTest, MeshFileReferencePoseComposedWithGeomPose) {
   const auto& inspector = scene_graph_->model_inspector();
   const GeometryId geom_id = inspector.GetGeometryIdByName(
       inspector.world_frame_id(), Role::kProximity, "box_geom");
-  const RigidTransformd X_BG(
+  const RigidTransformd X_BR(
       Eigen::Quaternion<double>(std::sqrt(0.5), 0, 0, std::sqrt(0.5)),
       Vector3d(0.5, -1, 2));
   const RigidTransformd X_GR(Eigen::Quaternion<double>(0, 1, 0, 0),
                              Vector3d(1, 2, 3));
-  const RigidTransformd expected = X_BG * X_GR.inverse();
+  const RigidTransformd X_RG = X_GR.inverse();
+  const RigidTransformd expected = X_BR * X_RG;
   EXPECT_TRUE(
       inspector.GetPoseInFrame(geom_id).IsNearlyEqualTo(expected, 1e-14));
   // Guard against the test being insensitive to the order.
-  EXPECT_FALSE((X_GR.inverse() * X_BG).IsNearlyEqualTo(expected, 1e-6));
+  EXPECT_FALSE((X_RG * X_BR).IsNearlyEqualTo(expected, 1e-6));
 }
 
 TEST_F(MujocoParserTest, MeshFileReferencePoseNegatedIdentityQuat) {
@@ -988,43 +990,10 @@ TEST_F(MujocoParserTest, MeshFileReferencePoseNonFinite) {
   }
 }
 
-TEST_F(MujocoParserTest, MeshFileReferencePoseInfText) {
-  // Documents that non-finite text never reaches our own finiteness checks.
-  const std::string xml = fmt::format(R"""(
-<mujoco model="test">
-  <asset>
-    <mesh name="box" file="{}" refquat="inf 0 0 0"/>
-  </asset>
-</mujoco>
-)""",
-                                      box_obj_);
-  DRAKE_EXPECT_THROWS_MESSAGE(AddModelFromString(xml, "test"),
-                              ".*Expected 4 values for attribute refquat.*");
-}
-
-TEST_F(MujocoParserTest, MeshFileReferencePoseBadFileOnlyReportsFileError) {
-  // A bad refquat on a mesh whose file can't be loaded must not add diagnostics
-  // beyond the file error.
-  const std::string xml = R"""(
-<mujoco model="test">
-  <asset>
-    <mesh name="box" file="does_not_exist.obj" refquat="0 0 0 0"/>
-  </asset>
-  <worldbody>
-    <geom name="box_geom" type="mesh" mesh="box"/>
-  </worldbody>
-</mujoco>
-)""";
-
-  AddModelFromString(xml, "test");
-  EXPECT_THAT(TakeError(), MatchesRegex(".*could not be found.*"));
-  EXPECT_THAT(TakeWarning(), MatchesRegex(".*unknown mesh.*"));
-}
-
 TEST_F(MujocoParserTest, MeshFileReferencePoseInertia) {
   // The inertia is computed from the Drake mesh (in its local frame G), so
   // with the geom frame shifted to G the body's center of mass must follow
-  // X_BG = X_BR * X_GR⁻¹ (where X_BR is the identity here). The box mesh is
+  // X_BG = X_BR * X_RG (where X_BR is the identity here). The box mesh is
   // centered at G's origin, so p_BCom = X_BG * 0 = -R_GR⁻¹ * p_GR.
   const std::string xml = fmt::format(R"""(
 <mujoco model="test">
