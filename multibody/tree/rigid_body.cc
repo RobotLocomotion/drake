@@ -164,15 +164,15 @@ void RigidBody<T>::ThrowIfNotFinalized(const char* source_method) const {
 }
 
 template <typename T>
-void RigidBody<T>::ThrowIfEphemeralInertia(const char* source_method) const {
-  if (this->is_ephemeral()) {
-    throw std::logic_error(fmt::format(
-        "{}(): RigidBody '{}' is an ephemeral shadow link created "
-        "automatically to break a kinematic loop; its mass properties are not "
-        "independently settable. They mirror its primary link and are managed "
-        "internally. Set the primary link's mass properties instead.",
-        source_method, this->name()));
-  }
+void RigidBody<T>::ThrowEphemeralInertiaError(const char* source_method) const {
+  const internal::MultibodyTree<T>& tree = this->get_parent_tree();
+  const LinkIndex primary_index =
+      tree.graph().link_by_index(this->index()).primary_link();
+  throw std::logic_error(fmt::format(
+      "{}(): RigidBody '{}' is a shadow link, which Finalize() created to "
+      "break a kinematic loop. A shadow link has no mass properties of its "
+      "own; use its primary link '{}' instead.",
+      source_method, this->name(), tree.get_link(primary_index).name()));
 }
 
 template <typename T>
@@ -272,46 +272,17 @@ void RigidBody<T>::AddInForce(const systems::Context<T>& context,
 template <typename T>
 Vector3<T> RigidBody<T>::CalcCenterOfMassTranslationalVelocityInWorld(
     const systems::Context<T>& context) const {
-  const RigidBody<T>& body_B = *this;
-  const Frame<T>& frame_B = body_B.body_frame();
-
-  // Form frame_B's spatial velocity in the world frame W, expressed in W.
-  const SpatialVelocity<T>& V_WBo_W =
-      body_B.EvalSpatialVelocityInWorld(context);
-
-  // Form v_WBcm_W, Bcm's translational velocity in frame W, expressed in W.
-  const Vector3<T> p_BoBcm_B = CalcCenterOfMassInBodyFrame(context);
-  const math::RotationMatrix<T> R_WB =
-      frame_B.CalcRotationMatrixInWorld(context);
-  const Vector3<T> p_BoBcm_W = R_WB * p_BoBcm_B;
-  const Vector3<T> v_WBcm_W = V_WBo_W.Shift(p_BoBcm_W).translational();
-  return v_WBcm_W;
+  ThrowIfEphemeralInertia(__func__);
+  return this->get_parent_tree()
+      .CalcLinkCenterOfMassTranslationalVelocityInWorld(context, *this);
 }
 
 template <typename T>
 Vector3<T> RigidBody<T>::CalcCenterOfMassTranslationalAccelerationInWorld(
     const systems::Context<T>& context) const {
-  const RigidBody<T>& body_B = *this;
-  const Frame<T>& frame_B = body_B.body_frame();
-
-  // Form frame B's spatial acceleration in the world frame W, expressed in W.
-  const SpatialAcceleration<T>& A_WBo_W =
-      body_B.EvalSpatialAccelerationInWorld(context);
-
-  // Form Bcm's position from Bo, expressed in world W (for shift calculation).
-  const Vector3<T> p_BoBcm_B = CalcCenterOfMassInBodyFrame(context);
-  const math::RotationMatrix<T> R_WB =
-      frame_B.CalcRotationMatrixInWorld(context);
-  const Vector3<T> p_BoBcm_W = R_WB * p_BoBcm_B;
-
-  // Form B's angular velocity in world, expressed in W (for shift calculation).
-  const SpatialVelocity<T>& V_WBo_W =
-      body_B.EvalSpatialVelocityInWorld(context);
-  const Vector3<T>& w_WB_W = V_WBo_W.rotational();
-
-  // Form a_WBcm_W, Bcm's translational acceleration in frame W, expressed in W.
-  const Vector3<T> a_WBcm_W = A_WBo_W.Shift(p_BoBcm_W, w_WB_W).translational();
-  return a_WBcm_W;
+  ThrowIfEphemeralInertia(__func__);
+  return this->get_parent_tree()
+      .CalcLinkCenterOfMassTranslationalAccelerationInWorld(context, *this);
 }
 
 }  // namespace multibody

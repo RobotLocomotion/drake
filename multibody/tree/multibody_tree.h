@@ -1208,6 +1208,19 @@ class MultibodyTree {
                             const Frame<T>& frame_A, const Frame<T>& frame_E,
                             EigenPtr<MatrixX<T>> v_AQi_E) const;
 
+  // Returns M_LLo_L, link L's spatial inertia about its origin Lo, expressed in
+  // L, as the dynamics see it. That is all of L's own (parameterized) mass
+  // properties, unless L is the primary or a shadow of a link that Finalize()
+  // split to break a kinematic loop, in which case it is an even share of the
+  // primary's. Summing these over links, as the mass-property calculations
+  // below do, counts every user-defined link exactly once and agrees with the
+  // dynamics even while a loop is unassembled. (RigidBody's own accessors
+  // instead report a primary's full mass properties, and throw for a shadow.)
+  const SpatialInertia<T>& EvalLinkSpatialInertiaShare(
+      const systems::Context<T>& context, const Link<T>& link_L) const {
+    return EvalFrameBodyPoses(context).get_M_LLo_L(link_L.ordinal());
+  }
+
   // See MultibodyPlant method.
   T CalcTotalMass(const systems::Context<T>& context) const;
 
@@ -1267,6 +1280,21 @@ class MultibodyTree {
 
   // See MultibodyPlantMethod EvalBodySpatialAccelerationInWorld().
   const SpatialAcceleration<T>& EvalLinkSpatialAccelerationInWorld(
+      const systems::Context<T>& context, const Link<T>& link_L) const;
+
+  // Returns v_WLcm_W, the translational velocity in World of link L's center of
+  // mass Lcm, expressed in World. Unlike
+  // RigidBody::CalcCenterOfMassTranslationalVelocityInWorld(), this works for a
+  // shadow link too; a shadow's center of mass is where its primary's is, in
+  // its own link frame.
+  Vector3<T> CalcLinkCenterOfMassTranslationalVelocityInWorld(
+      const systems::Context<T>& context, const Link<T>& link_L) const;
+
+  // Returns a_WLcm_W, the translational acceleration in World of link L's
+  // center of mass Lcm, expressed in World. Unlike
+  // RigidBody::CalcCenterOfMassTranslationalAccelerationInWorld(), this works
+  // for a shadow link too.
+  Vector3<T> CalcLinkCenterOfMassTranslationalAccelerationInWorld(
       const systems::Context<T>& context, const Link<T>& link_L) const;
 
   // End of "Kinematic computations" section.

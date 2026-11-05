@@ -4563,7 +4563,10 @@ Parameter ``frame_F``:
 
 Parameter ``body_indexes``:
     Array of selected bodies. This method does not distinguish between
-    welded bodies, joint-connected bodies, etc.
+    welded bodies, joint-connected bodies, etc. A body that Finalize()
+    split to break a kinematic loop counts once, as a whole, whether
+    body_indexes names its primary, a shadow, or both; see
+    SetEnableLoopTopology().
 
 Raises:
     RuntimeError if ``frame_F`` does not belong to ``this`` plant.
@@ -6892,6 +6895,18 @@ constraint is added between the primary and shadow links to enforce
 loop closure. When the weld constraint is satisfied, the original
 physics is restored.
 
+A shadow link is a body like any other in most respects (it has a pose
+and a velocity, for example), but it has no mass properties of its
+own: the primary link reports the link's full, user-defined mass
+properties, and asking a shadow link for its mass properties throws.
+Calculations that sum over several bodies (total mass, center of mass,
+spatial momentum, energy, and CalcSpatialInertia()) count a split link
+once, as its primary and shadows together. Until a loop's weld
+constraint is satisfied, these describe the split model that the
+solver is simulating, in which the primary and each shadow carry an
+equal share of the mass at their own poses. Shadow bodies always come
+after all the user's bodies; see num_user_bodies().
+
 Parameter ``enable``:
     Whether Finalize() should automatically model closed kinematic
     loops rather than throwing.
@@ -8258,7 +8273,9 @@ R"""(Returns the total number of ball constraints specified by the user.)""";
           // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Returns the number of RigidBody elements in the model, including the
-"world" RigidBody, which is always part of the model.
+"world" RigidBody, which is always part of the model. After Finalize()
+this includes any shadow bodies that Finalize() added to break
+kinematic loops; see num_user_bodies().
 
 See also:
     AddRigidBody().)""";
@@ -8391,6 +8408,18 @@ Raises:
           const char* doc =
 R"""(Returns the total number of tendon constraints specified by the user.)""";
         } num_tendon_constraints;
+        // Symbol: drake::multibody::MultibodyPlant::num_user_bodies
+        struct /* num_user_bodies */ {
+          // Source: drake/multibody/plant/multibody_plant.h
+          const char* doc =
+R"""(Returns the number of RigidBody elements in the model that are not
+shadow bodies: the "world" RigidBody plus every body added with
+AddRigidBody(). Finalize() adds a shadow body for each kinematic loop
+it breaks (see SetEnableLoopTopology()), always after all of these, so
+the BodyIndex values in [0, num_user_bodies()) are exactly the
+non-shadow bodies. This equals num_bodies() unless Finalize() broke a
+loop.)""";
+        } num_user_bodies;
         // Symbol: drake::multibody::MultibodyPlant::num_velocities
         struct /* num_velocities */ {
           // Source: drake/multibody/plant/multibody_plant.h

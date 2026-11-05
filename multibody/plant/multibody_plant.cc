@@ -1426,10 +1426,10 @@ void MultibodyPlant<T>::Finalize() {
   collision_geometries_.resize(num_bodies());
 
   // Next, register the shadow links with SceneGraph so that we can visualize
-  // them. This enables Meshcat to visualize the shadow link inertia ellipsoids,
-  // and can be used to add visual geometry to the shadow links if desired
-  // (typically for pedagogical or debugging purposes -- shadows links are
-  // normally invisible).
+  // them. This can be used to add visual geometry to the shadow links if
+  // desired (typically for pedagogical or debugging purposes -- shadow links
+  // are normally invisible). A shadow link has no mass properties of its own,
+  // so it gets no inertia ellipsoid; its primary's shows the full mass.
   for (BodyIndex index(0); index < num_bodies(); ++index) {
     const RigidBody<T>& body = get_body(index);
     if (body.is_ephemeral()) {
@@ -2160,8 +2160,10 @@ void MultibodyPlant<T>::EstimatePointContactParameters(
   //  - Consider an estimate of maximum velocities (context dependent).
   // Right now we are being very conservative and use the maximum mass in the
   // system.
+  // Shadow bodies (see SetEnableLoopTopology()) have no mass of their own, and
+  // come after all the user's bodies.
   double mass = 0.0;
-  for (BodyIndex body_index(0); body_index < num_bodies(); ++body_index) {
+  for (BodyIndex body_index(0); body_index < num_user_bodies(); ++body_index) {
     const RigidBody<T>& body = get_body(body_index);
     mass = std::max(mass, body.default_mass());
   }

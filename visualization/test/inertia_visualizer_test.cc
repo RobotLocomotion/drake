@@ -110,12 +110,12 @@ TEST_F(InertiaVisualizerConfigTest, InertiaButNoIllustrationConfig) {
 }
 
 // When MultibodyPlant models a closed kinematic loop it splits a link into a
-// primary link and an ephemeral "shadow" copy, which carries half of the
-// primary's mass and has a pose of its own. It is a body like any other here,
-// so it gets an inertia ellipsoid of its own -- showing the shadow's share of
-// the mass, where the shadow actually is.
-GTEST_TEST(InertiaVisualizerTest, ShadowLinkGetsAnEllipsoid) {
-  // A minimal closed loop: two links joined to World and to each other.
+// primary link and a "shadow" link, which has no mass properties of its own.
+// Only the user's bodies get inertia ellipsoids, and the split link's shows its
+// full mass.
+GTEST_TEST(InertiaVisualizerTest, ShadowLinkIsSkipped) {
+  // A minimal closed loop: two identical links joined to World and to each
+  // other.
   constexpr char kLoopSdf[] = R"""(
   <?xml version="1.0"?>
   <sdf version="1.7">
@@ -146,8 +146,10 @@ GTEST_TEST(InertiaVisualizerTest, ShadowLinkGetsAnEllipsoid) {
   Parser(&plant).AddModelsFromString(kLoopSdf, "sdf");
   plant.Finalize();
 
-  // Breaking the loop added an ephemeral shadow body, with a frame of its own.
+  // Breaking the loop added a shadow body, after the user's bodies. It has a
+  // SceneGraph frame of its own, so the visualizer could have drawn it.
   ASSERT_EQ(plant.num_loop_constraints(), 1);
+  ASSERT_EQ(plant.num_bodies(), plant.num_user_bodies() + 1);
   const multibody::BodyIndex shadow_index(plant.num_bodies() - 1);
   const multibody::RigidBody<double>& shadow = plant.get_body(shadow_index);
   ASSERT_TRUE(shadow.is_ephemeral());
@@ -156,19 +158,37 @@ GTEST_TEST(InertiaVisualizerTest, ShadowLinkGetsAnEllipsoid) {
   InertiaVisualizer<double>::AddToBuilder(&builder, plant, &scene_graph);
 
   // The visualizer registers one frame per body it draws an ellipsoid for, so
-  // the shadow is drawn iff a frame named for it turns up in SceneGraph.
-  const std::string expected_name = fmt::format(
-      "InertiaVisualizer::{}::{}",
-      plant.GetModelInstanceName(shadow.model_instance()), shadow.name());
+  // a body is drawn iff a frame named for it turns up in SceneGraph.
   const geometry::SceneGraphInspector<double>& inspector =
       scene_graph.model_inspector();
   std::vector<std::string> frame_names;
   for (const geometry::FrameId frame_id : inspector.GetAllFrameIds()) {
     frame_names.push_back(inspector.GetName(frame_id));
   }
-  EXPECT_TRUE(std::find(frame_names.begin(), frame_names.end(),
-                        expected_name) != frame_names.end())
-      << "No SceneGraph frame named '" << expected_name << "'.";
+  auto is_drawn = [&](const multibody::RigidBody<double>& body) {
+    const std::string name = fmt::format(
+        "InertiaVisualizer::{}::{}",
+        plant.GetModelInstanceName(body.model_instance()), body.name());
+    return std::find(frame_names.begin(), frame_names.end(), name) !=
+           frame_names.end();
+  };
+  const multibody::RigidBody<double>& upper = plant.GetBodyByName("upper");
+  const multibody::RigidBody<double>& lower = plant.GetBodyByName("lower");
+  EXPECT_TRUE(is_drawn(upper));
+  EXPECT_TRUE(is_drawn(lower));
+  EXPECT_FALSE(is_drawn(shadow));
+
+  // The two links have the same (default) mass properties, so the one that was
+  // split gets the same ellipsoid as the one that wasn't, showing its full
+  // mass.
+  const auto context = plant.CreateDefaultContext();
+  const auto [upper_ellipsoid, X_upper] =
+      CalculateInertiaGeometry(upper, *context);
+  const auto [lower_ellipsoid, X_lower] =
+      CalculateInertiaGeometry(lower, *context);
+  EXPECT_EQ(upper_ellipsoid.a(), lower_ellipsoid.a());
+  EXPECT_EQ(upper_ellipsoid.b(), lower_ellipsoid.b());
+  EXPECT_EQ(upper_ellipsoid.c(), lower_ellipsoid.c());
 }
 
 // This class allows testing the results of inertia geometry calculation.
