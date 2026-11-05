@@ -81,8 +81,8 @@ SimulatorConfig ExtractSimulatorConfig(
   maintain a reference to the system in perpetuity, so the integrator must not
   outlive the system.
 @param integrator_config Configuration to be used. Only values relevant to the
-  integrator (integration_scheme, max_step_size, use_error_control, accuracy)
-  are applied.
+  integrator (integration_scheme, max_step_size, use_error_control, accuracy,
+  integrator_params) are applied.
 @pre `system != nullptr`.
 @throw std::exception if the integration scheme does not match any of
   GetIntegrationSchemes(), or if the integration scheme does not support the
