@@ -1,8 +1,8 @@
-/* Tests that mass properties and link kinematics (poses and spatial
-velocities) are identical whether links that are welded together are modeled
-with explicit weld joints (unfused) or are fused into a single mobilized body
-(fused Mobod). The tests build two identical models that differ only in whether
-SetFuseWeldedLinks() is enabled. */
+/* Tests that mass properties, link kinematics (poses and spatial velocities),
+and kinetic energy are identical whether links that are welded together are
+modeled with explicit weld joints (unfused) or are fused into a single mobilized
+body (fused Mobod). The tests build two identical models that differ only in
+whether SetFuseWeldedLinks() is enabled. */
 
 #include <limits>
 #include <memory>
@@ -648,6 +648,102 @@ GTEST_TEST(FusedTest, CompositeSpatialInertia) {
             *fused_model.context, p_WoP_W);
     EXPECT_TRUE(CompareMatrices(L_unfused.get_coeffs(), L_fused.get_coeffs(),
                                 kTolerance, MatrixCompareType::relative));
+  }
+}
+
+/* Tests that kinetic energy does not depend on whether welded links are fused.
+When fused, Link1, Link2, and Link3 follow a single Mobod whose spatial inertia
+includes all three links, and Link4 follows World. So that Mobod's kinetic
+energy must be counted once (not once per link) and Link4 (which does not
+move in World) contributes no kinetic energy. The links rotate together about
+the revolute's z axis, so KE = ½ Iₜ θ̇², with Iₜ = 3.005 kg·m² as derived above
+for the CompositeSpatialInertia test. */
+GTEST_TEST(FusedTest, KineticEnergy) {
+  const TestModel unfused_model = MakeModel(false);
+  const TestModel fused_model = MakeModel(true);
+
+  const double m = 1.0, a = 0.1;  // mass m and side-length a of solid cubes.
+  const double Izz = m * a * a / 6.0;  // Izz of one cube about its COM.
+  const double I_total = 3 * Izz + m * (0.0 + 1.0 + 2.0);  // dᵢ² = 0, 1, 2
+  const double theta_dot = 2.0;                            // rad/s
+  const double ke_expected = 0.5 * I_total * theta_dot * theta_dot;
+
+  const std::vector<double> angles = {0.0, M_PI / 6, -M_PI / 3};
+  for (double angle : angles) {
+    SCOPED_TRACE(fmt::format("angle = {}", angle));
+    SetState(unfused_model, angle, theta_dot);
+    SetState(fused_model, angle, theta_dot);
+    EXPECT_NEAR(unfused_model.plant->CalcKineticEnergy(*unfused_model.context),
+                ke_expected, kTolerance * ke_expected);
+    EXPECT_NEAR(fused_model.plant->CalcKineticEnergy(*fused_model.context),
+                ke_expected, kTolerance * ke_expected);
+  }
+}
+
+/* Tests the bias forces Fb_Bo_W that CalcDynamicBiasForces() computes for each
+Mobod B (the Fb_Bo_W in F_BBo_W = M_Bo_W A_WB + Fb_Bo_W).
+
+When not fused, each link is its own Mobod, with its center of mass at Bo and an
+isotropic central inertia, so every Fb_Bo_W is zero.
+
+When fused, Link1, Link2, and Link3 follow a single Mobod whose spatial inertia
+includes all three links. B rotates about the revolute's z axis, so its bias
+force is the centripetal force on the composite's center of mass Bcm, with no
+moment about Bo (Bcm is in the plane of rotation):
+  Fb_Bo_W = [0₃, m ω×(ω×p_BoBcm_W)] = [0₃, -m θ̇² p_BoBcm_W]
+where m = 3 kg and p_BoBcm_W = Rz_WB(θ) (2/3, 1/3, 0).
+
+World doesn't move, so it has no bias force. Its entry should be set to NaN. */
+GTEST_TEST(FusedTest, DynamicBiasForces) {
+  const TestModel unfused_model = MakeModel(false);
+  const TestModel fused_model = MakeModel(true);
+  const internal::MobodIndex world_mobod = internal::world_mobod_index();
+  const internal::MobodIndex composite_mobod(1);
+
+  const double m = 3.0;          // kg, three 1 kg cubes.
+  const double theta_dot = 2.0;  // rad/s
+
+  // Returns every Mobod's bias force, indexed by MobodIndex. The output starts
+  // out filled with a recognizable value so we can see what gets written.
+  const SpatialForce<double> kUnwritten(Vector3<double>::Constant(7.0),
+                                        Vector3<double>::Constant(7.0));
+  auto calc_bias_forces = [&kUnwritten](const TestModel& model) {
+    const internal::MultibodyTree<double>& tree = GetInternalTree(*model.plant);
+    std::vector<SpatialForce<double>> Fb_Bo_W_all(tree.num_mobods(),
+                                                  kUnwritten);
+    tree.CalcDynamicBiasForces(*model.context, &Fb_Bo_W_all);
+    return Fb_Bo_W_all;
+  };
+  auto is_nan = [](const SpatialForce<double>& F) {
+    return F.get_coeffs().array().isNaN().all();
+  };
+
+  const std::vector<double> angles = {0.0, M_PI / 6, -M_PI / 3};
+  for (double angle : angles) {
+    SCOPED_TRACE(fmt::format("angle = {}", angle));
+    SetState(unfused_model, angle, theta_dot);
+    SetState(fused_model, angle, theta_dot);
+
+    const std::vector<SpatialForce<double>> Fb_unfused =
+        calc_bias_forces(unfused_model);
+    ASSERT_EQ(ssize(Fb_unfused), 5);  // World and the four links.
+    EXPECT_TRUE(is_nan(Fb_unfused[world_mobod]));
+    for (int b = 1; b < ssize(Fb_unfused); ++b) {
+      EXPECT_TRUE(CompareMatrices(Fb_unfused[b].get_coeffs(),
+                                  Vector6<double>::Zero(), kTolerance));
+    }
+
+    const std::vector<SpatialForce<double>> Fb_fused =
+        calc_bias_forces(fused_model);
+    ASSERT_EQ(ssize(Fb_fused), 2);  // World and the Link1-2-3 composite.
+    EXPECT_TRUE(is_nan(Fb_fused[world_mobod]));
+    const Vector3<double> p_BoBcm_W = RotationMatrixd::MakeZRotation(angle) *
+                                      Vector3<double>(2.0, 1.0, 0.0) / 3.0;
+    const SpatialForce<double> Fb_Bo_W_expected(
+        Vector3<double>::Zero(), -m * theta_dot * theta_dot * p_BoBcm_W);
+    EXPECT_TRUE(CompareMatrices(Fb_fused[composite_mobod].get_coeffs(),
+                                Fb_Bo_W_expected.get_coeffs(),
+                                16 * kTolerance));
   }
 }
 
