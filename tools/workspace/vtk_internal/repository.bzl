@@ -200,12 +200,12 @@ def vtk_internal_repository(
             # - Patch file names should begin with the name of the module being
             #   edited (e.g., patching IO/Image is named io_image_{foo}.patch).
             # - Use alphabetical order within a directory when listing patches.
+            ":patches/upstream/common_executionmodel_disable_static_destructors.patch",  # noqa
             ":patches/common_core_fmt9.patch",
             ":patches/common_core_nobacktrace.patch",
             ":patches/common_core_rm_cin_prompting.patch",
             ":patches/common_core_version.patch",
             ":patches/common_datamodel_no_pegtl.patch",
-            ":patches/common_executionmodel_disable_static_destructors.patch",
             ":patches/io_geometry_no_mime_type_warning.patch",
             ":patches/io_image_formats.patch",
             ":patches/rendering_opengl2_nobacktrace.patch",
