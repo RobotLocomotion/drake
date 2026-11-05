@@ -71,6 +71,7 @@ drake_cc_package_library(
         ":text_logging_spdlog",
         ":timer",
         ":type_safe_index",
+        ":unchanged",
         ":unused",
         ":value",
     ],
@@ -606,6 +607,11 @@ drake_cc_library(
         ":hash",
         ":nice_type_name",
     ],
+)
+
+drake_cc_library(
+    name = "unchanged",
+    hdrs = ["unchanged.h"],
 )
 
 drake_cc_library(

@@ -84,7 +84,7 @@ GTEST_TEST(MultibodyPlantConfigFunctionsTest,
 
 const char* const kExampleConfig = R"""(
 time_step: 0.002
-use_sampled_output_ports: true
+use_sampled_output_ports: !Unchanged {}
 penetration_allowance: 0.003
 stiction_tolerance: 0.004
 contact_model: hydroelastic
