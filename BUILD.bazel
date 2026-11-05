@@ -25,7 +25,10 @@ exports_files(
         "MODULE.bazel",
         "cmake/MODULE.bazel.in",
     ],
-    visibility = ["//tools/workspace:__pkg__"],
+    visibility = [
+        "//tools/install/libdrake:__pkg__",
+        "//tools/workspace:__pkg__",
+    ],
 )
 
 exports_files(

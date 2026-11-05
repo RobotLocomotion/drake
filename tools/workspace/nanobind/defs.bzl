@@ -8,6 +8,9 @@ NANOBIND_DEFINES = [
 
     # See https://nanobind.readthedocs.io/en/latest/refleaks.html#reference-leaks
     # This limits the scope of setting nanobind global flags.
+    # N.B. The "pydrake" domain is duplicated in tools/install/libdrake/
+    # drake-config.cmake.in (drake_NB_OPTIONS), which downstream nanobind
+    # modules must match to interoperate with pydrake; keep the two in sync.
     "NB_DOMAIN=pydrake",
 ]
 
