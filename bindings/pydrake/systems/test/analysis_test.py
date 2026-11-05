@@ -8,7 +8,9 @@ import numpy as np
 from pydrake.autodiffutils import AutoDiffXd
 from pydrake.common import Parallelism
 from pydrake.common.test_utilities import numpy_compare
+from pydrake.common.yaml import yaml_dump_typed, yaml_load_typed
 from pydrake.math import isnan
+from pydrake.multibody.cenic import CenicIntegratorParameters
 from pydrake.symbolic import Expression, Variable
 from pydrake.systems.analysis import (
     ApplySimulatorConfig,
@@ -473,6 +475,27 @@ class TestAnalysis(unittest.TestCase):
         self.assertEqual(config.target_realtime_rate, 2.0)
         self.assertIn("target_realtime_rate", repr(config))
         copy.copy(config)
+
+    def test_simulator_config_integrator_params(self):
+        # The default (unset) is None.
+        config = SimulatorConfig()
+        self.assertIsNone(config.integrator_params)
+        # CENIC parameters can be set, and survive a copy.
+        params = CenicIntegratorParameters()
+        params.explicit_external_inputs = True
+        config = SimulatorConfig(
+            integration_scheme="cenic", integrator_params=params
+        )
+        self.assertTrue(config.integrator_params.explicit_external_inputs)
+        self.assertIn("integrator_params", repr(config))
+        dut = copy.deepcopy(config)
+        self.assertTrue(dut.integrator_params.explicit_external_inputs)
+
+        # The YAML type tag uses the public class name.
+        doc = yaml_dump_typed(config)
+        self.assertIn("!CenicIntegratorParameters", doc)
+        loaded = yaml_load_typed(schema=SimulatorConfig, data=doc)
+        self.assertTrue(loaded.integrator_params.explicit_external_inputs)
 
     def test_simulator_config_functions(self):
         for T in (float, AutoDiffXd):

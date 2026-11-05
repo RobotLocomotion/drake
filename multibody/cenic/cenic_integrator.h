@@ -65,7 +65,8 @@ Benefits of CENIC include:
   arbitrary stiff controllers (e.g., a custom `LeafSystem`) to the
   `MultibodyPlant` and have them treated implicitly in CENIC's convex
   formulation. This allows for larger time steps, leading to faster and more
-  stable simulations.
+  stable simulations. (This is the default; see @ref
+  cenic_explicit_external_inputs "Explicit external inputs" for the opt-out.)
 
 - **Principled static/dynamic friction modeling**. Unlike discrete solvers,
   CENIC can simulate frictional contact with different static and dynamic
@@ -124,11 +125,69 @@ integrator has initialized the Context throws.
 
 The reported reaction forces use external spatial forces (the plant's
 `applied_spatial_force` input port) evaluated at the start of the solved step,
-whereas the solve itself is implicit in their linearization. For strongly
-velocity-dependent external forces the reported reaction forces can therefore be
-inconsistent with the step's acceleration, by roughly the force's velocity
-gradient times the step's change in velocity. Actuation and contact are not
-affected.
+whereas, by default, the solve itself is implicit in their linearization. For
+strongly velocity-dependent external forces the reported reaction forces can
+therefore be inconsistent with the step's acceleration, by roughly the force's
+velocity gradient times the step's change in velocity. Actuation and contact are
+not affected. With @ref cenic_explicit_external_inputs "explicit external
+inputs" the solve also holds those forces at their start-of-step values, so the
+reported reaction forces are consistent with the solve.
+
+@anchor cenic_explicit_external_inputs
+### Explicit external inputs
+
+By default, CENIC linearizes the MultibodyPlant's external inputs (actuation and
+external forces) with finite differences so that it can treat them implicitly.
+That re-evaluates all upstream systems several times per step, which is
+expensive when the inputs come from complicated external systems. Alternatively,
+CENIC can hold those inputs fixed over each step (i.e., treat them explicitly),
+so that upstream systems are evaluated once per step, which is up to about
+`nv + 2` times fewer upstream evaluations for a plant with `nv` generalized
+velocities. See CenicIntegratorParameters::explicit_external_inputs and
+set_explicit_external_inputs().
+
+This choice does not depend on whether error control is enabled: explicit inputs
+can be used in both fixed-step and error-controlled modes. Explicit inputs give
+up the implicit treatment of stiff controllers, so if a controller is stiff
+relative to the step size, use a smaller step or leave explicit inputs off.
+(Joint-level PD controllers set through the plant's desired-state input ports
+are analytic, so they stay implicit either way.)
+
+@anchor cenic_discrete_like_mode
+### Discrete-like mode
+
+ICF is not (yet) available as a discrete-time MultibodyPlant solver. One way to
+get discrete-like behavior (a fixed time step, and no extra work for the other
+systems in the diagram) is to combine a continuous-time plant, fixed-step
+CENIC, and explicit external inputs. With YAML configuration, that looks like:
+
+@code{.yaml}
+# MultibodyPlantConfig
+time_step: 0.0
+# SimulatorConfig
+integration_scheme: cenic
+max_step_size: 0.001  # The fixed step size.
+use_error_control: false
+integrator_params: !CenicIntegratorParameters
+  explicit_external_inputs: true
+@endcode
+
+In C++, the equivalent calls are `set_fixed_step_mode(true)` and
+`set_explicit_external_inputs(true)`.
+
+Each setting does its own job, and they can be mixed freely:
+
+- `time_step: 0.0` makes the plant continuous, so that CENIC integrates it.
+- `use_error_control: false` takes fixed steps of size `max_step_size`.
+- `explicit_external_inputs: true` (within `integrator_params`) treats external
+  inputs explicitly (see above).
+
+Caveats specific to fixed-step mode:
+
+- CENIC advances the continuous state of any other system in the diagram with
+  explicit Euler, in both fixed-step and error-controlled modes. In fixed-step
+  mode there is no error control to catch an unstable choice of step size.
+- Other systems' continuous state still counts toward the cost of each step.
 
 Implementation notes:
 
@@ -191,6 +250,19 @@ class CenicIntegrator final : public systems::IntegratorBase<T> {
   /** Sets the convex solver tolerances and iteration limits. */
   void SetSolverParameters(
       const contact_solvers::icf::IcfSolverParameters& parameters);
+
+  /** Gets whether external inputs are treated explicitly. */
+  bool get_explicit_external_inputs() const {
+    return explicit_external_inputs_;
+  }
+
+  /** Sets whether to treat the plant's external inputs (actuation and external
+  forces) explicitly. See CenicIntegratorParameters::explicit_external_inputs
+  and @ref cenic_explicit_external_inputs "Explicit external inputs". The
+  default is false. */
+  void set_explicit_external_inputs(bool explicit_external_inputs) {
+    explicit_external_inputs_ = explicit_external_inputs;
+  }
 
   bool supports_error_estimation() const final;
 
@@ -314,6 +386,9 @@ class CenicIntegrator final : public systems::IntegratorBase<T> {
   /* Helper class that linearizes torques dτ/dv from plant input ports. */
   const contact_solvers::icf::internal::IcfExternalSystemsLinearizer<T>
       external_systems_linearizer_;
+
+  /* Whether external inputs are held fixed over each step. */
+  bool explicit_external_inputs_{false};
 
   /* ICF integrator state and storage. */
   std::unique_ptr<contact_solvers::icf::internal::IcfBuilder<T>> builder_;
