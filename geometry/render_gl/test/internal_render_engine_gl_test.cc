@@ -9,6 +9,7 @@
 #include <optional>
 #include <set>
 #include <source_location>
+#include <sstream>
 #include <string>
 #include <unordered_map>
 #include <utility>
@@ -632,6 +633,40 @@ class RenderEngineGlTest : public ::testing::Test {
   unique_ptr<RenderEngineGl> renderer_;
 
   fs::path temp_dir_;
+
+  // Returns an in-memory box mesh with the given half size whose contents (and
+  // so cache key) are unique to this call, and sets the expected depth so that
+  // PerformCenterShapeTest() passes for that box alone at the world origin.
+  // Boxes of different sizes render to different depths, so a geometry drawing
+  // another geometry's mesh fails the test.
+  Mesh MakeUniqueBox(double half_size) {
+    // N.B. box_no_mtl.obj is generated from box.obj by the build system. Its
+    // vertices are at ±1.
+    const std::string obj = ReadFileOrThrow(FindResourceOrThrow(
+        "drake/geometry/render/test/meshes/box_no_mtl.obj"));
+    std::string contents = fmt::format("# {}\n", ++num_unique_boxes_);
+    std::istringstream lines(obj);
+    for (std::string line; std::getline(lines, line);) {
+      if (line.starts_with("v ")) {
+        double x, y, z;
+        std::istringstream(line.substr(2)) >> x >> y >> z;
+        line = fmt::format("v {} {} {}", half_size * x, half_size * y,
+                           half_size * z);
+      }
+      contents += line + "\n";
+    }
+    return Mesh(InMemoryMesh{MemoryFile(std::move(contents), ".obj", "box")});
+  }
+
+  // Sets the expected values for PerformCenterShapeTest() on a box made by
+  // MakeUniqueBox(half_size) and registered with simple_material().
+  void ExpectUniqueBox(double half_size) {
+    expected_label_ = RenderLabel(3);
+    expected_color_ = default_color_;
+    expected_object_depth_ = kDefaultDistance - half_size;
+  }
+
+  int num_unique_boxes_{};
 };
 
 TEST_F(RenderEngineGlTest, ParameterMatching) {
@@ -2580,17 +2615,7 @@ TEST_F(RenderEngineGlTest, RendererIndependence) {
 TEST_F(RenderEngineGlTest, MeshCacheEviction) {
   Init(X_WR_, true);
   RenderEngineGlTester tester(renderer_.get());
-  // N.B. box_no_mtl.obj is generated from box.obj by the build system.
-  const std::string obj = ReadFileOrThrow(
-      FindResourceOrThrow("drake/geometry/render/test/meshes/box_no_mtl.obj"));
-  // Each call makes a mesh with new contents (and so a new cache key).
-  int version = 0;
-  auto make_mesh = [&obj, &version]() {
-    return Mesh(InMemoryMesh{
-        MemoryFile(fmt::format("# {}\n", ++version) + obj, ".obj", "box")});
-  };
   expected_label_ = RenderLabel(3);
-  expected_color_ = default_color_;
   auto add = [this](const Mesh& mesh) {
     const GeometryId id = GeometryId::get_new_id();
     renderer_->RegisterVisual(id, mesh, simple_material(),
@@ -2599,24 +2624,29 @@ TEST_F(RenderEngineGlTest, MeshCacheEviction) {
     return id;
   };
 
-  GeometryId id = add(make_mesh());
+  // Each re-mesh has a different size.
+  double half_size = 0.5;
+  GeometryId id = add(MakeUniqueBox(half_size));
   const int num_geometries = ssize(tester.opengl_geometries());
   for (int i = 0; i < 10; ++i) {
     EXPECT_TRUE(renderer_->RemoveGeometry(id));
-    id = add(make_mesh());
+    half_size += 0.05;
+    id = add(MakeUniqueBox(half_size));
   }
   EXPECT_EQ(tester.num_cached_meshes(), 1);
   // The released slots are reused.
   EXPECT_EQ(ssize(tester.opengl_geometries()), num_geometries);
   {
     SCOPED_TRACE("Re-meshed");
+    ExpectUniqueBox(half_size);
     PerformCenterShapeTest(renderer_.get());
   }
 
   // A cached mesh stays while any geometry uses it.
   EXPECT_TRUE(renderer_->RemoveGeometry(id));
   EXPECT_EQ(tester.num_cached_meshes(), 0);
-  const Mesh shared = make_mesh();
+  const Mesh shared = MakeUniqueBox(0.8);
+  ExpectUniqueBox(0.8);
   const GeometryId first = add(shared);
   const GeometryId second = add(shared);
   EXPECT_EQ(tester.num_cached_meshes(), 1);
@@ -2708,17 +2738,7 @@ TEST_F(RenderEngineGlTest, MeshCacheEvictionGltfSharedBuffers) {
 // in any order leaves the remaining clones' shared buffers intact.
 TEST_F(RenderEngineGlTest, MeshCacheEvictionCloneLifetimes) {
   Init(X_WR_, true);
-  // N.B. box_no_mtl.obj is generated from box.obj by the build system.
-  const std::string obj = ReadFileOrThrow(
-      FindResourceOrThrow("drake/geometry/render/test/meshes/box_no_mtl.obj"));
-  // Each call makes a mesh with new contents (and so a new cache key).
-  int version = 0;
-  auto make_mesh = [&obj, &version]() {
-    return Mesh(InMemoryMesh{
-        MemoryFile(fmt::format("# {}\n", ++version) + obj, ".obj", "box")});
-  };
   expected_label_ = RenderLabel(3);
-  expected_color_ = default_color_;
   auto add = [this](RenderEngine* engine, const Mesh& mesh) {
     const GeometryId id = GeometryId::get_new_id();
     engine->RegisterVisual(id, mesh, simple_material(),
@@ -2732,22 +2752,25 @@ TEST_F(RenderEngineGlTest, MeshCacheEvictionCloneLifetimes) {
     return gl_engine;
   };
 
-  // Free some slots, then clone. Each engine reuses the freed slot for a
-  // different mesh.
-  EXPECT_TRUE(renderer_->RemoveGeometry(add(renderer_.get(), make_mesh())));
+  // Free a slot, then clone. Each engine reuses the freed slot (the most
+  // recently freed one) for a box of a different size.
+  EXPECT_TRUE(
+      renderer_->RemoveGeometry(add(renderer_.get(), MakeUniqueBox(0.5))));
   unique_ptr<RenderEngine> clone = renderer_->Clone();
-  const GeometryId in_clone = add(clone.get(), make_mesh());
-  const GeometryId in_original = add(renderer_.get(), make_mesh());
+  const GeometryId in_clone = add(clone.get(), MakeUniqueBox(0.6));
+  const GeometryId in_original = add(renderer_.get(), MakeUniqueBox(0.9));
   auto slot = [](const RenderEngineGl* engine, GeometryId id) {
     return RenderEngineGlTester(engine).GetVisual(id).instances.at(0).geometry;
   };
   EXPECT_EQ(slot(as_gl(clone), in_clone), slot(renderer_.get(), in_original));
   {
     SCOPED_TRACE("Clone, reused slot");
+    ExpectUniqueBox(0.6);
     PerformCenterShapeTest(as_gl(clone));
   }
   {
     SCOPED_TRACE("Original, reused slot");
+    ExpectUniqueBox(0.9);
     PerformCenterShapeTest(renderer_.get());
   }
   EXPECT_TRUE(clone->RemoveGeometry(in_clone));
@@ -2756,11 +2779,13 @@ TEST_F(RenderEngineGlTest, MeshCacheEvictionCloneLifetimes) {
 
   // A mesh shared by the original and two clones survives the destruction of
   // the original and of the first clone.
-  const GeometryId shared = add(renderer_.get(), make_mesh());
-  RenderEngineGlTester tester(renderer_.get());
-  const internal::OpenGlGeometry geometry = tester.opengl_geometries().at(
-      tester.GetVisual(shared).instances.at(0).geometry);
-  // N.B. `tester` refers to renderer_, which is destroyed below.
+  const GeometryId shared = add(renderer_.get(), MakeUniqueBox(0.7));
+  ExpectUniqueBox(0.7);
+  const internal::OpenGlGeometry geometry = [&]() {
+    RenderEngineGlTester tester(renderer_.get());
+    return tester.opengl_geometries().at(
+        tester.GetVisual(shared).instances.at(0).geometry);
+  }();
   unique_ptr<RenderEngine> clone1 = renderer_->Clone();
   unique_ptr<RenderEngine> clone2 = renderer_->Clone();
   renderer_.reset();

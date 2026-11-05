@@ -1204,8 +1204,21 @@ void RenderEngineGl::ImplementMeshesForSource(void* user_data,
   // MaybeMakeMeshFallbackmaterial() to avoid looking for foo.png.
   const fs::path filename =
       mesh_source.is_path() ? mesh_source.path() : fs::path();
+  const RegistrationData& data = *static_cast<RegistrationData*>(user_data);
+
+  // The geometry uses the cached meshes; DoRemoveGeometry() evicts them with
+  // their last user. The use is counted before any instance is added. If adding
+  // the instances throws, the instances already added stay behind (they're
+  // never removed), so the use is kept to keep the meshes they reference from
+  // being evicted; only the id is forgotten, so it can be registered again.
+  DRAKE_DEMAND(!geometry_mesh_keys_.contains(data.id));
+  ++mesh_key_uses_[file_key];
+  geometry_mesh_keys_.emplace(data.id, file_key);
+  ScopeExit forget_id_on_throw([this, &data]() {
+    geometry_mesh_keys_.erase(data.id);
+  });
+
   for (const auto& gl_mesh : meshes_.at(file_key)) {
-    const RegistrationData& data = *static_cast<RegistrationData*>(user_data);
     PerceptionProperties temp_props(data.properties);
 
     RenderMaterial material;
@@ -1243,13 +1256,7 @@ void RenderEngineGl::ImplementMeshesForSource(void* user_data,
                                data.default_diffuse};
     AddGeometryInstance(gl_mesh.mesh_index, &temp_data, scale);
   }
-
-  // The geometry now uses the cached meshes; DoRemoveGeometry() evicts them
-  // with their last user.
-  const RegistrationData& data = *static_cast<RegistrationData*>(user_data);
-  DRAKE_DEMAND(!geometry_mesh_keys_.contains(data.id));
-  geometry_mesh_keys_.emplace(data.id, file_key);
-  ++mesh_key_uses_[file_key];
+  forget_id_on_throw.Disarm();
 }
 
 bool RenderEngineGl::DoRegisterVisual(GeometryId id, const Shape& shape,
@@ -1395,6 +1402,15 @@ unique_ptr<RenderEngine> RenderEngineGl::DoClone() const {
   // correctly.
   auto clone = unique_ptr<RenderEngineGl>(new RenderEngineGl(*this));
 
+  // The copy constructor shared buffer_use_counts_ with this engine. Count the
+  // clone's uses of the shared buffers before anything else can throw: the
+  // clone's destructor releases them.
+  for (const OpenGlGeometry& geometry : clone->geometries_) {
+    if (!geometry.is_defined()) continue;
+    clone->buffer_use_counts_->Add(geometry.vertex_buffer);
+    clone->buffer_use_counts_->Add(geometry.index_buffer);
+  }
+
   ScopeExit unbind([]() {
     OpenGlContext::ClearCurrent();
   });
@@ -1413,15 +1429,8 @@ unique_ptr<RenderEngine> RenderEngineGl::DoClone() const {
 
   clone->InitGlState();
 
-  // Update the vertex array objects on the shared vertex buffers; the clone
-  // uses those buffers too. (The copy constructor shared buffer_use_counts_
-  // with this engine; the clone's uses are added to it here.)
+  // Update the vertex array objects on the shared vertex buffers.
   clone->UpdateVertexArrays();
-  for (const OpenGlGeometry& geometry : clone->geometries_) {
-    if (!geometry.is_defined()) continue;
-    clone->buffer_use_counts_->Add(geometry.vertex_buffer);
-    clone->buffer_use_counts_->Add(geometry.index_buffer);
-  }
 
   // We need to separate the ShaderProgram uniform namespaces so that setting
   // a uniform value in one thread doesn't affect the others. This uses the
