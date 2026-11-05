@@ -20,6 +20,7 @@
 #include "drake/multibody/tree/prismatic_spring.h"
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/multibody/tree/uniform_gravity_field_element.h"
+#include "drake/multibody/tree/weld_joint.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/analysis/test_utilities/spring_mass_system.h"
 #include "drake/systems/controllers/pid_controller.h"
@@ -1704,6 +1705,43 @@ GTEST_TEST(CenicIntegrator, SampledContactReactionsWithWholeTreeLocked) {
                                        plant.GetModelInstanceByName("m"))
                                    .Eval(plant_context);
   EXPECT_NEAR(tau_contact[tau_contact.size() - 1], g, 0.01 * g);
+}
+
+/* A system with no continuous state is never stepped, so sampled output ports
+could never be populated; CENIC refuses rather than reporting zeros forever.
+With live output ports the same system is fine. */
+GTEST_TEST(CenicIntegrator, SampledPortsRequireContinuousState) {
+  for (const bool sampled : {true, false}) {
+    SCOPED_TRACE(fmt::format("sampled = {}", sampled));
+    DiagramBuilder<double> builder;
+    auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.0);
+    const auto& body = plant.AddRigidBody(
+        "body", SpatialInertia<double>::SolidSphereWithMass(1.0, 0.1));
+    const auto& weld =
+        plant.AddJoint<WeldJoint>("weld", plant.world_body(), std::nullopt,
+                                  body, std::nullopt, math::RigidTransformd());
+    if (sampled) plant.SetUseSampledOutputPorts(true);
+    plant.Finalize();
+    auto diagram = builder.Build();
+
+    Simulator<double> simulator(*diagram);
+    auto& integrator = simulator.reset_integrator<CenicIntegrator<double>>();
+    integrator.set_maximum_step_size(0.01);
+    ASSERT_EQ(simulator.get_context().num_continuous_states(), 0);
+    if (sampled) {
+      DRAKE_EXPECT_THROWS_MESSAGE(simulator.Initialize(),
+                                  ".*no continuous state.*");
+    } else {
+      simulator.AdvanceTo(0.1);
+      const double g = UniformGravityFieldElement<double>::kDefaultStrength;
+      EXPECT_NEAR(
+          EvalReactionForces(plant, plant.GetMyContextFromRoot(
+                                        simulator.get_context()))[weld.index()]
+              .translational()
+              .norm(),
+          g, 1e-8);
+    }
+  }
 }
 
 /* Applies the spatial force F = -K v (on the body's origin) to a body, which

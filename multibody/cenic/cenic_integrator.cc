@@ -278,6 +278,18 @@ void CenicIntegrator<T>::DoInitialize() {
 
   this->set_accuracy_in_use(this->get_target_accuracy());
 
+  // With no continuous state at all, IntegratorBase advances time without ever
+  // calling DoStep(), so a sampled plant would silently report its empty sample
+  // forever.
+  if (plant().has_sampled_output_ports() &&
+      this->get_context().num_continuous_states() == 0) {
+    throw std::logic_error(
+        "CenicIntegrator: the plant has sampled output ports, but the system "
+        "has no continuous state (e.g., every body is welded to the world), so "
+        "the integrator would never take a step to record a sample. Use live "
+        "output ports (the default for a continuous-time plant) instead.");
+  }
+
   // Create the ICF builder, which will manage the construction of the convex
   // ICF optimization problem.
   builder_ = std::make_unique<IcfBuilder<T>>(&plant());
