@@ -27,6 +27,7 @@
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/analysis/test_utilities/spring_mass_system.h"
 #include "drake/systems/controllers/pid_controller.h"
+#include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/primitives/constant_vector_source.h"
@@ -340,6 +341,28 @@ TEST_P(DoublePendulum, Parameters) {
   integrator_->SetSolverParameters(params);
   DRAKE_EXPECT_THROWS_MESSAGE(simulator_->AdvanceTo(2e-2),
                               ".*optimization failed.*");
+}
+
+/* Checks that GetParameters() and SetParameters() round trip, and that the
+solver-only accessors are consistent with them. */
+TEST_P(DoublePendulum, CenicParameters) {
+  Build();
+  EXPECT_FALSE(integrator_->GetParameters().explicit_external_inputs);
+
+  CenicIntegratorParameters params;
+  params.explicit_external_inputs = true;
+  params.icf_solver.max_iterations = 7;
+  integrator_->SetParameters(params);
+  EXPECT_TRUE(integrator_->GetParameters().explicit_external_inputs);
+  EXPECT_EQ(integrator_->GetParameters().icf_solver.max_iterations, 7);
+  EXPECT_EQ(integrator_->get_solver_parameters().max_iterations, 7);
+
+  // Setting only the solver parameters leaves the CENIC parameters alone.
+  IcfSolverParameters solver_params = integrator_->get_solver_parameters();
+  solver_params.max_iterations = 9;
+  integrator_->SetSolverParameters(solver_params);
+  EXPECT_TRUE(integrator_->GetParameters().explicit_external_inputs);
+  EXPECT_EQ(integrator_->GetParameters().icf_solver.max_iterations, 9);
 }
 
 /* Checks that a double pendulum simulation in fixed-step mode matches the
@@ -1244,6 +1267,152 @@ TEST_P(DoublePendulum, SampledReactionForcesWithJointLocking) {
   const double v1_0 = 0.5;  // Initial rate of joint1, set above.
   EXPECT_NEAR(reactions[joint1.ordinal()].rotational()[1],
               -joint1.default_damping() * v1_0, 1e-4);
+}
+
+/* Checks that explicit_external_inputs skips the finite
+differencing of external inputs: an upstream feedback system is evaluated far
+fewer times, and the (fixed-step) trajectory stays close to the implicit one. */
+GTEST_TEST(CenicIntegrator, ExplicitExternalInputs) {
+  // Applied generalized forces τ = -Kd⋅v, counting how often they're computed.
+  class CountingDamper final : public systems::LeafSystem<double> {
+   public:
+    CountingDamper() {
+      DeclareVectorInputPort("x", 4);
+      DeclareVectorOutputPort("tau", 2, &CountingDamper::CalcTau);
+    }
+    int num_evals() const { return num_evals_; }
+
+   private:
+    void CalcTau(const Context<double>& context,
+                 systems::BasicVector<double>* output) const {
+      ++num_evals_;
+      output->SetFromVector(-1e-4 * get_input_port().Eval(context).tail<2>());
+    }
+    mutable int num_evals_{0};
+  };
+
+  struct Result {
+    VectorXd x;
+    int num_evals{};
+  };
+  auto simulate = [](bool explicit_inputs) {
+    DiagramBuilder<double> builder;
+    auto& plant = *builder.AddSystem<MultibodyPlant<double>>(0.0);
+    Parser(&plant).AddModelsFromString(kDoublePendulumMjcf, "xml");
+    plant.Finalize();
+    auto& damper = *builder.AddSystem<CountingDamper>();
+    builder.Connect(plant.get_state_output_port(), damper.get_input_port());
+    builder.Connect(damper.get_output_port(),
+                    plant.get_applied_generalized_force_input_port());
+    auto diagram = builder.Build();
+
+    Simulator<double> simulator(*diagram);
+    Context<double>& plant_context =
+        plant.GetMyMutableContextFromRoot(&simulator.get_mutable_context());
+    plant.SetPositions(&plant_context, Vector2d(M_PI / 4, M_PI / 2));
+    plant.SetVelocities(&plant_context, Vector2d(0.1, 0.2));
+
+    auto& integrator = simulator.reset_integrator<CenicIntegrator<double>>();
+    integrator.set_maximum_step_size(0.0005);
+    integrator.set_fixed_step_mode(true);
+    {
+      CenicIntegratorParameters params = integrator.GetParameters();
+      params.explicit_external_inputs = explicit_inputs;
+      integrator.SetParameters(params);
+    }
+    simulator.AdvanceTo(0.5);
+    return Result{.x = plant.GetPositionsAndVelocities(plant_context),
+                  .num_evals = damper.num_evals()};
+  };
+
+  const Result implicit_result = simulate(false);
+  const Result explicit_result = simulate(true);
+  // Explicit evaluation costs one evaluation per step (plus a few for setup),
+  // while finite differences cost roughly nv + 2 per step.
+  EXPECT_LT(explicit_result.num_evals * 2, implicit_result.num_evals);
+  // The schemes differ at O(h), so they agree closely for a small step.
+  EXPECT_TRUE(CompareMatrices(explicit_result.x, implicit_result.x, 1e-2,
+                              MatrixCompareType::relative));
+}
+
+/* Checks that actuation held explicitly still passes through the effort-limit
+constraint: a huge commanded torque behaves like a torque at the limit. */
+GTEST_TEST(CenicIntegrator, ExplicitExternalInputsEffortLimits) {
+  auto simulate = [](double u, bool explicit_inputs) -> VectorXd {
+    DiagramBuilder<double> builder;
+    auto& plant = *builder.AddSystem<MultibodyPlant<double>>(0.0);
+    Parser(&plant).AddModelsFromString(kDoublePendulumMjcf, "xml");
+    const auto& joint1 = plant.GetJointByName("joint1");
+    plant.AddJointActuator("actuator1", joint1, /* effort_limit = */ 1e-3);
+    plant.Finalize();
+    auto diagram = builder.Build();
+
+    Simulator<double> simulator(*diagram);
+    Context<double>& plant_context =
+        plant.GetMyMutableContextFromRoot(&simulator.get_mutable_context());
+    plant.SetPositions(&plant_context, Vector2d(M_PI / 4, M_PI / 2));
+    plant.get_actuation_input_port().FixValue(&plant_context, Vector1d(u));
+
+    auto& integrator = simulator.reset_integrator<CenicIntegrator<double>>();
+    integrator.set_maximum_step_size(0.01);
+    integrator.set_fixed_step_mode(true);
+    {
+      CenicIntegratorParameters params = integrator.GetParameters();
+      params.explicit_external_inputs = explicit_inputs;
+      integrator.SetParameters(params);
+    }
+    simulator.AdvanceTo(0.2);
+    return plant.GetPositionsAndVelocities(plant_context);
+  };
+
+  const VectorXd at_limit = simulate(1e-3, true);
+  const VectorXd over_limit = simulate(100.0, true);
+  const VectorXd over_limit_implicit = simulate(100.0, false);
+  const VectorXd unactuated = simulate(0.0, true);
+  EXPECT_TRUE(
+      CompareMatrices(over_limit, at_limit, 1e-9, MatrixCompareType::relative));
+  EXPECT_TRUE(CompareMatrices(over_limit, over_limit_implicit, 1e-9,
+                              MatrixCompareType::relative));
+  // Sanity check that the actuation matters at all.
+  EXPECT_GT((at_limit - unactuated).norm(), 1e-4);
+}
+
+/* Checks explicit external inputs together with error control, including steps
+that error control rejects and retries (which re-linearize on each retry). */
+GTEST_TEST(CenicIntegrator, ExplicitExternalInputsWithErrorControl) {
+  auto simulate = [](bool explicit_inputs) -> VectorXd {
+    DiagramBuilder<double> builder;
+    auto& plant = *builder.AddSystem<MultibodyPlant<double>>(0.0);
+    Parser(&plant).AddModelsFromString(kDoublePendulumMjcf, "xml");
+    plant.AddJointActuator("actuator1", plant.GetJointByName("joint1"));
+    plant.Finalize();
+    auto diagram = builder.Build();
+
+    Simulator<double> simulator(*diagram);
+    Context<double>& plant_context =
+        plant.GetMyMutableContextFromRoot(&simulator.get_mutable_context());
+    plant.SetPositions(&plant_context, Vector2d(M_PI / 4, M_PI / 2));
+    plant.SetVelocities(&plant_context, Vector2d(0.1, 0.2));
+    plant.get_actuation_input_port().FixValue(&plant_context, Vector1d(1e-3));
+
+    // A large maximum step with tight accuracy forces step rejections.
+    auto& integrator = simulator.reset_integrator<CenicIntegrator<double>>();
+    integrator.set_maximum_step_size(0.1);
+    integrator.set_target_accuracy(1e-6);
+    {
+      CenicIntegratorParameters params = integrator.GetParameters();
+      params.explicit_external_inputs = explicit_inputs;
+      integrator.SetParameters(params);
+    }
+    simulator.AdvanceTo(0.5);
+    EXPECT_GT(integrator.get_num_step_shrinkages_from_error_control(), 0);
+    return plant.GetPositionsAndVelocities(plant_context);
+  };
+
+  // A constant input has no velocity dependence, so the explicit and implicit
+  // treatments coincide exactly.
+  EXPECT_TRUE(CompareMatrices(simulate(true), simulate(false), 1e-9,
+                              MatrixCompareType::relative));
 }
 
 INSTANTIATE_TEST_SUITE_P(
