@@ -1,5 +1,6 @@
 #pragma once
 
+#include <optional>
 #include <string>
 
 #include "drake/common/name_value.h"
@@ -35,8 +36,8 @@ struct MultibodyPlantConfig {
   double time_step{0.001};
 
   /// Configures the MultibodyPlant::SetUseSampledOutputPorts().
-  /// Ignored when the time_step is zero.
-  bool use_sampled_output_ports{true};
+  /// When null, the MultibodyPlant setting remains unchanged.
+  std::optional<bool> use_sampled_output_ports;
 
   // TODO(amcastro-tri): deprecate. Defaults should always come from
   // DefaultProximityProperties.
