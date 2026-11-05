@@ -20,6 +20,17 @@ PYDRAKE_MODULE(cenic, m) {
   py::module_::import_("pydrake.multibody.plant");
   py::module_::import_("pydrake.systems.analysis");
 
+  // CenicIntegratorParameters is bound (privately) by the analysis module,
+  // because SimulatorConfig refers to it. Re-export it here, where it belongs.
+  {
+    py::object cls = py::module_::import_("pydrake.systems.analysis")
+                         .attr("_CenicIntegratorParameters");
+    py::setattr(cls, "__name__", py::str("CenicIntegratorParameters"));
+    py::setattr(cls, "__qualname__", py::str("CenicIntegratorParameters"));
+    py::setattr(cls, "__module__", py::str("pydrake.multibody.cenic"));
+    py::setattr(m, "CenicIntegratorParameters", cls);
+  }
+
   auto bind_nonsymbolic_scalar_types = [&m](auto dummy) {
     using T = decltype(dummy);
 
@@ -35,7 +46,14 @@ PYDRAKE_MODULE(cenic, m) {
             &CenicIntegrator<T>::get_solver_parameters,
             doc.CenicIntegrator.get_solver_parameters.doc)
         .def("SetSolverParameters", &CenicIntegrator<T>::SetSolverParameters,
-            py::arg("parameters"), doc.CenicIntegrator.SetSolverParameters.doc);
+            py::arg("parameters"), doc.CenicIntegrator.SetSolverParameters.doc)
+        .def("get_explicit_external_inputs",
+            &CenicIntegrator<T>::get_explicit_external_inputs,
+            doc.CenicIntegrator.get_explicit_external_inputs.doc)
+        .def("set_explicit_external_inputs",
+            &CenicIntegrator<T>::set_explicit_external_inputs,
+            py::arg("explicit_external_inputs"),
+            doc.CenicIntegrator.set_explicit_external_inputs.doc);
   };
   type_visit(bind_nonsymbolic_scalar_types, NonSymbolicScalarPack{});
 }

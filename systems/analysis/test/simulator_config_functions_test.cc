@@ -1,6 +1,7 @@
 #include "drake/systems/analysis/simulator_config_functions.h"
 
 #include <string>
+#include <variant>
 #include <vector>
 
 #include <gtest/gtest.h>
@@ -96,10 +97,15 @@ TYPED_TEST(SimulatorConfigFunctionsTest, RoundTripTest) {
       "start_time: 0.5\n"
       "target_realtime_rate: 3.0\n";
 
-  // Ensure that the string and the struct have the same fields.
-  const auto bespoke = LoadYamlString<SimulatorConfig>(bespoke_str);
+  // Ensure that the string and the struct have the same fields. An explicit
+  // null for integrator_params loads as std::monostate.
+  const auto bespoke =
+      LoadYamlString<SimulatorConfig>(bespoke_str + "integrator_params: ~\n");
+  EXPECT_TRUE(
+      std::holds_alternative<std::monostate>(bespoke.integrator_params));
 
   // Ensure that a round trip through the archive process does not corrupt data.
+  // A std::monostate is omitted when saving, so the null key does not appear.
   const std::string readback_str = SaveYamlString(bespoke);
   EXPECT_EQ(bespoke_str, readback_str);
 
