@@ -84,6 +84,8 @@ class RenderEngineGlTester {
     return engine_.geometries_;
   }
 
+  int num_cached_meshes() const { return ssize(engine_.meshes_); }
+
  private:
   const RenderEngineGl& engine_;
 };
@@ -2568,6 +2570,87 @@ TEST_F(RenderEngineGlTest, RendererIndependence) {
   // the reference image.
   Render(&engine1);
   ASSERT_TRUE(ImagesExactlyEqual(reference_1, depth_));
+}
+
+// The mesh cache releases a mesh when no registered geometry uses it anymore,
+// so a mesh re-registered with new contents (e.g., a surface re-meshed at
+// runtime) does not grow the cache, and clones keep the buffers they share
+// until the last of them stops using them.
+TEST_F(RenderEngineGlTest, MeshCacheEviction) {
+  Init(X_WR_, true);
+  RenderEngineGlTester tester(renderer_.get());
+  // N.B. box_no_mtl.obj is generated from box.obj by the build system.
+  const std::string obj = ReadFileOrThrow(
+      FindResourceOrThrow("drake/geometry/render/test/meshes/box_no_mtl.obj"));
+  // Each call makes a mesh with new contents (and so a new cache key).
+  int version = 0;
+  auto make_mesh = [&obj, &version]() {
+    return Mesh(InMemoryMesh{
+        MemoryFile(fmt::format("# {}\n", ++version) + obj, ".obj", "box")});
+  };
+  expected_label_ = RenderLabel(3);
+  expected_color_ = default_color_;
+  auto add = [this](const Mesh& mesh) {
+    const GeometryId id = GeometryId::get_new_id();
+    renderer_->RegisterVisual(id, mesh, simple_material(),
+                              RigidTransformd::Identity(),
+                              false /* needs update */);
+    return id;
+  };
+
+  GeometryId id = add(make_mesh());
+  const int num_geometries = ssize(tester.opengl_geometries());
+  for (int i = 0; i < 10; ++i) {
+    EXPECT_TRUE(renderer_->RemoveGeometry(id));
+    id = add(make_mesh());
+  }
+  EXPECT_EQ(tester.num_cached_meshes(), 1);
+  // The released slots are reused.
+  EXPECT_EQ(ssize(tester.opengl_geometries()), num_geometries);
+  {
+    SCOPED_TRACE("Re-meshed");
+    PerformCenterShapeTest(renderer_.get());
+  }
+
+  // A cached mesh stays while any geometry uses it.
+  EXPECT_TRUE(renderer_->RemoveGeometry(id));
+  EXPECT_EQ(tester.num_cached_meshes(), 0);
+  const Mesh shared = make_mesh();
+  const GeometryId first = add(shared);
+  const GeometryId second = add(shared);
+  EXPECT_EQ(tester.num_cached_meshes(), 1);
+  EXPECT_TRUE(renderer_->RemoveGeometry(first));
+  EXPECT_EQ(tester.num_cached_meshes(), 1);
+  {
+    SCOPED_TRACE("Shared");
+    PerformCenterShapeTest(renderer_.get());
+  }
+
+  // A clone shares the buffers: the original releasing the mesh leaves the
+  // clone's rendering intact, and the buffers go with the last user.
+  unique_ptr<RenderEngine> clone = renderer_->Clone();
+  auto* gl_clone = dynamic_cast<RenderEngineGl*>(clone.get());
+  ASSERT_NE(gl_clone, nullptr);
+  RenderEngineGlTester clone_tester(gl_clone);
+  const int index = tester.GetVisual(second).instances.at(0).geometry;
+  const internal::OpenGlGeometry geometry =
+      tester.opengl_geometries().at(index);
+  EXPECT_TRUE(renderer_->RemoveGeometry(second));
+  EXPECT_EQ(tester.num_cached_meshes(), 0);
+  EXPECT_EQ(clone_tester.num_cached_meshes(), 1);
+  {
+    SCOPED_TRACE("Clone after the original released the mesh");
+    PerformCenterShapeTest(gl_clone);
+  }
+  clone_tester.opengl_context().MakeCurrent();
+  EXPECT_TRUE(glIsBuffer(geometry.vertex_buffer));
+  EXPECT_TRUE(glIsBuffer(geometry.index_buffer));
+  EXPECT_TRUE(clone->RemoveGeometry(second));
+  EXPECT_EQ(clone_tester.num_cached_meshes(), 0);
+  clone_tester.opengl_context().MakeCurrent();
+  EXPECT_FALSE(glIsBuffer(geometry.vertex_buffer));
+  EXPECT_FALSE(glIsBuffer(geometry.index_buffer));
+  internal::OpenGlContext::ClearCurrent();
 }
 
 // Confirms that passing in show_window = true "works". The test can't confirm

@@ -3,6 +3,7 @@
 #include <array>
 #include <map>
 #include <memory>
+#include <mutex>
 #include <optional>
 #include <set>
 #include <string>
@@ -11,6 +12,7 @@
 #include <vector>
 
 #include "drake/common/copyable_unique_ptr.h"
+#include "drake/common/drake_assert.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/reset_on_copy.h"
 #include "drake/geometry/geometry_roles.h"
@@ -290,6 +292,21 @@ class RenderEngineGl final : public render::RenderEngine, private ShapeReifier {
   int CreateGlGeometry(const geometry::internal::RenderMesh& mesh_data,
                        bool is_deformable = false);
 
+  // Stores the fully defined `geometry` in geometries_, reusing a slot freed by
+  // ReleaseGlGeometry() if there is one, counts this engine's use of its
+  // buffers, and returns its index.
+  int AddGlGeometry(const OpenGlGeometry& geometry);
+
+  // Deletes this engine's vertex array of geometries_[index] and drops its use
+  // of the geometry's buffers, deleting each buffer no other clone uses. The
+  // slot is left undefined and reused by AddGlGeometry().
+  // @pre opengl_context_ has been bound.
+  void ReleaseGlGeometry(int index);
+
+  // Removes the mesh cache entry `key` and releases its geometries.
+  // @pre opengl_context_ has been bound.
+  void EvictCachedMeshes(const std::string& key);
+
   // Updates the vertex arrays in all of the OpenGlGeometry instances owned by
   // this render engine.
   // @pre opengl_context_ has been bound.
@@ -428,6 +445,44 @@ class RenderEngineGl final : public render::RenderEngine, private ShapeReifier {
 
   // Mapping from the obj's canonical filename to RenderGlMeshes.
   std::unordered_map<std::string, std::vector<RenderGlMesh>> meshes_;
+
+  // The number of registered geometries instantiating each key in meshes_, and
+  // the key each such geometry instantiates. When the count of a key drops to
+  // zero, the key is evicted (see EvictCachedMeshes()). Without eviction, a
+  // mesh whose contents change at runtime (re-registered as an in-memory mesh
+  // with a new hash each time) would grow the cache without bound.
+  std::unordered_map<std::string, int> mesh_key_uses_;
+  std::unordered_map<GeometryId, std::string> geometry_mesh_keys_;
+
+  // Indices of geometries_ freed by ReleaseGlGeometry(), to be reused.
+  std::vector<int> free_geometry_indices_;
+
+  // OpenGl buffer objects are shared by an engine and its clones (each has its
+  // own vertex arrays). This counts, per buffer, the geometries_ entries across
+  // the engine and all of its clones that use it; a buffer is deleted when its
+  // count drops to zero.
+  class BufferUseCounts {
+   public:
+    void Add(GLuint buffer) {
+      std::lock_guard<std::mutex> lock(mutex_);
+      ++counts_[buffer];
+    }
+    // Returns true if `buffer` is no longer used (the caller deletes it).
+    bool Remove(GLuint buffer) {
+      std::lock_guard<std::mutex> lock(mutex_);
+      auto iter = counts_.find(buffer);
+      DRAKE_DEMAND(iter != counts_.end() && iter->second > 0);
+      if (--iter->second > 0) return false;
+      counts_.erase(iter);
+      return true;
+    }
+
+   private:
+    std::mutex mutex_;
+    std::unordered_map<GLuint, int> counts_;
+  };
+  std::shared_ptr<BufferUseCounts> buffer_use_counts_{
+      std::make_shared<BufferUseCounts>()};
 
   // This collection serves as a convenient look up when updating the vertex
   // positions and normals of deformable meshes (which get updated on a
