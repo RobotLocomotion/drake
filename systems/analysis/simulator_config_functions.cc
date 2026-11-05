@@ -4,6 +4,7 @@
 #include <initializer_list>
 #include <memory>
 #include <stdexcept>
+#include <type_traits>
 #include <utility>
 #include <variant>
 
@@ -13,6 +14,7 @@
 #include "drake/common/never_destroyed.h"
 #include "drake/common/nice_type_name.h"
 #include "drake/common/unused.h"
+#include "drake/multibody/cenic/cenic_integrator.h"
 #include "drake/multibody/cenic/make_cenic_integrator.h"
 #include "drake/systems/analysis/bogacki_shampine3_integrator.h"
 #include "drake/systems/analysis/explicit_euler_integrator.h"
@@ -78,6 +80,38 @@ string GetIntegratorName() {
     }
   }
   return result;
+}
+
+// Applies the CENIC-specific config values; does nothing for other integrators.
+template <typename T>
+void ApplyCenicConfig(const SimulatorConfig& config,
+                      IntegratorBase<T>* integrator) {
+  if constexpr (!std::is_same_v<T, symbolic::Expression>) {
+    if (auto* cenic =
+            dynamic_cast<multibody::CenicIntegrator<T>*>(integrator)) {
+      auto params = cenic->get_solver_parameters();
+      params.explicit_external_inputs = config.cenic_explicit_external_inputs;
+      cenic->SetSolverParameters(params);
+    }
+  } else {
+    unused(config, integrator);
+  }
+}
+
+// Reports the CENIC-specific config values; leaves defaults for other
+// integrators.
+template <typename T>
+void ExtractCenicConfig(const IntegratorBase<T>& integrator,
+                        SimulatorConfig* config) {
+  if constexpr (!std::is_same_v<T, symbolic::Expression>) {
+    if (const auto* cenic =
+            dynamic_cast<const multibody::CenicIntegrator<T>*>(&integrator)) {
+      config->cenic_explicit_external_inputs =
+          cenic->get_solver_parameters().explicit_external_inputs;
+    }
+  } else {
+    unused(integrator, config);
+  }
 }
 
 // A hollow shell of a System.  TODO(jeremy.nimmer) Move into drake primitives.
@@ -259,6 +293,7 @@ void ApplySimulatorConfig(const SimulatorConfig& config,
   if (!integrator.get_fixed_step_mode()) {
     integrator.set_target_accuracy(config.accuracy);
   }
+  ApplyCenicConfig(config, &integrator);
   simulator->get_mutable_context().SetTime(config.start_time);
   simulator->set_target_realtime_rate(config.target_realtime_rate);
 }
@@ -280,6 +315,7 @@ SimulatorConfig ExtractSimulatorConfig(const Simulator<T>& simulator) {
     result.use_error_control = false;
     result.accuracy = 0.0;
   }
+  ExtractCenicConfig(integrator, &result);
   result.start_time = ExtractDoubleOrThrow(simulator.get_context().get_time());
   result.target_realtime_rate =
       ExtractDoubleOrThrow(simulator.get_target_realtime_rate());
@@ -304,6 +340,7 @@ std::unique_ptr<IntegratorBase<T>> CreateIntegratorFromConfig(
         integrator->set_fixed_step_mode(!config.use_error_control);
         integrator->set_target_accuracy(config.accuracy);
       }
+      ApplyCenicConfig(config, integrator.get());
       return integrator;
     }
   }
