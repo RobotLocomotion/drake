@@ -85,6 +85,20 @@ R"""(Maximum step length for exact linesearch.)""";
               const char* doc =
 R"""(Whether hessian reuse between iterations and time steps is enabled.)""";
             } enable_hessian_reuse;
+            // Symbol: drake::multibody::contact_solvers::icf::IcfSolverParameters::explicit_external_inputs
+            struct /* explicit_external_inputs */ {
+              // Source: drake/multibody/contact_solvers/icf/icf_solver_parameters.h
+              const char* doc =
+R"""(Whether to treat the plant's external inputs (actuation and external
+forces) explicitly, i.e., hold them fixed at their values at the start
+of the step. When false (the default), they are linearized with
+respect to velocity using finite differences so that they can be
+treated implicitly, which requires re-evaluating all upstream systems
+several times per step. Setting this to true skips that work, which is
+useful when the inputs come from expensive external systems (e.g.,
+when using fixed-step CENIC in place of discrete mode). It may reduce
+stability for stiff feedback controllers.)""";
+            } explicit_external_inputs;
             // Symbol: drake::multibody::contact_solvers::icf::IcfSolverParameters::hessian_reuse_target_iterations
             struct /* hessian_reuse_target_iterations */ {
               // Source: drake/multibody/contact_solvers/icf/icf_solver_parameters.h
@@ -156,6 +170,7 @@ problem.)""";
               return std::array{
                 std::make_pair("alpha_max", alpha_max.doc),
                 std::make_pair("enable_hessian_reuse", enable_hessian_reuse.doc),
+                std::make_pair("explicit_external_inputs", explicit_external_inputs.doc),
                 std::make_pair("hessian_reuse_target_iterations", hessian_reuse_target_iterations.doc),
                 std::make_pair("linesearch_tolerance", linesearch_tolerance.doc),
                 std::make_pair("max_iterations", max_iterations.doc),

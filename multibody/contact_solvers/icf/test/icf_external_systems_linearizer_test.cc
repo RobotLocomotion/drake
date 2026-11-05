@@ -62,7 +62,7 @@ class LinearizerTestFixture {
     std::optional<IcfLinearFeedbackGains<double>> actuation_feedback;
     std::optional<IcfLinearFeedbackGains<double>> external_feedback;
   };
-  Result LinearizeExternalSystem(double h) const {
+  Result LinearizeExternalSystem(double h, bool explicit_inputs = false) const {
     DRAKE_DEMAND(plant_context_ != nullptr);
     const IcfExternalSystemsLinearizer<double> dut(&plant_);
     const int nv = plant_.num_velocities();
@@ -74,7 +74,7 @@ class LinearizerTestFixture {
     bool has_actuation_forces{};
     bool has_feedback_forces{};
     std::tie(has_actuation_forces, has_feedback_forces) =
-        dut.LinearizeExternalSystem(h, *plant_context_,
+        dut.LinearizeExternalSystem(h, explicit_inputs, *plant_context_,
                                     &result.actuation_feedback.value(),
                                     &result.external_feedback.value());
     if (!has_actuation_forces) {
@@ -219,6 +219,46 @@ TEST_F(IcfExternalSystemsLinearizerTest, ExternalSpatialForce) {
                             K_expected(0) * v0};
   EXPECT_TRUE(CompareMatrices(K, K_expected, 1e-8));
   EXPECT_TRUE(CompareMatrices(b, b_expected, 1e-8));
+}
+
+// With explicit inputs, the feedback is held fixed at τ(x₀): K = 0 and
+// b = τ(x₀), with no dependence on the step size h.
+TEST_F(IcfExternalSystemsLinearizerTest, ExternalSpatialForceExplicit) {
+  const RigidBody<double>& ball =
+      plant_.AddRigidBody("ball", default_model_instance(),
+                          SpatialInertia<double>::SolidSphereWithMass(
+                              /* mass = */ 1.0, /* radius = */ 0.01));
+  plant_.AddJoint<PrismaticJoint>("prismatic", plant_.world_body(), {}, ball,
+                                  {}, Vector3d::UnitX());
+  plant_.Finalize();
+  auto controller = builder_->AddSystem<SpatialForceFeedback>(ball.index());
+  builder_->Connect(plant_.get_state_output_port(),
+                    controller->get_input_port());
+  builder_->Connect(controller->get_output_port(),
+                    plant_.get_applied_spatial_force_input_port());
+  Build();
+
+  const double q0 = 0.1;
+  const double v0 = 0.2;
+  plant_.SetPositions(plant_context_, Vector1d{q0});
+  plant_.SetVelocities(plant_context_, Vector1d{v0});
+  const VectorXd x0 =
+      plant_context_->get_continuous_state_vector().CopyToVector();
+
+  const auto result =
+      LinearizeExternalSystem(0.01, /* explicit_inputs = */ true);
+  ASSERT_TRUE(result.external_feedback.has_value());
+  EXPECT_FALSE(result.actuation_feedback.has_value());
+
+  // b = f(q0, v0) = -(Kp*q0 + Kd*v0), evaluated at x₀ (not at q0 + h*v0).
+  const Vector1d b_expected{-SpatialForceFeedback::Kp * q0 -
+                            SpatialForceFeedback::Kd * v0};
+  EXPECT_TRUE(CompareMatrices(result.external_feedback->K, Vector1d{0.0}));
+  EXPECT_TRUE(CompareMatrices(result.external_feedback->b, b_expected, 1e-14));
+
+  // The context is left untouched.
+  EXPECT_TRUE(CompareMatrices(
+      plant_context_->get_continuous_state_vector().CopyToVector(), x0));
 }
 
 // A feedback "controller" that takes the plant's state_output_port as input and
@@ -369,6 +409,94 @@ TEST_F(IcfExternalSystemsLinearizerTest, DesiredStateInput) {
   EXPECT_TRUE(CompareMatrices(with_ff.actuation_feedback->K, K_expected, 1e-8));
   EXPECT_TRUE(
       CompareMatrices(with_ff.actuation_feedback->b, b_expected + u, 1e-8));
+}
+
+// With explicit inputs, the analytic desired-state PD terms remain implicit
+// (K = Kp⋅h + Kd) while feedforward actuation is held fixed (and so shows up
+// only in `b`, with no contribution to K).
+TEST_F(IcfExternalSystemsLinearizerTest, DesiredStateInputExplicit) {
+  const ModelInstanceIndex model_instance =
+      Parser(builder_.get())
+          .AddModelsFromString(kActuatedPendulumXml, "xml")
+          .at(0);
+  plant_.Finalize();
+  Build();
+
+  const Vector2d q0{0.1, 0.2};
+  const Vector2d v0{0.3, 0.4};
+  plant_.SetPositions(plant_context_, q0);
+  plant_.SetVelocities(plant_context_, v0);
+  const Vector2d qd{0.11, 0.22};
+  const Vector2d vd{0.33, 0.44};
+  plant_.get_desired_state_input_port(model_instance)
+      .FixValue(plant_context_, (Vector4d() << qd, vd).finished());
+  const double Kp = 0.5;
+  const double Kd = 0.25;
+  for (const JointActuatorIndex& actuator :
+       plant_.GetJointActuatorIndices(model_instance)) {
+    plant_.get_mutable_joint_actuator(actuator).set_controller_gains(
+        {.p = Kp, .d = Kd});
+  }
+  const Vector2d u{22, 23};
+  plant_.get_actuation_input_port(model_instance).FixValue(plant_context_, u);
+
+  const double h = 0.01;
+  const auto result = LinearizeExternalSystem(h, /* explicit_inputs = */ true);
+  ASSERT_TRUE(result.actuation_feedback.has_value());
+  EXPECT_FALSE(result.external_feedback.has_value());
+  const Vector2d K_expected = Vector2d::Constant(Kp * h + Kd);
+  const Vector2d b_expected = -Kp * (q0 - qd) - Kd * vd + u;
+  EXPECT_TRUE(CompareMatrices(result.actuation_feedback->K, K_expected, 1e-14));
+  EXPECT_TRUE(CompareMatrices(result.actuation_feedback->b, b_expected, 1e-14));
+}
+
+// Same as ActuationInput below, but with explicit inputs: K = 0 and b = τ(x₀),
+// for both the actuation and the applied generalized force ports.
+TEST_P(IcfExternalSystemsLinearizerChoosePortTest, ActuationInputExplicit) {
+  const int choose_plant_port = GetParam();
+  Parser(builder_.get()).AddModelsFromString(kActuatedPendulumXml, "xml");
+  if (choose_plant_port == 1) {
+    plant_.RemoveJointActuator(
+        plant_.get_joint_actuator(JointActuatorIndex(1)));
+    plant_.RemoveJointActuator(
+        plant_.get_joint_actuator(JointActuatorIndex(0)));
+  }
+  plant_.Finalize();
+  auto target_source = builder_->AddSystem<ConstantVectorSource<double>>(
+      Vector4d{M_PI_2, M_PI_2, 0.0, 0.0});
+  auto pid_controller = builder_->AddSystem<PidController>(
+      Vector2d{0.24, 0.19}, Vector2d{0.35, 0.3}, Vector2d::Zero());
+  builder_->Connect(target_source->get_output_port(),
+                    pid_controller->get_input_port_desired_state());
+  builder_->Connect(plant_.get_state_output_port(),
+                    pid_controller->get_input_port_estimated_state());
+  builder_->Connect(pid_controller->get_output_port(),
+                    choose_plant_port == 0
+                        ? plant_.get_actuation_input_port()
+                        : plant_.get_applied_generalized_force_input_port());
+  Build();
+  const Context<double>& pid_controller_context =
+      pid_controller->GetMyContextFromRoot(*diagram_context_);
+
+  plant_.SetPositions(plant_context_, Vector2d{0.1, 0.2});
+  plant_.SetVelocities(plant_context_, Vector2d{0.3, 0.4});
+
+  const auto result =
+      LinearizeExternalSystem(0.01, /* explicit_inputs = */ true);
+  const std::optional<IcfLinearFeedbackGains<double>>& relevant_feedback =
+      (choose_plant_port == 0) ? result.actuation_feedback
+                               : result.external_feedback;
+  const std::optional<IcfLinearFeedbackGains<double>>& empty_feedback =
+      (choose_plant_port == 0) ? result.external_feedback
+                               : result.actuation_feedback;
+  ASSERT_TRUE(relevant_feedback.has_value());
+  EXPECT_FALSE(empty_feedback.has_value());
+
+  // Both actuators are on the pendulum's two joints in order, so B = I.
+  const VectorXd tau0 =
+      pid_controller->get_output_port().Eval(pid_controller_context);
+  EXPECT_TRUE(CompareMatrices(relevant_feedback->K, Vector2d::Zero()));
+  EXPECT_TRUE(CompareMatrices(relevant_feedback->b, tau0, 1e-14));
 }
 
 // Run a test with a pendulum and an external (PID) controller.
