@@ -43,6 +43,14 @@ class DefAttributesArchive {
     DRAKE_DEMAND((std::is_same_v<Docs, void>) == (cls_docs == nullptr));
   }
 
+#ifdef PYDRAKE_USE_NANOBIND
+  template <typename T>
+  struct IsVariantWithMonostate : std::false_type {};
+  template <typename... Types>
+  struct IsVariantWithMonostate<std::variant<Types...>>
+      : std::bool_constant<(std::is_same_v<Types, std::monostate> || ...)> {};
+#endif
+
   // Creates a class property for one instance field, akin to def_rw
   // but using `nvp` created by the CxxClass's Serialize function to specify
   // the field to be bound.
@@ -85,8 +93,21 @@ class DefAttributesArchive {
     }
 
     // Add the binding.
+#ifdef PYDRAKE_USE_NANOBIND
+    if constexpr (IsVariantWithMonostate<T>::value) {
+      // Nanobind rejects None for an argument unless it is marked `.none()`,
+      // but None is how Python spells std::monostate (e.g., an unset
+      // `std::variant<std::monostate, ...>` field). Pybind11 accepts it as is.
+      ppy_class_->def_prop_rw(name, getter, setter, doc,
+          py_rvp::reference_internal, py::arg("value").none());
+    } else {
+      ppy_class_->def_prop_rw(
+          name, getter, setter, doc, py_rvp::reference_internal);
+    }
+#else
     ppy_class_->def_prop_rw(
         name, getter, setter, doc, py_rvp::reference_internal);
+#endif
 
     // Remember the field's name and type for later use by Finished().
     auto field = py::module_::import_("types").attr("SimpleNamespace")();
@@ -155,6 +176,9 @@ class DefAttributesArchive {
       return type_of(py::float_(0.0));
     } else if constexpr (std::is_same_v<T, std::string>) {
       return type_of(py::str(""));
+    } else if constexpr (std::is_same_v<T, std::monostate>) {
+      // Pybind11 converts std::monostate to None.
+      return type_of(py::none());
     } else if constexpr (is_eigen_type<T>::value) {
       // TODO(jwnimmer-tri) Perhaps we can use numpy.typing here some day?
       return py::module_::import_("numpy").attr("ndarray");

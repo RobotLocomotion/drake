@@ -20,6 +20,13 @@ PYDRAKE_MODULE(cenic, m) {
   py::module_::import_("pydrake.multibody.plant");
   py::module_::import_("pydrake.systems.analysis");
 
+  // CenicIntegratorParameters is bound (privately) by the analysis module,
+  // because SimulatorConfig refers to it. Re-export it here, where it belongs.
+  // (The analysis module already gave the class its public name and module.)
+  py::setattr(m, "CenicIntegratorParameters",
+      py::module_::import_("pydrake.systems.analysis")
+          .attr("_CenicIntegratorParameters"));
+
   auto bind_nonsymbolic_scalar_types = [&m](auto dummy) {
     using T = decltype(dummy);
 
@@ -31,6 +38,10 @@ PYDRAKE_MODULE(cenic, m) {
             py::keep_alive<1, 2>(),
             // Keep alive, reference: `self` keeps `context` alive.
             py::keep_alive<1, 3>(), doc.CenicIntegrator.ctor.doc)
+        .def("GetParameters", &CenicIntegrator<T>::GetParameters,
+            doc.CenicIntegrator.GetParameters.doc)
+        .def("SetParameters", &CenicIntegrator<T>::SetParameters,
+            py::arg("parameters"), doc.CenicIntegrator.SetParameters.doc)
         .def("get_solver_parameters",
             &CenicIntegrator<T>::get_solver_parameters,
             doc.CenicIntegrator.get_solver_parameters.doc)
