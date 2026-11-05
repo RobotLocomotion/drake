@@ -3,6 +3,7 @@
 #include <utility>
 #include <vector>
 
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/text_logging.h"
 #include "drake/multibody/plant/discrete_step_memory.h"
 #include "drake/multibody/plant/multibody_plant_icf_attorney.h"
@@ -288,6 +289,24 @@ void CenicIntegrator<T>::DoInitialize() {
         "has no continuous state (e.g., every body is welded to the world), so "
         "the integrator would never take a step to record a sample. Use live "
         "output ports (the default for a continuous-time plant) instead.");
+  }
+
+  // CENIC doesn't integrate the plant's own contact model, so the plant's live
+  // dynamics output ports disagree with the simulated trajectory. We will
+  // require sampled output ports; for now, warn (once).
+  if (!plant().has_sampled_output_ports()) {
+    static const drake::internal::WarnDeprecated warn_once(
+        "2027-03-01",
+        "CenicIntegrator used with a plant whose output ports are not sampled. "
+        "The plant's dynamics output ports (e.g., reaction_forces, "
+        "contact_results, generalized_acceleration) then report the plant's "
+        "own continuous contact model instead of the forces of CENIC's convex "
+        "solve, so they do not match the simulated trajectory. Call "
+        "plant.SetUseSampledOutputPorts(true) before Finalize() so they report "
+        "CENIC's solution. A future version of Drake will refuse to "
+        "initialize CenicIntegrator with a plant that doesn't have sampled "
+        "output ports (set DRAKE_DEPRECATION_RUNTIME_SEVERITY=error to see "
+        "that behavior now)");
   }
 
   // Tell the plant that its sampled output ports will be filled in, so that its

@@ -60,6 +60,18 @@ drake_cc_googletest(
     ],
 )
 
+# The deprecation warning fires once per process (and, at "error" severity,
+# throws on every attempt), so this test needs its own process.
+drake_cc_googletest(
+    name = "cenic_unsampled_deprecation_test",
+    env = {"DRAKE_DEPRECATION_RUNTIME_SEVERITY": "error"},
+    deps = [
+        ":cenic_integrator",
+        "//common/test_utilities:expect_throws_message",
+        "//systems/analysis:simulator",
+    ],
+)
+
 drake_cc_googletest(
     name = "cenic_integrator_generic_integrator_test",
     deps = [

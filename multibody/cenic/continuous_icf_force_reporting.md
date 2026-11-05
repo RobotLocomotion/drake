@@ -188,6 +188,19 @@ cost.
   dereferenced an invalid tree index for world-anchored geometry whenever a
   joint was locked; that is fixed here by treating the world as zero-dof.
 
+### Deprecating CENIC without sampled output ports
+
+Under CENIC the plant's live dynamics output ports report the plant's own
+continuous contact model, not the forces of CENIC's solve. CENIC will
+eventually refuse a plant without sampled output ports. For now,
+`CenicIntegrator::DoInitialize()` emits a once-per-process
+`drake::internal::WarnDeprecated` (removal date 2027-03-01) telling users to
+call `SetUseSampledOutputPorts(true)` before `Finalize()`;
+`DRAKE_DEPRECATION_RUNTIME_SEVERITY=error` turns it into the future refusal.
+Note that `MultibodyPlantConfig::use_sampled_output_ports` is currently ignored
+for continuous plants, so a YAML-only user cannot comply until the config
+change (a separate PR) lands; the removal date must follow that.
+
 ### Fail-fast without a recording integrator
 
 A continuous plant with sampled output ports under an integrator that never
@@ -215,7 +228,7 @@ rejected by CENIC itself (see above), since it is never stepped.
   rejected trial's sample; a ball on a shelf welded to the world (the weld
   reports both weights); a whole locked tree whose ball constraint to a free
   body must report the impulse that was solved (not the full model's), and the
-  contact analog; reinitializing with a fresh context; sampled ports requiring a
-  recording integrator (and the recorder attaching again after a context
+  contact analog; reinitializing with a fresh context; the deprecation warning for CENIC without sampled ports (own test binary, run
+  at error severity); sampled ports requiring a recording integrator (and the recorder attaching again after a context
   reset); a system with no continuous state; and the stiff external
   force limitation above.

@@ -107,6 +107,12 @@ the end of the step t + h, so it can lag the Context's body poses by up to half
 a step. See
 @ref output_port_sampling "Output port sampling" for details.
 
+Using CenicIntegrator with a plant that does not have sampled output ports is
+deprecated: Initialize() logs a (once-per-process) deprecation warning, and a
+future version of Drake will refuse such a plant, as it does a plant with the
+wrong time step. Set the `DRAKE_DEPRECATION_RUNTIME_SEVERITY=error` environment
+variable to see that behavior now.
+
 Sampling requires steps. If the whole system has no continuous state (e.g.,
 every body is welded to the world and nothing else has state), the Simulator
 never asks the integrator to step, so nothing could ever be sampled.
