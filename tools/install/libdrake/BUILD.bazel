@@ -207,6 +207,7 @@ cmake_configure_file(
         ":drake_install_java.cmake",
         ":libdrake_was_linked_shared.cmake",
         ":python_version.cmake",
+        "//tools/workspace:nanobind_version.cmake",
         ":stamp_version.cmake",
         ":with_lcm_runtime.cmake",
         ":with_openmp.cmake",

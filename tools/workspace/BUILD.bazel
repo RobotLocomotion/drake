@@ -178,6 +178,17 @@ drake_py_binary(
     visibility = ["//visibility:public"],
 )
 
+# Scrape the nanobind version from MODULE.bazel into a cmake snippet, so that
+# drake-config.cmake can expose it (drake_NANOBIND_VERSION) without a second,
+# separately-maintained copy of the version number.
+genrule(
+    name = "nanobind_version_cmake",
+    srcs = ["//:MODULE.bazel"],
+    outs = ["nanobind_version.cmake"],
+    cmd = """sed -n '/bazel_dep(name = "nanobind"/s/.*version = "\\([^"]*\\)".*/set(NANOBIND_VERSION "\\1")/p' $< > $@""",  # noqa
+    visibility = ["//tools/install/libdrake:__pkg__"],
+)
+
 _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "ccd_internal",
     "clp_internal",

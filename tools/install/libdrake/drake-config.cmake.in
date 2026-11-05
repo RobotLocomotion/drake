@@ -133,6 +133,19 @@ if(@PYTHON_VERSION@)
   set(${CMAKE_FIND_PACKAGE_NAME}_PYTHON_DIR "${${CMAKE_FIND_PACKAGE_NAME}_IMPORT_PREFIX}/lib/python@PYTHON_VERSION@/site-packages")
   # Allow users to easily check Drake's expected CPython version.
   set(${CMAKE_FIND_PACKAGE_NAME}_PYTHON_VERSION "@PYTHON_VERSION@")
+
+  # The nanobind version that pydrake is built against. Downstream projects that
+  # build their own nanobind extension modules to interoperate with pydrake must
+  # use a matching nanobind so that the modules are ABI-compatible. Use this
+  # instead of hard-coding the version number.
+  set(${CMAKE_FIND_PACKAGE_NAME}_NANOBIND_VERSION "@NANOBIND_VERSION@")
+
+  # The nanobind_add_module options that make a downstream extension module
+  # ABI-compatible with pydrake (i.e., sharing pydrake's type registry). Pass
+  # these to your own nanobind_add_module call, e.g.
+  #   find_package(nanobind ${drake_NANOBIND_VERSION} CONFIG REQUIRED)
+  #   nanobind_add_module(my_ext ${drake_NB_OPTIONS} my_ext.cc)
+  set(${CMAKE_FIND_PACKAGE_NAME}_NB_OPTIONS STABLE_ABI NB_DOMAIN pydrake)
 endif()
 
 unset(${CMAKE_FIND_PACKAGE_NAME}_IMPORT_PREFIX)
