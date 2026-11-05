@@ -3695,25 +3695,25 @@ CalcJacobianSpatialVelocity()).
 
 .. code-block:: c++
 
-    H𝑠_V_ABp ≜ [ D₁(J𝑠_V_ABp), ... Dₙ(J𝑠_V_ABp) ]    (n is j or k)
+    H𝑠_V_ABp ≜ [ D₁(J𝑠_V_ABp), ... Dₙ(J𝑠_V_ABp) ]    (n is nq or nv)
 
 .. raw:: html
 
     </details>
 
-"speeds" 𝑠 is either q̇ ≜ [q̇₁ ... q̇ⱼ]ᵀ (time-derivatives of j
-generalized positions) or v ≜ [v₁ ... vₖ]ᵀ (k generalized velocities).
-Since J𝑠_V_ABp_E depends only on the generalized positions q,
-Dᵢ(J𝑠_V_ABp_E) denotes the time derivative in frame E of J𝑠_V_ABp_E
-(i.e., of its elements) when 𝑠 = eᵢ (𝑠ᵢ = 1 and all other speeds are
-zero). For 𝑠 = q̇ this is the partial derivative ∂(J𝑠_V_ABp_E)/∂qᵢ.
-For 𝑠 = v it is the directional derivative Σₖ ∂(J𝑠_V_ABp_E)/∂qₖ ⋅
-Nₖᵢ(q), where q̇ = N(q)⋅v (if N(q) exists); the two coincide for
-joints with q̇ = v (e.g., revolute, prismatic, and planar joints).
-Because the derivative is taken in frame E, the choice of frame_E
-changes the result by more than a re-expression. At a break in a
-CurvilinearJoint's path, where the curvature can jump, the derivative
-is one-sided (from the right).
+Speeds 𝑠 is q̇ ≜ [q̇₁ ... q̇ₙ]ᵀ (n = nq = number of generalized
+positions) or v ≜ [v₁ ... vₙ]ᵀ (n = nv = number of generalized
+velocities). Since J𝑠_V_ABp_E depends only on the generalized
+positions q, Dᵢ(J𝑠_V_ABp_E) denotes the time derivative in frame E of
+J𝑠_V_ABp_E (i.e., of its elements) when 𝑠 = eᵢ (𝑠ᵢ = 1 and all other
+speeds are zero). For 𝑠 = q̇ this is the partial derivative
+∂(J𝑠_V_ABp_E)/∂qᵢ. For 𝑠 = v it is the directional derivative Σₖ
+∂(J𝑠_V_ABp_E)/∂qₖ ⋅ Nₖᵢ(q), where q̇ = N(q)⋅v (if N(q) exists); the
+two coincide for joints with q̇ = v (e.g., revolute, prismatic, and
+planar joints). Because the derivative is taken in frame E, the choice
+of frame_E changes the result by more than a re-expression. At a break
+in a CurvilinearJoint's path, where the curvature can jump, the
+derivative is one-sided (from the right).
 
 Parameter ``context``:
     The state of the multibody system.
@@ -3842,7 +3842,7 @@ with respect to "speeds" 𝑠.
 
 .. code-block:: c++
 
-    J𝑠_w_AB ≜ [ ∂(w_AB)/∂𝑠₁,  ...  ∂(w_AB)/∂𝑠ₙ ]    (n is j or k)
+    J𝑠_w_AB ≜ [ ∂(w_AB)/∂𝑠₁,  ...  ∂(w_AB)/∂𝑠ₙ ]    (n is nq or nv)
          w_AB = J𝑠_w_AB ⋅ 𝑠          w_AB is linear in 𝑠 ≜ [𝑠₁ ... 𝑠ₙ]ᵀ
 
 .. raw:: html
@@ -3850,8 +3850,8 @@ with respect to "speeds" 𝑠.
     </details>
 
 ``w_AB`` is B's angular velocity in frame A and "speeds" 𝑠 is either
-q̇ ≜ [q̇₁ ... q̇ⱼ]ᵀ (time-derivatives of j generalized positions) or v
-≜ [v₁ ... vₖ]ᵀ (k generalized velocities).
+q̇ ≜ [q̇₁ ... q̇ₙ]ᵀ (n = nq = number of generalized positions) or v ≜
+[v₁ ... vₙ]ᵀ (n = nv = number of generalized velocities).
 
 Parameter ``context``:
     The state of the multibody system.
@@ -3869,8 +3869,7 @@ Parameter ``frame_A``:
     The frame A in ``w_AB`` (B's angular velocity in A).
 
 Parameter ``frame_E``:
-    The frame in which ``w_AB`` is expressed on input and the frame in
-    which the Jacobian ``J𝑠_w_AB`` is expressed on output.
+    The frame in which w_AB and J𝑠_w_AB are expressed.
 
 Parameter ``Js_w_AB_E``:
     Frame B's angular velocity Jacobian in frame A with respect to
@@ -3987,7 +3986,8 @@ See also:
           const char* doc =
 R"""(For each point Bi affixed/welded to a frame B, calculates Jq_p_AoBi,
 Bi's position vector Jacobian in frame A with respect to the
-generalized positions q ≜ [q₁ ... qₙ]ᵀ as
+generalized positions q ≜ [q₁ ... qₙ]ᵀ (n = nq = number of generalized
+positions) as
 
 
 .. raw:: html
@@ -4028,9 +4028,9 @@ Parameter ``frame_E``:
 Parameter ``Jq_p_AoBi_E``:
     Point Bi's position vector Jacobian in frame A with generalized
     positions q, expressed in frame E. Jq_p_AoBi_E is a ``3*k x n``
-    matrix, where k is the number of points Bi and n is the number of
-    elements in q. The Jacobian is a function of only generalized
-    positions q (which are pulled from the context).
+    matrix, where k is the number of points Bi and n = nq is the
+    number of elements in q. The Jacobian is a function of only
+    generalized positions q (which are pulled from the context).
 
 Raises:
     RuntimeError if Jq_p_AoBi_E is nullptr or not sized ``3*k x n``.
@@ -4076,7 +4076,7 @@ spatial velocity Jacobian in frame A with respect to "speeds" 𝑠.
 
 .. code-block:: c++
 
-    J𝑠_V_ABp ≜ [ ∂(V_ABp)/∂𝑠₁,  ...  ∂(V_ABp)/∂𝑠ₙ ]    (n is j or k)
+    J𝑠_V_ABp ≜ [ ∂(V_ABp)/∂𝑠₁,  ...  ∂(V_ABp)/∂𝑠ₙ ]    (n is nq or nv)
          V_ABp = J𝑠_V_ABp ⋅ 𝑠          V_ABp is linear in 𝑠 ≜ [𝑠₁ ... 𝑠ₙ]ᵀ
 
 .. raw:: html
@@ -4084,8 +4084,8 @@ spatial velocity Jacobian in frame A with respect to "speeds" 𝑠.
     </details>
 
 ``V_ABp`` is Bp's spatial velocity in frame A and "speeds" 𝑠 is either
-q̇ ≜ [q̇₁ ... q̇ⱼ]ᵀ (time-derivatives of j generalized positions) or v
-≜ [v₁ ... vₖ]ᵀ (k generalized velocities).
+q̇ ≜ [q̇₁ ... q̇ₙ]ᵀ (n = nq = number of generalized positions) or v ≜
+[v₁ ... vₙ]ᵀ (n = nv = number of generalized velocities).
 
 Parameter ``context``:
     The state of the multibody system.
@@ -4105,15 +4105,14 @@ Parameter ``p_BoBp_B``:
     as fixed/welded to B), expressed in frame_B.
 
 Parameter ``frame_A``:
-    The frame that measures ``v_ABp`` (Bp's velocity in A). Note: It
+    Frame that measures V_ABp (Bp's spatial velocity in A). Note: It
     is natural to wonder why there is no parameter p_AoAp_A (similar
     to the parameter p_BoBp_B for frame_B). There is no need for
     p_AoAp_A because Bp's velocity in A is defined as the derivative
     in frame A of Bp's position vector from *any* point fixed to A.
 
 Parameter ``frame_E``:
-    The frame in which ``v_ABp`` is expressed on input and the frame
-    in which the Jacobian ``J𝑠_V_ABp`` is expressed on output.
+    The frame in which V_ABp and J𝑠_V_ABp are expressed.
 
 Parameter ``Js_V_ABp_E``:
     Point Bp's spatial velocity Jacobian in frame A with respect to
@@ -4167,7 +4166,7 @@ Bi's translational velocity Jacobian in frame A with respect to
 
 .. code-block:: c++
 
-    J𝑠_v_ABi ≜ [ ∂(v_ABi)/∂𝑠₁,  ...  ∂(v_ABi)/∂𝑠ₙ ]    (n is j or k)
+    J𝑠_v_ABi ≜ [ ∂(v_ABi)/∂𝑠₁,  ...  ∂(v_ABi)/∂𝑠ₙ ]    (n is nq or nv)
          v_ABi = J𝑠_v_ABi ⋅ 𝑠          v_ABi is linear in 𝑠 ≜ [𝑠₁ ... 𝑠ₙ]ᵀ
 
 .. raw:: html
@@ -4175,8 +4174,8 @@ Bi's translational velocity Jacobian in frame A with respect to
     </details>
 
 ``v_ABi`` is Bi's translational velocity in frame A and "speeds" 𝑠 is
-either q̇ ≜ [q̇₁ ... q̇ⱼ]ᵀ (time-derivatives of j generalized
-positions) or v ≜ [v₁ ... vₖ]ᵀ (k generalized velocities).
+either q̇ ≜ [q̇₁ ... q̇ₙ]ᵀ (n = nq = number of generalized positions)
+or v ≜ [v₁ ... vₙ]ᵀ (n = nv = number of generalized velocities).
 
 Parameter ``context``:
     The state of the multibody system.
@@ -4204,8 +4203,7 @@ Parameter ``frame_A``:
     in frame A of Bi's position vector from *any* point affixed to A.
 
 Parameter ``frame_E``:
-    The frame in which ``v_ABi`` is expressed on input and the frame
-    in which the Jacobian ``J𝑠_v_ABi`` is expressed on output.
+    The frame in which v_ABi and J𝑠_v_ABi are expressed.
 
 Parameter ``Js_v_ABi_E``:
     Point Bi's velocity Jacobian in frame A with respect to speeds 𝑠
@@ -4231,7 +4229,7 @@ Note:
 
 .. code-block:: c++
 
-    [∂(v_ABi)/∂q̇₁,  ...  ∂(v_ABi)/∂q̇ⱼ] = [∂(p_AoBi)/∂q₁,  ...  ∂(p_AoBi)/∂qⱼ]
+    [∂(v_ABi)/∂q̇₁,  ...  ∂(v_ABi)/∂q̇ₙ] = [∂(p_AoBi)/∂q₁,  ...  ∂(p_AoBi)/∂qₙ]
 
 .. raw:: html
 
