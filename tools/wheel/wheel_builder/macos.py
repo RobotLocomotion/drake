@@ -47,6 +47,7 @@ TARGETS = (
             PythonTarget(3, 12),
             PythonTarget(3, 13),
             PythonTarget(3, 14),
+            PythonTarget(3, 15),
         ),
     ),
     Target(
