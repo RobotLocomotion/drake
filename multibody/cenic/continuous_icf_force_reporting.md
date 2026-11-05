@@ -112,9 +112,20 @@ after the accepted solve and before the new state is written, so the plant
 context still holds the solve's start state and its kinematics caches are
 valid. It:
 
-1. Re-evaluates the **full** (unreduced) model at `v₁` with
-   `IcfModel::CalcAllData` so constraints touching locked bodies still report
-   their impulses. Full-model `γ` equals reduced-model `γ` at the same `v`.
+1. Evaluates the constraint impulses at `v₁` with `IcfModel::CalcAllData`.
+   Gain, limit and coupler constraints come from the **full** (unreduced) model:
+   their regularization depends only on the diagonal of the mass matrix, which
+   reduction doesn't change, and this keeps the actuation of locked joints.
+   Contact patches and weld, ball and distance constraints come from the
+   **reduced** model that was solved when joint locking reduced the problem.
+   Reduction treats locked bodies as anchored and re-derives these
+   constraints' regularization from the remaining bodies (e.g., with one of two
+   equal masses locked, `R` is half the full model's), so the full model's
+   impulses at the same `v₁` are *not* the ones that advanced the state. The
+   reduced pools keep the original body indices, so their impulses also load
+   the locked bodies. Constraints with no surviving body (e.g., a weld between
+   two locked bodies) are not in the reduced model and report nothing; the
+   locked joints carry their loads.
 2. Builds the applied `MultibodyForces`: force elements (gravity, springs,
    damping) and the `applied_*` input ports at the start state; actuation as
    the gain-constraint impulse `γ_u/δt` when effort limits are active,
@@ -189,4 +200,7 @@ cost.
   hydroelastic ball-on-table contact results with body-ordering signs, for
   fixed-step and error-controlled modes; sampled feedback that must not see a
   rejected trial's sample; a ball on a shelf welded to the world (the weld
-  reports both weights); and the stiff external force limitation above.
+  reports both weights); a whole locked tree whose ball constraint to a free
+  body must report the impulse that was solved (not the full model's), and the
+  contact analog; reinitializing with a fresh context; and the stiff external
+  force limitation above.

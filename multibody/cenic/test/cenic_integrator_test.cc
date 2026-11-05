@@ -36,6 +36,7 @@ namespace {
 using contact_solvers::icf::IcfSolverParameters;
 using Eigen::MatrixXd;
 using Eigen::Vector2d;
+using Eigen::Vector3d;
 using Eigen::Vector4d;
 using Eigen::VectorXd;
 using math::RigidTransformd;
@@ -1581,6 +1582,128 @@ GTEST_TEST(CenicIntegrator, SampledReportingSurvivesContextReset) {
   EXPECT_NEAR(
       EvalReactionForces(plant, plant_context)[weld].translational().norm(),
       weight, 0.05 * weight);
+}
+
+/* Joint locking reduces the ICF problem, and reduction re-derives the
+regularization of constraints that touch locked bodies (the locked body no
+longer contributes its inverse mass). The reported impulse must be the one that
+advanced the state, not the full model's impulse at the same velocity. Locks a
+whole tree: two bodies on separate vertical sliders, joined by a ball
+constraint, with A locked and B free. B hangs from A through the constraint, so
+B's support force is B's weight, and B's free slider must transmit nothing. */
+GTEST_TEST(CenicIntegrator, SampledReactionForcesWithWholeTreeLocked) {
+  DiagramBuilder<double> builder;
+  auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.0);
+  const auto& body_a = plant.AddRigidBody(
+      "A", SpatialInertia<double>::SolidSphereWithMass(1.0, 0.1));
+  const auto& body_b = plant.AddRigidBody(
+      "B", SpatialInertia<double>::SolidSphereWithMass(1.0, 0.1));
+  const Vector3d z = Vector3d::UnitZ();
+  const auto& slider_a = plant.AddJoint<PrismaticJoint>(
+      "slider_a", plant.world_body(), std::nullopt, body_a, std::nullopt, z);
+  const auto& slider_b = plant.AddJoint<PrismaticJoint>(
+      "slider_b", plant.world_body(), std::nullopt, body_b, std::nullopt, z);
+  plant.AddBallConstraint(body_a, Vector3d::Zero(), body_b, Vector3d::Zero());
+  plant.SetUseSampledOutputPorts(true);
+  plant.Finalize();
+  auto diagram = builder.Build();
+
+  Simulator<double> simulator(*diagram);
+  auto& integrator = simulator.reset_integrator<CenicIntegrator<double>>();
+  const double h = 0.01;
+  integrator.set_maximum_step_size(h);
+  integrator.set_fixed_step_mode(true);
+  Context<double>& plant_context =
+      plant.GetMyMutableContextFromRoot(&simulator.get_mutable_context());
+  slider_a.Lock(&plant_context);
+  simulator.Initialize();
+  simulator.AdvanceTo(h);
+
+  const double g = UniformGravityFieldElement<double>::kDefaultStrength;
+  const std::vector<SpatialForce<double>>& reactions =
+      EvalReactionForces(plant, plant_context);
+  // B is (nearly) stationary and held up by the constraint alone, so its
+  // free slider transmits no axial force. (It would report the constraint's
+  // missing half if the impulse were re-derived from the full model.)
+  EXPECT_NEAR(reactions[slider_b.ordinal()].translational()[2], 0.0, 1e-3);
+  // The locked slider carries A's weight plus the load B puts on A through
+  // the constraint.
+  EXPECT_NEAR(reactions[slider_a.ordinal()].translational()[2], 2 * g,
+              0.01 * g);
+}
+
+/* Like SampledReactionForcesWithWholeTreeLocked, but the constraint is
+contact: a ball rests on a platform whose slider is locked. Reduction flips the
+contact patch (the locked platform becomes anchored) and re-derives its
+friction regularization, and the platform's locked slider must carry the
+weights of both bodies. */
+GTEST_TEST(CenicIntegrator, SampledContactReactionsWithWholeTreeLocked) {
+  DiagramBuilder<double> builder;
+  auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.0);
+  Parser(&plant).AddModelsFromString(R"""(
+    <sdf version="1.9">
+      <model name="m">
+        <link name="shelf">
+          <inertial>
+            <mass>2</mass>
+            <inertia>
+              <ixx>1</ixx><iyy>1</iyy><izz>1</izz>
+              <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
+            </inertia>
+          </inertial>
+          <collision name="shelf_collision">
+            <geometry><box><size>1 1 0.2</size></box></geometry>
+          </collision>
+        </link>
+        <link name="ball">
+          <pose>0 0 0.2 0 0 0</pose>
+          <inertial>
+            <mass>1</mass>
+            <inertia>
+              <ixx>0.01</ixx><iyy>0.01</iyy><izz>0.01</izz>
+              <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
+            </inertia>
+          </inertial>
+          <collision name="ball_collision">
+            <geometry><sphere><radius>0.1</radius></sphere></geometry>
+          </collision>
+        </link>
+        <joint name="slide" type="prismatic">
+          <parent>world</parent>
+          <child>shelf</child>
+          <axis><xyz>0 0 1</xyz></axis>
+        </joint>
+      </model>
+    </sdf>)""",
+                                     "sdf");
+  plant.SetUseSampledOutputPorts(true);
+  plant.Finalize();
+  auto diagram = builder.Build();
+
+  Simulator<double> simulator(*diagram);
+  auto& integrator = simulator.reset_integrator<CenicIntegrator<double>>();
+  integrator.set_maximum_step_size(0.01);
+  integrator.set_fixed_step_mode(true);
+  const auto& slide = plant.GetJointByName<PrismaticJoint>("slide");
+  Context<double>& plant_context =
+      plant.GetMyMutableContextFromRoot(&simulator.get_mutable_context());
+  slide.Lock(&plant_context);
+  simulator.Initialize();
+  simulator.AdvanceTo(0.1);
+
+  const double g = UniformGravityFieldElement<double>::kDefaultStrength;
+  const double weight = (2.0 + 1.0) * g;
+  EXPECT_NEAR(EvalReactionForces(plant, plant_context)[slide.ordinal()]
+                  .translational()
+                  .norm(),
+              weight, 0.01 * weight);
+  // The ball is carried by the contact force, which is the generalized contact
+  // force on the ball's z velocity (the last dof).
+  const VectorXd tau_contact = plant
+                                   .get_generalized_contact_forces_output_port(
+                                       plant.GetModelInstanceByName("m"))
+                                   .Eval(plant_context);
+  EXPECT_NEAR(tau_contact[tau_contact.size() - 1], g, 0.01 * g);
 }
 
 /* Applies the spatial force F = -K v (on the body's origin) to a body, which

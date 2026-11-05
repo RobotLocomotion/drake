@@ -196,6 +196,9 @@ class CenicIntegrator final : public systems::IntegratorBase<T> {
 
     /* Storage for recording output port samples; see RecordStepMemory(). */
     contact_solvers::icf::internal::IcfData<T> report_data;
+    /* Same, for the reduced model when joint locking reduced the problem. */
+    contact_solvers::icf::internal::IcfData<T> reduced_report_data;
+    VectorX<T> reduced_gradient;
     std::unique_ptr<MultibodyForces<T>> applied_forces;
     VectorX<T> vdot;
     VectorX<T> generalized_forces;

@@ -591,14 +591,34 @@ void CenicIntegrator<T>::RecordStepMemory(const IcfModel<T>& model,
   const VectorX<T>& v = data_.v();
   DRAKE_DEMAND(v.size() == model.num_velocities());
 
-  // Evaluate the (full, unreduced) model's constraint impulses at the
-  // solution. We use the full model rather than the reduced one so that the
-  // impulses of constraints acting on locked bodies are still reported; at the
-  // same velocities the two agree on every impulse. This is a single
+  // Evaluate the constraint impulses at the solution. The full model covers
+  // the gain, limit and coupler constraints: their regularization depends only
+  // on the diagonal of the mass matrix, which reduction doesn't change, so they
+  // agree with the reduced model, and we also keep the actuation of locked
+  // joints. Contact patches and weld, ball and distance constraints are another
+  // matter: reduction treats locked bodies as anchored and re-derives their
+  // regularization from the remaining bodies' inverse masses (and their contact
+  // friction from the remaining cliques), so the full model's impulses at the
+  // same velocity are not the ones that advanced the state. For those we use
+  // the reduced model that was solved. It keeps the original body indices, so
+  // its impulses also load the locked bodies. Each evaluation is a single
   // constraint evaluation, much cheaper than a solve.
   IcfData<T>& data = scratch_.report_data;
   model.ResizeData(&data);
   model.CalcAllData(v, &data);
+  const bool is_reduced = model.is_reducible();
+  const IcfModel<T>& constraint_model = is_reduced ? reduced_model_ : model;
+  IcfData<T>& constraint_data =
+      is_reduced ? scratch_.reduced_report_data : data;
+  const std::vector<int>& reduced_dofs =
+      mapping_.velocity_subsequence.inverse_permutation();
+  if (is_reduced) {
+    // ComputeNextContinuousState() reduced this same model for its solve.
+    DRAKE_DEMAND(reduced_model_.time_step() == dt);
+    DRAKE_DEMAND(reduced_model_.num_velocities() == ssize(reduced_dofs));
+    constraint_model.ResizeData(&constraint_data);
+    constraint_model.CalcAllData(VectorX<T>(v(reduced_dofs)), &constraint_data);
+  }
 
   // Assemble the forces applied to the plant during this step:
   //  - force elements (gravity, springs, dampers, etc.),
@@ -658,8 +678,8 @@ void CenicIntegrator<T>::RecordStepMemory(const IcfModel<T>& model,
 
   // Contact patches: the pool stores the spatial impulse Γ_Bo_W on body B; the
   // impulse on body A is its negation shifted to Ao.
-  const auto& patches = model.patch_constraints_pool();
-  const auto& patch_data = data.patch_constraints_data();
+  const auto& patches = constraint_model.patch_constraints_pool();
+  const auto& patch_data = constraint_data.patch_constraints_data();
   for (int p = 0; p < patches.num_patches(); ++p) {
     const int body_b = patches.bodies()[p].first;
     const int body_a = patches.bodies()[p].second;
@@ -676,7 +696,7 @@ void CenicIntegrator<T>::RecordStepMemory(const IcfModel<T>& model,
   // Weld, ball and distance constraints: CalcSpatialImpulses() resolves the
   // impulse on each body about its origin. Body pairs are ordered (A, B).
   auto add_holonomic_impulses = [&](const auto& pool) {
-    const auto& pool_data = pool.GetDataPool(data);
+    const auto& pool_data = pool.GetDataPool(constraint_data);
     for (int k = 0; k < pool.num_constraints(); ++k) {
       Vector6<T> Gamma_Bo_W, Gamma_Ao_W;
       pool.CalcSpatialImpulses(k, pool_data.gamma(k), &Gamma_Bo_W, &Gamma_Ao_W);
@@ -684,9 +704,9 @@ void CenicIntegrator<T>::RecordStepMemory(const IcfModel<T>& model,
       add_body_impulse(pool.body_pairs()[k].first, Gamma_Ao_W);
     }
   };
-  add_holonomic_impulses(model.weld_constraints_pool());
-  add_holonomic_impulses(model.ball_constraints_pool());
-  add_holonomic_impulses(model.distance_constraints_pool());
+  add_holonomic_impulses(constraint_model.weld_constraints_pool());
+  add_holonomic_impulses(constraint_model.ball_constraints_pool());
+  add_holonomic_impulses(constraint_model.distance_constraints_pool());
 
   // Joint limits and couplers act in generalized coordinates. Each pool's
   // AccumulateGradient() adds ∇ℓ = -Jᵀγ, so the generalized force is -∇ℓ/δt.
@@ -702,13 +722,24 @@ void CenicIntegrator<T>::RecordStepMemory(const IcfModel<T>& model,
   }
   tau -= g / dt;
 
-  // Generalized contact forces, for the generalized_contact_forces ports.
+  // Generalized contact forces, for the generalized_contact_forces ports. These
+  // come from the model the contact impulses came from; when that is the
+  // reduced model, the gradient is in reduced velocities (locked dofs carry no
+  // generalized contact force here).
   VectorX<T>& tau_contact = scratch_.tau_contact;
-  g.setZero();
-  for (int i = 0; i < num_islands; ++i) {
-    patches.AccumulateGradient(data, model.island_patches().items(i), &g);
+  VectorX<T>& g_contact = is_reduced ? scratch_.reduced_gradient : g;
+  g_contact.setZero(constraint_model.num_velocities());
+  for (int i = 0; i < constraint_model.partition().num_islands(); ++i) {
+    patches.AccumulateGradient(constraint_data,
+                               constraint_model.island_patches().items(i),
+                               &g_contact);
   }
-  tau_contact = -g / dt;
+  if (is_reduced) {
+    tau_contact = ExpandRows(VectorX<T>(-g_contact / dt),
+                             model.num_velocities(), reduced_dofs);
+  } else {
+    tau_contact = -g_contact / dt;
+  }
 
   // The step's generalized accelerations.
   VectorX<T>& vdot = scratch_.vdot;
