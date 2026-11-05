@@ -7,6 +7,7 @@
 #include <limits>
 #include <memory>
 #include <optional>
+#include <set>
 #include <source_location>
 #include <string>
 #include <unordered_map>
@@ -2648,6 +2649,136 @@ TEST_F(RenderEngineGlTest, MeshCacheEviction) {
   EXPECT_TRUE(clone->RemoveGeometry(second));
   EXPECT_EQ(clone_tester.num_cached_meshes(), 0);
   clone_tester.opengl_context().MakeCurrent();
+  EXPECT_FALSE(glIsBuffer(geometry.vertex_buffer));
+  EXPECT_FALSE(glIsBuffer(geometry.index_buffer));
+  internal::OpenGlContext::ClearCurrent();
+}
+
+// The primitives of a glTF file can share an OpenGL buffer. Each primitive
+// counts as a separate use of the buffer, so the buffer survives until the last
+// primitive using it (in the engine or any clone) is released.
+TEST_F(RenderEngineGlTest, MeshCacheEvictionGltfSharedBuffers) {
+  Init(X_WR_, true);
+  RenderEngineGlTester tester(renderer_.get());
+  expected_label_ = RenderLabel(3);
+  const GeometryId id = GeometryId::get_new_id();
+  renderer_->RegisterVisual(
+      id,
+      Mesh(FindResourceOrThrow(
+          "drake/geometry/render/test/meshes/rainbow_box.gltf")),
+      simple_material(), RigidTransformd::Identity(), false /* needs update */);
+  EXPECT_EQ(tester.num_cached_meshes(), 1);
+
+  std::set<GLuint> vertex_buffers;
+  std::set<GLuint> buffers;
+  const auto& instances = tester.GetVisual(id).instances;
+  for (const auto& instance : instances) {
+    const internal::OpenGlGeometry& geometry =
+        tester.opengl_geometries().at(instance.geometry);
+    vertex_buffers.insert(geometry.vertex_buffer);
+    buffers.insert(geometry.vertex_buffer);
+    buffers.insert(geometry.index_buffer);
+  }
+  // Confirm the premise: the primitives share a vertex buffer.
+  ASSERT_GT(ssize(instances), 1);
+  ASSERT_LT(ssize(vertex_buffers), ssize(instances));
+
+  unique_ptr<RenderEngine> clone = renderer_->Clone();
+  auto* gl_clone = dynamic_cast<RenderEngineGl*>(clone.get());
+  ASSERT_NE(gl_clone, nullptr);
+  RenderEngineGlTester clone_tester(gl_clone);
+
+  EXPECT_TRUE(renderer_->RemoveGeometry(id));
+  EXPECT_EQ(tester.num_cached_meshes(), 0);
+  clone_tester.opengl_context().MakeCurrent();
+  for (const GLuint buffer : buffers) {
+    EXPECT_TRUE(glIsBuffer(buffer)) << buffer;
+  }
+  EXPECT_TRUE(clone->RemoveGeometry(id));
+  EXPECT_EQ(clone_tester.num_cached_meshes(), 0);
+  clone_tester.opengl_context().MakeCurrent();
+  for (const GLuint buffer : buffers) {
+    EXPECT_FALSE(glIsBuffer(buffer)) << buffer;
+  }
+  internal::OpenGlContext::ClearCurrent();
+}
+
+// Clones and mesh eviction: a clone made after an eviction inherits the freed
+// slots and fills them independently of the original, and destroying engines
+// in any order leaves the remaining clones' shared buffers intact.
+TEST_F(RenderEngineGlTest, MeshCacheEvictionCloneLifetimes) {
+  Init(X_WR_, true);
+  // N.B. box_no_mtl.obj is generated from box.obj by the build system.
+  const std::string obj = ReadFileOrThrow(
+      FindResourceOrThrow("drake/geometry/render/test/meshes/box_no_mtl.obj"));
+  // Each call makes a mesh with new contents (and so a new cache key).
+  int version = 0;
+  auto make_mesh = [&obj, &version]() {
+    return Mesh(InMemoryMesh{
+        MemoryFile(fmt::format("# {}\n", ++version) + obj, ".obj", "box")});
+  };
+  expected_label_ = RenderLabel(3);
+  expected_color_ = default_color_;
+  auto add = [this](RenderEngine* engine, const Mesh& mesh) {
+    const GeometryId id = GeometryId::get_new_id();
+    engine->RegisterVisual(id, mesh, simple_material(),
+                           RigidTransformd::Identity(),
+                           false /* needs update */);
+    return id;
+  };
+  auto as_gl = [](const unique_ptr<RenderEngine>& engine) {
+    auto* gl_engine = dynamic_cast<RenderEngineGl*>(engine.get());
+    DRAKE_DEMAND(gl_engine != nullptr);
+    return gl_engine;
+  };
+
+  // Free some slots, then clone. Each engine reuses the freed slot for a
+  // different mesh.
+  EXPECT_TRUE(renderer_->RemoveGeometry(add(renderer_.get(), make_mesh())));
+  unique_ptr<RenderEngine> clone = renderer_->Clone();
+  const GeometryId in_clone = add(clone.get(), make_mesh());
+  const GeometryId in_original = add(renderer_.get(), make_mesh());
+  auto slot = [](const RenderEngineGl* engine, GeometryId id) {
+    return RenderEngineGlTester(engine).GetVisual(id).instances.at(0).geometry;
+  };
+  EXPECT_EQ(slot(as_gl(clone), in_clone), slot(renderer_.get(), in_original));
+  {
+    SCOPED_TRACE("Clone, reused slot");
+    PerformCenterShapeTest(as_gl(clone));
+  }
+  {
+    SCOPED_TRACE("Original, reused slot");
+    PerformCenterShapeTest(renderer_.get());
+  }
+  EXPECT_TRUE(clone->RemoveGeometry(in_clone));
+  EXPECT_TRUE(renderer_->RemoveGeometry(in_original));
+  clone.reset();
+
+  // A mesh shared by the original and two clones survives the destruction of
+  // the original and of the first clone.
+  const GeometryId shared = add(renderer_.get(), make_mesh());
+  RenderEngineGlTester tester(renderer_.get());
+  const internal::OpenGlGeometry geometry = tester.opengl_geometries().at(
+      tester.GetVisual(shared).instances.at(0).geometry);
+  // N.B. `tester` refers to renderer_, which is destroyed below.
+  unique_ptr<RenderEngine> clone1 = renderer_->Clone();
+  unique_ptr<RenderEngine> clone2 = renderer_->Clone();
+  renderer_.reset();
+  {
+    SCOPED_TRACE("First clone, original destroyed");
+    PerformCenterShapeTest(as_gl(clone1));
+  }
+  clone1.reset();
+  {
+    SCOPED_TRACE("Second clone, original and first clone destroyed");
+    PerformCenterShapeTest(as_gl(clone2));
+  }
+  RenderEngineGlTester clone2_tester(as_gl(clone2));
+  clone2_tester.opengl_context().MakeCurrent();
+  EXPECT_TRUE(glIsBuffer(geometry.vertex_buffer));
+  EXPECT_TRUE(glIsBuffer(geometry.index_buffer));
+  EXPECT_TRUE(clone2->RemoveGeometry(shared));
+  clone2_tester.opengl_context().MakeCurrent();
   EXPECT_FALSE(glIsBuffer(geometry.vertex_buffer));
   EXPECT_FALSE(glIsBuffer(geometry.index_buffer));
   internal::OpenGlContext::ClearCurrent();

@@ -1414,7 +1414,8 @@ unique_ptr<RenderEngine> RenderEngineGl::DoClone() const {
   clone->InitGlState();
 
   // Update the vertex array objects on the shared vertex buffers; the clone
-  // uses those buffers too.
+  // uses those buffers too. (The copy constructor shared buffer_use_counts_
+  // with this engine; the clone's uses are added to it here.)
   clone->UpdateVertexArrays();
   for (const OpenGlGeometry& geometry : clone->geometries_) {
     if (!geometry.is_defined()) continue;
@@ -1891,7 +1892,6 @@ class RenderEngineGl::GltfMeshExtractor {
                          : fmt::format("the in-memory glTF file: '{}'",
                                        mesh_source_.description())),
         engine_(*engine),
-        geometries_(engine->geometries_),
         texture_library_(*texture_library) {
     DRAKE_DEMAND(mesh_source != nullptr);
     DRAKE_DEMAND(engine != nullptr);
@@ -2208,7 +2208,7 @@ class RenderEngineGl::GltfMeshExtractor {
 
   /* Walks the node tree rooted at the node indicated by `node_index`. The mesh
    nodes are processed and added to `result` (with additional changes made to
-   this instance's geometries_ as needed).
+   the engine's geometries_ as needed).
 
    @param node_index       The index of the node to process.
    @param model            The full model (used to resolve the quantities
@@ -2310,7 +2310,7 @@ class RenderEngineGl::GltfMeshExtractor {
                                 const RegistrationData& data) {
     RenderGlMesh gl_mesh{.mesh_index = geometry_index};
 
-    const OpenGlGeometry& geometry = geometries_.at(geometry_index);
+    const OpenGlGeometry& geometry = engine_.geometries_.at(geometry_index);
     gl_mesh.uv_state = geometry.spec.uvs.components_per_element == 0
                            ? UvState::kNone
                            : UvState::kFull;
@@ -2639,7 +2639,6 @@ class RenderEngineGl::GltfMeshExtractor {
   /* The engine that stores newly created OpenGlGeometry instances (see
    RenderEngineGl::AddGlGeometry()). */
   RenderEngineGl& engine_;
-  std::vector<OpenGlGeometry>& geometries_;
 
   /* The texture library for registering embedded textures in the glTF file. */
   TextureLibrary& texture_library_;
@@ -2891,9 +2890,9 @@ int RenderEngineGl::CreateGlGeometry(const RenderMesh& render_mesh,
   // clang-format on
   CreateVertexArray(&geometry);
 
-  // The meshes we store are "canonical" meshes: a GeometryId only references
-  // its canonical mesh. Canonical primitives live as long as the engine; cached
-  // meshes are released when no registered geometry uses them anymore (see
+  // Registered geometries only reference the OpenGlGeometry created here; they
+  // don't own it. Primitives (box, sphere, etc.) are kept for the lifetime of
+  // the engine. Meshes are kept while any registered geometry uses them (see
   // EvictCachedMeshes()).
   return AddGlGeometry(geometry);
 }
