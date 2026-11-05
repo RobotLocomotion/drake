@@ -31,6 +31,7 @@ struct IcfSolverParameters {
     a->Visit(DRAKE_NVP(hessian_reuse_target_iterations));
     a->Visit(DRAKE_NVP(use_dense_algebra));
     a->Visit(DRAKE_NVP(use_islands));
+    a->Visit(DRAKE_NVP(explicit_external_inputs));
     a->Visit(DRAKE_NVP(max_linesearch_iterations));
     a->Visit(DRAKE_NVP(linesearch_tolerance));
     a->Visit(DRAKE_NVP(alpha_max));
@@ -73,6 +74,16 @@ struct IcfSolverParameters {
   (connected components of the clique graph) and solve them separately. When
   false, all cliques are solved together as a single Newton problem. */
   bool use_islands{true};
+
+  /** Whether to treat the plant's external inputs (actuation and external
+  forces) explicitly, i.e., hold them fixed at their values at the start of the
+  step. When false (the default), they are linearized with respect to velocity
+  using finite differences so that they can be treated implicitly, which
+  requires re-evaluating all upstream systems several times per step. Setting
+  this to true skips that work, which is useful when the inputs come from
+  expensive external systems (e.g., when using fixed-step CENIC in place of
+  discrete mode). It may reduce stability for stiff feedback controllers. */
+  bool explicit_external_inputs{false};
 
   /** Maximum iterations for exact linesearch. */
   int max_linesearch_iterations{100};

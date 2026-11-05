@@ -324,7 +324,8 @@ bool CenicIntegrator<T>::DoStep(const T& h) {
   bool has_external_forces;
   std::tie(has_actuation_forces, has_external_forces) =
       external_systems_linearizer_.LinearizeExternalSystem(
-          h, plant().GetMyMutableContextFromRoot(&context),
+          h, get_solver_parameters().explicit_external_inputs,
+          plant().GetMyMutableContextFromRoot(&context),
           &actuation_feedback_storage, &external_feedback_storage);
   const IcfLinearFeedbackGains<T>* const actuation_feedback =
       has_actuation_forces ? &actuation_feedback_storage : nullptr;
