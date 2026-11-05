@@ -41,9 +41,16 @@ Frame & Link poses
 Mass properties
 ---------------
  - M_LLo_L: The SpatialInertia of every link L about its link origin Lo,
-         expressed in L. Since mass properties can be parameterized, we need
-         to precalculate these inertias so that we don't have to do that
-         repeatedly at runtime. Indexed by LinkOrdinal.
+         expressed in L, as the dynamics see it. Since mass properties can be
+         parameterized, we need to precalculate these inertias so that we
+         don't have to do that repeatedly at runtime. Indexed by LinkOrdinal.
+         When Finalize() splits a link into a primary and shadows to break a
+         kinematic loop, each copy's M_LLo_L is an even share of the
+         primary's mass properties. Summing M_LLo_L over links, as the
+         MultibodyTree mass-property calculations do, thus counts each
+         user-defined link once, and agrees with the dynamics even while a
+         loop is unassembled. (RigidBody's own accessors instead report a
+         primary's full mass properties, and throw for a shadow.)
  - M_BBo_B: The SpatialInertia of every mobod B about its body origin Bo,
          expressed in B. This differs from M_LLo_L when B is a composite
          mobod. Indexed by MobodIndex.
