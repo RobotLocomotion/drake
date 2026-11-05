@@ -328,6 +328,28 @@ bool CenicIntegrator<T>::DoStep(const T& h) {
   ContinuousState<T>& x_next = context.get_mutable_continuous_state();
   const T t0 = context.get_time();
 
+  // A step starting at the time of the last solve is a retry of a step that
+  // error control rejected. RecordStepMemory() changed the plant's abstract
+  // state during the rejected trial, but IntegratorBase doesn't restore it, and
+  // sampled output ports feed the external systems linearized below. So hand
+  // them the last accepted sample, not the rejected trial's. For a fresh step,
+  // the current sample is the accepted one; remember it for any retries.
+  const bool is_retry = (t0 == time_at_last_solve_);
+  if (plant().has_sampled_output_ports()) {
+    if (is_retry) {
+      DRAKE_DEMAND(last_accepted_memory_ != nullptr);
+      plant()
+          .GetMyMutableContextFromRoot(&context)
+          .template get_mutable_abstract_state<DiscreteStepMemory>(0) =
+          *last_accepted_memory_;
+    } else {
+      last_accepted_memory_ = std::make_unique<DiscreteStepMemory>(
+          plant()
+              .GetMyContextFromRoot(context)
+              .template get_abstract_state<DiscreteStepMemory>(0));
+    }
+  }
+
   // Linearize any external systems (e.g., controllers, external force elements,
   // etc.) as
   //
@@ -364,7 +386,7 @@ bool CenicIntegrator<T>::DoStep(const T& h) {
   //
   // TODO(vincekurtz): consider having IntegratorBase tell us about the
   // rejection instead of doing this "time at last solve" bookkeeping.
-  if (t0 == time_at_last_solve_) {
+  if (is_retry) {
     // The last time we updated the model, we used the initial state (q₀, v₀),
     // so all we need to update is the time step and the external system
     // linearization.
@@ -617,9 +639,11 @@ void CenicIntegrator<T>::RecordStepMemory(const IcfModel<T>& model,
 
   // Adds the spatial impulse Γ (about the body origin, in world) applied to
   // the given ICF body, as a force, into the applied body forces. ICF body
-  // indices are plant BodyIndex values; anchored bodies carry no dynamics.
+  // indices are plant BodyIndex values. Bodies welded to the world carry no
+  // dynamics in the ICF problem, but their weld joints still transmit the loads
+  // applied to them, so only the world body itself is skipped.
   auto add_body_impulse = [&](int icf_body, const Vector6<T>& Gamma_Bo_W) {
-    if (model.is_anchored(icf_body)) return;
+    if (icf_body == world_index()) return;
     const internal::MobodIndex mobod =
         mbp.get_body(BodyIndex(icf_body)).mobod_index();
     F_Bo_W_array[mobod] += SpatialForce<T>(Gamma_Bo_W / dt);
@@ -634,7 +658,7 @@ void CenicIntegrator<T>::RecordStepMemory(const IcfModel<T>& model,
     const int body_a = patches.bodies()[p].second;
     const Vector6<T> Gamma_Bo_W = patch_data.Gamma_Bo_W_pool()[p];
     add_body_impulse(body_b, Gamma_Bo_W);
-    if (!model.is_anchored(body_a)) {
+    if (body_a != world_index()) {
       const Vector3<T> p_BoAo_W = -Vector3<T>(patches.p_AB_W()[p]);
       const SpatialForce<T> Gamma_Ao_W =
           SpatialForce<T>(Vector6<T>(-Gamma_Bo_W)).Shift(p_BoAo_W);

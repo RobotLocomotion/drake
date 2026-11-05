@@ -42,9 +42,15 @@ and `δt` come from the last accepted ICF solve.
   the full step (`δt = h`). The sample's kinematics (contact points, surface
   centroids, reaction force frames) are those at the start of the recorded
   solve, so in error-controlled mode they are at q(t₀+h/2) and can lag the
-  Context's poses at t₀+h by up to half a step. Rejected steps are harmless:
-  `IntegratorBase` only restores continuous state, and the final accepted
-  `DoStep` always overwrites the sample, so sample and state stay paired.
+  Context's poses at t₀+h by up to half a step. Rejected steps need care:
+  `IntegratorBase` restores only time and continuous state, but every trial
+  records a sample into abstract state. The final accepted `DoStep` always
+  overwrites the sample, so sample and state stay paired. However, sampled
+  ports feed external systems (e.g., a controller using the sampled
+  acceleration), and a retry would see the rejected trial's sample. So
+  `DoStep` remembers the sample as of the start of each fresh step and puts it
+  back when it detects a retry (a step starting at the time of the last solve),
+  before linearizing the external systems.
 
 These are the same semantics as Drake's existing *sampled output ports* for a
 discrete plant: the dynamics ports report the sample recorded by the most
@@ -116,6 +122,9 @@ valid. It:
    constraints as spatial forces `Γ/δt` on both bodies; limit and coupler
    constraints as `Jᵀγ/δt`. Spatial forces are kept spatial because joint
    reaction forces need the body-level loads, not just generalized forces.
+   Bodies welded to the world are not part of the ICF problem, but their weld
+   joints still transmit the loads applied to them, so their impulses are kept;
+   only the world body itself is skipped.
 
    The `applied_*` input ports are evaluated at the start state of the
    recorded solve, explicitly. This is only first-order consistent with what
@@ -126,7 +135,11 @@ valid. It:
    but reuses the external-system linearization taken at x₀. The gain impulse
    cannot be used instead, because it is a generalized force and joint
    reaction forces need the per-body spatial forces. Both errors are O(h), the
-   same order as the integrator. Only the spatial forces affect the reported
+   same order as the integrator, but the first can be large for stiff
+   velocity-dependent forces: it is about `Ke·(v₁−v₀)`, so a 1 kg free body at
+   1 m/s with `F = −1000·v` and `h = 0.01` reports a 909 N reaction on its
+   floating joint, which should transmit nothing. Reporting this exactly would
+   require linearizing the spatial force port per body. Only the spatial forces affect the reported
    reaction forces: inverse dynamics determines each joint's reaction from
    body spatial forces and `v̇`, and applied generalized forces only enter its
    residual.
@@ -174,4 +187,6 @@ cost.
   the motivating weld with a 1e-8 m violation (forces stay O(weight)),
   joint locking (locked joint carries the contact load), and point and
   hydroelastic ball-on-table contact results with body-ordering signs, for
-  fixed-step and error-controlled modes.
+  fixed-step and error-controlled modes; sampled feedback that must not see a
+  rejected trial's sample; a ball on a shelf welded to the world (the weld
+  reports both weights); and the stiff external force limitation above.

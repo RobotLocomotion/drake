@@ -98,6 +98,14 @@ h/2, not at the end of the step t + h, so it can lag the Context's
 body poses by up to half a step. See output_port_sampling "Output port
 sampling" for details.
 
+The reported reaction forces use external spatial forces (the plant's
+``applied_spatial_force`` input port) evaluated at the start of the
+solved step, whereas the solve itself is implicit in their
+linearization. For strongly velocity-dependent external forces the
+reported reaction forces can therefore be inconsistent with the step's
+acceleration, by roughly the force's velocity gradient times the
+step's change in velocity. Actuation and contact are not affected.
+
 Implementation notes:
 
 Warning:

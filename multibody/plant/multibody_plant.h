@@ -1058,10 +1058,12 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// BodyIndex "zero" (0) always corresponds to the world body, with zero
   /// spatial acceleration at all times.
   ///
-  /// In a discrete-time plant, the use_sampled_output_ports setting affects the
-  /// output of this port.  See @ref output_port_sampling "Output port sampling"
-  /// for details. When sampling is enabled and the plant has not yet taken a
-  /// step, the output value will be all zeros.
+  /// The use_sampled_output_ports setting affects the output of this port. (For
+  /// a continuous-time plant, sampling is opt-in via SetUseSampledOutputPorts()
+  /// and requires an integrator that records samples, i.e., CenicIntegrator.)
+  /// See @ref output_port_sampling "Output port sampling" for details. When
+  /// sampling is enabled and the plant has not yet taken a step, the output
+  /// value will be all zeros.
   ///
   /// @throws std::exception if called pre-finalize.
   const systems::OutputPort<T>& get_body_spatial_accelerations_output_port()
@@ -1100,10 +1102,12 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// include PD controllers will include their contribution in this port, refer
   /// to @ref mbp_actuation "Actuation" for further details.
   ///
-  /// In a discrete-time plant, the use_sampled_output_ports setting affects the
-  /// output of this port.  See @ref output_port_sampling "Output port sampling"
-  /// for details. When sampling is enabled and the plant has not yet taken a
-  /// step, the output value will be all zeros.
+  /// The use_sampled_output_ports setting affects the output of this port. (For
+  /// a continuous-time plant, sampling is opt-in via SetUseSampledOutputPorts()
+  /// and requires an integrator that records samples, i.e., CenicIntegrator.)
+  /// See @ref output_port_sampling "Output port sampling" for details. When
+  /// sampling is enabled and the plant has not yet taken a step, the output
+  /// value will be all zeros.
   ///
   /// @note PD controllers are not considered for actuators on locked joints,
   /// see Joint::Lock(). Therefore they do not contribute to this port if the
@@ -1125,10 +1129,12 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// Every model instance in `this` plant model has a net actuation output
   /// port, even if zero sized (for model instance with no actuators).
   ///
-  /// In a discrete-time plant, the use_sampled_output_ports setting affects the
-  /// output of this port.  See @ref output_port_sampling "Output port sampling"
-  /// for details. When sampling is enabled and the plant has not yet taken a
-  /// step, the output value will be all zeros.
+  /// The use_sampled_output_ports setting affects the output of this port. (For
+  /// a continuous-time plant, sampling is opt-in via SetUseSampledOutputPorts()
+  /// and requires an integrator that records samples, i.e., CenicIntegrator.)
+  /// See @ref output_port_sampling "Output port sampling" for details. When
+  /// sampling is enabled and the plant has not yet taken a step, the output
+  /// value will be all zeros.
   ///
   /// @note PD controllers are not considered for actuators on locked joints,
   /// see Joint::Lock(). Therefore they do not contribute to this port if the
@@ -1252,10 +1258,12 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// systems::BasicVector<T> "vector-valued" output port of size
   /// num_velocities().
   ///
-  /// In a discrete-time plant, the use_sampled_output_ports setting affects the
-  /// output of this port.  See @ref output_port_sampling "Output port sampling"
-  /// for details. When sampling is enabled and the plant has not yet taken a
-  /// step, the output value will be all zeros.
+  /// The use_sampled_output_ports setting affects the output of this port. (For
+  /// a continuous-time plant, sampling is opt-in via SetUseSampledOutputPorts()
+  /// and requires an integrator that records samples, i.e., CenicIntegrator.)
+  /// See @ref output_port_sampling "Output port sampling" for details. When
+  /// sampling is enabled and the plant has not yet taken a step, the output
+  /// value will be all zeros.
   ///
   /// @pre Finalize() was already called on `this` plant.
   /// @throws std::exception if called before Finalize().
@@ -1267,10 +1275,12 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// output port of size @ref num_velocities(ModelInstanceIndex) const
   /// "num_velocities(model_instance)".
   ///
-  /// In a discrete-time plant, the use_sampled_output_ports setting affects the
-  /// output of this port.  See @ref output_port_sampling "Output port sampling"
-  /// for details. When sampling is enabled and the plant has not yet taken a
-  /// step, the output value will be all zeros.
+  /// The use_sampled_output_ports setting affects the output of this port. (For
+  /// a continuous-time plant, sampling is opt-in via SetUseSampledOutputPorts()
+  /// and requires an integrator that records samples, i.e., CenicIntegrator.)
+  /// See @ref output_port_sampling "Output port sampling" for details. When
+  /// sampling is enabled and the plant has not yet taken a step, the output
+  /// value will be all zeros.
   ///
   /// @pre Finalize() was already called on `this` plant.
   /// @throws std::exception if called before Finalize().
@@ -1283,10 +1293,12 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// @ref num_actuated_dofs(ModelInstanceIndex) const
   /// "num_actuated_dofs(model_instance)".
   ///
-  /// In a discrete-time plant, the use_sampled_output_ports setting affects the
-  /// output of this port.  See @ref output_port_sampling "Output port sampling"
-  /// for details. When sampling is enabled and the plant has not yet taken a
-  /// step, the output value will be all zeros.
+  /// The use_sampled_output_ports setting affects the output of this port. (For
+  /// a continuous-time plant, sampling is opt-in via SetUseSampledOutputPorts()
+  /// and requires an integrator that records samples, i.e., CenicIntegrator.)
+  /// See @ref output_port_sampling "Output port sampling" for details. When
+  /// sampling is enabled and the plant has not yet taken a step, the output
+  /// value will be all zeros.
   ///
   /// @pre Finalize() was already called on `this` plant.
   /// @throws std::exception if called before Finalize().
@@ -1320,10 +1332,12 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// body C (Joint::child_body()), at the joint's child frame `Jc`
   /// (Joint::frame_on_child()) and expressed in frame `Jc`.
   ///
-  /// In a discrete-time plant, the use_sampled_output_ports setting affects the
-  /// output of this port.  See @ref output_port_sampling "Output port sampling"
-  /// for details. When sampling is enabled and the plant has not yet taken a
-  /// step, the output value will be all zeros.
+  /// The use_sampled_output_ports setting affects the output of this port. (For
+  /// a continuous-time plant, sampling is opt-in via SetUseSampledOutputPorts()
+  /// and requires an integrator that records samples, i.e., CenicIntegrator.)
+  /// See @ref output_port_sampling "Output port sampling" for details. When
+  /// sampling is enabled and the plant has not yet taken a step, the output
+  /// value will be all zeros.
   ///
   /// @note PD controllers are not considered for actuators on locked joints,
   /// see Joint::Lock(). Therefore they do not contribute to this port if the
@@ -1334,10 +1348,12 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// Returns an @ref AbstractValue "abstract-valued" output port containing a
   /// @ref ContactResults.
   ///
-  /// In a discrete-time plant, the use_sampled_output_ports setting affects the
-  /// output of this port.  See @ref output_port_sampling "Output port sampling"
-  /// for details. When sampling is enabled and the plant has not yet taken a
-  /// step, the output value will be empty (no contacts).
+  /// The use_sampled_output_ports setting affects the output of this port. (For
+  /// a continuous-time plant, sampling is opt-in via SetUseSampledOutputPorts()
+  /// and requires an integrator that records samples, i.e., CenicIntegrator.)
+  /// See @ref output_port_sampling "Output port sampling" for details. When
+  /// sampling is enabled and the plant has not yet taken a step, the output
+  /// value will be empty (no contacts).
   ///
   /// @throws std::exception if called pre-finalize, see Finalize().
   const systems::OutputPort<T>& get_contact_results_output_port() const;
@@ -5473,10 +5489,11 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// @see Finalize().
   bool is_finalized() const { return internal_tree().is_finalized(); }
 
-  /// (Advanced) If `this` plant is continuous (i.e., is_discrete() is `false`),
-  /// returns false. If `this` plant is discrete, returns whether or not the
-  /// output ports are sampled (change only at a time step boundary) or
-  /// live (instantaneously reflect changes to the input ports).
+  /// (Advanced) Returns whether or not the dynamics output ports are sampled
+  /// (change only at a time step boundary) or live (instantaneously reflect
+  /// changes to the input ports). A discrete plant is sampled unless configured
+  /// otherwise; a continuous plant is live unless
+  /// SetUseSampledOutputPorts(true) was called.
   /// See @ref output_port_sampling "Output port sampling" for details.
   bool has_sampled_output_ports() const { return use_sampled_output_ports_; }
 

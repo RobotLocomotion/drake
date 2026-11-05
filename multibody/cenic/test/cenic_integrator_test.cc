@@ -14,14 +14,19 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/multibody/parsing/parser.h"
+#include "drake/multibody/plant/externally_applied_spatial_force.h"
 #include "drake/multibody/plant/multibody_plant.h"
+#include "drake/multibody/tree/prismatic_joint.h"
+#include "drake/multibody/tree/prismatic_spring.h"
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/multibody/tree/uniform_gravity_field_element.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/analysis/test_utilities/spring_mass_system.h"
 #include "drake/systems/controllers/pid_controller.h"
 #include "drake/systems/framework/diagram_builder.h"
+#include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/primitives/constant_vector_source.h"
+#include "drake/systems/primitives/gain.h"
 
 namespace drake {
 namespace multibody {
@@ -1382,6 +1387,213 @@ TEST_P(BallOnTableSampled, PointContact) {
 
 TEST_P(BallOnTableSampled, HydroelasticContact) {
   CheckSampledContact(/* hydroelastic = */ true);
+}
+
+/* Takes the first accepted step of a stiff spring-mass system, with error
+control and a large maximum step size so that the first trial is rejected. The
+plant has sampled output ports. If `with_feedback`, the sampled generalized
+acceleration is fed back as a force of equal magnitude and opposite sign. */
+struct FirstStepResult {
+  double time{};
+  VectorXd x;
+  int num_shrinkages{};
+};
+FirstStepResult TakeFirstStepOfStiffSpringMass(bool with_feedback) {
+  DiagramBuilder<double> builder;
+  auto& plant = *builder.AddSystem<MultibodyPlant<double>>(0.0);
+  const RigidBody<double>& body =
+      plant.AddRigidBody("body", SpatialInertia<double>::MakeUnitary());
+  const auto& slider = plant.AddJoint<PrismaticJoint>(
+      "slider", plant.world_body(), std::nullopt, body, std::nullopt,
+      Eigen::Vector3d::UnitZ());
+  plant.AddForceElement<PrismaticSpring>(slider, 0.0, 1e4);
+  plant.SetUseSampledOutputPorts(true);
+  plant.Finalize();
+  if (with_feedback) {
+    auto& gain = *builder.AddSystem<systems::Gain<double>>(-1.0, 1);
+    builder.Connect(plant.get_generalized_acceleration_output_port(),
+                    gain.get_input_port());
+    builder.Connect(gain.get_output_port(),
+                    plant.get_applied_generalized_force_input_port());
+  }
+  auto diagram = builder.Build();
+  auto context = diagram->CreateDefaultContext();
+  slider.set_translation(&plant.GetMyMutableContextFromRoot(context.get()),
+                         1.0);
+
+  CenicIntegrator<double> integrator(*diagram, context.get());
+  integrator.set_maximum_step_size(0.5);
+  integrator.set_target_accuracy(1e-6);
+  integrator.Initialize();
+  const double inf = std::numeric_limits<double>::infinity();
+  integrator.IntegrateNoFurtherThanTime(inf, inf, 1.0);
+  return {.time = context->get_time(),
+          .x = plant.GetPositionsAndVelocities(
+              plant.GetMyContextFromRoot(*context)),
+          .num_shrinkages = static_cast<int>(
+              integrator.get_num_step_shrinkages_from_error_control())};
+}
+
+/* Error control restores only time and continuous state when it rejects a
+step, but each trial records a sample into the plant's abstract state. Checks
+that a retried step doesn't see the rejected trial's sample through sampled
+output ports. Before the first step the sample is zero, so feeding the sampled
+acceleration back as a force applies no force during the entire first step,
+however many trials it takes. The first accepted step must therefore be
+identical to that of the system without feedback. */
+GTEST_TEST(CenicIntegrator, SampledFeedbackIgnoresRejectedTrialSample) {
+  const FirstStepResult reference = TakeFirstStepOfStiffSpringMass(false);
+  // The scenario only means something if the first step was rejected.
+  ASSERT_GT(reference.num_shrinkages, 0);
+  const FirstStepResult feedback = TakeFirstStepOfStiffSpringMass(true);
+  EXPECT_EQ(feedback.num_shrinkages, reference.num_shrinkages);
+  EXPECT_EQ(feedback.time, reference.time);
+  EXPECT_TRUE(CompareMatrices(feedback.x, reference.x, 1e-12));
+}
+
+/* A body welded to the world carries no dynamics in the ICF problem, but its
+weld joint still transmits the loads applied to it. Checks that a shelf welded
+to the world reports the weight of the ball resting on it (via contact) in
+addition to its own weight. */
+GTEST_TEST(CenicIntegrator, SampledReactionForcesThroughAnchoredBody) {
+  DiagramBuilder<double> builder;
+  auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.0);
+  Parser(&plant).AddModelsFromString(R"""(
+    <sdf version="1.9">
+      <model name="m">
+        <link name="shelf">
+          <inertial>
+            <mass>2</mass>
+            <inertia>
+              <ixx>1</ixx><iyy>1</iyy><izz>1</izz>
+              <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
+            </inertia>
+          </inertial>
+          <collision name="shelf_collision">
+            <geometry><box><size>1 1 0.2</size></box></geometry>
+          </collision>
+        </link>
+        <link name="ball">
+          <pose>0 0 0.2 0 0 0</pose>
+          <inertial>
+            <mass>1</mass>
+            <inertia>
+              <ixx>0.01</ixx><iyy>0.01</iyy><izz>0.01</izz>
+              <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
+            </inertia>
+          </inertial>
+          <collision name="ball_collision">
+            <geometry><sphere><radius>0.1</radius></sphere></geometry>
+          </collision>
+        </link>
+        <joint name="weld" type="fixed">
+          <parent>world</parent>
+          <child>shelf</child>
+        </joint>
+      </model>
+    </sdf>)""",
+                                     "sdf");
+  plant.SetUseSampledOutputPorts(true);
+  plant.Finalize();
+  auto diagram = builder.Build();
+
+  Simulator<double> simulator(*diagram);
+  auto& integrator = simulator.reset_integrator<CenicIntegrator<double>>();
+  integrator.set_maximum_step_size(0.01);
+  integrator.set_fixed_step_mode(true);
+  simulator.AdvanceTo(0.5);
+
+  const Context<double>& plant_context =
+      plant.GetMyContextFromRoot(simulator.get_context());
+  const double g = UniformGravityFieldElement<double>::kDefaultStrength;
+  const double weight = (2.0 + 1.0) * g;
+  const JointIndex weld = plant.GetJointByName("weld").index();
+  const SpatialForce<double>& F_weld =
+      EvalReactionForces(plant, plant_context)[weld];
+  EXPECT_NEAR(F_weld.translational().norm(), weight, 0.05 * weight);
+}
+
+/* Applies the spatial force F = -K v (on the body's origin) to a body, which
+depends on the body's spatial velocity. */
+class SpatialVelocityDamper final : public systems::LeafSystem<double> {
+ public:
+  SpatialVelocityDamper(BodyIndex body, double K) : body_(body), K_(K) {
+    DeclareAbstractInputPort("body_spatial_velocities",
+                             Value<std::vector<SpatialVelocity<double>>>());
+    DeclareAbstractOutputPort("spatial_forces",
+                              &SpatialVelocityDamper::CalcForces);
+  }
+
+ private:
+  void CalcForces(
+      const Context<double>& context,
+      std::vector<ExternallyAppliedSpatialForce<double>>* forces) const {
+    const auto& V_WB_all =
+        get_input_port().Eval<std::vector<SpatialVelocity<double>>>(context);
+    ExternallyAppliedSpatialForce<double> force;
+    force.body_index = body_;
+    force.p_BoBq_B = Eigen::Vector3d::Zero();
+    force.F_Bq_W = SpatialForce<double>(Eigen::Vector3d::Zero(),
+                                        -K_ * V_WB_all[body_].translational());
+    forces->assign(1, force);
+  }
+
+  const BodyIndex body_;
+  const double K_;
+};
+
+/* Documents a known limitation of the reported reaction forces. The ICF step is
+implicit in (the linearization of) external forces, but the reaction forces are
+computed from the external spatial forces evaluated at the start of the step,
+because the linearization is in generalized coordinates and doesn't retain
+per-body forces. For a strongly velocity-dependent external force the reported
+reaction is therefore inconsistent with the step's acceleration.
+
+Here a free 1 kg body without gravity starts at 1 m/s with F = -1000 v, and
+takes one step of h = 0.01. The ICF step gives v₁ = 1/11 (acceleration
+-90.909 m/s²) and the force at the start of the step is -1000 N. The floating
+joint should transmit no force, but the reported reaction is 909.091 N. If this
+test fails because the approximation was improved, update it (and the docs
+that describe the limitation) to expect zero. */
+GTEST_TEST(CenicIntegrator, SampledReactionForcesWithStiffExternalForce) {
+  const double h = 0.01;
+  const double K = 1000.0;
+  DiagramBuilder<double> builder;
+  auto& plant = *builder.AddSystem<MultibodyPlant<double>>(0.0);
+  plant.mutable_gravity_field().set_gravity_vector(Eigen::Vector3d::Zero());
+  const RigidBody<double>& body =
+      plant.AddRigidBody("body", SpatialInertia<double>::MakeUnitary());
+  plant.SetUseSampledOutputPorts(true);
+  plant.Finalize();
+  auto& damper = *builder.AddSystem<SpatialVelocityDamper>(body.index(), K);
+  builder.Connect(plant.get_body_spatial_velocities_output_port(),
+                  damper.get_input_port());
+  builder.Connect(damper.get_output_port(),
+                  plant.get_applied_spatial_force_input_port());
+  auto diagram = builder.Build();
+
+  Simulator<double> simulator(*diagram);
+  Context<double>& plant_context =
+      plant.GetMyMutableContextFromRoot(&simulator.get_mutable_context());
+  plant.SetFreeBodySpatialVelocity(
+      &plant_context, body,
+      SpatialVelocity<double>(Eigen::Vector3d::Zero(),
+                              Eigen::Vector3d(1.0, 0.0, 0.0)));
+  auto& integrator = simulator.reset_integrator<CenicIntegrator<double>>();
+  integrator.set_maximum_step_size(h);
+  integrator.set_fixed_step_mode(true);
+  simulator.AdvanceTo(h);
+  ASSERT_EQ(integrator.get_num_steps_taken(), 1);
+
+  const double v1 = plant.GetVelocities(plant_context)[3];
+  EXPECT_NEAR(v1, 1.0 / (1.0 + K * h), 1e-9);
+  const VectorXd vdot =
+      plant.get_generalized_acceleration_output_port().Eval(plant_context);
+  EXPECT_NEAR(vdot[3], (v1 - 1.0) / h, 1e-9);
+  ASSERT_EQ(plant.num_joints(), 1);
+  const SpatialForce<double>& F_reaction =
+      EvalReactionForces(plant, plant_context)[0];
+  EXPECT_NEAR(std::abs(F_reaction.translational()[0]), 909.091, 1e-2);
 }
 
 INSTANTIATE_TEST_SUITE_P(

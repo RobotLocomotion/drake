@@ -15,6 +15,8 @@
 namespace drake {
 namespace multibody {
 namespace internal {
+struct DiscreteStepMemory;
+
 /* A sequence of subsystem indices that allows finding an arbitrary
 nested-diagram asset from the root. */
 using SubsystemPath = std::vector<systems::SubsystemIndex>;
@@ -104,6 +106,14 @@ error-controlled step that is the configuration at the midpoint t + h/2, not at
 the end of the step t + h, so it can lag the Context's body poses by up to half
 a step. See
 @ref output_port_sampling "Output port sampling" for details.
+
+The reported reaction forces use external spatial forces (the plant's
+`applied_spatial_force` input port) evaluated at the start of the solved step,
+whereas the solve itself is implicit in their linearization. For strongly
+velocity-dependent external forces the reported reaction forces can therefore be
+inconsistent with the step's acceleration, by roughly the force's velocity
+gradient times the step's change in velocity. Actuation and contact are not
+affected.
 
 Implementation notes:
 
@@ -301,6 +311,14 @@ class CenicIntegrator final : public systems::IntegratorBase<T> {
   /* Track whether solves are initialized at the same time as a previous
   rejected step, to enable model (e.g., constraints, geometry) reuse. */
   T time_at_last_solve_{NAN};
+
+  /* The sampled output port memory (see RecordStepMemory()) as of the start of
+  the most recent fresh (not retried) step, i.e., the last accepted sample.
+  IntegratorBase restores only time and continuous state when it rejects a
+  step, so DoStep() puts this back before retrying; otherwise the retry's
+  external systems would see the rejected trial's sample. Null unless the plant
+  has sampled output ports. */
+  std::unique_ptr<internal::DiscreteStepMemory> last_accepted_memory_;
 
   /* Preallocated scratch space for intermediate calculations. */
   Scratch scratch_;

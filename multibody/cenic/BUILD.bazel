@@ -56,6 +56,7 @@ drake_cc_googletest(
         "//systems/analysis:simulator",
         "//systems/analysis:simulator_config_functions",
         "//systems/analysis/test_utilities",
+        "//systems/primitives:gain",
     ],
 )
 
