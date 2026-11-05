@@ -124,6 +124,17 @@ cc_library(
     }),
 )
 
+cc_library(
+    name = "_mosek_libname",
+    defines = select({
+        ":lazy_load": [
+            'DRAKE_MOSEK_LAZY_LOAD_LIBRARY=\\"' + _MOSEK_SO_NAME + '\\"',
+        ],
+        "//conditions:default": [],
+    }),
+    visibility = ["@drake//solvers:__pkg__"],
+)
+
 install_files(
     name = "install_tbb_libraries",
     dest = "lib",
