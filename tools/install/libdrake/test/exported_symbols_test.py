@@ -125,9 +125,6 @@ def _is_known_bad_ctor_or_dtor(*, filename, function_name):
     if function_name.startswith("vtkpugixml::"):
         # TODO(#24447) Fix VTK to remove globals.
         return True
-    if function_name.startswith("vtksys::"):
-        # TODO(#24447) Fix VTK to remove globals.
-        return True
     if function_name.startswith("vtktoken::"):
         # TODO(#24447) Fix VTK to remove globals.
         return True
