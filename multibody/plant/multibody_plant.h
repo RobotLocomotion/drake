@@ -1858,6 +1858,18 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// added between the primary and shadow links to enforce loop closure. When
   /// the weld constraint is satisfied, the original physics is restored.
   ///
+  /// A shadow link is a body like any other in most respects (it has a pose and
+  /// a velocity, for example), but it has no mass properties of its own: the
+  /// primary link reports the link's full, user-defined mass properties, and
+  /// asking a shadow link for its mass properties throws; ask its
+  /// RigidBody::primary_link() instead. Calculations that sum over several
+  /// bodies (total mass, center of mass, spatial momentum, energy, and
+  /// CalcSpatialInertia()) count a split link once, as its primary and shadows
+  /// together. Until a loop's weld constraint is satisfied, these describe the
+  /// split model that the solver is simulating, in which the primary and each
+  /// shadow carry an equal share of the mass at their own poses. Shadow bodies
+  /// always come after all the user's bodies; see num_user_bodies().
+  ///
   /// @param[in] enable Whether Finalize() should automatically model closed
   ///   kinematic loops rather than throwing.
   /// @throws std::exception if called after Finalize().
@@ -4176,12 +4188,26 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// @param[in] frame_F specifies the about-point Fo (frame_F's origin) and
   ///  the expressed-in frame for the returned spatial inertia.
   /// @param[in] body_indexes Array of selected bodies.  This method does not
-  ///  distinguish between welded bodies, joint-connected bodies, etc.
+  ///  distinguish between welded bodies, joint-connected bodies, etc. A body
+  ///  that Finalize() split to break a kinematic loop counts once, as a whole,
+  ///  whether body_indexes names its primary, a shadow, or both. So a list
+  ///  from GetBodyIndices(), which includes shadows, works as is. See
+  ///  SetEnableLoopTopology().
   /// @throws std::exception if `frame_F` does not belong to `this` plant.
   /// @throws std::exception if body_indexes contains an invalid BodyIndex or
   ///  if there is a repeated BodyIndex.
   /// @note The mass and inertia of the world_body() does not contribute to the
   ///  the returned spatial inertia.
+  /// @note Until a loop's weld constraint is satisfied, a split body
+  ///  contributes as in the split model that the solver is simulating: an
+  ///  equal share of its mass properties at the pose of its primary and of
+  ///  each shadow (see SetEnableLoopTopology()). So then, for a primary body
+  ///  P, `CalcSpatialInertia(context, P.body_frame(), {P.index()})` can differ
+  ///  from `P.CalcSpatialInertiaInBodyFrame(context)`, which reports P's full,
+  ///  user-defined mass properties. Also, because naming any copy counts the
+  ///  whole body, results don't add up across lists that divide a split body's
+  ///  copies between them: `{primary}` and `{shadow}` each give the whole body,
+  ///  as does `{primary, shadow}`.
   SpatialInertia<T> CalcSpatialInertia(
       const systems::Context<T>& context, const Frame<T>& frame_F,
       const std::vector<BodyIndex>& body_indexes) const {
@@ -5484,9 +5510,21 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   }
 
   /// Returns the number of RigidBody elements in the model, including the
-  /// "world" RigidBody, which is always part of the model.
+  /// "world" RigidBody, which is always part of the model. After Finalize()
+  /// this includes any shadow bodies that Finalize() added to break kinematic
+  /// loops; see num_user_bodies().
   /// @see AddRigidBody().
   int num_bodies() const { return internal_tree().num_links(); }
+
+  /// Returns the number of RigidBody elements in the model that are not shadow
+  /// bodies: the "world" RigidBody plus every body added with AddRigidBody().
+  /// Finalize() adds a shadow body for each kinematic loop it breaks (see
+  /// SetEnableLoopTopology()), always after all of these, so the BodyIndex
+  /// values in [0, num_user_bodies()) are exactly the non-shadow bodies. This
+  /// equals num_bodies() unless Finalize() broke a loop.
+  int num_user_bodies() const {
+    return internal_tree().graph().num_user_links();
+  }
 
   /// Returns `true` if plant has a rigid body with unique index `body_index`.
   bool has_body(BodyIndex body_index) const {
@@ -5554,7 +5592,12 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
     return internal_tree().GetLinkByName(name, model_instance);
   }
 
-  /// Returns a list of body indices associated with `model_instance`.
+  /// Returns a list of body indices associated with `model_instance`. After
+  /// Finalize(), the list includes any shadow bodies that Finalize() split from
+  /// this model instance's bodies to break kinematic loops; see
+  /// SetEnableLoopTopology(). A shadow body has no mass properties of its own.
+  /// RigidBody::is_ephemeral() is true for a shadow body (and for no other
+  /// body), and RigidBody::primary_link() returns the body it was split from.
   std::vector<BodyIndex> GetBodyIndices(
       ModelInstanceIndex model_instance) const {
     return internal_tree().GetLinkIndices(model_instance);

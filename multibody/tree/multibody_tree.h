@@ -1269,6 +1269,21 @@ class MultibodyTree {
   const SpatialAcceleration<T>& EvalLinkSpatialAccelerationInWorld(
       const systems::Context<T>& context, const Link<T>& link_L) const;
 
+  // Returns v_WLcm_W, the translational velocity in World of link L's center of
+  // mass Lcm, expressed in World. Unlike
+  // RigidBody::CalcCenterOfMassTranslationalVelocityInWorld(), this works for a
+  // shadow link too; a shadow's center of mass is where its primary's is, in
+  // its own link frame.
+  Vector3<T> CalcLinkCenterOfMassTranslationalVelocityInWorld(
+      const systems::Context<T>& context, const Link<T>& link_L) const;
+
+  // Returns a_WLcm_W, the translational acceleration in World of link L's
+  // center of mass Lcm, expressed in World. Unlike
+  // RigidBody::CalcCenterOfMassTranslationalAccelerationInWorld(), this works
+  // for a shadow link too.
+  Vector3<T> CalcLinkCenterOfMassTranslationalAccelerationInWorld(
+      const systems::Context<T>& context, const Link<T>& link_L) const;
+
   // End of "Kinematic computations" section.
 
   // Methods to compute multibody Jacobians.

@@ -4,6 +4,8 @@ kinematic loop using the shadow links and loop constraints produced by the
 underlying LinkJointGraph/SpanningForest. This file tests that
  - adding shadow links splits mass properties properly among the primary
    link and all of its shadows,
+ - a primary link still reports its full mass properties, a shadow link has
+   none of its own, and sums over bodies count a split link once,
  - splitting a primary link into more than two pieces works,
  - loop joints are correctly retargeted from a frame on the primary to
    a corresponding frame on the shadow,
@@ -210,8 +212,20 @@ const Link<double>& GetSoleShadowLink(const MultibodyPlant<double>& plant) {
   }
   EXPECT_EQ(shadows.size(), 1);
   // Shadow links are guaranteed to have higher indexes than any user link.
-  EXPECT_EQ(shadows[0], LinkIndex(plant.num_bodies() - 1));
+  EXPECT_EQ(shadows[0], LinkIndex(plant.num_user_bodies()));
   return plant.get_body(shadows[0]);
+}
+
+/* Returns the share of `link`'s mass properties that the dynamics give it, as
+M_LLo_L. For a split link's primary or one of its shadows that is an even share
+of the primary's mass properties; for any other link it is all of them. The
+public API doesn't expose this: a primary link reports its full mass
+properties, and a shadow has none. */
+SpatialInertia<double> GetSpatialInertiaShare(
+    const MultibodyPlant<double>& plant,
+    const systems::Context<double>& context, const Link<double>& link) {
+  return GetInternalTree(plant).EvalFrameBodyPoses(context).get_M_LLo_L(
+      link.ordinal());
 }
 
 /* The four-bar's kinematic loop is handled by splitting the coupler link's mass
@@ -220,23 +234,36 @@ SpanningForest minimizes the maximum branch length (hence it splits the middle
 link): the coupler's primary link is reached via the driver and the coupler's
 shadow link is reached via the rocker, yielding two length-2 branches. The
 primary link is the coupler except half of its mass properties are given to
-the coupler shadow link (which is named coupler$1). */
+the coupler shadow link (which is named coupler$1). The shadow's primary_link()
+is the coupler; every other link is its own primary link. */
 GTEST_TEST(ClosedTopologyTest, CouplerIsSplit) {
   FourBar four_bar;
   MultibodyPlant<double>& plant = four_bar.plant();
+  // World + driver + coupler + rocker.
+  EXPECT_EQ(plant.num_bodies(), 4);
+  EXPECT_EQ(plant.num_user_bodies(), 4);
+  // Before Finalize() there are no shadows.
+  for (BodyIndex i(0); i < plant.num_bodies(); ++i) {
+    EXPECT_EQ(&plant.get_body(i).primary_link(), &plant.get_body(i));
+  }
   plant.Finalize();
 
-  // World + driver + coupler + rocker + the coupler's shadow.
+  // World + driver + coupler + rocker + the coupler's shadow, which comes
+  // after all the user's bodies.
   EXPECT_EQ(plant.num_bodies(), 5);
+  EXPECT_EQ(plant.num_user_bodies(), 4);
 
   // There is exactly one shadow, and it is the coupler's.
   const Link<double>& shadow = GetSoleShadowLink(plant);
   EXPECT_EQ(shadow.name(), "coupler$1");
   EXPECT_TRUE(shadow.is_ephemeral());
+  EXPECT_EQ(&shadow.primary_link(), &plant.GetBodyByName("coupler"));
 
-  // Every user-defined link remains non-ephemeral.
-  for (const char* name : {"driver", "coupler", "rocker"}) {
-    EXPECT_FALSE(plant.GetBodyByName(name).is_ephemeral());
+  // Every user-defined link remains non-ephemeral, and its own primary link.
+  for (BodyIndex i(0); i < plant.num_user_bodies(); ++i) {
+    const Link<double>& link = plant.get_body(i);
+    EXPECT_FALSE(link.is_ephemeral());
+    EXPECT_EQ(&link.primary_link(), &link);
   }
 }
 
@@ -280,15 +307,13 @@ GTEST_TEST(ClosedTopologyTest, ShadowLinkFramesAreEphemeral) {
   EXPECT_FALSE(plant_ad->GetBodyByName("coupler").body_frame().is_ephemeral());
 }
 
-/* Ensure the coupler link's mass properties is split evenly with its shadow
-link. Note: The algorithm used here splits individual links, not mobods.
-(Reminder: mobod mass properties may include multiple fused links). Here, the
-coupler primary link and the coupler's shadow link coupler$1 each carry half of
-the coupler's inertia (and are identical to each other, since their link frames
-coincide). The user-facing per-link (default) mass is unchanged for the coupler
-(its full declared 1 kg) while the shadow link's default reflects its half
-share; the effective (split) inertia checked here is what drives the dynamics.
-Also ensure the unsplit links (driver and rocker) are unaffected. */
+/* The coupler is split into a primary link (the coupler itself) and a shadow
+link, coupler$1. The dynamics share the coupler's mass properties evenly between
+the two copies, but that is an internal modeling device: the coupler reports its
+full, user-defined mass properties, both by default and in a Context. Here we
+check both views, and that the unsplit links (driver and rocker) are unaffected.
+Note that the algorithm splits individual links, not mobods (whose mass
+properties may include multiple fused links). */
 GTEST_TEST(ClosedTopologyTest, ShadowMassIsSplitEvenly) {
   constexpr double kTol = 1e-14;
   FourBar four_bar;
@@ -299,62 +324,104 @@ GTEST_TEST(ClosedTopologyTest, ShadowMassIsSplitEvenly) {
   const Link<double>& coupler = plant.GetBodyByName("coupler");
   const Link<double>& shadow = plant.GetBodyByName("coupler$1");
 
-  // The user-facing (model default) mass of the coupler is untouched (its full
-  // declared 1 kg). The shadow's default mass properties reflect its share of
-  // the even split: half the coupler's mass, with the same com and unit inertia
-  // (hence half the rotational inertia). This default is informational only;
-  // the effective split inertia checked below is what drives the dynamics.
+  // The coupler reports its full declared mass properties (1 kg).
+  const SpatialInertia<double>& M_CCo_C = coupler.default_spatial_inertia();
   EXPECT_EQ(coupler.default_mass(), 1.0);
-  EXPECT_EQ(shadow.default_mass(), 0.5);
-  EXPECT_TRUE(
-      CompareMatrices(shadow.default_com(), coupler.default_com(), kTol));
+  EXPECT_EQ(coupler.get_mass(*context), 1.0);
   EXPECT_TRUE(CompareMatrices(
-      shadow.default_rotational_inertia().CopyToFullMatrix3(),
-      0.5 * coupler.default_rotational_inertia().CopyToFullMatrix3(), kTol));
+      coupler.CalcSpatialInertiaInBodyFrame(*context).CopyToFullMatrix6(),
+      M_CCo_C.CopyToFullMatrix6(), kTol));
+  EXPECT_TRUE(CompareMatrices(coupler.CalcCenterOfMassInBodyFrame(*context),
+                              coupler.default_com(), kTol));
 
-  // Ask each link for its own effective spatial inertia about its origin Lo,
-  // expressed in its link frame L.
-  auto M_LLo_L = [&](const Link<double>& link) {
-    // This function reads the loop-split value from the FrameBodyPoseCache.
-    return link.CalcSpatialInertiaInBodyFrame(*context);
-  };
-  const SpatialInertia<double> M_LLo_L_coupler = M_LLo_L(coupler);
-  const SpatialInertia<double> M_LLo_L_shadow = M_LLo_L(shadow);
-
-  // The coupler's primary link and its shadow link each carry half of
-  // the coupler's 1 kg, have colocated centers of mass, and have
-  // equal rotational inertia (their link frames coincide).
-  EXPECT_NEAR(M_LLo_L_coupler.get_mass(), 0.5, kTol);
-  EXPECT_NEAR(M_LLo_L_shadow.get_mass(), 0.5, kTol);
-  EXPECT_TRUE(CompareMatrices(M_LLo_L_shadow.get_com(),
-                              M_LLo_L_coupler.get_com(), kTol));
-  EXPECT_TRUE(CompareMatrices(
-      M_LLo_L_shadow.CalcRotationalInertia().CopyToFullMatrix3(),
-      M_LLo_L_coupler.CalcRotationalInertia().CopyToFullMatrix3(), kTol));
-
-  // The coupler's primary link and its shadow link each have half the
-  // user-declared coupler's rotational inertia about Lo, expressed in L.
+  // The dynamics give the coupler and its shadow half of the coupler's mass
+  // each, with the same center of mass and half the rotational inertia about
+  // the link origin (the two link frames coincide).
   const Matrix3<double> half_I_LLo_L =
       0.5 * coupler.default_rotational_inertia().CopyToFullMatrix3();
-  EXPECT_TRUE(CompareMatrices(
-      M_LLo_L_coupler.CalcRotationalInertia().CopyToFullMatrix3(), half_I_LLo_L,
-      kTol));
-  EXPECT_TRUE(CompareMatrices(
-      M_LLo_L_shadow.CalcRotationalInertia().CopyToFullMatrix3(), half_I_LLo_L,
-      kTol));
+  for (const Link<double>* copy : {&coupler, &shadow}) {
+    SCOPED_TRACE(copy->name());
+    const SpatialInertia<double> M_LLo_L =
+        GetSpatialInertiaShare(plant, *context, *copy);
+    EXPECT_NEAR(M_LLo_L.get_mass(), 0.5, kTol);
+    EXPECT_TRUE(
+        CompareMatrices(M_LLo_L.get_com(), coupler.default_com(), kTol));
+    EXPECT_TRUE(
+        CompareMatrices(M_LLo_L.CalcRotationalInertia().CopyToFullMatrix3(),
+                        half_I_LLo_L, kTol));
+  }
 
-  // The unsplit links keep their full mass (driver 1 kg, rocker 2 kg).
-  EXPECT_NEAR(M_LLo_L(plant.GetBodyByName("driver")).get_mass(), 1.0, kTol);
-  EXPECT_NEAR(M_LLo_L(plant.GetBodyByName("rocker")).get_mass(), 2.0, kTol);
+  // The unsplit links keep all of their mass (driver 1 kg, rocker 2 kg).
+  for (const auto& [name, mass] : std::vector<std::pair<std::string, double>>{
+           {"driver", 1.0}, {"rocker", 2.0}}) {
+    const Link<double>& link = plant.GetBodyByName(name);
+    EXPECT_EQ(link.get_mass(*context), mass);
+    EXPECT_EQ(GetSpatialInertiaShare(plant, *context, link).get_mass(), mass);
+  }
 }
 
-/* A shadow link has no spatial-inertia parameter of its own; its effective mass
-properties are sourced from the FrameBodyPoseCache (mirroring its primary's
-share of the split). Consequently the per-body context accessors report the
-split value for both the primary and the shadow, and system-wide mass
-aggregates (which loop over all links, shadows included) count the physical mass
-exactly once rather than double-counting the shadow. */
-GTEST_TEST(ClosedTopologyTest, ShadowHasNoIndependentInertiaParameter) {
+/* A shadow link has no mass properties of its own, so asking it for any of them
+throws, and the message points to the primary link instead. That includes the
+defaults, the Context values, and the center of mass motion, as well as the
+setters. */
+GTEST_TEST(ClosedTopologyTest, ShadowHasNoMassProperties) {
+  FourBar four_bar;
+  MultibodyPlant<double>& plant = four_bar.plant();
+  plant.Finalize();
+  auto context = plant.CreateDefaultContext();
+  const Link<double>& shadow = plant.GetBodyByName("coupler$1");
+
+  // The expected message, for the shadow method named `method`.
+  auto expected_message = [](const std::string& method) {
+    return method +
+           "\\(\\): RigidBody 'coupler\\$1' is a shadow link, which "
+           "Finalize\\(\\) created to break a kinematic loop. A shadow link "
+           "has no mass properties of its own; use its primary_link\\(\\), "
+           "'coupler', instead.";
+  };
+  DRAKE_EXPECT_THROWS_MESSAGE(shadow.default_mass(),
+                              expected_message("default_mass"));
+  DRAKE_EXPECT_THROWS_MESSAGE(shadow.default_com(),
+                              expected_message("default_com"));
+  DRAKE_EXPECT_THROWS_MESSAGE(shadow.default_unit_inertia(),
+                              expected_message("default_unit_inertia"));
+  DRAKE_EXPECT_THROWS_MESSAGE(shadow.default_rotational_inertia(),
+                              expected_message("default_rotational_inertia"));
+  DRAKE_EXPECT_THROWS_MESSAGE(shadow.default_spatial_inertia(),
+                              expected_message("default_spatial_inertia"));
+  DRAKE_EXPECT_THROWS_MESSAGE(shadow.get_mass(*context),
+                              expected_message("get_mass"));
+  DRAKE_EXPECT_THROWS_MESSAGE(shadow.CalcCenterOfMassInBodyFrame(*context),
+                              expected_message("CalcCenterOfMassInBodyFrame"));
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      shadow.CalcSpatialInertiaInBodyFrame(*context),
+      expected_message("CalcSpatialInertiaInBodyFrame"));
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      shadow.CalcCenterOfMassTranslationalVelocityInWorld(*context),
+      expected_message("CalcCenterOfMassTranslationalVelocityInWorld"));
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      shadow.CalcCenterOfMassTranslationalAccelerationInWorld(*context),
+      expected_message("CalcCenterOfMassTranslationalAccelerationInWorld"));
+
+  DRAKE_EXPECT_THROWS_MESSAGE(shadow.SetMass(context.get(), 1.0),
+                              expected_message("SetMass"));
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      shadow.SetSpatialInertiaInBodyFrame(
+          context.get(), SpatialInertia<double>::MakeUnitary()),
+      expected_message("SetSpatialInertiaInBodyFrame"));
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      shadow.SetCenterOfMassInBodyFrame(context.get(), Vector3<double>::Zero()),
+      expected_message("SetCenterOfMassInBodyFrame"));
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      shadow.SetCenterOfMassInBodyFrameAndPreserveCentralInertia(
+          context.get(), Vector3<double>::Zero()),
+      expected_message("SetCenterOfMassInBodyFrameAndPreserveCentralInertia"));
+}
+
+/* The coupler's mass parameter is the single source of truth for its mass
+properties, so changing it at runtime re-splits the mass between the coupler and
+its shadow automatically, and the coupler reports the mass it was given. */
+GTEST_TEST(ClosedTopologyTest, RuntimeMassChangeReSplits) {
   constexpr double kTol = 1e-14;
   FourBar four_bar;
   MultibodyPlant<double>& plant = four_bar.plant();
@@ -364,43 +431,216 @@ GTEST_TEST(ClosedTopologyTest, ShadowHasNoIndependentInertiaParameter) {
   const Link<double>& coupler = plant.GetBodyByName("coupler");
   const Link<double>& shadow = plant.GetBodyByName("coupler$1");
 
-  // The context accessor reports each copy's split share (0.5 kg), not the
-  // coupler's full declared 1 kg. (default_mass() still reports the declared
-  // 1 kg for the primary; see ShadowMassIsSplitEvenly.)
-  EXPECT_NEAR(coupler.get_mass(*context), 0.5, kTol);
-  EXPECT_NEAR(shadow.get_mass(*context), 0.5, kTol);
-
-  // Ensure the system's total mass properly accounts for the split-link
-  // coupler (0.5 * primary_link_mass + 0.5 * shadow_link_mass = 1 kg),
-  // so total mass is: driver 1 kg + rocker 2 kg + coupler 1 kg = 4 kg.
-  EXPECT_NEAR(plant.CalcTotalMass(*context), 4.0, kTol);
-}
-
-/* Because the split is recomputed in the FrameBodyPoseCache from the primary's
-parameter, changing the primary's mass at runtime re-splits across the shadow
-automatically -- the primary is the single source of truth. Setting mass on the
-shadow directly is disallowed. */
-GTEST_TEST(ClosedTopologyTest, RuntimeMassChangeReSplitsAndShadowIsReadOnly) {
-  constexpr double kTol = 1e-14;
-  FourBar four_bar;
-  MultibodyPlant<double>& plant = four_bar.plant();
-  plant.Finalize();
-  auto context = plant.CreateDefaultContext();
-
-  const Link<double>& coupler = plant.GetBodyByName("coupler");
-  const Link<double>& shadow = plant.GetBodyByName("coupler$1");
-
-  // Set the coupler's (physical) mass to 3 kg; the split follows to 1.5 kg on
-  // each of the coupler and its shadow, and the total tracks accordingly
+  // Set the coupler's mass to 3 kg. It reports 3 kg, the dynamics give 1.5 kg
+  // to each of the coupler and its shadow, and the total tracks accordingly
   // (driver 1 + rocker 2 + coupler 3 = 6 kg).
   coupler.SetMass(context.get(), 3.0);
-  EXPECT_NEAR(coupler.get_mass(*context), 1.5, kTol);
-  EXPECT_NEAR(shadow.get_mass(*context), 1.5, kTol);
+  EXPECT_EQ(coupler.get_mass(*context), 3.0);
+  EXPECT_EQ(coupler.CalcSpatialInertiaInBodyFrame(*context).get_mass(), 3.0);
+  for (const Link<double>* copy : {&coupler, &shadow}) {
+    EXPECT_NEAR(GetSpatialInertiaShare(plant, *context, *copy).get_mass(), 1.5,
+                kTol);
+  }
   EXPECT_NEAR(plant.CalcTotalMass(*context), 6.0, kTol);
+}
 
-  // The shadow's mass properties are not independently settable.
-  DRAKE_EXPECT_THROWS_MESSAGE(shadow.SetMass(context.get(), 1.0),
-                              ".*coupler\\$1.*ephemeral shadow link.*");
+/* The calculations that sum mass properties over bodies count the split coupler
+once, as the coupler and its shadow together. Here we check that against known
+values in the as-parsed (assembled) configuration. Then, with the loop pulled
+apart, we check that the calculations agree with each other and with the split
+model they are supposed to describe, in which the coupler and its shadow each
+carry half the coupler's mass at their own poses. */
+GTEST_TEST(ClosedTopologyTest, MassPropertySumsCountASplitLinkOnce) {
+  constexpr double kTol = 1e-14;
+  FourBar four_bar;
+  MultibodyPlant<double>& plant = four_bar.plant();
+  plant.Finalize();
+  auto context = plant.CreateDefaultContext();
+  const Frame<double>& world_frame = plant.world_frame();
+  const std::vector<ModelInstanceIndex> four_bar_instance{
+      plant.GetModelInstanceByName("four_bar_loop")};
+  std::vector<BodyIndex> all_bodies;
+  for (BodyIndex i(0); i < plant.num_bodies(); ++i) all_bodies.push_back(i);
+
+  // Assembled: driver 1 kg at (-1, 0, 0.5), rocker 2 kg at (1, 0, 0.5), and
+  // coupler 1 kg at (0, 0, 1).
+  EXPECT_NEAR(plant.CalcTotalMass(*context), 4.0, kTol);
+  EXPECT_NEAR(plant.CalcTotalMass(*context, four_bar_instance), 4.0, kTol);
+  const Vector3<double> p_WoScm_W_expected(0.25, 0.0, 0.625);
+  EXPECT_TRUE(CompareMatrices(plant.CalcCenterOfMassPositionInWorld(*context),
+                              p_WoScm_W_expected, kTol));
+  EXPECT_TRUE(CompareMatrices(
+      plant.CalcCenterOfMassPositionInWorld(*context, four_bar_instance),
+      p_WoScm_W_expected, kTol));
+
+  // Now pull the loop apart, and set it moving.
+  plant.GetJointByName<RevoluteJoint>("world_driver")
+      .set_angle(context.get(), 0.3);
+  plant.GetJointByName<RevoluteJoint>("world_rocker")
+      .set_angle(context.get(), -0.4);
+  plant.SetVelocities(context.get(), Eigen::Vector4d(0.7, -0.2, 0.5, 0.3));
+  const Link<double>& coupler = plant.GetBodyByName("coupler");
+  const Link<double>& shadow = plant.GetBodyByName("coupler$1");
+  ASSERT_FALSE(coupler.EvalPoseInWorld(*context).IsNearlyEqualTo(
+      shadow.EvalPoseInWorld(*context), 0.1));
+
+  // The split model's mass and center of mass, from each link's share of the
+  // mass properties at its own pose.
+  double mass = 0;
+  Vector3<double> sum_mi_pi = Vector3<double>::Zero();
+  for (BodyIndex i(1); i < plant.num_bodies(); ++i) {
+    const Link<double>& link = plant.get_body(i);
+    const SpatialInertia<double> M_LLo_L =
+        GetSpatialInertiaShare(plant, *context, link);
+    mass += M_LLo_L.get_mass();
+    sum_mi_pi += M_LLo_L.get_mass() *
+                 (link.EvalPoseInWorld(*context) * M_LLo_L.get_com());
+  }
+  EXPECT_NEAR(mass, 4.0, kTol);
+  const Vector3<double> p_WoScm_W = sum_mi_pi / mass;
+
+  EXPECT_TRUE(CompareMatrices(plant.CalcCenterOfMassPositionInWorld(*context),
+                              p_WoScm_W, kTol));
+  EXPECT_TRUE(CompareMatrices(
+      plant.CalcCenterOfMassPositionInWorld(*context, four_bar_instance),
+      p_WoScm_W, kTol));
+  const SpatialInertia<double> M_SWo_W =
+      plant.CalcSpatialInertia(*context, world_frame, all_bodies);
+  EXPECT_NEAR(M_SWo_W.get_mass(), 4.0, kTol);
+  EXPECT_TRUE(CompareMatrices(M_SWo_W.get_com(), p_WoScm_W, kTol));
+
+  // The center of mass velocity agrees with the linear momentum, and with the
+  // center of mass Jacobian.
+  const Vector3<double> v_WScm_W =
+      plant.CalcCenterOfMassTranslationalVelocityInWorld(*context);
+  EXPECT_TRUE(
+      CompareMatrices(plant.CalcCenterOfMassTranslationalVelocityInWorld(
+                          *context, four_bar_instance),
+                      v_WScm_W, kTol));
+  EXPECT_TRUE(CompareMatrices(plant
+                                  .CalcSpatialMomentumInWorldAboutPoint(
+                                      *context, Vector3<double>::Zero())
+                                  .translational(),
+                              mass * v_WScm_W, kTol));
+  EXPECT_TRUE(CompareMatrices(
+      plant
+          .CalcSpatialMomentumInWorldAboutPoint(*context, four_bar_instance,
+                                                Vector3<double>::Zero())
+          .translational(),
+      mass * v_WScm_W, kTol));
+  Matrix3X<double> Js_v_WScm_W(3, plant.num_velocities());
+  plant.CalcJacobianCenterOfMassTranslationalVelocity(
+      *context, JacobianWrtVariable::kV, world_frame, world_frame,
+      &Js_v_WScm_W);
+  EXPECT_TRUE(CompareMatrices(Js_v_WScm_W * plant.GetVelocities(*context),
+                              v_WScm_W, kTol));
+}
+
+/* CalcSpatialInertia() counts a split link once, as a whole, however its list
+of bodies names it: as the primary, as a shadow, or as both. Assembled, that is
+just the coupler's full spatial inertia at the coupler's pose, which in the
+coupler's own frame is what the coupler itself reports. With the loop pulled
+apart it is the split model the solver is simulating, with half the coupler's
+mass properties at each copy's own pose, so then even in the coupler's own frame
+it differs from what the coupler reports. */
+GTEST_TEST(ClosedTopologyTest, CalcSpatialInertiaCountsTheWholeSplitLink) {
+  constexpr double kTol = 1e-14;
+  FourBar four_bar;
+  MultibodyPlant<double>& plant = four_bar.plant();
+  plant.Finalize();
+  auto context = plant.CreateDefaultContext();
+  const Frame<double>& world_frame = plant.world_frame();
+  const Link<double>& coupler = plant.GetBodyByName("coupler");
+  const Link<double>& shadow = plant.GetBodyByName("coupler$1");
+
+  // Every way of naming the coupler gives the same result.
+  auto calc_coupler_inertia = [&]() {
+    const SpatialInertia<double> M_SWo_W =
+        plant.CalcSpatialInertia(*context, world_frame, {coupler.index()});
+    for (const std::vector<BodyIndex>& bodies :
+         std::vector<std::vector<BodyIndex>>{
+             {shadow.index()},
+             {coupler.index(), shadow.index()},
+             {shadow.index(), coupler.index()}}) {
+      EXPECT_TRUE(CompareMatrices(
+          plant.CalcSpatialInertia(*context, world_frame, bodies)
+              .CopyToFullMatrix6(),
+          M_SWo_W.CopyToFullMatrix6(), kTol));
+    }
+    return M_SWo_W;
+  };
+
+  // Assembled, the coupler's full spatial inertia at its own pose.
+  const math::RigidTransformd& X_WC = coupler.EvalPoseInWorld(*context);
+  const SpatialInertia<double> M_CWo_W = coupler.default_spatial_inertia()
+                                             .ReExpress(X_WC.rotation())
+                                             .Shift(-X_WC.translation());
+  EXPECT_TRUE(CompareMatrices(calc_coupler_inertia().CopyToFullMatrix6(),
+                              M_CWo_W.CopyToFullMatrix6(), kTol));
+
+  // Naming just the coupler, in the coupler's own frame C.
+  auto calc_coupler_inertia_in_C = [&]() {
+    return plant.CalcSpatialInertia(*context, coupler.body_frame(),
+                                    {coupler.index()});
+  };
+
+  // Assembled, that is just what the coupler itself reports.
+  EXPECT_TRUE(CompareMatrices(
+      calc_coupler_inertia_in_C().CopyToFullMatrix6(),
+      coupler.CalcSpatialInertiaInBodyFrame(*context).CopyToFullMatrix6(),
+      kTol));
+
+  // Pulled apart, each copy's share at its own pose.
+  plant.GetJointByName<RevoluteJoint>("world_driver")
+      .set_angle(context.get(), 0.3);
+  plant.GetJointByName<RevoluteJoint>("world_rocker")
+      .set_angle(context.get(), -0.4);
+  ASSERT_FALSE(coupler.EvalPoseInWorld(*context).IsNearlyEqualTo(
+      shadow.EvalPoseInWorld(*context), 0.1));
+  SpatialInertia<double> M_SWo_W_expected = SpatialInertia<double>::Zero();
+  for (const Link<double>* copy : {&coupler, &shadow}) {
+    const math::RigidTransformd& X_WL = copy->EvalPoseInWorld(*context);
+    M_SWo_W_expected += GetSpatialInertiaShare(plant, *context, *copy)
+                            .ReExpress(X_WL.rotation())
+                            .Shift(-X_WL.translation());
+  }
+  EXPECT_TRUE(CompareMatrices(calc_coupler_inertia().CopyToFullMatrix6(),
+                              M_SWo_W_expected.CopyToFullMatrix6(), kTol));
+
+  // In the coupler's own frame that split model is no longer what the coupler
+  // itself reports, which is still its full, user-defined spatial inertia.
+  SpatialInertia<double> M_SCo_C_expected = SpatialInertia<double>::Zero();
+  for (const Link<double>* copy : {&coupler, &shadow}) {
+    const math::RigidTransformd X_CL =
+        copy->body_frame().CalcPose(*context, coupler.body_frame());
+    M_SCo_C_expected += GetSpatialInertiaShare(plant, *context, *copy)
+                            .ReExpress(X_CL.rotation())
+                            .Shift(-X_CL.translation());
+  }
+  const SpatialInertia<double> M_SCo_C = calc_coupler_inertia_in_C();
+  EXPECT_TRUE(CompareMatrices(M_SCo_C.CopyToFullMatrix6(),
+                              M_SCo_C_expected.CopyToFullMatrix6(), kTol));
+  EXPECT_FALSE(CompareMatrices(
+      M_SCo_C.CopyToFullMatrix6(),
+      coupler.CalcSpatialInertiaInBodyFrame(*context).CopyToFullMatrix6(),
+      0.01));
+
+  // Naming the same body twice is still an error.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant.CalcSpatialInertia(*context, world_frame,
+                               {coupler.index(), coupler.index()}),
+      ".*repeated BodyIndex.*");
+}
+
+/* MultibodyTree's checks for terminal bodies with unusable mass properties must
+not ask a shadow link for mass properties, since it has none; they check the
+primary instead. */
+GTEST_TEST(ClosedTopologyTest, MassChecksUseThePrimaryLink) {
+  FourBar four_bar;
+  MultibodyPlant<double>& plant = four_bar.plant();
+  plant.Finalize();
+  // The shadow's mobilized body is terminal, so it gets checked.
+  EXPECT_NO_THROW(GetInternalTree(plant).ThrowDefaultMassInertiaError());
 }
 
 /* A shadow link carries no geometry of its own. It is an internal modeling
@@ -586,6 +826,7 @@ GTEST_TEST(ClosedTopologyTest, OneLinkCanHaveTwoShadows) {
   // World + seven user links + two shadows; the ninth joint is the ephemeral
   // floating joint that attaches link1 to World.
   ASSERT_EQ(plant.num_bodies(), 10);
+  EXPECT_EQ(plant.num_user_bodies(), 8);
   ASSERT_EQ(plant.num_joints(), 9);
 
   // We got the topology we're expecting.
@@ -603,29 +844,32 @@ GTEST_TEST(ClosedTopologyTest, OneLinkCanHaveTwoShadows) {
   EXPECT_FALSE(primary.is_ephemeral());
   EXPECT_TRUE(shadow1.is_ephemeral());
   EXPECT_TRUE(shadow2.is_ephemeral());
+  EXPECT_EQ(&primary.primary_link(), &primary);
+  EXPECT_EQ(&shadow1.primary_link(), &primary);
+  EXPECT_EQ(&shadow2.primary_link(), &primary);
   EXPECT_NE(primary.mobod_index(), shadow1.mobod_index());
   EXPECT_NE(primary.mobod_index(), shadow2.mobod_index());
   EXPECT_NE(shadow1.mobod_index(), shadow2.mobod_index());
 
-  // The primary retains the user's declared defaults. Each shadow's defaults
-  // report its one-third share, including the rotational inertia about Lo.
+  // The primary reports link6's full, user-defined mass properties, both by
+  // default and in the Context. The shadows have none of their own.
   EXPECT_EQ(primary.default_mass(), kLink6Mass);
+  EXPECT_EQ(primary.get_mass(*context), kLink6Mass);
+  EXPECT_TRUE(CompareMatrices(
+      primary.CalcSpatialInertiaInBodyFrame(*context).CopyToFullMatrix6(),
+      link6_inertia.CopyToFullMatrix6(), kTol));
   for (const Link<double>* shadow : {&shadow1, &shadow2}) {
-    EXPECT_NEAR(shadow->default_mass(), kLink6Mass / 3.0, kTol);
-    EXPECT_TRUE(
-        CompareMatrices(shadow->default_com(), primary.default_com(), kTol));
-    EXPECT_TRUE(CompareMatrices(
-        shadow->default_rotational_inertia().CopyToFullMatrix3(),
-        primary.default_rotational_inertia().CopyToFullMatrix3() / 3.0, kTol));
+    EXPECT_THROW(shadow->default_mass(), std::exception);
+    EXPECT_THROW(shadow->get_mass(*context), std::exception);
   }
 
-  // Effective mass properties are split equally among the primary and its two
-  // shadows. Summing over the plant still counts link6's physical mass once.
+  // The dynamics split link6's mass properties equally among the primary and
+  // its two shadows. Summing over the plant still counts link6's mass once.
   const Matrix3<double> one_third_I_LLo_L =
       primary.default_rotational_inertia().CopyToFullMatrix3() / 3.0;
   for (const Link<double>* copy : {&primary, &shadow1, &shadow2}) {
     const SpatialInertia<double> M_LLo_L =
-        copy->CalcSpatialInertiaInBodyFrame(*context);
+        GetSpatialInertiaShare(plant, *context, *copy);
     EXPECT_NEAR(M_LLo_L.get_mass(), kLink6Mass / 3.0, kTol);
     EXPECT_TRUE(
         CompareMatrices(M_LLo_L.get_com(), primary.default_com(), kTol));
@@ -635,14 +879,15 @@ GTEST_TEST(ClosedTopologyTest, OneLinkCanHaveTwoShadows) {
   }
   EXPECT_NEAR(plant.CalcTotalMass(*context), 12.0, kTol);
 
-  // As in RuntimeMassChangeReSplitsAndShadowIsReadOnly, changing the primary's
-  // mass at runtime re-splits its mass properties. Here the new 12 kg mass and
-  // correspondingly scaled rotational inertia are divided among three copies.
+  // As in RuntimeMassChangeReSplits, changing the primary's mass at runtime
+  // re-splits its mass properties. Here the new 12 kg mass and correspondingly
+  // scaled rotational inertia are divided among three copies.
   constexpr double kUpdatedLink6Mass = 12.0;
   primary.SetMass(context.get(), kUpdatedLink6Mass);
+  EXPECT_EQ(primary.get_mass(*context), kUpdatedLink6Mass);
   for (const Link<double>* copy : {&primary, &shadow1, &shadow2}) {
     const SpatialInertia<double> M_LLo_L =
-        copy->CalcSpatialInertiaInBodyFrame(*context);
+        GetSpatialInertiaShare(plant, *context, *copy);
     EXPECT_NEAR(M_LLo_L.get_mass(), kUpdatedLink6Mass / 3.0, kTol);
     EXPECT_TRUE(
         CompareMatrices(M_LLo_L.get_com(), primary.default_com(), kTol));
@@ -815,6 +1060,7 @@ GTEST_TEST(ClosedTopologyTest, RetargetingSurvivesScalarConversion) {
 
   const Link<AutoDiffXd>& shadow_ad = plant_ad->GetBodyByName("coupler$1");
   EXPECT_TRUE(shadow_ad.is_ephemeral());
+  EXPECT_EQ(&shadow_ad.primary_link(), &plant_ad->GetBodyByName("coupler"));
 
   const Joint<AutoDiffXd>& loop_joint_ad =
       plant_ad->GetJointByName("coupler_rocker");
