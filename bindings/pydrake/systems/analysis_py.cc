@@ -56,6 +56,7 @@ PYDRAKE_MODULE(analysis, m) {
   py::module_::import_("pydrake.systems.framework");
   py::module_::import_("pydrake.systems.primitives");
   py::module_::import_("pydrake.solvers");
+  py::module_::import_("pydrake.multibody.contact_solvers");
   py::module_::import_("pydrake.trajectories");
 
   {

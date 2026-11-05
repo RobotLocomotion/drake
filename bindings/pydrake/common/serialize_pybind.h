@@ -155,6 +155,9 @@ class DefAttributesArchive {
       return type_of(py::float_(0.0));
     } else if constexpr (std::is_same_v<T, std::string>) {
       return type_of(py::str(""));
+    } else if constexpr (std::is_same_v<T, std::monostate>) {
+      // Pybind11 converts std::monostate to None.
+      return type_of(py::none());
     } else if constexpr (is_eigen_type<T>::value) {
       // TODO(jwnimmer-tri) Perhaps we can use numpy.typing here some day?
       return py::module_::import_("numpy").attr("ndarray");

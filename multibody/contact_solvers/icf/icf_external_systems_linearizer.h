@@ -82,6 +82,12 @@ class IcfExternalSystemsLinearizer {
 
   @param[in] h The time step used to advance positions during differencing,
     since the linearization is performed around x̃₀ = [q₀ + h⋅v₀; v₀].
+  @param[in] explicit_inputs If true, actuation and external forces are held
+    fixed at their values τ(x₀) for the whole step, i.e., Kᵤ = Kₑ = 0, bᵤ =
+    τᵤ(x₀), and bₑ = τₑ(x₀). This skips the finite differences (and the
+    associated re-evaluation of upstream systems), at the cost of treating those
+    forces explicitly. Desired-state PD terms are analytic, so they remain
+    implicit either way.
   @param[in] mutable_plant_context The plant context to linearize around,
     used both as input (for the current state and inputs) and to mutate during
     differencing while computing changes in generalized forces due to changes in
@@ -95,7 +101,8 @@ class IcfExternalSystemsLinearizer {
   Returns a tuple [has_actuation_forces, has_external_forces] where a given
   element is true iff any input is connected for the corresponding type. */
   std::tuple<bool, bool> LinearizeExternalSystem(
-      const T& h, systems::Context<T>& mutable_plant_context,
+      const T& h, bool explicit_inputs,
+      systems::Context<T>& mutable_plant_context,
       IcfLinearFeedbackGains<T>* actuation_feedback,
       IcfLinearFeedbackGains<T>* external_feedback) const;
 
