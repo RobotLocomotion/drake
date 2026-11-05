@@ -1,4 +1,5 @@
 #include <memory>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -179,11 +180,12 @@ std::function<AutoDiffVecXd(const AutoDiffVecXd&, double)> BorrowValueFunction(
 }
 
 std::function<Eigen::VectorXd(const Eigen::Ref<const Eigen::VectorXd>&, double)>
-BorrowValueFunctionDouble(const py::object& value_function_double) {
-  if (value_function_double.is_none()) {
+BorrowValueFunctionDouble(
+    const std::optional<py::callable>& value_function_double) {
+  if (!value_function_double.has_value()) {
     return {};
   }
-  PyObject* ptr = value_function_double.ptr();
+  PyObject* ptr = value_function_double->ptr();
   return [ptr](const Eigen::Ref<const Eigen::VectorXd>& x,
              double influence_value) {
     py::gil_scoped_acquire guard;
@@ -545,7 +547,8 @@ void BindEvaluatorsAndBindings(py::module_ m) {
             "__init__",
             [](Class* self, int num_vars, double minimum_value_lower,
                 double influence_value_offset, int max_num_values,
-                py::callable value_function, py::object value_function_double) {
+                py::callable value_function,
+                std::optional<py::callable> value_function_double) {
               new (self)
                   Class(num_vars, minimum_value_lower, influence_value_offset,
                       max_num_values, BorrowValueFunction(value_function),
@@ -587,7 +590,8 @@ void BindEvaluatorsAndBindings(py::module_ m) {
             "__init__",
             [](Class* self, int num_vars, double minimum_value_upper,
                 double influence_value_offset, int max_num_values,
-                py::callable value_function, py::object value_function_double) {
+                py::callable value_function,
+                std::optional<py::callable> value_function_double) {
               new (self)
                   Class(num_vars, minimum_value_upper, influence_value_offset,
                       max_num_values, BorrowValueFunction(value_function),
