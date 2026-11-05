@@ -2809,6 +2809,91 @@ TEST_F(RenderEngineGlTest, MeshCacheEvictionCloneLifetimes) {
   internal::OpenGlContext::ClearCurrent();
 }
 
+// A registration that throws is rolled back: the cached mesh it loaded is
+// evicted, and the id can be registered again.
+TEST_F(RenderEngineGlTest, MeshCacheEvictionFailedRegistration) {
+  Init(X_WR_, true);
+  RenderEngineGlTester tester(renderer_.get());
+  ExpectUniqueBox(0.5);
+  const Mesh mesh = MakeUniqueBox(0.5);
+  const GeometryId id = GeometryId::get_new_id();
+
+  // The diffuse map must be a string; adding the mesh's instance throws.
+  PerceptionProperties bad_material = simple_material();
+  bad_material.AddProperty("phong", "diffuse_map", 3);
+  EXPECT_THROW(renderer_->RegisterVisual(id, mesh, bad_material,
+                                         RigidTransformd::Identity(),
+                                         false /* needs update */),
+               std::exception);
+  EXPECT_FALSE(renderer_->has_geometry(id));
+  EXPECT_EQ(tester.num_cached_meshes(), 0);
+
+  renderer_->RegisterVisual(id, mesh, simple_material(),
+                            RigidTransformd::Identity(),
+                            false /* needs update */);
+  EXPECT_EQ(tester.num_cached_meshes(), 1);
+  PerformCenterShapeTest(renderer_.get());
+  EXPECT_TRUE(renderer_->RemoveGeometry(id));
+  EXPECT_EQ(tester.num_cached_meshes(), 0);
+}
+
+// Registering an id that is already registered throws and leaves the existing
+// registration intact.
+TEST_F(RenderEngineGlTest, RegisterDuplicateId) {
+  Init(X_WR_, true);
+  RenderEngineGlTester tester(renderer_.get());
+  ExpectUniqueBox(0.5);
+  const GeometryId id = GeometryId::get_new_id();
+  renderer_->RegisterVisual(id, MakeUniqueBox(0.5), simple_material(),
+                            RigidTransformd::Identity(),
+                            false /* needs update */);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      renderer_->RegisterVisual(id, MakeUniqueBox(0.7), simple_material(),
+                                RigidTransformd::Identity(),
+                                false /* needs update */),
+      ".*already registered.*");
+  EXPECT_EQ(tester.num_cached_meshes(), 1);
+  PerformCenterShapeTest(renderer_.get());
+}
+
+// Capsules and deformable meshes own their OpenGL geometries, which are
+// released (and their slots reused) when they're removed.
+TEST_F(RenderEngineGlTest, OwnedGeometriesReleased) {
+  Init(X_WR_, true);
+  RenderEngineGlTester tester(renderer_.get());
+  expected_label_ = RenderLabel(3);
+  const PerceptionProperties material = simple_material();
+  const std::vector<geometry::internal::RenderMesh> render_meshes =
+      geometry::internal::LoadRenderMeshesFromObj(
+          fs::path(FindResourceOrThrow(
+              "drake/geometry/render/test/meshes/box_no_mtl.obj")),
+          material, Rgba(1, 1, 1, 1));
+
+  auto add_and_remove = [&]() {
+    const GeometryId capsule_id = GeometryId::get_new_id();
+    renderer_->RegisterVisual(capsule_id, Capsule(0.5, 1.0), material,
+                              RigidTransformd::Identity(),
+                              false /* needs update */);
+    const GeometryId deformable_id = GeometryId::get_new_id();
+    renderer_->RegisterDeformableVisual(deformable_id, render_meshes, material);
+    EXPECT_TRUE(renderer_->RemoveGeometry(capsule_id));
+    EXPECT_TRUE(renderer_->RemoveGeometry(deformable_id));
+  };
+
+  add_and_remove();
+  const int num_geometries = ssize(tester.opengl_geometries());
+  for (int i = 0; i < 5; ++i) {
+    add_and_remove();
+  }
+  EXPECT_EQ(ssize(tester.opengl_geometries()), num_geometries);
+  // Only the shared primitives remain (the terrain's half space).
+  int num_defined = 0;
+  for (const auto& geometry : tester.opengl_geometries()) {
+    if (geometry.is_defined()) ++num_defined;
+  }
+  EXPECT_EQ(num_defined, 1);
+}
+
 // Confirms that passing in show_window = true "works". The test can't confirm
 // that a window appears that a human would see. Instead, it confirms that
 // RenderEngineGl is exercising the OpenGlContext responsible for window

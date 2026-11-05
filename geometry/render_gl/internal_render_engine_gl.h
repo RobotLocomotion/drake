@@ -303,6 +303,9 @@ class RenderEngineGl final : public render::RenderEngine, private ShapeReifier {
   // @pre opengl_context_ has been bound.
   void ReleaseGlGeometry(int index);
 
+  // Throws if `id` is already registered.
+  void ThrowIfRegistered(GeometryId id) const;
+
   // Removes the mesh cache entry `key` and releases its geometries.
   // @pre opengl_context_ has been bound.
   void EvictCachedMeshes(const std::string& key);
@@ -454,6 +457,10 @@ class RenderEngineGl final : public render::RenderEngine, private ShapeReifier {
   std::unordered_map<std::string, int> mesh_key_uses_;
   std::unordered_map<GeometryId, std::string> geometry_mesh_keys_;
 
+  // The geometries_ owned by a single registered geometry (capsules and
+  // deformable meshes), released when it is removed.
+  std::unordered_map<GeometryId, std::vector<int>> owned_geometries_;
+
   // Indices of geometries_ freed by ReleaseGlGeometry(), to be reused.
   std::vector<int> free_geometry_indices_;
 
@@ -461,6 +468,12 @@ class RenderEngineGl final : public render::RenderEngine, private ShapeReifier {
   // own vertex arrays). This counts, per buffer, the geometries_ entries across
   // the engine and all of its clones that use it; a buffer is deleted when its
   // count drops to zero.
+  //
+  // N.B. Owning the buffers through shared_ptrs with a deleting deleter would
+  // also count, but the last reference must then be dropped with an OpenGL
+  // context bound, which isn't guaranteed for the copies of OpenGlGeometry
+  // handed around (e.g., in tests). Counting explicitly keeps the deletion in
+  // ReleaseGlGeometry(), where the context is known to be bound.
   class BufferUseCounts {
    public:
     void Add(GLuint buffer) {
