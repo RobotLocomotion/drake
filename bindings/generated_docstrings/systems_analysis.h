@@ -4883,7 +4883,8 @@ implicitly. This avoids re-evaluating upstream systems several times
 per step, which is useful when using fixed-step CENIC
 (``use_error_control: false``) in place of discrete mode. See
 drake∷multibody∷contact_solvers∷icf∷
-IcfSolverParameters∷explicit_external_inputs.)""";
+IcfSolverParameters∷explicit_external_inputs, and the "Discrete-like
+mode" section of drake∷multibody∷CenicIntegrator.)""";
         } cenic_explicit_external_inputs;
         // Symbol: drake::systems::SimulatorConfig::integration_scheme
         struct /* integration_scheme */ {
