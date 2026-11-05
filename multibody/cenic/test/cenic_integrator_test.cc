@@ -1513,6 +1513,76 @@ GTEST_TEST(CenicIntegrator, SampledReactionForcesThroughAnchoredBody) {
   EXPECT_NEAR(F_weld.translational().norm(), weight, 0.05 * weight);
 }
 
+/* Reinitializing the integrator with a fresh context (the supported
+`reset_context(); Initialize();` workflow) must not leave state from earlier
+steps behind. The first step after a reset starts at the same time as the last
+step before it, which must not be mistaken for a retry of a rejected step. We
+need contact so that the stale model would have a different geometry than the
+rebuilt one. */
+GTEST_TEST(CenicIntegrator, SampledReportingSurvivesContextReset) {
+  DiagramBuilder<double> builder;
+  auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.0);
+  Parser(&plant).AddModelsFromString(R"""(
+    <sdf version="1.9">
+      <model name="m">
+        <link name="shelf">
+          <inertial>
+            <mass>2</mass>
+            <inertia>
+              <ixx>1</ixx><iyy>1</iyy><izz>1</izz>
+              <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
+            </inertia>
+          </inertial>
+          <collision name="shelf_collision">
+            <geometry><box><size>1 1 0.2</size></box></geometry>
+          </collision>
+        </link>
+        <link name="ball">
+          <pose>0 0 0.2 0 0 0</pose>
+          <inertial>
+            <mass>1</mass>
+            <inertia>
+              <ixx>0.01</ixx><iyy>0.01</iyy><izz>0.01</izz>
+              <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
+            </inertia>
+          </inertial>
+          <collision name="ball_collision">
+            <geometry><sphere><radius>0.1</radius></sphere></geometry>
+          </collision>
+        </link>
+        <joint name="weld" type="fixed">
+          <parent>world</parent>
+          <child>shelf</child>
+        </joint>
+      </model>
+    </sdf>)""",
+                                     "sdf");
+  plant.SetUseSampledOutputPorts(true);
+  plant.Finalize();
+  auto diagram = builder.Build();
+
+  Simulator<double> simulator(*diagram);
+  auto& integrator = simulator.reset_integrator<CenicIntegrator<double>>();
+  integrator.set_maximum_step_size(0.01);
+  integrator.set_fixed_step_mode(true);
+  simulator.Initialize();
+  simulator.AdvanceTo(0.01);
+
+  // Start over from an identical initial context, at the same time as before.
+  simulator.reset_context(diagram->CreateDefaultContext());
+  simulator.Initialize();
+  simulator.AdvanceTo(0.01);
+
+  const Context<double>& plant_context =
+      plant.GetMyContextFromRoot(simulator.get_context());
+  const double g = UniformGravityFieldElement<double>::kDefaultStrength;
+  const double weight = (2.0 + 1.0) * g;
+  const JointIndex weld = plant.GetJointByName("weld").index();
+  EXPECT_NEAR(
+      EvalReactionForces(plant, plant_context)[weld].translational().norm(),
+      weight, 0.05 * weight);
+}
+
 /* Applies the spatial force F = -K v (on the body's origin) to a body, which
 depends on the body's spatial velocity. */
 class SpatialVelocityDamper final : public systems::LeafSystem<double> {

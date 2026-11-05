@@ -283,6 +283,13 @@ void CenicIntegrator<T>::DoInitialize() {
   builder_ = std::make_unique<IcfBuilder<T>>(&plant());
   builder_->SetSolverParameters(get_solver_parameters());
 
+  // The builder is new (it holds no model or geometry data) and the context may
+  // be new, so nothing from earlier steps can be reused. In particular, the
+  // first step after (re)initialization must not be mistaken for a retry of a
+  // rejected step that started at the same time.
+  time_at_last_solve_ = NAN;
+  last_accepted_memory_.reset();
+
   // Allocate scratch variables.
   // #created_for_root_system: This call takes the integrator's system, which
   // is our root system. As a result, all of the `x_next*` states will be
