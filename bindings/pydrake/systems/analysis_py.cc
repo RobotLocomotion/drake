@@ -3,6 +3,7 @@
 #include <utility>
 #include <vector>
 
+#include "drake/bindings/generated_docstrings/multibody_cenic.h"
 #include "drake/bindings/generated_docstrings/systems_analysis.h"
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
@@ -11,6 +12,7 @@
 #include "drake/bindings/pydrake/common/wrap_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/common/scope_exit.h"
+#include "drake/multibody/cenic/cenic_integrator_parameters.h"
 #include "drake/systems/analysis/batch_eval.h"
 #include "drake/systems/analysis/discrete_time_approximation.h"
 #include "drake/systems/analysis/integrator_base.h"
@@ -56,7 +58,31 @@ PYDRAKE_MODULE(analysis, m) {
   py::module_::import_("pydrake.systems.framework");
   py::module_::import_("pydrake.systems.primitives");
   py::module_::import_("pydrake.solvers");
+  py::module_::import_("pydrake.multibody.contact_solvers");
   py::module_::import_("pydrake.trajectories");
+
+  {
+    // SimulatorConfig::integrator_params refers to this class, so it must be
+    // bound here (before SimulatorConfig). Its natural home is the cenic module
+    // (which imports this module), so we bind it using a private attribute name
+    // and `pydrake.multibody.cenic` re-exports it under the public name. We
+    // present the public name and module immediately (not upon re-export), so
+    // that YAML type tags like `!CenicIntegratorParameters` resolve whenever
+    // SimulatorConfig is available, even if the cenic module is never imported.
+    using Class = multibody::CenicIntegratorParameters;
+    constexpr auto& cls_doc =
+        pydrake_doc_multibody_cenic.drake.multibody.CenicIntegratorParameters;
+    class_<Class> cls(
+        m, "_CenicIntegratorParameters", py::dynamic_attr(), cls_doc.doc);
+    cls  // BR
+        .def(ParamInit<Class>());
+    DefAttributesUsingSerialize(&cls, cls_doc);
+    DefReprUsingSerialize(&cls);
+    DefCopyAndDeepCopy(&cls);
+    py::setattr(cls, "__name__", py::str("CenicIntegratorParameters"));
+    py::setattr(cls, "__qualname__", py::str("CenicIntegratorParameters"));
+    py::setattr(cls, "__module__", py::str("pydrake.multibody.cenic"));
+  }
 
   {
     using Class = SimulatorConfig;
