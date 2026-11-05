@@ -3700,10 +3700,18 @@ systems::EventStatus MultibodyPlant<T>::CalcSurfaceDisplacementUpdate(
 
 template <typename T>
 systems::EventStatus MultibodyPlant<T>::CheckSampledOutputPortsAreRecorded(
-    const systems::Context<T>& context) const {
+    const systems::Context<T>&, systems::State<T>* state) const {
   DRAKE_DEMAND(!is_discrete() && use_sampled_output_ports_);
-  if (!context.template get_abstract_state<DiscreteStepMemory>(0)
-           .recorder_attached) {
+  // Consume the flag, so that it only vouches for the initialization that
+  // just happened. Otherwise, it would outlive the integrator that set it, and
+  // would be copied along with the context into a Simulator whose integrator
+  // does not record anything.
+  bool& recorder_attached =
+      state->template get_mutable_abstract_state<DiscreteStepMemory>(0)
+          .recorder_attached;
+  const bool was_attached = recorder_attached;
+  recorder_attached = false;
+  if (!was_attached) {
     throw std::logic_error(fmt::format(
         "MultibodyPlant: this continuous-time plant has sampled output ports "
         "(SetUseSampledOutputPorts(true)), but the integrator in use does not "
@@ -3711,7 +3719,7 @@ systems::EventStatus MultibodyPlant<T>::CheckSampledOutputPortsAreRecorded(
         "zeros. Use an integrator that records them (e.g., CenicIntegrator), "
         "or call SetUseSampledOutputPorts(false) before Finalize()."));
   }
-  return systems::EventStatus::DidNothing();
+  return systems::EventStatus::Succeeded();
 }
 
 template <typename T>
@@ -3726,7 +3734,7 @@ void MultibodyPlant<T>::DeclareStateUpdate() {
     if (use_sampled_output_ports_) {
       this->DeclareAbstractState(Value<DiscreteStepMemory>{});
       // Nothing else would ever fill the sample if no such integrator is used.
-      this->DeclareInitializationPublishEvent(
+      this->DeclareInitializationUnrestrictedUpdateEvent(
           &MultibodyPlant<T>::CheckSampledOutputPortsAreRecorded);
     }
   } else {

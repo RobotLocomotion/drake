@@ -6569,9 +6569,10 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
 
   // For a continuous-time plant with sampled output ports, an initialization
   // event that throws unless an integrator that records samples (see
-  // DiscreteStepMemory::recorder_attached) was initialized with the context.
+  // DiscreteStepMemory::recorder_attached) was initialized just before it. The
+  // event clears the flag, so each initialization must be vouched for anew.
   systems::EventStatus CheckSampledOutputPortsAreRecorded(
-      const systems::Context<T>& context) const;
+      const systems::Context<T>& context, systems::State<T>* state) const;
 
   // Accesses the AccelerationKinematicsCache for use by possibly-sampled
   // output port calculations:

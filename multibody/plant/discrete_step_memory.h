@@ -86,11 +86,13 @@ struct DiscreteStepMemory {
   }
 
   /* For a continuous-time plant with sampled output ports only: whether an
-  integrator that records the samples (e.g., CenicIntegrator) has been
+  integrator that records the samples (e.g., CenicIntegrator) was just
   initialized with this context. The plant checks this when the Simulator
-  initializes, so that a plant with sampled output ports under an integrator
-  that never records anything fails fast, instead of silently reporting its
-  empty sample forever. Unused for a discrete-time plant. */
+  initializes, and then clears it (so that it neither outlives that
+  integrator nor travels with a cloned context), so that a plant with sampled
+  output ports under an integrator that never records anything fails fast,
+  instead of silently reporting its empty sample forever. Unused for a
+  discrete-time plant. */
   bool recorder_attached{false};
 
   // We use variant because abstract state in the context cannot template on T.

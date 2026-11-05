@@ -213,8 +213,11 @@ change (a separate PR) lands; the removal date must follow that.
 A continuous plant with sampled output ports under an integrator that never
 records would report zeros forever. `CenicIntegrator::DoInitialize()` sets
 `DiscreteStepMemory::recorder_attached` in the plant's state, and the plant
-declares an initialization publish event (only in this configuration) that
-throws if the flag is missing. `Simulator::Initialize()` runs the integrator's
+declares an initialization unrestricted update event (only in this
+configuration) that throws if the flag is missing, and otherwise clears it. The
+flag therefore vouches only for the initialization that just happened: it
+doesn't outlive CENIC if the integrator is replaced, and it isn't carried by a
+cloned Context into a Simulator with a nonrecording integrator. `Simulator::Initialize()` runs the integrator's
 initialization before the initialization events, so a Simulator with any other
 integrator fails at `Initialize()` with a message naming both remedies. Users
 who build contexts and read ports without a Simulator, or drive an integrator

@@ -21,6 +21,7 @@
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/multibody/tree/uniform_gravity_field_element.h"
 #include "drake/multibody/tree/weld_joint.h"
+#include "drake/systems/analysis/runge_kutta3_integrator.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/analysis/test_utilities/spring_mass_system.h"
 #include "drake/systems/controllers/pid_controller.h"
@@ -1896,6 +1897,66 @@ GTEST_TEST(CenicIntegrator, SampledPortsRequireRecordingIntegrator) {
       }
     }
   }
+}
+
+// Swapping CENIC out, or cloning its context into a Simulator with another
+// integrator, must not carry over the memory that CENIC once recorded.
+GTEST_TEST(CenicIntegrator, SampledPortsRecorderDoesNotOutliveCenic) {
+  DiagramBuilder<double> builder;
+  auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.0);
+  Parser(&plant).AddModelsFromString(R"""(
+    <sdf version="1.9">
+      <model name="m">
+        <link name="body">
+          <inertial>
+            <mass>1</mass>
+            <inertia>
+              <ixx>1</ixx><iyy>1</iyy><izz>1</izz>
+              <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
+            </inertia>
+          </inertial>
+        </link>
+        <joint name="slider" type="prismatic">
+          <parent>world</parent>
+          <child>body</child>
+          <axis><xyz>1 0 0</xyz></axis>
+        </joint>
+      </model>
+    </sdf>)""",
+                                     "sdf");
+  plant.SetUseSampledOutputPorts(true);
+  plant.Finalize();
+  auto diagram = builder.Build();
+
+  Simulator<double> simulator(*diagram);
+  auto& integrator = simulator.reset_integrator<CenicIntegrator<double>>();
+  integrator.set_maximum_step_size(0.01);
+  integrator.set_fixed_step_mode(true);
+  simulator.Initialize();
+  simulator.AdvanceTo(0.01);
+
+  // Workflow 1: replace CENIC with a nonrecording integrator.
+  simulator.reset_integrator<systems::RungeKutta3Integrator<double>>()
+      .set_maximum_step_size(0.01);
+  DRAKE_EXPECT_THROWS_MESSAGE(simulator.Initialize(),
+                              ".*does not record samples.*");
+
+  // Workflow 2: clone the context of a CENIC-initialized simulation.
+  Simulator<double> cenic_sim(*diagram);
+  auto& cenic = cenic_sim.reset_integrator<CenicIntegrator<double>>();
+  cenic.set_maximum_step_size(0.01);
+  cenic.set_fixed_step_mode(true);
+  cenic_sim.Initialize();
+  cenic_sim.AdvanceTo(0.01);
+  Simulator<double> clone_sim(*diagram, cenic_sim.get_context().Clone());
+  clone_sim.reset_integrator<systems::RungeKutta3Integrator<double>>()
+      .set_maximum_step_size(0.01);
+  DRAKE_EXPECT_THROWS_MESSAGE(clone_sim.Initialize(),
+                              ".*does not record samples.*");
+
+  // The original CENIC simulation can still be reinitialized.
+  cenic_sim.Initialize();
+  cenic_sim.AdvanceTo(0.02);
 }
 
 /* Applies the spatial force F = -K v (on the body's origin) to a body, which
