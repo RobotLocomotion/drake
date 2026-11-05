@@ -546,9 +546,11 @@ on a continuous-time plant declares the same sample state variable `s` used by
 discrete-time plants and switches the dynamics output ports to report it. It is
 then the integrator's responsibility to record `s` on every step it takes;
 CenicIntegrator records the contact and constraint forces of the convex problem
-that produced the current state. Before the first step (and forever, if the
-integrator in use does not record samples) the dynamics output ports report
-zero forces, zero accelerations, and empty contact results. As with a
+that produced the current state. Before the first step the dynamics output
+ports report zero forces, zero accelerations, and empty contact results. If the
+integrator in use does not record samples they would stay that way forever, so
+a systems::Simulator throws when it is initialized (see
+systems::Simulator::Initialize()) with such an integrator. As with a
 discrete-time plant, the presence of `s` means the Context is no longer
 purely continuous, which some Drake features (e.g., linearization) do not
 support.
@@ -6564,6 +6566,12 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   // also updates the abstract state that holds the sample.
   systems::EventStatus CalcStepUnrestricted(
       const systems::Context<T>& context0, systems::State<T>* next_state) const;
+
+  // For a continuous-time plant with sampled output ports, an initialization
+  // event that throws unless an integrator that records samples (see
+  // DiscreteStepMemory::recorder_attached) was initialized with the context.
+  systems::EventStatus CheckSampledOutputPortsAreRecorded(
+      const systems::Context<T>& context) const;
 
   // Accesses the AccelerationKinematicsCache for use by possibly-sampled
   // output port calculations:

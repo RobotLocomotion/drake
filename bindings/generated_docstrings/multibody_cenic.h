@@ -98,6 +98,12 @@ h/2, not at the end of the step t + h, so it can lag the Context's
 body poses by up to half a step. See output_port_sampling "Output port
 sampling" for details.
 
+Sampling requires steps. If the whole system has no continuous state
+(e.g., every body is welded to the world and nothing else has state),
+the Simulator never asks the integrator to step, so nothing could ever
+be sampled. Initialize() throws in that case when the plant has
+sampled output ports.
+
 The reported reaction forces use external spatial forces (the plant's
 ``applied_spatial_force`` input port) evaluated at the start of the
 solved step, whereas the solve itself is implicit in their

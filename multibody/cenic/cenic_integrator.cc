@@ -290,6 +290,15 @@ void CenicIntegrator<T>::DoInitialize() {
         "output ports (the default for a continuous-time plant) instead.");
   }
 
+  // Tell the plant that its sampled output ports will be filled in, so that its
+  // initialization check passes. (It's an error to sample without CENIC.)
+  if (plant().has_sampled_output_ports()) {
+    plant()
+        .GetMyMutableContextFromRoot(this->get_mutable_context())
+        .template get_mutable_abstract_state<DiscreteStepMemory>(0)
+        .recorder_attached = true;
+  }
+
   // Create the ICF builder, which will manage the construction of the convex
   // ICF optimization problem.
   builder_ = std::make_unique<IcfBuilder<T>>(&plant());

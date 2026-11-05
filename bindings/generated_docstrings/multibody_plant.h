@@ -1977,12 +1977,14 @@ used by discrete-time plants and switches the dynamics output ports to
 report it. It is then the integrator's responsibility to record ``s``
 on every step it takes; CenicIntegrator records the contact and
 constraint forces of the convex problem that produced the current
-state. Before the first step (and forever, if the integrator in use
-does not record samples) the dynamics output ports report zero forces,
-zero accelerations, and empty contact results. As with a discrete-time
-plant, the presence of ``s`` means the Context is no longer purely
-continuous, which some Drake features (e.g., linearization) do not
-support.
+state. Before the first step the dynamics output ports report zero
+forces, zero accelerations, and empty contact results. If the
+integrator in use does not record samples they would stay that way
+forever, so a systems∷Simulator throws when it is initialized (see
+systems∷Simulator∷Initialize()) with such an integrator. As with a
+discrete-time plant, the presence of ``s`` means the Context is no
+longer purely continuous, which some Drake features (e.g.,
+linearization) do not support.
 
 **** Actuation
 

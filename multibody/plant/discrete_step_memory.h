@@ -85,6 +85,14 @@ struct DiscreteStepMemory {
     return nullptr;
   }
 
+  /* For a continuous-time plant with sampled output ports only: whether an
+  integrator that records the samples (e.g., CenicIntegrator) has been
+  initialized with this context. The plant checks this when the Simulator
+  initializes, so that a plant with sampled output ports under an integrator
+  that never records anything fails fast, instead of silently reporting its
+  empty sample forever. Unused for a discrete-time plant. */
+  bool recorder_attached{false};
+
   // We use variant because abstract state in the context cannot template on T.
   // We use shared_ptr-to-const so that we're cheap to copy and move.
   std::variant<std::shared_ptr<const Data<double>>,

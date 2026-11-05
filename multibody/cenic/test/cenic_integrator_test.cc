@@ -1744,6 +1744,79 @@ GTEST_TEST(CenicIntegrator, SampledPortsRequireContinuousState) {
   }
 }
 
+/* A continuous-time plant with sampled output ports only works with an
+integrator that records the samples. Under any other integrator the ports would
+silently report zeros, so initializing the Simulator throws. */
+GTEST_TEST(CenicIntegrator, SampledPortsRequireRecordingIntegrator) {
+  for (const bool sampled : {true, false}) {
+    for (const bool use_cenic : {true, false}) {
+      SCOPED_TRACE(
+          fmt::format("sampled = {}, use_cenic = {}", sampled, use_cenic));
+      DiagramBuilder<double> builder;
+      auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.0);
+      Parser(&plant).AddModelsFromString(R"""(
+        <sdf version="1.9">
+          <model name="m">
+            <link name="shelf">
+              <inertial>
+                <mass>2</mass>
+                <inertia>
+                  <ixx>1</ixx><iyy>1</iyy><izz>1</izz>
+                  <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
+                </inertia>
+              </inertial>
+              <collision name="shelf_collision">
+                <geometry><box><size>1 1 0.2</size></box></geometry>
+              </collision>
+            </link>
+            <link name="ball">
+              <pose>0 0 0.2 0 0 0</pose>
+              <inertial>
+                <mass>1</mass>
+                <inertia>
+                  <ixx>0.01</ixx><iyy>0.01</iyy><izz>0.01</izz>
+                  <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
+                </inertia>
+              </inertial>
+              <collision name="ball_collision">
+                <geometry><sphere><radius>0.1</radius></sphere></geometry>
+              </collision>
+            </link>
+            <joint name="weld" type="fixed">
+              <parent>world</parent>
+              <child>shelf</child>
+            </joint>
+          </model>
+        </sdf>)""",
+                                         "sdf");
+      if (sampled) plant.SetUseSampledOutputPorts(true);
+      plant.Finalize();
+      auto diagram = builder.Build();
+
+      Simulator<double> simulator(*diagram);
+      if (use_cenic) {
+        auto& integrator =
+            simulator.reset_integrator<CenicIntegrator<double>>();
+        integrator.set_maximum_step_size(0.01);
+        integrator.set_fixed_step_mode(true);
+      }
+      if (sampled && !use_cenic) {
+        DRAKE_EXPECT_THROWS_MESSAGE(simulator.Initialize(),
+                                    ".*does not record samples.*");
+      } else {
+        simulator.Initialize();
+        simulator.AdvanceTo(0.01);
+        if (sampled) {
+          // Reinitializing with a fresh context attaches the recorder again.
+          simulator.reset_context(diagram->CreateDefaultContext());
+          simulator.Initialize();
+          simulator.AdvanceTo(0.01);
+        }
+      }
+    }
+  }
+}
+
 /* Applies the spatial force F = -K v (on the body's origin) to a body, which
 depends on the body's spatial velocity. */
 class SpatialVelocityDamper final : public systems::LeafSystem<double> {

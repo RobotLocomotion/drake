@@ -188,6 +188,19 @@ cost.
   dereferenced an invalid tree index for world-anchored geometry whenever a
   joint was locked; that is fixed here by treating the world as zero-dof.
 
+### Fail-fast without a recording integrator
+
+A continuous plant with sampled output ports under an integrator that never
+records would report zeros forever. `CenicIntegrator::DoInitialize()` sets
+`DiscreteStepMemory::recorder_attached` in the plant's state, and the plant
+declares an initialization publish event (only in this configuration) that
+throws if the flag is missing. `Simulator::Initialize()` runs the integrator's
+initialization before the initialization events, so a Simulator with any other
+integrator fails at `Initialize()` with a message naming both remedies. Users
+who build contexts and read ports without a Simulator, or drive an integrator
+directly, don't get the check. A system with no continuous state at all is
+rejected by CENIC itself (see above), since it is never stepped.
+
 ## 5. Tests
 
 - `multibody/plant/test/multibody_plant_test.cc`:
@@ -202,5 +215,7 @@ cost.
   rejected trial's sample; a ball on a shelf welded to the world (the weld
   reports both weights); a whole locked tree whose ball constraint to a free
   body must report the impulse that was solved (not the full model's), and the
-  contact analog; reinitializing with a fresh context; and the stiff external
+  contact analog; reinitializing with a fresh context; sampled ports requiring a
+  recording integrator (and the recorder attaching again after a context
+  reset); a system with no continuous state; and the stiff external
   force limitation above.

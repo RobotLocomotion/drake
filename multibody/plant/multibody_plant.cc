@@ -3699,6 +3699,22 @@ systems::EventStatus MultibodyPlant<T>::CalcSurfaceDisplacementUpdate(
 }
 
 template <typename T>
+systems::EventStatus MultibodyPlant<T>::CheckSampledOutputPortsAreRecorded(
+    const systems::Context<T>& context) const {
+  DRAKE_DEMAND(!is_discrete() && use_sampled_output_ports_);
+  if (!context.template get_abstract_state<DiscreteStepMemory>(0)
+           .recorder_attached) {
+    throw std::logic_error(fmt::format(
+        "MultibodyPlant: this continuous-time plant has sampled output ports "
+        "(SetUseSampledOutputPorts(true)), but the integrator in use does not "
+        "record samples, so the dynamics output ports would silently report "
+        "zeros. Use an integrator that records them (e.g., CenicIntegrator), "
+        "or call SetUseSampledOutputPorts(false) before Finalize()."));
+  }
+  return systems::EventStatus::DidNothing();
+}
+
+template <typename T>
 void MultibodyPlant<T>::DeclareStateUpdate() {
   // The model must be finalized.
   DRAKE_DEMAND(this->is_finalized());
@@ -3709,6 +3725,9 @@ void MultibodyPlant<T>::DeclareStateUpdate() {
     // dynamics of each step it takes for use by the sampled output ports.
     if (use_sampled_output_ports_) {
       this->DeclareAbstractState(Value<DiscreteStepMemory>{});
+      // Nothing else would ever fill the sample if no such integrator is used.
+      this->DeclareInitializationPublishEvent(
+          &MultibodyPlant<T>::CheckSampledOutputPortsAreRecorded);
     }
   } else {
     // Declare our periodic update step, and also permit triggering a step via
