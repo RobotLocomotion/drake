@@ -2402,9 +2402,19 @@ to define collision avoidance strategies.
 
 Conceptually, this class represents a table:
 
-| body index R | body index O | type | ϕᴼ(R) | Jq_ϕᴼ(R) | |
-:----------: | :----------: | :--: | :---: | :------: | | ... | ... |
-.. | ... | ... |
+.. list-table::
+   :header-rows: 1
+
+   * - body index R
+     - body index O
+     - type
+     - ϕᴼ(R)
+     - Jq_ϕᴼ(R)
+   * - ...
+     - ...
+     - \..
+     - ...
+     - ...
 
 Member functions return each column of the table as an ordered
 collection. The iᵗʰ entry in each collection belongs to the iᵗʰ row.
