@@ -116,6 +116,12 @@ config_setting(
 cc_library(
     name = "mosek",
     hdrs = ["h/mosek.h"],
+    defines = select({
+        ":lazy_load": [
+            'DRAKE_MOSEK_LAZY_LOAD_LIBRARY=\\"' + _MOSEK_MAJMIN_GLOB[0] + '\\"',
+        ],
+        "//conditions:default": [],
+    }),
     includes = ["h"],
     visibility = ["//visibility:public"],
     deps = select({
