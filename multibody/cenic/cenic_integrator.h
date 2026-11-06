@@ -84,13 +84,33 @@ MultibodyPlant subsystem, at any level of Diagram nesting.
 Running CENIC in fixed-step mode (with error-control disabled) recovers the
 "Lagged" variant of discrete-time ICF simulation from [Castro et al., 2023].
 
+@anchor cenic_explicit_external_inputs
+### Explicit external inputs
+
+By default, CENIC linearizes the MultibodyPlant's external inputs (actuation and
+external forces) with finite differences so that it can treat them implicitly.
+That re-evaluates all upstream systems several times per step, which is
+expensive when the inputs come from complicated external systems. Alternatively,
+CENIC can hold those inputs fixed over each step (i.e., treat them explicitly),
+so that upstream systems are evaluated once per step, which is up to about
+`nv + 2` times fewer upstream evaluations for a plant with `nv` generalized
+velocities. See
+contact_solvers::icf::IcfSolverParameters::explicit_external_inputs.
+
+This choice is independent of whether error control is enabled: explicit inputs
+are valid in both fixed-step and error-controlled modes. Explicit inputs give up
+the implicit treatment of stiff controllers, so if a controller is stiff
+relative to the step size, use a smaller step or leave explicit inputs off.
+(Joint-level PD controllers set through the plant's desired-state input ports
+are analytic, so they stay implicit either way.)
+
 @anchor cenic_discrete_like_mode
 ### Discrete-like mode
 
-ICF is not (yet) available as a discrete-time MultibodyPlant solver. To get
-discrete-like behavior (a fixed time step, and no extra work for the other
-systems in the diagram), use a continuous-time plant together with fixed-step
-CENIC and explicit external inputs. With YAML configuration, that looks like:
+ICF is not (yet) available as a discrete-time MultibodyPlant solver. One way to
+get discrete-like behavior (a fixed time step, and no extra work for the other
+systems in the diagram) is to combine a continuous-time plant, fixed-step
+CENIC, and explicit external inputs. With YAML configuration, that looks like:
 
 @code{.yaml}
 # MultibodyPlantConfig
@@ -105,26 +125,15 @@ cenic_explicit_external_inputs: true
 In C++, the equivalent calls are `set_fixed_step_mode(true)` and
 SetSolverParameters() with `explicit_external_inputs = true`.
 
-The three pieces do the following:
+Each setting does its own job, and they can be mixed freely:
 
 - `time_step: 0.0` makes the plant continuous, so that CENIC integrates it.
 - `use_error_control: false` takes fixed steps of size `max_step_size`.
-- `cenic_explicit_external_inputs: true` holds the plant's actuation and
-  external force inputs fixed over each step. By default, CENIC linearizes those
-  inputs with finite differences so it can treat them implicitly, which
-  re-evaluates all upstream systems several times per step. That is expensive
-  when the inputs come from complicated external systems. Explicit inputs
-  evaluate them once per step instead, which is up to about `nv + 2` times fewer
-  upstream evaluations for a plant with `nv` generalized velocities. See
-  contact_solvers::icf::IcfSolverParameters::explicit_external_inputs.
+- `cenic_explicit_external_inputs: true` treats external inputs explicitly (see
+  above).
 
-Notes and caveats:
+Caveats specific to fixed-step mode:
 
-- Explicit inputs give up the implicit treatment of stiff controllers. If a
-  controller is stiff relative to the step size, use a smaller step or leave
-  `cenic_explicit_external_inputs` off. (Joint-level PD controllers set through
-  the plant's desired-state input ports are analytic, so they stay implicit
-  either way.)
 - CENIC advances the continuous state of any other system in the diagram with
   explicit Euler, in both fixed-step and error-controlled modes. In fixed-step
   mode there is no error control to catch an unstable choice of step size.

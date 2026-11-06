@@ -4880,11 +4880,11 @@ ignored otherwise. If true, the MultibodyPlant's external inputs
 (actuation and external forces) are held fixed over each step instead
 of being linearized with finite differences so they can be treated
 implicitly. This avoids re-evaluating upstream systems several times
-per step, which is useful when using fixed-step CENIC
-(``use_error_control: false``) in place of discrete mode. See
+per step, which is useful when the inputs come from expensive external
+systems. This is independent of ``use_error_control``. See
 drake∷multibody∷contact_solvers∷icf∷
-IcfSolverParameters∷explicit_external_inputs, and the "Discrete-like
-mode" section of drake∷multibody∷CenicIntegrator.)""";
+IcfSolverParameters∷explicit_external_inputs, and the "Explicit
+external inputs" section of drake∷multibody∷CenicIntegrator.)""";
         } cenic_explicit_external_inputs;
         // Symbol: drake::systems::SimulatorConfig::integration_scheme
         struct /* integration_scheme */ {

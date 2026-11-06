@@ -37,10 +37,10 @@ struct SimulatorConfig {
   /// external forces) are held fixed over each step instead of being linearized
   /// with finite differences so they can be treated implicitly. This avoids
   /// re-evaluating upstream systems several times per step, which is useful
-  /// when using fixed-step CENIC (`use_error_control: false`) in place of
-  /// discrete mode. See drake::multibody::contact_solvers::icf::
-  /// IcfSolverParameters::explicit_external_inputs, and the "Discrete-like
-  /// mode" section of drake::multibody::CenicIntegrator.
+  /// when the inputs come from expensive external systems. This is independent
+  /// of `use_error_control`. See drake::multibody::contact_solvers::icf::
+  /// IcfSolverParameters::explicit_external_inputs, and the "Explicit external
+  /// inputs" section of drake::multibody::CenicIntegrator.
   bool cenic_explicit_external_inputs{false};
 };
 }  // namespace systems
