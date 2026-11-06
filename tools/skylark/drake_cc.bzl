@@ -379,12 +379,6 @@ def _cc_nolink_library_impl(ctx):
         cc_infos = [dep[CcInfo] for dep in ctx.attr.deps],
     )
     return [
-        DefaultInfo(
-            runfiles = ctx.runfiles(
-                collect_data = True,
-                collect_default = True,
-            ),
-        ),
         CcInfo(
             compilation_context = deps_cc_infos.compilation_context,
             linking_context = None,
