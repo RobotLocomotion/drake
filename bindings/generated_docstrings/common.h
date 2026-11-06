@@ -72,6 +72,7 @@
 // #include "drake/common/text_logging_spdlog.h"
 // #include "drake/common/timer.h"
 // #include "drake/common/type_safe_index.h"
+// #include "drake/common/unchanged.h"
 // #include "drake/common/unused.h"
 // #include "drake/common/value.h"
 
@@ -2482,6 +2483,21 @@ R"""(Allow greater than or equals test with unsigned integers.)""";
 R"""(Prevent greater than or equals test with indices of other tags.)""";
       } operator_ge;
     } TypeSafeIndex;
+    // Symbol: drake::Unchanged
+    struct /* Unchanged */ {
+      // Source: drake/common/unchanged.h
+      const char* doc =
+R"""(A tag type intended for use by YAML Serialization to affirmatively
+indicate that some value should remain unchanged. Refer to
+yaml_serialization "YAML Serialization" for background.)""";
+      // Symbol: drake::Unchanged::Serialize
+      struct /* Serialize */ {
+        // Source: drake/common/unchanged.h
+        const char* doc =
+R"""(Passes this object to an Archive. Refer to yaml_serialization "YAML
+Serialization" for background.)""";
+      } Serialize;
+    } Unchanged;
     // Symbol: drake::Value
     struct /* Value */ {
       // Source: drake/common/value.h
