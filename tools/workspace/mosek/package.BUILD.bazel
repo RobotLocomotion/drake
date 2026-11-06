@@ -122,6 +122,12 @@ cc_library(
         ":lazy_load": [":implib_mosek"],
         "//conditions:default": [":import_mosek"],
     }),
+    defines = select{
+        ":lazy_load": [
+            "DRAKE_MOSEK_LAZY_LOAD_LIBRARY=" + _MOSEK_MAJMIN_GLOB[0],
+        ],
+        "//conditions:default": [],
+    })
 )
 
 install_files(
