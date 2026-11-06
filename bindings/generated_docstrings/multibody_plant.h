@@ -8710,8 +8710,8 @@ cases.)""";
         struct /* use_sampled_output_ports */ {
           // Source: drake/multibody/plant/multibody_plant_config.h
           const char* doc =
-R"""(Configures the MultibodyPlant∷SetUseSampledOutputPorts(). Ignored when
-the time_step is zero.)""";
+R"""(Configures the MultibodyPlant∷SetUseSampledOutputPorts(). When set to
+Unchanged, the MultibodyPlant setting remains unchanged.)""";
         } use_sampled_output_ports;
         auto Serialize__fields() const {
           return std::array{

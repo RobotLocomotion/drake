@@ -14,6 +14,7 @@ from pydrake.common import FindResourceOrThrow, Parallelism
 from pydrake.common.cpp_param import List
 from pydrake.common.deprecation import install_numpy_warning_filters
 from pydrake.common.eigen_geometry import Quaternion_
+from pydrake.common.schema import Unchanged
 from pydrake.common.test_utilities import numpy_compare
 from pydrake.common.test_utilities.pickle_compare import assert_pickle
 from pydrake.common.value import AbstractValue, Value
@@ -352,6 +353,7 @@ class TestPlant(unittest.TestCase):
     def test_multibody_plant_config(self):
         MultibodyPlantConfig()
         config = MultibodyPlantConfig(time_step=0.01)
+        self.assertIsInstance(config.use_sampled_output_ports, Unchanged)
         self.assertEqual(config.time_step, 0.01)
         self.assertIn("time_step", repr(config))
         copy.copy(config)
