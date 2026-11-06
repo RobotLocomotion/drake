@@ -207,6 +207,7 @@ class TestPlant(unittest.TestCase):
         self.assertEqual(plant.GetEnableLoopTopology(), True)
         plant.SetEnableLoopTopology(enable=False)
         self.assertEqual(plant.num_loop_constraints(), 0)
+        self.assertEqual(plant.num_user_bodies(), plant.num_bodies())
         spatial_inertia = SpatialInertia.NaN()
         body = plant.AddRigidBody(name="new_body", M_BBo_B=spatial_inertia)
         body.default_mass()

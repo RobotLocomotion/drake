@@ -17,6 +17,7 @@
 #include "drake/math/rigid_transform.h"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/multibody/plant/multibody_plant.h"
+#include "drake/multibody/tree/revolute_joint.h"
 #include "drake/multibody/tree/spatial_inertia.h"
 
 namespace drake {
@@ -291,6 +292,63 @@ TEST_F(MeshcatMouseSpringTest, ConstructorErrors) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       MeshcatMouseSpring(meshcat_, &no_scene_graph, scene_graph_),
       ".*geometry_source_is_registered.*");
+}
+
+// A shadow body, which Finalize() adds to break a kinematic loop (see
+// MultibodyPlant::SetEnableLoopTopology()), has no mass of its own. Dragging
+// one applies the force to the shadow, where the dragged geometry is, scaled by
+// the full mass of the body it was split from, as for dragging that body.
+GTEST_TEST(MeshcatMouseSpringLoopTest, DragShadowBody) {
+  SceneGraph<double> scene_graph;
+  MultibodyPlant<double> plant(0.0);
+  plant.SetEnableLoopTopology(true);
+  plant.RegisterAsSourceForSceneGraph(&scene_graph);
+  // A triangle of revolute joints: World to A, World to B, and A to B.
+  const RigidBody<double>& body_A = plant.AddRigidBody(
+      "A", SpatialInertia<double>::SolidCubeWithMass(2.0, 0.1));
+  const RigidBody<double>& body_B = plant.AddRigidBody(
+      "B", SpatialInertia<double>::SolidCubeWithMass(4.0, 0.1));
+  const RigidTransformd X_offset(Vector3d(1.0, 0.0, 0.0));
+  plant.AddJoint<RevoluteJoint>("world_A", plant.world_body(), {}, body_A, {},
+                                Vector3d::UnitZ());
+  plant.AddJoint<RevoluteJoint>("world_B", plant.world_body(), X_offset, body_B,
+                                {}, Vector3d::UnitZ());
+  plant.AddJoint<RevoluteJoint>("A_B", body_A, X_offset, body_B, {},
+                                Vector3d::UnitZ());
+  plant.Finalize();
+  ASSERT_EQ(plant.num_bodies(), 4);  // World, A, B, and a shadow.
+  const RigidBody<double>& shadow = plant.get_body(BodyIndex(3));
+  ASSERT_TRUE(shadow.is_ephemeral());
+  const RigidBody<double>& primary =
+      plant.get_body(multibody::internal::GetInternalTree(plant)
+                         .graph()
+                         .link_by_index(shadow.index())
+                         .primary_link());
+  ASSERT_NE(&primary, &shadow);
+
+  constexpr double kStiffness = 100.0;  // 1/s².
+  MeshcatMouseSpring spring(geometry::GetTestEnvironmentMeshcat(), &plant,
+                            scene_graph, kStiffness);
+  // The shadow's frame in SceneGraph carries its name, as for any other body.
+  const Vector3d anchor(0.1, 0.2, 0.0);
+  const Vector3d target(0.4, 0.2, 0.0);
+  const Meshcat::VirtualSpringKinematics drag{
+      .path = "/drake/visualizer/" + shadow.name(),
+      .body_point_in_world = anchor,
+      .target_point_in_world = target};
+  const std::vector<RigidTransformd> poses(plant.num_bodies(),
+                                           RigidTransformd::Identity());
+  const std::vector<SpatialVelocity<double>> velocities(
+      plant.num_bodies(), SpatialVelocity<double>::Zero());
+
+  const auto forces = MeshcatMouseSpringTester::CalcAppliedSpatialForce(
+      spring, drag, poses, velocities);
+  ASSERT_EQ(forces.size(), 1);
+  EXPECT_EQ(forces[0].body_index, shadow.index());
+  EXPECT_TRUE(CompareMatrices(forces[0].p_BoBq_B, anchor, 1e-12));
+  EXPECT_TRUE(CompareMatrices(
+      forces[0].F_Bq_W.translational(),
+      primary.default_mass() * kStiffness * (target - anchor), 1e-12));
 }
 
 // When a shorter segment ("body") and a longer, more-specific one ("m1/body")

@@ -26,10 +26,13 @@ InertiaVisualizer<T>::InertiaVisualizer(
   DRAKE_THROW_UNLESS(scene_graph != nullptr);
   source_id_ = scene_graph->RegisterSource("inertia_visualizer");
 
-  // For all MbP bodies, except for those welded to the world ...
+  // For all MbP bodies, except for those welded to the world and any shadow
+  // bodies (which come last) ... A shadow body, which Finalize() adds to break
+  // a kinematic loop, has no mass properties of its own; the ellipsoid of the
+  // body it was split from shows the full mass.
   const std::vector<const multibody::RigidBody<T>*> world_bodies =
       plant.GetBodiesWeldedTo(plant.world_body());
-  const int num_bodies = plant.num_bodies();
+  const int num_bodies = plant.num_user_bodies();
   for (multibody::BodyIndex i{0}; i < num_bodies; ++i) {
     bool welded = false;
     for (const auto* world_body : world_bodies) {
