@@ -361,6 +361,7 @@ drake_cc_library(
     hdrs = ["multibody_plant_config.h"],
     deps = [
         "//common:name_value",
+        "//common:unchanged",
     ],
 )
 
