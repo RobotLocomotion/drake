@@ -1,8 +1,10 @@
 #pragma once
 
 #include <string>
+#include <variant>
 
 #include "drake/common/name_value.h"
+#include "drake/common/schema/unchanged.h"
 
 namespace drake {
 namespace multibody {
@@ -35,8 +37,13 @@ struct MultibodyPlantConfig {
   double time_step{0.001};
 
   /// Configures the MultibodyPlant::SetUseSampledOutputPorts().
-  /// Ignored when the time_step is zero.
-  bool use_sampled_output_ports{true};
+  /// When set to Unchanged, the MultibodyPlant setting remains unchanged
+  /// (sampled for a discrete-time plant, live for a continuous-time plant).
+  /// For a continuous-time plant, `true` is only useful with an integrator
+  /// that records samples (e.g., CenicIntegrator, which reports the forces of
+  /// its own solve); any other integrator will refuse to initialize.
+  std::variant<bool, schema::Unchanged> use_sampled_output_ports{
+      schema::Unchanged{}};
 
   // TODO(amcastro-tri): deprecate. Defaults should always come from
   // DefaultProximityProperties.

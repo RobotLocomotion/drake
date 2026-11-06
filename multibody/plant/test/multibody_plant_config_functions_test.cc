@@ -112,6 +112,57 @@ GTEST_TEST(MultibodyPlantConfigFunctionsTest, YamlTest) {
   // can't test them.
 }
 
+GTEST_TEST(MultibodyPlantConfigFunctionsTest, YamlSampledOutputPortsTest) {
+  // Returns whether the given YAML config uses sampled output ports.
+  auto is_sampled = [](const char* yaml) {
+    const auto config = LoadYamlString<MultibodyPlantConfig>(
+        yaml, {}, {}, yaml::LoadYamlOptions{.allow_cpp_with_no_yaml = true});
+    MultibodyPlant<double> plant(config.time_step);
+    ApplyMultibodyPlantConfig(config, &plant);
+    return plant.has_sampled_output_ports();
+  };
+
+  // True means true, no matter the time_step. (A continuous plant with sampled
+  // output ports is only useful with an integrator that records samples, e.g.,
+  // CenicIntegrator.)
+  EXPECT_TRUE(is_sampled(R"""(
+time_step: 0.1
+use_sampled_output_ports: true
+)"""));
+  EXPECT_TRUE(is_sampled(R"""(
+time_step: 0.0
+use_sampled_output_ports: true
+)"""));
+
+  // False means false, no matter the time_step.
+  EXPECT_FALSE(is_sampled(R"""(
+time_step: 0.1
+use_sampled_output_ports: false
+)"""));
+  EXPECT_FALSE(is_sampled(R"""(
+time_step: 0.0
+use_sampled_output_ports: false
+)"""));
+
+  // Unchanged leaves the MbP default intact.
+  EXPECT_TRUE(is_sampled(R"""(
+time_step: 0.1
+use_sampled_output_ports: !Unchanged {}
+)"""));
+  EXPECT_FALSE(is_sampled(R"""(
+time_step: 0.0
+use_sampled_output_ports: !Unchanged {}
+)"""));
+
+  // Silence also leaves the MbP default intact.
+  EXPECT_TRUE(is_sampled(R"""(
+time_step: 0.1
+)"""));
+  EXPECT_FALSE(is_sampled(R"""(
+time_step: 0.0
+)"""));
+}
+
 GTEST_TEST(MultibodyPlantConfigFunctionsTest, ContactModelTest) {
   std::vector<std::pair<const char*, ContactModel>> known_values{
       std::pair("point", ContactModel::kPointContactOnly),

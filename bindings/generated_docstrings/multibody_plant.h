@@ -1916,10 +1916,11 @@ used in the last time step, or we could recalculate the acceleration
 to immediately reflect the changing forces. We call the former a
 "sampled" port and the latter a "live" port.
 
-For a continuous-time plant, there is no distinction -- the output
-port is always live -- it immediately reflects the instantaneous input
-value. It is a "direct feedthrough" output port (see
-SystemBase∷GetDirectFeedthroughs()).
+For a continuous-time plant, the output ports are live by default --
+they immediately reflect the instantaneous input value. They are
+"direct feedthrough" output ports (see
+SystemBase∷GetDirectFeedthroughs()). Optionally, a continuous-time
+plant can be configured for sampled output ports (see below).
 
 For a discrete-time plant, the user can choose whether the output
 should be sampled or live: Use the function SetUseSampledOutputPorts()
@@ -1960,6 +1961,30 @@ either use a continuous-time plant, set the config option
 ``use_sampled_output_ports=false``, or use ExecuteForcedEvents() to
 force a dynamics step and then the outputs (and positions) will
 change.
+
+** Sampled output ports for a continuous-time plant
+
+A continuous-time plant does not take discrete steps itself, so it has
+no natural sample to record. However, some integrators advance the
+plant with a contact model of their own rather than by integrating the
+plant's continuous dynamics; in particular CenicIntegrator solves a
+convex contact problem at each step. For such an integrator the
+plant's live dynamics output ports (which report the plant's compliant
+continuous contact model) are inconsistent with the trajectory
+actually being simulated. Calling SetUseSampledOutputPorts(true) on a
+continuous-time plant declares the same sample state variable ``s``
+used by discrete-time plants and switches the dynamics output ports to
+report it. It is then the integrator's responsibility to record ``s``
+on every step it takes; CenicIntegrator records the contact and
+constraint forces of the convex problem that produced the current
+state. Before the first step the dynamics output ports report zero
+forces, zero accelerations, and empty contact results. If the
+integrator in use does not record samples they would stay that way
+forever, so a systems∷Simulator throws when it is initialized (see
+systems∷Simulator∷Initialize()) with such an integrator. As with a
+discrete-time plant, the presence of ``s`` means the Context is no
+longer purely continuous, which some Drake features (e.g.,
+linearization) do not support.
 
 **** Actuation
 
@@ -7312,17 +7337,16 @@ Raises:
         struct /* SetUseSampledOutputPorts */ {
           // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
-R"""((Advanced) For a discrete-time plant, configures whether the output
-ports are sampled (the default) or live (opt-in). See
+R"""((Advanced) Configures whether the dynamics output ports are sampled or
+live. For a discrete-time plant, sampled is the default and live is
+opt-in. For a continuous-time plant, live is the default and sampled
+is opt-in; sampled output ports on a continuous-time plant are only
+useful when the plant is advanced by an integrator that records the
+sample (at present, only CenicIntegrator does so). See
 output_port_sampling "Output port sampling" for details.
 
 Raises:
-    RuntimeError if the plant is already finalized.
-
-Raises:
-    RuntimeError if ``use_sampled_output_ports`` is ``True`` but
-    ``this`` MultibodyPlant is not a discrete model (is_discrete() ==
-    false).)""";
+    RuntimeError if the plant is already finalized.)""";
         } SetUseSampledOutputPorts;
         // Symbol: drake::multibody::MultibodyPlant::SetVelocities
         struct /* SetVelocities */ {
@@ -7573,8 +7597,10 @@ spatial accelerations is indexed by BodyIndex, and it has size
 num_bodies(). BodyIndex "zero" (0) always corresponds to the world
 body, with zero spatial acceleration at all times.
 
-In a discrete-time plant, the use_sampled_output_ports setting affects
-the output of this port. See output_port_sampling "Output port
+The use_sampled_output_ports setting affects the output of this port.
+(For a continuous-time plant, sampling is opt-in via
+SetUseSampledOutputPorts() and requires an integrator that records
+samples, i.e., CenicIntegrator.) See output_port_sampling "Output port
 sampling" for details. When sampling is enabled and the plant has not
 yet taken a step, the output value will be all zeros.
 
@@ -7654,8 +7680,10 @@ the smallest of the two time scales ``tc`` and ``tn``.)""";
 R"""(Returns an AbstractValue "abstract-valued" output port containing a
 ContactResults.
 
-In a discrete-time plant, the use_sampled_output_ports setting affects
-the output of this port. See output_port_sampling "Output port
+The use_sampled_output_ports setting affects the output of this port.
+(For a continuous-time plant, sampling is opt-in via
+SetUseSampledOutputPorts() and requires an integrator that records
+samples, i.e., CenicIntegrator.) See output_port_sampling "Output port
 sampling" for details. When sampling is enabled and the plant has not
 yet taken a step, the output value will be empty (no contacts).
 
@@ -7801,8 +7829,10 @@ R"""(Reports the generalized accelerations v̇ of the model as a
 systems∷BasicVector<T> "vector-valued" output port of size
 num_velocities().
 
-In a discrete-time plant, the use_sampled_output_ports setting affects
-the output of this port. See output_port_sampling "Output port
+The use_sampled_output_ports setting affects the output of this port.
+(For a continuous-time plant, sampling is opt-in via
+SetUseSampledOutputPorts() and requires an integrator that records
+samples, i.e., CenicIntegrator.) See output_port_sampling "Output port
 sampling" for details. When sampling is enabled and the plant has not
 yet taken a step, the output value will be all zeros.
 
@@ -7818,8 +7848,10 @@ R"""(Reports the generalized accelerations v̇ᵢ for the given
 output port of size num_velocities(ModelInstanceIndex) const
 "num_velocities(model_instance)".
 
-In a discrete-time plant, the use_sampled_output_ports setting affects
-the output of this port. See output_port_sampling "Output port
+The use_sampled_output_ports setting affects the output of this port.
+(For a continuous-time plant, sampling is opt-in via
+SetUseSampledOutputPorts() and requires an integrator that records
+samples, i.e., CenicIntegrator.) See output_port_sampling "Output port
 sampling" for details. When sampling is enabled and the plant has not
 yet taken a step, the output value will be all zeros.
 
@@ -7841,8 +7873,10 @@ R"""(Reports the generalized contact forces for the given
 port of size num_actuated_dofs(ModelInstanceIndex) const
 "num_actuated_dofs(model_instance)".
 
-In a discrete-time plant, the use_sampled_output_ports setting affects
-the output of this port. See output_port_sampling "Output port
+The use_sampled_output_ports setting affects the output of this port.
+(For a continuous-time plant, sampling is opt-in via
+SetUseSampledOutputPorts() and requires an integrator that records
+samples, i.e., CenicIntegrator.) See output_port_sampling "Output port
 sampling" for details. When sampling is enabled and the plant has not
 yet taken a step, the output value will be all zeros.
 
@@ -7930,8 +7964,10 @@ be found at offset JointActuator∷input_start() in this vector. Models
 that include PD controllers will include their contribution in this
 port, refer to mbp_actuation "Actuation" for further details.
 
-In a discrete-time plant, the use_sampled_output_ports setting affects
-the output of this port. See output_port_sampling "Output port
+The use_sampled_output_ports setting affects the output of this port.
+(For a continuous-time plant, sampling is opt-in via
+SetUseSampledOutputPorts() and requires an integrator that records
+samples, i.e., CenicIntegrator.) See output_port_sampling "Output port
 sampling" for details. When sampling is enabled and the plant has not
 yet taken a step, the output value will be all zeros.
 
@@ -7960,8 +7996,10 @@ Every model instance in ``this`` plant model has a net actuation
 output port, even if zero sized (for model instance with no
 actuators).
 
-In a discrete-time plant, the use_sampled_output_ports setting affects
-the output of this port. See output_port_sampling "Output port
+The use_sampled_output_ports setting affects the output of this port.
+(For a continuous-time plant, sampling is opt-in via
+SetUseSampledOutputPorts() and requires an integrator that records
+samples, i.e., CenicIntegrator.) See output_port_sampling "Output port
 sampling" for details. When sampling is enabled and the plant has not
 yet taken a step, the output value will be all zeros.
 
@@ -8003,8 +8041,10 @@ force ``F_CJc_Jc`` applied on the joint's child body C
 (Joint∷child_body()), at the joint's child frame ``Jc``
 (Joint∷frame_on_child()) and expressed in frame ``Jc``.
 
-In a discrete-time plant, the use_sampled_output_ports setting affects
-the output of this port. See output_port_sampling "Output port
+The use_sampled_output_ports setting affects the output of this port.
+(For a continuous-time plant, sampling is opt-in via
+SetUseSampledOutputPorts() and requires an integrator that records
+samples, i.e., CenicIntegrator.) See output_port_sampling "Output port
 sampling" for details. When sampling is enabled and the plant has not
 yet taken a step, the output value will be all zeros.
 
@@ -8167,11 +8207,12 @@ removed using RemoveJointActuator().)""";
         struct /* has_sampled_output_ports */ {
           // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
-R"""((Advanced) If ``this`` plant is continuous (i.e., is_discrete() is
-``False``), returns false. If ``this`` plant is discrete, returns
-whether or not the output ports are sampled (change only at a time
-step boundary) or live (instantaneously reflect changes to the input
-ports). See output_port_sampling "Output port sampling" for details.)""";
+R"""((Advanced) Returns whether or not the dynamics output ports are
+sampled (change only at a time step boundary) or live (instantaneously
+reflect changes to the input ports). A discrete plant is sampled
+unless configured otherwise; a continuous plant is live unless
+SetUseSampledOutputPorts(true) was called. See output_port_sampling
+"Output port sampling" for details.)""";
         } has_sampled_output_ports;
         // Symbol: drake::multibody::MultibodyPlant::is_finalized
         struct /* is_finalized */ {
@@ -8710,8 +8751,12 @@ cases.)""";
         struct /* use_sampled_output_ports */ {
           // Source: drake/multibody/plant/multibody_plant_config.h
           const char* doc =
-R"""(Configures the MultibodyPlant∷SetUseSampledOutputPorts(). Ignored when
-the time_step is zero.)""";
+R"""(Configures the MultibodyPlant∷SetUseSampledOutputPorts(). When set to
+Unchanged, the MultibodyPlant setting remains unchanged (sampled for a
+discrete-time plant, live for a continuous-time plant). For a
+continuous-time plant, ``True`` is only useful with an integrator that
+records samples (e.g., CenicIntegrator, which reports the forces of
+its own solve); any other integrator will refuse to initialize.)""";
         } use_sampled_output_ports;
         auto Serialize__fields() const {
           return std::array{
