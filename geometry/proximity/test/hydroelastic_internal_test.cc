@@ -591,6 +591,24 @@ TEST_F(HydroelasticRigidGeometryTest, Sphere) {
   }
 }
 
+// When a property that can be set from a model file is missing, the error
+// message names the model file tag that provides it (see #18118).
+TEST_F(HydroelasticRigidGeometryTest, MissingPropertyNamesModelFileTag) {
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      MakeRigidRepresentation(Sphere(0.5), ProximityProperties()),
+      "Cannot create rigid Sphere; missing the \\('hydroelastic', "
+      "'resolution_hint'\\) property. When parsing a model file \\(SDFormat "
+      "or URDF\\), it can be provided via the <drake:mesh_resolution_hint> "
+      "tag inside <drake:proximity_properties>.");
+
+  ProximityProperties no_modulus;
+  no_modulus.AddProperty(kHydroGroup, kRezHint, 0.5);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      MakeCompliantRepresentation(Sphere(0.5), no_modulus),
+      "Cannot create compliant Sphere; missing the \\('hydroelastic', "
+      "'hydroelastic_modulus'\\) property. .*<drake:hydroelastic_modulus>.*");
+}
+
 // Confirm support for a rigid Box. Tests that a hydroelastic representation
 // is made, and samples the representation to look for evidence of it being the
 // *right* representation.
@@ -933,7 +951,7 @@ void TestPropertyErrors(
   {
     DRAKE_EXPECT_THROWS_MESSAGE(
         maker(shape_spec, props),
-        fmt::format("Cannot create {} {}.+'{}'\\) property", compliance,
+        fmt::format("Cannot create {} {}.+'{}'\\) property\\..*", compliance,
                     shape_name, property_name));
   }
 
@@ -1023,7 +1041,7 @@ TEST_F(HydroelasticCompliantGeometryTest, HalfSpace) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       MakeCompliantRepresentation(HalfSpace(), properties),
       "Cannot create compliant HalfSpace; missing the .*slab_thickness.* "
-      "property");
+      "property\\.");
 
   // Case: fully specified half space.
   const double thickness = 1.3;

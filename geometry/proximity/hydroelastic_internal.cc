@@ -5,6 +5,7 @@
 #include <map>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include <fmt/format.h>
@@ -224,6 +225,24 @@ void Geometries::AddGeometry(GeometryId id, RigidGeometry geometry) {
 
 namespace {
 
+// Returns a sentence (with a leading space) telling the user which model file
+// tag sets the given property, or an empty string if there is no such tag.
+std::string ModelFileTagHint(std::string_view group_name,
+                             std::string_view property_name) {
+  if (group_name != kHydroGroup) return {};
+  const char* tag = nullptr;
+  if (property_name == kRezHint) {
+    tag = "drake:mesh_resolution_hint";
+  } else if (property_name == kElastic) {
+    tag = "drake:hydroelastic_modulus";
+  }
+  if (tag == nullptr) return {};
+  return fmt::format(
+      " When parsing a model file (SDFormat or URDF), it can be provided via "
+      "the <{}> tag inside <drake:proximity_properties>.",
+      tag);
+}
+
 // Validator interface for use with extracting valid properties. It is
 // instantiated with shape (e.g., "Sphere", "Box", etc.) and compliance (i.e.,
 // "rigid" or "compliant") strings (to help give intelligible error messages)
@@ -252,8 +271,9 @@ class Validator {
     const bool has_default = default_value.has_value();
     if (!has_default && !props.HasProperty(group_name, property_name)) {
       throw std::logic_error(
-          fmt::format("Cannot create {} {}; missing the {} property",
-                      compliance(), shape_name(), full_property_name));
+          fmt::format("Cannot create {} {}; missing the {} property.{}",
+                      compliance(), shape_name(), full_property_name,
+                      ModelFileTagHint(group_name, property_name)));
     }
     const ValueType value =
         has_default ? props.GetPropertyOrDefault(group_name, property_name,
