@@ -4986,10 +4986,13 @@ See also:
           // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Returns a list of actuated joint indices associated with
-``model_instance``.
+``model_instance``. The vector is ordered by the actuators'
+JointActuatorIndex (i.e., it is parallel to
+GetJointActuatorIndices(model_instance)). This may be called either
+pre- or post-finalize.
 
 Raises:
-    RuntimeError if called pre-finalize.)""";
+    RuntimeError if ``model_instance`` does not exist.)""";
         } GetActuatedJointIndices;
         // Symbol: drake::multibody::MultibodyPlant::GetActuationFromArray
         struct /* GetActuationFromArray */ {
@@ -5510,10 +5513,10 @@ general not be consecutive due to actuators that were removed.)""";
           const char* doc_1args =
 R"""(Returns a list of joint actuator indices associated with
 ``model_instance``. The vector is ordered by monotonically increasing
-JointActuatorIndex.
+JointActuatorIndex. This may be called either pre- or post-finalize.
 
 Raises:
-    RuntimeError if called pre-finalize.)""";
+    RuntimeError if ``model_instance`` does not exist.)""";
         } GetJointActuatorIndices;
         // Symbol: drake::multibody::MultibodyPlant::GetJointByName
         struct /* GetJointByName */ {
