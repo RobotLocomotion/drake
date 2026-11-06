@@ -224,7 +224,8 @@ properties, and a shadow has none. */
 SpatialInertia<double> GetSpatialInertiaShare(
     const MultibodyPlant<double>& plant,
     const systems::Context<double>& context, const Link<double>& link) {
-  return GetInternalTree(plant).EvalLinkSpatialInertiaShare(context, link);
+  return GetInternalTree(plant).EvalFrameBodyPoses(context).get_M_LLo_L(
+      link.ordinal());
 }
 
 /* The four-bar's kinematic loop is handled by splitting the coupler link's mass
