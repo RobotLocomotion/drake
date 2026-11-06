@@ -6,6 +6,7 @@ load(
     "@drake//tools/skylark:py.bzl",
     "py_binary",
 )
+load("@drake//tools/workspace:generate_file.bzl", "generate_file")
 load(
     "@drake//tools/workspace/vtk_internal:rules.bzl",
     "compile_all_modules",
@@ -71,15 +72,27 @@ compile_all_modules()
 
 # We offer some (unbuilt by default) programs to help with debugging.
 
+# The vtkProbeOpenGLVersion program uses VTK's own main(), so it can't call
+# drake::internal::VtkOpenGlInit(). Instead, it registers the OpenGL factory
+# overrides via a global VTK_MODULE_INIT. Drake code must never do this.
+generate_file(
+    name = "drake_debugging_programs/vtk_opengl_init_global.cc",
+    content = """
+#include <vtkAutoInit.h>
+VTK_MODULE_INIT(vtkRenderingOpenGL2)
+""",
+)
+
 cc_binary(
     name = "vtkProbeOpenGLVersion",
     srcs = [
         "Rendering/OpenGL2/vtkProbeOpenGLVersion.cxx",
+        "drake_debugging_programs/vtk_opengl_init_global.cc",
     ],
     linkstatic = True,
     deps = [
+        ":vtkCommonCore",
         ":vtkRenderingOpenGL2",
-        "@drake//tools/workspace/vtk_internal:vtk_opengl_init",
     ],
 )
 

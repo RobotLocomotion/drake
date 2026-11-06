@@ -26,16 +26,13 @@ cc_nolink_library(
 drake_cc_library(
     name = "vtk_opengl_init",
     srcs = ["vtk_opengl_init.cc"],
+    hdrs = ["vtk_opengl_init.h"],
     internal = True,
-    visibility = [
-        "//:__subpackages__",
-        "@vtk_internal//:__subpackages__",
-    ],
+    visibility = ["//:__subpackages__"],
     deps = [
         "@vtk_internal//:vtkCommonCore",
         "@vtk_internal//:vtkRenderingOpenGL2",
     ],
-    alwayslink = True,
 )
 
 drake_cc_googletest(
