@@ -95,9 +95,10 @@ of the step. When false (the default), they are linearized with
 respect to velocity using finite differences so that they can be
 treated implicitly, which requires re-evaluating all upstream systems
 several times per step. Setting this to true skips that work, which is
-useful when the inputs come from expensive external systems (e.g.,
-when using fixed-step CENIC in place of discrete mode). It may reduce
-stability for stiff feedback controllers.)""";
+useful when the inputs come from expensive external systems, at the
+cost of reduced stability for stiff feedback controllers. This is
+independent of any other choice, e.g., it is valid with or without
+error control.)""";
             } explicit_external_inputs;
             // Symbol: drake::multibody::contact_solvers::icf::IcfSolverParameters::hessian_reuse_target_iterations
             struct /* hessian_reuse_target_iterations */ {
