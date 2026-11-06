@@ -4507,15 +4507,25 @@ demonstrate how to model various joints that have a flexible (e.g.,
 rubber) mount. The damping values below with ? may be set to 0 or a
 reasonable positive number.
 
-Bushing type | torque constants | force constants
---------------------------------|:--------------------|:------------------
-z-axis revolute joint | k₀₁₂ = ``[k₀ k₁ 0]`` | kxyz = ``[kx ky kz]`` ^
-| d₀₁₂ = ``[d₀ d₁ ?]`` | dxyz = ``[dx dy dz]`` x-axis prismatic joint
-| k₀₁₂ = ``[k₀ k₁ k₂]`` | kxyz = ``[0 ky kz]`` ^ | d₀₁₂ = ``[d₀ d₁
-d₂]`` | dxyz = ``[? dy dz]`` Ball and socket joint | k₀₁₂ = ``[0 0
-0]`` | kxyz = ``[kx ky kz]`` ^ | d₀₁₂ = ``[? ? ?]`` | dxyz = ``[dx dy
-dz]`` Weld/fixed joint | k₀₁₂ = ``[k₀ k₁ k₂]`` | kxyz = ``[kx ky kz]``
-^ | d₀₁₂ = ``[d₀ d₁ d₂]`` | dxyz = ``[dx dy dz]``
++------------------------+-----------------------+-----------------------+
+| Bushing type           | torque constants      | force constants       |
++========================+=======================+=======================+
+| z-axis revolute joint  | k₀₁₂ = ``[k₀ k₁ 0]``  | kxyz = ``[kx ky kz]`` |
+|                        +-----------------------+-----------------------+
+|                        | d₀₁₂ = ``[d₀ d₁ ?]``  | dxyz = ``[dx dy dz]`` |
++------------------------+-----------------------+-----------------------+
+| x-axis prismatic joint | k₀₁₂ = ``[k₀ k₁ k₂]`` | kxyz = ``[0 ky kz]``  |
+|                        +-----------------------+-----------------------+
+|                        | d₀₁₂ = ``[d₀ d₁ d₂]`` | dxyz = ``[? dy dz]``  |
++------------------------+-----------------------+-----------------------+
+| Ball and socket joint  | k₀₁₂ = ``[0 0 0]``    | kxyz = ``[kx ky kz]`` |
+|                        +-----------------------+-----------------------+
+|                        | d₀₁₂ = ``[? ? ?]``    | dxyz = ``[dx dy dz]`` |
++------------------------+-----------------------+-----------------------+
+| Weld/fixed joint       | k₀₁₂ = ``[k₀ k₁ k₂]`` | kxyz = ``[kx ky kz]`` |
+|                        +-----------------------+-----------------------+
+|                        | d₀₁₂ = ``[d₀ d₁ d₂]`` | dxyz = ``[dx dy dz]`` |
++------------------------+-----------------------+-----------------------+
 
 Angles q₀, q₁, q₂ are calculated from frame C's orientation relative
 to frame A, with ``[−π < q₀ ≤ π, −π/2 ≤ q₁ ≤ π/2, −π < q₂ ≤ π]``,
@@ -4718,9 +4728,23 @@ a photovoltaic application". Another reference is
 https://courses.grainger.illinois.edu/ece486/sp2020/laboratory/docs/lab2/estimates.html
 - When ζ ≈ 1 (critically damped), ωₙ is determined by choosing a
 settling ratio and then solving for (ωₙ tₛ) via the nonlinear
-algebraic equation (1 + ωₙ tₛ)*exp(-ωₙ tₛ) = settling_ratio. Settling
-ratio | ωₙ -------------- | ------------- 0.01 | 6.64 / tₛ 0.02 | 5.83
-/ tₛ 0.05 | 4.74 / tₛ 0.10 | 3.89 / tₛ See
+algebraic equation (1 + ωₙ tₛ)*exp(-ωₙ tₛ) = settling_ratio.
+
+  .. list-table::
+     :header-rows: 1
+
+     * - Settling ratio
+       - ωₙ
+     * - 0.01
+       - 6.64 / tₛ
+     * - 0.02
+       - 5.83 / tₛ
+     * - 0.05
+       - 4.74 / tₛ
+     * - 0.10
+       - 3.89 / tₛ
+
+See
 https://electronics.stackexchange.com/questions/296567/over-and-critically-damped-systems-settling-time
 - When ζ ≥ 1.01 (overdamped), ωₙ ≈ -ln(2 settling_ratio sz/s₂) / (s₁
 tₛ) where sz = √(ζ² - 1), s₁ = ζ - sz, s₂ = ζ + sz. The derivation and
@@ -4786,14 +4810,43 @@ exp(p₂ t) ≈ 0 (which is why p₁ is called the "dominant pole"). Next,
 The table below shows that there is little error in this approximate
 formula for various settling ratios and ζ, particularly for ζ ≥ 1.1.
 For 1.0 ≤ ζ < 1.1, the critical damping estimates of ωₙ work well.
-Settling ratio | ζ = 1.01 | ζ = 1.1 | ζ = 1.2 | ζ = 1.3 | ζ = 1.5
--------------- | -------- | ------- | ------- | ------- | --------
-0.01 | 1.98% | 0.005% | 2.9E-5% | 1.6E-7% | 2.4E-12% 0.02 | 2.91% |
-0.016% | 1.8E-4% | 2.1E-6% | 1.6E-10% 0.05 | 5.10% | 0.076% | 2.3E-3%
-| 7.0E-5% | 4.4E-8% 0.10 | 8.28% | 0.258% | 1.6E-2% | 1.0E-3% |
-3.3E-6% Note: There is a related derivation in the reference below,
-however, it needlessly makes the oversimplified approximation k/(k -
-1) ≈ 1.
+
+.. list-table::
+   :header-rows: 1
+
+   * - Settling ratio
+     - ζ = 1.01
+     - ζ = 1.1
+     - ζ = 1.2
+     - ζ = 1.3
+     - ζ = 1.5
+   * - 0.01
+     - 1.98%
+     - 0.005%
+     - 2.9E-5%
+     - 1.6E-7%
+     - 2.4E-12%
+   * - 0.02
+     - 2.91%
+     - 0.016%
+     - 1.8E-4%
+     - 2.1E-6%
+     - 1.6E-10%
+   * - 0.05
+     - 5.10%
+     - 0.076%
+     - 2.3E-3%
+     - 7.0E-5%
+     - 4.4E-8%
+   * - 0.10
+     - 8.28%
+     - 0.258%
+     - 1.6E-2%
+     - 1.0E-3%
+     - 3.3E-6%
+
+Note: There is a related derivation in the reference below, however,
+it needlessly makes the oversimplified approximation k/(k - 1) ≈ 1.
 https://electronics.stackexchange.com/questions/296567/over-and-critically-damped-systems-settling-time
 
 Note:

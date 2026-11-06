@@ -107,12 +107,19 @@ Note:
     This function allows for initial misalignment of Nx, Ny, Nz and
     Bx, By, Bz.
 
-| Return values | Description
-|---------------|------------------------------------------------- |
-quat_NB | Quaternion [e0, e1, e2, e3] relating frame N to frame B. |
-quatDt | Time-derivative of quat_NB, i.e., [ė0, ė1, ė2, ė3]. |
-w_NB_B | B's angular velocity in N, expressed in B. | alpha_NB_B | B's
-angular acceleration in N, expressed in B.
+.. list-table::
+   :header-rows: 1
+
+   * - Return values
+     - Description
+   * - quat_NB
+     - Quaternion [e0, e1, e2, e3] relating frame N to frame B.
+   * - quatDt
+     - Time-derivative of quat_NB, i.e., [ė0, ė1, ė2, ė3].
+   * - w_NB_B
+     - B's angular velocity in N, expressed in B.
+   * - alpha_NB_B
+     - B's angular acceleration in N, expressed in B.
 
 Note: quat_NB is analogous to the rotation matrix R_NB.
 
@@ -134,11 +141,17 @@ Parameter ``t``:
 Returns:
     Machine-precision values at time t are returned as defined below.
 
-std∷tuple | Description
------------|-----------------------------------------------------------
-xyz | Vector3d [x, y, z], Bcm's position from No, expressed in N.
-xyzDt | Vector3d [ẋ, ẏ, ż] Bcm's velocity in N, expressed in N.
-xyzDDt | Vector3d [ẍ ÿ z̈], Bcm's acceleration in N, expressed in N.)""";
+.. list-table::
+   :header-rows: 1
+
+   * - std∷tuple
+     - Description
+   * - xyz
+     - Vector3d [x, y, z], Bcm's position from No, expressed in N.
+   * - xyzDt
+     - Vector3d [ẋ, ẏ, ż] Bcm's velocity in N, expressed in N.
+   * - xyzDDt
+     - Vector3d [ẍ ÿ z̈], Bcm's acceleration in N, expressed in N.)""";
             } CalculateExactTranslationalSolution;
             // Symbol: drake::multibody::benchmarks::free_body::FreeBody::FreeBody
             struct /* ctor */ {

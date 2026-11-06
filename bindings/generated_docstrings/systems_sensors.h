@@ -2731,11 +2731,21 @@ For example, with the following constructor settings: - capture_offset
 
 We have the following timing schedule:
 
-| Time | Event | Current output images | | :----: | :-----: |
-:----------------------: | | 0 ms | capture | empty (i.e., zero-sized)
-| | 50 ms | output | the scene as of 0 ms | | 200 ms | capture | ^ | |
-250 ms | output | the scene as of 200 ms | | 400 ms | capture | ^ | |
-... | ... | ... |
++--------+---------+--------------------------+
+| Time   | Event   | Current output images    |
++========+=========+==========================+
+| 0 ms   | capture | empty (i.e., zero-sized) |
++--------+---------+--------------------------+
+| 50 ms  | output  | the scene as of 0 ms     |
++--------+---------+                          |
+| 200 ms | capture |                          |
++--------+---------+--------------------------+
+| 250 ms | output  | the scene as of 200 ms   |
++--------+---------+                          |
+| 400 ms | capture |                          |
++--------+---------+--------------------------+
+| ...    | ...     | ...                      |
++--------+---------+--------------------------+
 
 The ``capture_offset`` is typically zero, but can be useful to stagger
 multiple cameras in the same scene to trigger at different times if
