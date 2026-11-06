@@ -1,0 +1,384 @@
+directives:
+- add_frame:
+    name: house_frame
+    X_PF:
+      base_frame: world
+      translation: [0, 0, 0]
+- add_frame:
+    name: room_office_frame
+    X_PF:
+      base_frame: house_frame
+      translation: [2.4, 1.9, 0]
+- add_model:
+    name: room_geometry_office
+    file: package://scenesmith_scenes/home_office_desk_tidy/shared/room_geometry/room_geometry_office.sdf
+- add_model:
+    name: office_writing_desk_0
+    file: package://scenesmith_scenes/home_office_desk_tidy/shared/derived/scenesmith_models/furniture/desk/desk__s1p0857.sdf
+- add_weld:
+    parent: room_office_frame
+    child: office_writing_desk_0::base_link
+    X_PC:
+      translation: [-2.015371446643158, 0.9370255811427508, -0.0010898694003687777]
+      rotation: !AngleAxis
+        angle_deg: 89.99999999944231
+        axis: [4.308917238985796e-07, -5.064892123207688e-07, -0.999999999999779]
+- add_model:
+    name: office_bookshelf_0
+    file: package://scenesmith_scenes/home_office_desk_tidy/shared/derived/scenesmith_models/furniture/shelving_unit/shelving_unit__s0p8215.sdf
+- add_weld:
+    parent: room_office_frame
+    child: office_bookshelf_0::base_link
+    X_PC:
+      translation: [1.6560627014350078, 1.6584495153966756, 0.0008098373717784565]
+      rotation: !AngleAxis
+        angle_deg: 179.99999971586786
+        axis: [-8.861643147174063e-08, -3.920961186635197e-08, 0.9999999999999953]
+- add_model:
+    name: office_cabinet_0
+    file: package://scenesmith_scenes/home_office_desk_tidy/shared/derived/scenesmith_models/furniture/supply_cabinet/supply_cabinet__s0p9242.sdf
+- add_weld:
+    parent: room_office_frame
+    child: office_cabinet_0::base_link
+    X_PC:
+      translation: [2.1329851876466703, -1.1822003908869674, -7.362567112858275e-05]
+      rotation: !AngleAxis
+        angle_deg: 89.99999775689058
+        axis: [-4.0339328922419155e-07, 2.3507783643277393e-07, 0.9999999999998911]
+- add_model:
+    name: office_desk_chair_0
+    file: package://scenesmith_scenes/home_office_desk_tidy/shared/derived/scenesmith_models/furniture/visitor_chair/visitor_chair__s0p9455.sdf
+- add_weld:
+    parent: room_office_frame
+    child: office_desk_chair_0::base_link
+    X_PC:
+      translation: [-1.7193253416842988, 0.9646008067412467, 0.002252928173943161]
+      rotation: !AngleAxis
+        angle_deg: 90.05001264908708
+        axis: [0.0031428160037660895, 0.0016746316106277907, 0.9999936591381643]
+- add_model:
+    name: office_print_0
+    file: package://scenesmith_scenes/home_office_desk_tidy/shared/room_office/generated_assets/wall_mounted/sdf/print_1784674070535607518/print.sdf
+- add_weld:
+    parent: room_office_frame
+    child: office_print_0::base_link
+    X_PC:
+      translation: [-1.0075151280783916, -1.8499999999999999, 1.4551897018528661]
+      rotation: !AngleAxis
+        angle_deg: 0.5370339525035637
+        axis: [6.123233995736767e-17, -1.0, -1.3065576013664153e-14]
+- add_model:
+    name: office_whiteboard_0
+    file: package://scenesmith_scenes/home_office_desk_tidy/shared/derived/scenesmith_models/wall/whiteboard_1768009744__07d8f79169/whiteboard_1768009744__07d8f79169__s1p0065.sdf
+- add_weld:
+    parent: room_office_frame
+    child: office_whiteboard_0::base_link
+    X_PC:
+      translation: [-2.35, 0.6764532905524026, 1.465509968327554]
+      rotation: !AngleAxis
+        angle_deg: 90.00173410895889
+        axis: [0.005501363005518895, 0.005501363005518895, -0.9999697345470827]
+- add_model:
+    name: office_clock_0
+    file: package://scenesmith_scenes/home_office_desk_tidy/shared/derived/scenesmith_models/wall/clock_1767941479__5f4a1d031c/clock_1767941479__5f4a1d031c__s1p0003.sdf
+- add_weld:
+    parent: room_office_frame
+    child: office_clock_0::base_link
+    X_PC:
+      translation: [2.35, -1.314758694006382, 1.7394657542343825]
+      rotation: !AngleAxis
+        angle_deg: 90.00004963239907
+        axis: [-0.0009307244647917864, 0.0009307244647917864, 0.9999991337515953]
+- add_model:
+    name: office_print_1
+    file: package://scenesmith_models/wall/print_1767905591__42650725d3/print_1767905591__42650725d3.sdf
+- add_weld:
+    parent: room_office_frame
+    child: office_print_1::base_link
+    X_PC:
+      translation: [1.019151674533942, 1.8499999999999999, 1.5075013722425799]
+      rotation: !AngleAxis
+        angle_deg: 180.0
+        axis: [-0.004237239992452927, -2.594561196988317e-19, 0.9999910228583286]
+- add_model:
+    name: office_flush_mount_0
+    file: package://scenesmith_scenes/home_office_desk_tidy/shared/derived/scenesmith_models/ceiling/flush_mount_1767836637__a0fbc8ff96/flush_mount_1767836637__a0fbc8ff96__s1p0369.sdf
+- add_weld:
+    parent: room_office_frame
+    child: office_flush_mount_0::base_link
+    X_PC:
+      translation: [0.05997304255378202, 0.004233296705468596, 2.7]
+      rotation: !AngleAxis
+        angle_deg: 0.36596268327380294
+        axis: [0.0, 0.0, -1.0]
+- add_model:
+    name: office_track_light_0
+    file: package://scenesmith_scenes/home_office_desk_tidy/shared/derived/scenesmith_models/ceiling/track_light_1767963248__068a2dfaa8/track_light_1767963248__068a2dfaa8__s1p0094.sdf
+- add_weld:
+    parent: room_office_frame
+    child: office_track_light_0::base_link
+    X_PC:
+      translation: [-1.35, 0.45, 2.7]
+      rotation: !AngleAxis
+        angle_deg: 90.0
+        axis: [0.0, 0.0, 1.0]
+- add_model:
+    name: office_hardcover_book_1_s0_0
+    file: package://scenesmith_scenes/home_office_desk_tidy/shared/derived/scenesmith_models/manipuland/hardcover_book/hardcover_book__s0p8995.sdf
+    default_free_body_pose:
+      base_link:
+        base_frame: room_office_frame
+        translation: [-2.197855426043784, 1.573539432379417, 0.7545403089946422]
+        rotation: !AngleAxis
+          angle_deg: 72.33147950408743
+          axis: [-0.0008057891582025069, -0.0010965611586139371, -0.9999990741283004]
+- add_model:
+    name: office_hardcover_book_0_s0_1
+    file: package://scenesmith_scenes/home_office_desk_tidy/shared/derived/scenesmith_models/manipuland/hardcover_photography_book/hardcover_photography_book__s0p7273.sdf
+    default_free_body_pose:
+      base_link:
+        base_frame: room_office_frame
+        translation: [-2.1899473376994485, 1.5798628754611435, 0.7842772348055067]
+        rotation: !AngleAxis
+          angle_deg: 74.73591277270204
+          axis: [-0.02964688570681801, -0.013407512450735754, -0.9994705102091659]
+- add_model:
+    name: office_hardcover_book_2_s0_2
+    file: package://scenesmith_scenes/home_office_desk_tidy/shared/derived/scenesmith_models/manipuland/hardcover_photography_book/hardcover_photography_book__s0p6818.sdf
+    default_free_body_pose:
+      base_link:
+        base_frame: room_office_frame
+        translation: [-2.189597958502515, 1.5810093801537675, 0.8055050610386211]
+        rotation: !AngleAxis
+          angle_deg: 74.78657830891214
+          axis: [-0.02961780051693101, -0.013414308791749962, -0.9994712813343757]
+- add_model:
+    name: office_pen_holder_cup_0_f0_c
+    file: package://scenesmith_scenes/home_office_desk_tidy/shared/derived/scenesmith_models/manipuland/pen_cup/pen_cup__s1p0259.sdf
+    default_free_body_pose:
+      base_link:
+        base_frame: room_office_frame
+        translation: [-2.164559130430552, 0.4283834081491705, 0.7545486033094772]
+        rotation: !AngleAxis
+          angle_deg: 90.36444706190512
+          axis: [-3.940077905336309e-05, 6.160144300724902e-05, -0.9999999973264204]
+- add_model:
+    name: office_scissors_0_f0_0
+    file: package://scenesmith_scenes/home_office_desk_tidy/shared/derived/scenesmith_models/manipuland/scissors/scissors__s0p9789.sdf
+    default_free_body_pose:
+      base_link:
+        base_frame: room_office_frame
+        translation: [-2.17901312207243, 0.4335146212201144, 0.8243770243644771]
+        rotation: !AngleAxis
+          angle_deg: 136.21415702089544
+          axis: [-0.6012940412490059, -0.7394541261391181, 0.3027425825586352]
+- add_model:
+    name: office_wooden_strip_0_f0_1
+    file: package://scenesmith_scenes/home_office_desk_tidy/shared/derived/scenesmith_models/manipuland/plywood_offcut_plank/plywood_offcut_plank__s0p2699.sdf
+    default_free_body_pose:
+      base_link:
+        base_frame: room_office_frame
+        translation: [-2.1623648577757324, 0.42764339360556647, 0.789554287428128]
+        rotation: !AngleAxis
+          angle_deg: 103.54546674826794
+          axis: [-0.4107895593710376, 0.4873110567540317, -0.7705711335606971]
+- add_model:
+    name: office_coffee_mug_0
+    file: package://scenesmith_scenes/home_office_desk_tidy/shared/derived/scenesmith_models/manipuland/coffee_cup/coffee_cup__s0p8889.sdf
+    default_free_body_pose:
+      base_link:
+        base_frame: room_office_frame
+        translation: [-2.0907685975730934, 0.6539172510211098, 0.7545568838182609]
+        rotation: !AngleAxis
+          angle_deg: 56.56865005133373
+          axis: [5.107685467698091e-07, -3.073630714857117e-07, -0.9999999999998223]
+- add_model:
+    name: office_mouse_pad_0
+    file: package://scenesmith_scenes/home_office_desk_tidy/shared/room_office/generated_assets/manipuland/sdf/mouse_pad_1784674404044926420/mouse_pad.sdf
+- add_weld:
+    parent: room_office_frame
+    child: office_mouse_pad_0::base_link
+    X_PC:
+      translation: [-1.9615048334606682, 0.47609041653002904, 0.7586906305905474]
+      rotation: !AngleAxis
+        angle_deg: 84.01948574966471
+        axis: [-0.0007599347264399572, 0.00016362527664908857, -0.9999996978629446]
+- add_model:
+    name: office_pencil_0
+    file: package://scenesmith_scenes/home_office_desk_tidy/shared/derived/scenesmith_models/manipuland/wooden_pencil/wooden_pencil__s1p2000.sdf
+    default_free_body_pose:
+      base_link:
+        base_frame: room_office_frame
+        translation: [-1.93061860876175, 0.7755654663135509, 0.7544813838439968]
+        rotation: !AngleAxis
+          angle_deg: 26.28298807242595
+          axis: [-0.7911260166769805, 0.11241608679104584, -0.6012339388020291]
+- add_model:
+    name: office_desk_clock_0
+    file: package://scenesmith_scenes/home_office_desk_tidy/shared/derived/scenesmith_models/manipuland/alarm_clock/alarm_clock__s1p2531.sdf
+    default_free_body_pose:
+      base_link:
+        base_frame: room_office_frame
+        translation: [-2.2418748017643297, 0.2973194063827613, 0.7545370475406442]
+        rotation: !AngleAxis
+          angle_deg: 84.51583746410832
+          axis: [-0.00022279860284885332, -0.0021052027067750573, 0.9999977592386625]
+- add_model:
+    name: office_tape_measure_0
+    file: package://scenesmith_scenes/home_office_desk_tidy/shared/derived/scenesmith_models/manipuland/measuring_tape/measuring_tape__s0p6667.sdf
+    default_free_body_pose:
+      base_link:
+        base_frame: room_office_frame
+        translation: [-1.847054367374857, 0.6050604836273062, 0.7545539019597678]
+        rotation: !AngleAxis
+          angle_deg: 111.00152989010196
+          axis: [4.007042399056201e-06, 1.1151318241972702e-05, -0.9999999999297958]
+- add_model:
+    name: office_eraser_0
+    file: package://scenesmith_scenes/home_office_desk_tidy/shared/derived/scenesmith_models/manipuland/pink_eraser/pink_eraser__s1p0892.sdf
+    default_free_body_pose:
+      base_link:
+        base_frame: room_office_frame
+        translation: [-1.8369134762307124, 0.7725498557048509, 0.7547321452892841]
+        rotation: !AngleAxis
+          angle_deg: 80.52135729795873
+          axis: [-0.0003163554783156905, -0.000520493304161986, -0.9999998145029487]
+- add_model:
+    name: office_memo_pad_0
+    file: package://scenesmith_scenes/home_office_desk_tidy/shared/derived/scenesmith_models/manipuland/spiral_bound_sketchbook_notebook/spiral_bound_sketchbook_notebook__s0p4444.sdf
+    default_free_body_pose:
+      base_link:
+        base_frame: room_office_frame
+        translation: [-1.891810861297774, 0.33214621417157714, 0.7526678394700379]
+        rotation: !AngleAxis
+          angle_deg: 100.35428779450952
+          axis: [0.015335708719041033, -0.015183309810796686, -0.9997671144527981]
+- add_model:
+    name: office_paperclip_0
+    file: package://scenesmith_scenes/home_office_desk_tidy/shared/derived/scenesmith_models/manipuland/paperclip/paperclip__s2p1904.sdf
+    default_free_body_pose:
+      base_link:
+        base_frame: room_office_frame
+        translation: [-2.013539242725793, 0.7381778701195374, 0.7545572391892815]
+        rotation: !AngleAxis
+          angle_deg: 60.04195734413758
+          axis: [1.5399201479704389e-06, -1.4466549203288116e-06, -0.9999999999977679]
+- add_model:
+    name: office_paperclip_1
+    file: package://scenesmith_scenes/home_office_desk_tidy/shared/derived/scenesmith_models/manipuland/paperclip/paperclip__s2p1904.sdf
+    default_free_body_pose:
+      base_link:
+        base_frame: room_office_frame
+        translation: [-1.931214177608168, 0.661804842055903, 0.7545573221328388]
+        rotation: !AngleAxis
+          angle_deg: 12.337413865976961
+          axis: [5.096068387866242e-06, -3.419945155986922e-06, 0.9999999999811671]
+- add_model:
+    name: office_paperclip_2
+    file: package://scenesmith_scenes/home_office_desk_tidy/shared/derived/scenesmith_models/manipuland/paperclip/paperclip__s2p1904.sdf
+    default_free_body_pose:
+      base_link:
+        base_frame: room_office_frame
+        translation: [-1.9839484608520819, 0.6246618345193689, 0.7545572755086429]
+        rotation: !AngleAxis
+          angle_deg: 109.12533253734716
+          axis: [9.242592514412157e-07, -9.951500460070713e-07, -0.9999999999990777]
+- add_model:
+    name: office_reading_glasses_0
+    file: package://scenesmith_scenes/home_office_desk_tidy/shared/derived/scenesmith_models/manipuland/reading_glasses/reading_glasses__s0p7732.sdf
+    default_free_body_pose:
+      base_link:
+        base_frame: room_office_frame
+        translation: [-1.7816919842096468, 1.221887159978244, 0.7691904733654952]
+        rotation: !AngleAxis
+          angle_deg: 121.1709565376196
+          axis: [0.655347363133317, -0.48012664377609154, -0.583093679926746]
+- add_model:
+    name: office_potted_succulent_0
+    file: package://scenesmith_scenes/home_office_desk_tidy/shared/derived/scenesmith_models/manipuland/potted_aloe_vera_plant/potted_aloe_vera_plant__s0p6471.sdf
+    default_free_body_pose:
+      base_link:
+        base_frame: room_office_frame
+        translation: [-1.9992993729925228, 1.6191673027657647, 0.7533469159921283]
+        rotation: !AngleAxis
+          angle_deg: 84.58104406717712
+          axis: [0.00019640626279342235, 0.015475694117050649, -0.9998802249850605]
+- add_model:
+    name: office_laptop_2
+    file: package://scenesmith_scenes/home_office_desk_tidy/shared/derived/scenesmith_models/manipuland/laptop_computer/laptop_computer__s0p9554.sdf
+    default_free_body_pose:
+      base_link:
+        base_frame: room_office_frame
+        translation: [-1.9999757031150913, 1.0050394812671835, 0.756018555649549]
+        rotation: !AngleAxis
+          angle_deg: 98.17977734971026
+          axis: [0.0004063097332576026, 0.0001378887288072915, -0.9999999079495453]
+- add_model:
+    name: office_wireless_mouse_0
+    file: package://scenesmith_scenes/home_office_desk_tidy/shared/derived/scenesmith_models/manipuland/wireless_optical_mouse/wireless_optical_mouse__s0p9574.sdf
+    default_free_body_pose:
+      base_link:
+        base_frame: room_office_frame
+        translation: [-1.9009005493049815, 0.5266182856288837, 0.7541042913778743]
+        rotation: !AngleAxis
+          angle_deg: 74.52798028500861
+          axis: [0.006498166929472063, 0.00859879677522293, -0.9999419155733873]
+- add_model:
+    name: office_pencil_1
+    file: package://scenesmith_scenes/home_office_desk_tidy/shared/derived/scenesmith_models/manipuland/wooden_pencil/wooden_pencil__s1p0200.sdf
+    default_free_body_pose:
+      base_link:
+        base_frame: room_office_frame
+        translation: [-1.7815756524514412, 1.0701293275392167, 0.7544922904894289]
+        rotation: !AngleAxis
+          angle_deg: 22.229997179079092
+          axis: [-0.9435496015248511, -0.0587661756649782, 0.3259765115157952]
+- add_model:
+    name: office_letter_tray_0_s1_0
+    file: package://scenesmith_scenes/home_office_desk_tidy/shared/derived/scenesmith_models/manipuland/letter_tray/letter_tray__s1p6667.sdf
+    default_free_body_pose:
+      base_link:
+        base_frame: room_office_frame
+        translation: [-1.9246752963200855, 1.3491031089690266, 0.7545571649026668]
+        rotation: !AngleAxis
+          angle_deg: 81.7262582929362
+          axis: [-4.498511075059369e-09, -9.51003298665024e-07, -0.9999999999995478]
+- add_model:
+    name: office_printer_paper_sheet_1_s1_1
+    file: package://scenesmith_scenes/home_office_desk_tidy/shared/derived/scenesmith_models/manipuland/printed_page/printed_page__s0p8095.sdf
+    default_free_body_pose:
+      base_link:
+        base_frame: room_office_frame
+        translation: [-1.9247470570036846, 1.3488701779226095, 0.7579388313335591]
+        rotation: !AngleAxis
+          angle_deg: 81.73164789940313
+          axis: [-0.0007494494550272813, -0.0002053803471273275, -0.9999996980721682]
+- add_model:
+    name: office_printer_paper_sheet_1_s1_2
+    file: package://scenesmith_scenes/home_office_desk_tidy/shared/derived/scenesmith_models/manipuland/printed_page/printed_page__s0p8095.sdf
+    default_free_body_pose:
+      base_link:
+        base_frame: room_office_frame
+        translation: [-1.9250564010605193, 1.3489817764516592, 0.7670780812752268]
+        rotation: !AngleAxis
+          angle_deg: 81.74195695503046
+          axis: [-0.0007497146725858589, -0.00020566281298308635, -0.999999697815313]
+- add_model:
+    name: office_paper_packet_0_s1_3
+    file: package://scenesmith_scenes/home_office_desk_tidy/shared/derived/scenesmith_models/manipuland/paper_towel/paper_towel__s0p5000.sdf
+    default_free_body_pose:
+      base_link:
+        base_frame: room_office_frame
+        translation: [-1.9251272468042924, 1.3488051909986847, 0.7750795594627609]
+        rotation: !AngleAxis
+          angle_deg: 81.72593200689057
+          axis: [0.0011758642891934047, 0.00047322352813003904, -0.9999991967010103]
+- add_weld:
+    parent: room_office_frame
+    child: room_geometry_office::room_geometry_body_link
+- add_model:
+    name: ceiling_visual_office
+    file: package://scenesmith_scenes/home_office_desk_tidy/shared/floor_plans/office/ceilings/ceiling.sdf
+- add_weld:
+    parent: room_office_frame
+    child: ceiling_visual_office::ceiling_visual_body_link
