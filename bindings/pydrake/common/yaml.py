@@ -255,6 +255,13 @@ def _is_union(generic_base):
     return generic_base in [typing.Union, types.UnionType]
 
 
+def _is_nullable(schema):
+    """Returns True iff the given schema is a Union that allows None."""
+    if _is_union(typing.get_origin(schema)):
+        return type(None) in typing.get_args(schema)
+    return False
+
+
 def _get_nested_optional_type(schema):
     """If the given schema (i.e., type) is equivalent to an Optional[Foo], then
     returns Foo. Otherwise, returns None.
@@ -858,9 +865,10 @@ def _yaml_dump_typed_item(*, obj, schema):
         item_obj = _yaml_dump_get_attribute(obj=obj, name=name)
         item_plain = _yaml_dump_typed_item(obj=item_obj, schema=item_schema)
         if item_plain is None:
-            if _get_nested_optional_type(item_schema) is not None:
-                # When an Optional member field is set to None, then don't emit
-                # "{name}: null"; instead, just skip it entirely.
+            if _is_nullable(item_schema):
+                # When an Optional (or other nullable Union) member field is
+                # set to None, then don't emit "{name}: null"; instead, just
+                # skip it entirely.
                 continue
         result[name] = item_plain
     return result
