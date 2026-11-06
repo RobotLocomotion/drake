@@ -3701,7 +3701,7 @@ CalcJacobianSpatialVelocity()).
 
     </details>
 
-Speeds 𝑠 is q̇ ≜ [q̇₁ ... q̇ₙ]ᵀ (n = nq = number of generalized
+Speeds 𝑠 are q̇ ≜ [q̇₁ ... q̇ₙ]ᵀ (n = nq = number of generalized
 positions) or v ≜ [v₁ ... vₙ]ᵀ (n = nv = number of generalized
 velocities). Since J𝑠_V_ABp_E depends only on the generalized
 positions q, Dᵢ(J𝑠_V_ABp_E) denotes the time derivative in frame E of
@@ -4105,11 +4105,11 @@ Parameter ``p_BoBp_B``:
     as fixed/welded to B), expressed in frame_B.
 
 Parameter ``frame_A``:
-    Frame that measures V_ABp (Bp's spatial velocity in A). Note: It
-    is natural to wonder why there is no parameter p_AoAp_A (similar
-    to the parameter p_BoBp_B for frame_B). There is no need for
-    p_AoAp_A because Bp's velocity in A is defined as the derivative
-    in frame A of Bp's position vector from *any* point fixed to A.
+    The frame that measures V_ABp (Bp's spatial velocity). Note: It is
+    natural to wonder why there is no parameter p_AoAp_A (similar to
+    the parameter p_BoBp_B for frame_B). There is no need for p_AoAp_A
+    because Bp's velocity in A is defined as the derivative in frame A
+    of Bp's position vector from *any* point fixed to A.
 
 Parameter ``frame_E``:
     The frame in which V_ABp and J𝑠_V_ABp are expressed.

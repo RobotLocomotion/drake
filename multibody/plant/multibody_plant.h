@@ -4888,7 +4888,7 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// @param[in] frame_B The frame on which point Bp is fixed/welded.
   /// @param[in] p_BoBp_B A position vector from Bo (frame_B's origin) to point
   /// Bp (regarded as fixed/welded to B), expressed in frame_B.
-  /// @param[in] frame_A Frame that measures V_ABp (Bp's spatial velocity in A).
+  /// @param[in] frame_A The frame that measures V_ABp (Bp's spatial velocity).
   /// Note: It is natural to wonder why there is no parameter p_AoAp_A (similar
   /// to the parameter p_BoBp_B for frame_B).  There is no need for p_AoAp_A
   /// because Bp's velocity in A is defined as the derivative in frame A of
@@ -4932,7 +4932,7 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// <pre>
   ///      H𝑠_V_ABp ≜ [ D₁(J𝑠_V_ABp), ... Dₙ(J𝑠_V_ABp) ]    (n is nq or nv)
   /// </pre>
-  /// Speeds 𝑠 is q̇ ≜ [q̇₁ ... q̇ₙ]ᵀ (n = nq = number of generalized positions)
+  /// Speeds 𝑠 are q̇ ≜ [q̇₁ ... q̇ₙ]ᵀ (n = nq = number of generalized positions)
   /// or v ≜ [v₁ ... vₙ]ᵀ (n = nv = number of generalized velocities). Since
   /// J𝑠_V_ABp_E depends only on the generalized positions q, Dᵢ(J𝑠_V_ABp_E)
   /// denotes the time derivative in frame E of J𝑠_V_ABp_E (i.e., of its
