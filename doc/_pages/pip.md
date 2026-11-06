@@ -49,6 +49,16 @@ source env/bin/activate
 
 Refer to [Quickstart](/installation.html#quickstart) for next steps.
 
+### Extras
+
+To use MOSEK™ via pydrake, install `pydrake` using the `mosek` extra:
+
+```bash
+python3 -m venv env
+env/bin/pip install drake[mosek]
+source env/bin/activate
+```
+
 ## Nightly Releases
 
 Wheel packages for Linux and macOS are published nightly at a

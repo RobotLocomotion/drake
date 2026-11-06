@@ -1,5 +1,6 @@
 import glob
 import os
+import sys
 
 from setuptools import Distribution, find_packages, setup
 
@@ -15,12 +16,20 @@ DRAKE_VERSION = os.environ.get("DRAKE_VERSION", "0.0.0")
 
 DRAKE_IS_ABI3_WHEEL = bool(int(os.environ["DRAKE_IS_ABI3_WHEEL"]))
 
+IS_MAC = sys.platform == "darwin"
+
 # Required python packages that will be pip installed along with pydrake
 python_required = [
     "matplotlib",
     "numpy",
     "pydot",
     "PyYAML",
+]
+
+# On Linux this is added as an extra (i.e., optional) requirement, because we
+# load MOSEK lazily. On macOS it is a direct requirement because we aren't (yet)
+# lazy until #23867 gets finished.
+mosek_required = [
     # MOSEK's published wheels declare an upper bound on their supported Python
     # version, which is currently Python < 3.15. When that changes to a larger
     # version number, we should bump this up to match, and also grep tools/wheel
@@ -123,7 +132,10 @@ See https://drake.mit.edu/pip.html for installation instructions and caveats.
         if DRAKE_IS_ABI3_WHEEL
         else {}
     ),
-    install_requires=python_required,
+    install_requires=python_required + (mosek_required if IS_MAC else []),
+    extras_require={
+        "mosek": mosek_required if not IS_MAC else [],
+    },
     distclass=BinaryDistribution,
     zip_safe=False,
 )
