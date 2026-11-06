@@ -825,6 +825,26 @@ class TestYamlTypedRead(unittest.TestCase, metaclass=ValueParameterizedTest):
                 yaml_load_typed(schema=VariantStruct, data="{}", **options)
 
     @run_with_multiple_values(_all_typed_read_options())
+    def test_read_nullable_variant(self, *, options):
+        # This is the Python flavor of the C++ MonostateVariant test cases
+        # (where None in Python corresponds to std::monostate in C++).
+        for data in ["value:", "value: null", "value: ~"]:
+            with self.subTest(data=data):
+                x = yaml_load_typed(
+                    schema=NullableVariantStruct,
+                    data=data,
+                    defaults=NullableVariantStruct(FloatStruct(1.0)),
+                    **options,
+                )
+                self.assertIsNone(x.value)
+        x = yaml_load_typed(
+            schema=NullableVariantStruct,
+            data="value: !FloatStruct { value: 2.0 }",
+            **options,
+        )
+        self.assertEqual(x, NullableVariantStruct(FloatStruct(2.0)))
+
+    @run_with_multiple_values(_all_typed_read_options())
     def test_read_variant_found_no_tag(self, *, options):
         data = "value:"
         with self.assertRaisesRegex(RuntimeError, "one of.*FloatStruct.*"):

@@ -189,6 +189,13 @@ class YamlWriteArchive final {
     this->VisitVariant(nvp);
   }
 
+  // For std::monostate, which is only meaningful inside a std::variant.
+  // It is written as a YAML null.
+  template <typename NVP>
+  void DoVisit(const NVP& nvp, const std::monostate&, int32_t) {
+    root_.Add(nvp.name(), internal::Node::MakeNull());
+  }
+
   // For Eigen::Matrix or Eigen::Vector.
   template <typename NVP, typename T, int Rows, int Cols, int Options = 0,
             int MaxRows = Rows, int MaxCols = Cols>
@@ -309,7 +316,9 @@ class YamlWriteArchive final {
           if (needs_tag) {
             using T = std::remove_cvref_t<decltype(unwrapped)>;
             Node& node = root_.At(name);
-            if constexpr (std::is_same_v<T, bool>) {
+            if constexpr (std::is_same_v<T, std::monostate>) {
+              // A null node needs no tag.
+            } else if constexpr (std::is_same_v<T, bool>) {
               node.SetTag(JsonSchemaTag::kBool, /* important = */ true);
             } else if constexpr (std::is_integral_v<T>) {
               node.SetTag(JsonSchemaTag::kInt, /* important = */ true);
