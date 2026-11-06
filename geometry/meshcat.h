@@ -995,7 +995,10 @@ class Meshcat {
 
   /** Sends the recording to Meshcat as an animation. The published animation
   only includes transforms and properties; the objects that they modify must be
-  sent to the visualizer separately (e.g. by calling Publish()). */
+  sent to the visualizer separately by calling SetObject() (meshcat animations
+  do not support SetObject; see StartRecording()). When the recording was made
+  by a MeshcatVisualizer, no extra step is needed: the visualizer already calls
+  SetObject() for its geometries when it publishes. */
   void PublishRecording();
 
   /** Deletes the current animation holding the recorded frames.  Animation
