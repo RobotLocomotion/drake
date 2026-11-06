@@ -5706,14 +5706,18 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
 
   /// Returns a list of joint actuator indices associated with `model_instance`.
   /// The vector is ordered by monotonically increasing @ref JointActuatorIndex.
-  /// @throws std::exception if called pre-finalize.
+  /// This may be called either pre- or post-finalize.
+  /// @throws std::exception if `model_instance` does not exist.
   std::vector<JointActuatorIndex> GetJointActuatorIndices(
       ModelInstanceIndex model_instance) const {
     return internal_tree().GetJointActuatorIndices(model_instance);
   }
 
   /// Returns a list of actuated joint indices associated with `model_instance`.
-  /// @throws std::exception if called pre-finalize.
+  /// The vector is ordered by the actuators' @ref JointActuatorIndex (i.e., it
+  /// is parallel to GetJointActuatorIndices(model_instance)). This may be
+  /// called either pre- or post-finalize.
+  /// @throws std::exception if `model_instance` does not exist.
   std::vector<JointIndex> GetActuatedJointIndices(
       ModelInstanceIndex model_instance) const {
     return internal_tree().GetActuatedJointIndices(model_instance);
