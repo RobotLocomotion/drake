@@ -1,9 +1,11 @@
 import pydrake.planning as mut  # ruff: isort: skip
 
 import copy
+import gc
 import sys
 import textwrap
 import unittest
+import weakref
 
 import numpy as np
 import scipy.sparse
@@ -540,6 +542,55 @@ class TestCollisionChecker(unittest.TestCase):
 
         function_checker = self._make_scene_graph_collision_checker(False, True)
         self._test_collision_checker_base_class(function_checker, False)
+
+    def test_clones_are_released(self):
+        """A clone keeps its original alive, but not the other way around, so
+        discarded clones are freed even while the original lives."""
+        checker = self._make_scene_graph_collision_checker(False, False)
+        for make_clone in [
+            checker.Clone,
+            lambda: copy.copy(checker),
+            lambda: copy.deepcopy(checker),
+        ]:
+            refs = [weakref.ref(make_clone()) for _ in range(5)]
+            gc.collect()
+            self.assertEqual([r() for r in refs], [None] * 5)
+
+    def test_collision_checker_callback_lifetime(self):
+        """The checker borrows its Python distance and interpolation
+        functions, and a clone shares them, so a clone must keep its original
+        alive.
+        """
+        calls = []
+
+        def make_clone():
+            checker = self._make_scene_graph_collision_checker(False, True)
+
+            def distance(q1, q2):
+                calls.append("distance")
+                return np.linalg.norm(q1 - q2)
+
+            def interpolation(q1, q2, r):
+                calls.append("interpolation")
+                return q1 + (q2 - q1) * r
+
+            checker.SetConfigurationDistanceFunction(distance)
+            checker.SetConfigurationInterpolationFunction(interpolation)
+            return [
+                checker.Clone(),
+                copy.copy(checker),
+                copy.deepcopy(checker),
+            ]
+
+        clones = make_clone()
+        gc.collect()
+        q1 = np.array([0.0])
+        q2 = np.array([1.0])
+        for clone in clones:
+            calls.clear()
+            self.assertEqual(clone.ComputeConfigurationDistance(q1, q2), 1.0)
+            clone.InterpolateBetweenConfigurations(q1, q2, 0.5)
+            self.assertEqual(calls, ["distance", "interpolation"])
 
     def test_scene_graph_collision_checker_kwargs_ctor(self):
         def _make_with_kwargs_ctor(use_provider, use_function):
