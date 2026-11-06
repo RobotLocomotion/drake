@@ -11,6 +11,7 @@
 #include "drake/common/schema/rotation.h"
 #include "drake/common/schema/stochastic.h"
 #include "drake/common/schema/transform.h"
+#include "drake/common/schema/unchanged.h"
 
 namespace drake {
 namespace pydrake {
@@ -398,6 +399,18 @@ void DefineModuleSchema(py::module_ m) {
         [](const Class& self) { return &self.rotation.value; },
         py_rvp::reference_internal);
     DefReprUsingSerialize(&cls);
+    DefCopyAndDeepCopy(&cls);
+  }
+
+  // Bindings for unchanged.h.
+
+  {
+    using Class = Unchanged;
+    constexpr auto& cls_doc = doc.Unchanged;
+    class_<Class> cls(m, "Unchanged", cls_doc.doc);
+    cls  // BR
+        .def(py::init<>());
+    DefAttributesUsingSerialize(&cls, cls_doc);
     DefCopyAndDeepCopy(&cls);
   }
 }
