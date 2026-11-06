@@ -106,9 +106,9 @@ std::string_view to_string(const HydroelasticType& type);
  * Downstream consumers of the contact materials can optionally provide
  * defaults for missing properties.
  *
- * @throws std::exception if `dissipation` is negative, `point_stiffness` is
- * not positive, of any of the contact material properties have already been
- * defined in `properties`.
+ * @throws std::exception if `dissipation` is negative or NaN, `point_stiffness`
+ * is not positive (including NaN), or any of the contact material properties
+ * have already been defined in `properties`.
  * @pre `properties` is not nullptr.
  */
 void AddContactMaterial(
