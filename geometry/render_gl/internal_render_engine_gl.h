@@ -451,14 +451,17 @@ class RenderEngineGl final : public render::RenderEngine, private ShapeReifier {
 
   // The number of registered geometries instantiating each key in meshes_, and
   // the key each such geometry instantiates. When the count of a key drops to
-  // zero, the key is evicted (see EvictCachedMeshes()). Without eviction, a
-  // mesh whose contents change at runtime (re-registered as an in-memory mesh
-  // with a new hash each time) would grow the cache without bound.
+  // zero, the key is evicted (see EvictCachedMeshes()).
   std::unordered_map<std::string, int> mesh_key_uses_;
   std::unordered_map<GeometryId, std::string> geometry_mesh_keys_;
 
-  // The geometries_ owned by a single registered geometry (capsules and
-  // deformable meshes), released when it is removed.
+  // Capsules and deformable meshes create OpenGL buffers but they don't live in
+  // the mesh cache. Nevertheless, when the geometry using the buffer is
+  // removed, the OpenGL memory should likewise be freed up.
+  // The assumption is that, ids in this map refer to Geometry types which
+  // get implemented with completely independent geometry buffers (e.g.,
+  // Capsules and deformable meshes) so no reference counting is necessary and
+  // removable of the key geometry id implies release of its OpenGL buffers.
   std::unordered_map<GeometryId, std::vector<int>> owned_geometries_;
 
   // Indices of geometries_ freed by ReleaseGlGeometry(), to be reused.

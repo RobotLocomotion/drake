@@ -1209,10 +1209,7 @@ void RenderEngineGl::ImplementMeshesForSource(void* user_data,
       mesh_source.is_path() ? mesh_source.path() : fs::path();
   const RegistrationData& data = *static_cast<RegistrationData*>(user_data);
 
-  // The geometry uses the cached meshes; DoRemoveGeometry() evicts them with
-  // their last user. The use is counted before any instance is added, so that
-  // if adding them throws, DoRegisterVisual()'s roll back releases the use (and
-  // evicts the meshes if nothing else uses them).
+  // Register use of the cached meshes to support cache eviction.
   DRAKE_DEMAND(!geometry_mesh_keys_.contains(data.id));
   ++mesh_key_uses_[file_key];
   geometry_mesh_keys_.emplace(data.id, file_key);
@@ -2750,8 +2747,6 @@ void RenderEngineGl::CacheFileMeshesMaybe(const MeshSource& mesh_source,
         }
       }
     } else {
-      // TODO(ntfshard): If extraction throws part way, the geometries
-      // (and buffers) already created are only released with the engine.
       file_meshes =
           GltfMeshExtractor(&mesh_source, this, texture_library_.get())
               .ExtractMeshes(*data);
@@ -2925,10 +2920,6 @@ int RenderEngineGl::CreateGlGeometry(const RenderMesh& render_mesh,
   // clang-format on
   CreateVertexArray(&geometry);
 
-  // Shared primitives (box, sphere, etc.) are kept for the lifetime of the
-  // engine. Cached meshes are kept while any registered geometry uses them (see
-  // EvictCachedMeshes()). Capsules and deformable meshes are owned by their
-  // geometry and released with it (see DoRemoveGeometry()).
   return AddGlGeometry(geometry);
 }
 
