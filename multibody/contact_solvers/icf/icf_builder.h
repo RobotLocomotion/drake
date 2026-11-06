@@ -46,6 +46,8 @@ class IcfBuilder {
   @param external_feedback linearization data (Kₑ, bₑ) for external
          forces τₑ = -Kₑ⋅v + bₑ. May be nullptr.
   @param model The IcfModel to update.
+  @throws std::exception if any joint has a non-zero dry friction in
+          `context`, which this builder does not yet support.
 
   Note that the presence/absence of actuation_feedback and external_feedback
   affects the allocation of gain constraints. In particular, passing nullptr to

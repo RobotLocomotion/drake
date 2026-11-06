@@ -173,6 +173,19 @@ class SapDriver {
       const systems::Context<T>& context, const VectorX<T>& v_star,
       contact_solvers::internal::SapContactProblem<T>* problem) const;
 
+  // Adds dry friction constraints for every single degree of freedom joint
+  // with a non-zero dry friction bound (see Joint::GetDryFrictionVector()) in
+  // the parameters stored in `context`. Locked joints are skipped since their
+  // velocity is known to be zero.
+  // @throws std::exception if a joint has a negative or NaN dry friction bound,
+  // or a non-zero bound on more than one degree of freedom. The Joint setters
+  // reject these values, so this is only possible for a parameter written by
+  // other means.
+  // @pre problem must not be nullptr.
+  void AddJointFrictionConstraints(
+      const systems::Context<T>& context,
+      contact_solvers::internal::SapContactProblem<T>* problem) const;
+
   // Adds holonomic constraints to model couplers specified in the
   // MultibodyPlant.
   void AddCouplerConstraints(
