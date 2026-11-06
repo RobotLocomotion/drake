@@ -20,6 +20,9 @@ void DefinePlanningCollisionChecker(py::module_ m);
 /* Defines bindings per planning_py_collision_checker_interface_types.cc. */
 void DefinePlanningCollisionCheckerInterfaceTypes(py::module_ m);
 
+/* Defines bindings per planning_py_continuous_collision.cc. */
+void DefinePlanningContinuousCollision(py::module_ m);
+
 /* Defines bindings per planning_py_dof_mask.cc. */
 void DefinePlanningDofMask(py::module_ m);
 
