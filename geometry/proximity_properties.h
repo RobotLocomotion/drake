@@ -95,6 +95,50 @@ std::string GetStringFromHydroelasticType(HydroelasticType hydroelastic_type);
 /* String conversion for debug-printing hydroelastic type.  */
 std::string_view to_string(const HydroelasticType& type);
 
+/* @name  Validating proximity property numeric values
+
+ These helpers are the single definition of the numeric ranges of Drake's common
+ proximity properties. They serve as the sole judge of what makes a value
+ "valid" and provide a consistently worded message for all consumers. Valid
+ ranges are documented on the corresponding fields of DefaultProximityProperties
+ and on the Add* APIs that accept these values.
+
+ Each function returns std::nullopt when its argument is valid, or a fixed error
+ message when it is invalid. */
+//@{
+
+/* Reports an error unless `hydroelastic_modulus > 0`. +∞ is allowed. */
+std::optional<std::string> ReportIfInvalidHydroelasticModulus(
+    double hydroelastic_modulus);
+
+/* Reports an error unless `0 < resolution_hint < ∞`. */
+std::optional<std::string> ReportIfInvalidResolutionHint(
+    double resolution_hint);
+
+/* Reports an error unless `0 < slab_thickness < ∞`. */
+std::optional<std::string> ReportIfInvalidSlabThickness(double slab_thickness);
+
+/* Reports an error unless `0 ≤ margin < ∞`. */
+std::optional<std::string> ReportIfInvalidMargin(double margin);
+
+/* Reports an error unless `dissipation ≥ 0`. +∞ is allowed. */
+std::optional<std::string> ReportIfInvalidHuntCrossleyDissipation(
+    double dissipation);
+
+/* Reports an error unless `0 ≤ relaxation_time < ∞`. */
+std::optional<std::string> ReportIfInvalidRelaxationTime(
+    double relaxation_time);
+
+/* Reports an error unless `point_stiffness > 0`. +∞ is allowed. */
+std::optional<std::string> ReportIfInvalidPointStiffness(
+    double point_stiffness);
+
+/* Reports an error unless `friction_coefficient ≥ 0`. +∞ is allowed. */
+std::optional<std::string> ReportIfInvalidFrictionCoefficient(
+    double friction_coefficient);
+
+//@}
+
 }  // namespace internal
 
 /**
@@ -106,9 +150,10 @@ std::string_view to_string(const HydroelasticType& type);
  * Downstream consumers of the contact materials can optionally provide
  * defaults for missing properties.
  *
- * @throws std::exception if `dissipation` is negative, `point_stiffness` is
- * not positive, of any of the contact material properties have already been
- * defined in `properties`.
+ * @throws std::exception if `dissipation` is present but not ≥ 0 (+∞ is
+ * allowed), if `point_stiffness` is present but not > 0 (+∞ is allowed), or if
+ * any of the contact material properties have already been defined in
+ * `properties`.
  * @pre `properties` is not nullptr.
  */
 void AddContactMaterial(
@@ -125,11 +170,13 @@ void AddContactMaterial(
                               roughly corresponds to a typical edge length in
                               the resulting mesh.  See @ref hug_properties.
                               This will be ignored for geometry types that don't
-                              require tessellation.
+                              require tessellation. Must satisfy
+                              0 < `resolution_hint` < ∞.
  @param[in,out] properties    The properties will be added to this property set.
- @throws std::exception       If `properties` already has properties with the
+ @throws std::exception       If `resolution_hint` is invalid or if
+                              `properties` already has properties with the
                               names that this function would need to add.
- @pre 0 < `resolution_hint` < ∞ and `properties` is not nullptr.  */
+ @pre `properties` is not nullptr.  */
 void AddRigidHydroelasticProperties(double resolution_hint,
                                     ProximityProperties* properties);
 
@@ -149,14 +196,17 @@ void AddRigidHydroelasticProperties(ProximityProperties* properties);
                              roughly corresponds to a typical edge length in
                              the resulting mesh.  See @ref hug_properties.
                              This will be ignored for geometry types that don't
-                             require tessellation.
+                             require tessellation. Must satisfy
+                             0 < `resolution_hint` < ∞.
  @param hydroelastic_modulus A multiplier that maps penetration to pressure. See
-                             @ref hug_properties.
+                             @ref hug_properties. Must be > 0 (+∞ allowed; NaN
+                             rejected).
  @param[in,out] properties   The properties will be added to this property set.
- @throws std::exception      If `properties` already has properties with the
-                             names that this function would need to add.
- @pre 0 < `resolution_hint` < ∞, 0 < `hydroelastic_modulus`, and `properties`
-      is not nullptr. */
+ @throws std::exception      If `resolution_hint` or `hydroelastic_modulus` is
+                             invalid, or if `properties` already has properties
+                             with the names that this function would need to
+                             add.
+ @pre `properties` is not nullptr. */
 void AddCompliantHydroelasticProperties(double resolution_hint,
                                         double hydroelastic_modulus,
                                         ProximityProperties* properties);
@@ -167,14 +217,15 @@ void AddCompliantHydroelasticProperties(double resolution_hint,
 
  @param slab_thickness       The distance from the half space boundary to its
                              rigid core (this helps define the extent field of
-                             the half space).
+                             the half space). Must satisfy
+                             0 < `slab_thickness` < ∞.
  @param hydroelastic_modulus A multiplier that maps penetration to pressure. See
-                             @ref hug_properties.
+                             @ref hug_properties. Must be > 0 (+∞ allowed).
  @param[out] properties      The properties will be added to this property set.
- @throws std::exception If `properties` already has properties with the names
-                        that this function would need to add.
- @pre 0 < `slab_thickness` < ∞, 0 < `hydroelastic_modulus`, and `properties`
-      is not nullptr. */
+ @throws std::exception If `slab_thickness` or `hydroelastic_modulus` is
+                        invalid, or if `properties` already has properties with
+                        the names that this function would need to add.
+ @pre `properties` is not nullptr. */
 void AddCompliantHydroelasticPropertiesForHalfSpace(
     double slab_thickness, double hydroelastic_modulus,
     ProximityProperties* properties);
