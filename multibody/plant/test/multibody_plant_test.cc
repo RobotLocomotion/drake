@@ -422,6 +422,51 @@ GTEST_TEST(MultibodyPlantTest, AddJointActuator) {
       ".*3 degrees of freedom.*");
 }
 
+// Per-model-instance actuator queries give the same answers pre- and
+// post-finalize, including after an actuator has been removed (see #21547).
+GTEST_TEST(MultibodyPlantTest, GetJointActuatorIndicesPreFinalize) {
+  MultibodyPlant<double> plant(0.0);
+  const ModelInstanceIndex instance_a = plant.AddModelInstance("a");
+  const ModelInstanceIndex instance_b = plant.AddModelInstance("b");
+  const auto M_B = SpatialInertia<double>::MakeUnitary();
+  // Adds a body welded to the world by a revolute joint in `instance`, and
+  // returns that joint.
+  auto add_pin = [&](const std::string& name, ModelInstanceIndex instance) {
+    const RigidBody<double>& body = plant.AddRigidBody(name, instance, M_B);
+    return &plant.AddJoint<RevoluteJoint>(name, plant.world_body(),
+                                          std::nullopt, body, std::nullopt,
+                                          Vector3d::UnitZ());
+  };
+  const auto* joint_a0 = add_pin("a0", instance_a);
+  const auto* joint_b0 = add_pin("b0", instance_b);
+  const auto* joint_a1 = add_pin("a1", instance_a);
+  const auto* joint_a2 = add_pin("a2", instance_a);
+  const JointActuatorIndex actuator_a0 =
+      plant.AddJointActuator("a0", *joint_a0).index();
+  const JointActuatorIndex actuator_b0 =
+      plant.AddJointActuator("b0", *joint_b0).index();
+  const JointActuator<double>& doomed = plant.AddJointActuator("a1", *joint_a1);
+  const JointActuatorIndex actuator_a2 =
+      plant.AddJointActuator("a2", *joint_a2).index();
+  plant.RemoveJointActuator(doomed);
+
+  auto check = [&]() {
+    EXPECT_THAT(plant.GetJointActuatorIndices(instance_a),
+                testing::ElementsAre(actuator_a0, actuator_a2));
+    EXPECT_THAT(plant.GetActuatedJointIndices(instance_a),
+                testing::ElementsAre(joint_a0->index(), joint_a2->index()));
+    EXPECT_THAT(plant.GetJointActuatorIndices(instance_b),
+                testing::ElementsAre(actuator_b0));
+    EXPECT_THAT(plant.GetActuatedJointIndices(instance_b),
+                testing::ElementsAre(joint_b0->index()));
+    EXPECT_TRUE(plant.GetJointActuatorIndices(world_model_instance()).empty());
+    EXPECT_TRUE(plant.GetActuatedJointIndices(world_model_instance()).empty());
+  };
+  check();
+  plant.Finalize();
+  check();
+}
+
 GTEST_TEST(MultibodyPlantTest, AddMultibodyPlantSceneGraph) {
   systems::DiagramBuilder<double> builder;
   auto pair = AddMultibodyPlantSceneGraph(&builder, 0.0);

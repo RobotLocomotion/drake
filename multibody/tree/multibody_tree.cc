@@ -511,14 +511,38 @@ template <typename T>
 std::vector<JointActuatorIndex> MultibodyTree<T>::GetJointActuatorIndices(
     ModelInstanceIndex model_instance) const {
   DRAKE_THROW_UNLESS(model_instances_.has_element(model_instance));
-  return model_instances_.get_element(model_instance).GetJointActuatorIndices();
+  if (is_finalized()) {
+    return model_instances_.get_element(model_instance)
+        .GetJointActuatorIndices();
+  }
+  // The ModelInstance's list of actuators is only populated during Finalize(),
+  // so pre-finalize we scan all of the actuators instead. Like the
+  // ModelInstance list, the result is sorted by JointActuatorIndex.
+  std::vector<JointActuatorIndex> indices;
+  for (const JointActuator<T>* actuator : actuators_.elements()) {
+    if (actuator->model_instance() == model_instance) {
+      indices.push_back(actuator->index());
+    }
+  }
+  return indices;
 }
 
 template <typename T>
 std::vector<JointIndex> MultibodyTree<T>::GetActuatedJointIndices(
     ModelInstanceIndex model_instance) const {
   DRAKE_THROW_UNLESS(model_instances_.has_element(model_instance));
-  return model_instances_.get_element(model_instance).GetActuatedJointIndices();
+  if (is_finalized()) {
+    return model_instances_.get_element(model_instance)
+        .GetActuatedJointIndices();
+  }
+  // See GetJointActuatorIndices() for why we scan all actuators pre-finalize.
+  std::vector<JointIndex> indices;
+  for (const JointActuator<T>* actuator : actuators_.elements()) {
+    if (actuator->model_instance() == model_instance) {
+      indices.push_back(actuator->joint().index());
+    }
+  }
+  return indices;
 }
 
 template <typename T>
