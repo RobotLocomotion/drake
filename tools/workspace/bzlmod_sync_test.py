@@ -43,7 +43,9 @@ class TestBzlmodSync(unittest.TestCase):
         cmake = self._parse_modules("drake/cmake/MODULE.bazel.in")
         modules_to_sync = [
             "apple_support",
+            "platforms",
             "rules_python",
+            "rules_rs",
         ]
         for item in modules_to_sync:
             with self.subTest(module_to_sync=item):
