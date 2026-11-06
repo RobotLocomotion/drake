@@ -4190,7 +4190,8 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// @param[in] body_indexes Array of selected bodies.  This method does not
   ///  distinguish between welded bodies, joint-connected bodies, etc. A body
   ///  that Finalize() split to break a kinematic loop counts once, as a whole,
-  ///  whether body_indexes names its primary, a shadow, or both; see
+  ///  whether body_indexes names its primary, a shadow, or both. So a list
+  ///  from GetBodyIndices(), which includes shadows, works as is. See
   ///  SetEnableLoopTopology().
   /// @throws std::exception if `frame_F` does not belong to `this` plant.
   /// @throws std::exception if body_indexes contains an invalid BodyIndex or
