@@ -230,6 +230,35 @@ GTEST_TEST(InternalGeometryTest, DeformableGeometry) {
   EXPECT_FALSE(rigid_geometry.is_deformable());
 }
 
+// A geometry's dynamic/anchored classification follows its frame's anchored
+// status: geometry on the world frame is anchored at construction; geometry on
+// any other frame becomes anchored when told its frame is anchored. Deformable
+// geometry remains dynamic regardless.
+GTEST_TEST(InternalGeometryTest, FrameIsAnchored) {
+  const SourceId source_id = SourceId::get_new_id();
+  const Sphere sphere(1.0);
+  const FrameId frame_id = FrameId::get_new_id();
+
+  InternalGeometry world_rigid(
+      source_id, make_unique<Sphere>(sphere), InternalFrame::world_frame_id(),
+      GeometryId::get_new_id(), "world_rigid", RigidTransformd());
+  EXPECT_FALSE(world_rigid.is_dynamic());
+
+  InternalGeometry rigid(source_id, make_unique<Sphere>(sphere), frame_id,
+                         GeometryId::get_new_id(), "rigid", RigidTransformd());
+  EXPECT_TRUE(rigid.is_dynamic());
+  rigid.set_frame_is_anchored();
+  EXPECT_FALSE(rigid.is_dynamic());
+
+  constexpr double kRezHint = 0.5;
+  InternalGeometry deformable(source_id, make_unique<Sphere>(sphere), frame_id,
+                              GeometryId::get_new_id(), "deformable",
+                              RigidTransformd(), kRezHint);
+  EXPECT_TRUE(deformable.is_dynamic());
+  deformable.set_frame_is_anchored();
+  EXPECT_TRUE(deformable.is_dynamic());
+}
+
 GTEST_TEST(InternalGeometryTest, Rename) {
   InternalGeometry geometry;
   EXPECT_TRUE(geometry.name().empty());

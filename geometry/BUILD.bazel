@@ -1178,6 +1178,13 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "internal_frame_test",
+    deps = [
+        ":internal_frame",
+    ],
+)
+
+drake_cc_googletest(
     name = "internal_geometry_test",
     deps = [
         ":internal_geometry",
