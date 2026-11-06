@@ -1651,6 +1651,7 @@ PYDRAKE_MODULE(plant, m) {
 
   m.doc() = "Bindings for MultibodyPlant and related classes.";
 
+  py::module_::import_("pydrake.common.schema");
   py::module_::import_("pydrake.geometry");
   py::module_::import_("pydrake.math");
   py::module_::import_("pydrake.multibody.fem");
