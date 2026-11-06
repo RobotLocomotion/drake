@@ -10,6 +10,8 @@
 #include "drake/bindings/pydrake/common/cpp_param_pybind.h"
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/eigen_pybind.h"
+#include "drake/bindings/pydrake/common/ensure_callback_lifetime_pybind.h"
+#include "drake/bindings/pydrake/common/ref_cycle_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/solvers/solvers_py.h"
 #include "drake/bindings/pydrake/symbolic_types_pybind.h"
@@ -17,6 +19,7 @@
 #include "drake/solvers/common_solver_option.h"
 #include "drake/solvers/get_program_type.h"
 #include "drake/solvers/mathematical_program.h"
+#include "drake/solvers/minimum_value_constraint.h"
 #include "drake/solvers/solve.h"
 #include "drake/solvers/solver_type_converter.h"
 
@@ -73,6 +76,14 @@ using symbolic::Variables;
 
 namespace {
 
+#ifdef PYDRAKE_USE_PYBIND11
+using PyVisualizationCallbackFunc =
+    py::typing::Callable<void(const Eigen::VectorXd&)>;
+#else   // PYDRAKE_USE_NANOBIND
+using PyVisualizationCallbackFunc =
+    py::typed<py::callable, void(const Eigen::VectorXd&)>;
+#endif  // PYDRAKE_USE_PYBIND11
+
 // Wraps user cost or constraint evaluation function to provide better error
 // messages when the input or output are incorrectly typed or sized.
 template <typename T, typename Func>
@@ -82,6 +93,79 @@ Func WrapUserEvaluatorFunc(py::str cls_name, py::callable func, int num_vars,
   return py::cast<Func>(m.attr("_wrap_user_evaluator_func")(
       cls_name, func, num_vars, num_outputs, output_dim, GetPyParam<T>()[0]));
 }
+
+// Holds the wrapped user evaluator functions of a PyFunctionCost or
+// PyFunctionConstraint: one for double inputs and one for AutoDiffXd inputs.
+//
+// Initially the functions are owned here. That is only suitable for a
+// standalone object, because a function that captures the object that holds
+// this one forms a reference cycle that is invisible to Python garbage
+// collection. Borrow() hands ownership over to a Python object that can take
+// part in garbage collection. Thereafter only borrowed pointers are used, so
+// the new owner must outlive every use of this object.
+class UserEvaluatorFuncs {
+ public:
+  UserEvaluatorFuncs(const char* cls_name, const py::callable& func,
+      int num_vars, int num_outputs, int output_dim)
+      : double_owned_(WrapUserEvaluatorFunc<double, py::object>(
+            py::str(cls_name), func, num_vars, num_outputs, output_dim)),
+        autodiff_owned_(WrapUserEvaluatorFunc<AutoDiffXd, py::object>(
+            py::str(cls_name), func, num_vars, num_outputs, output_dim)),
+        double_ptr_(double_owned_.ptr()),
+        autodiff_ptr_(autodiff_owned_.ptr()) {}
+
+  // Calls the function for scalar type T with `x`.
+  template <typename T, typename Func, typename X>
+  auto Eval(const X& x) const {
+    py::gil_scoped_acquire guard;
+    Func func = py::cast<Func>(
+        py::handle(std::is_same_v<T, double> ? double_ptr_ : autodiff_ptr_));
+    return func(x);
+  }
+
+  // Gives the functions to `owner`, which must support dynamic attributes.
+  void Borrow(py::handle owner) {
+    py::gil_scoped_acquire guard;
+    owner.attr("_user_evaluator_funcs") =
+        py::make_tuple(double_owned_, autodiff_owned_);
+    double_owned_ = py::object();
+    autodiff_owned_ = py::object();
+  }
+
+ private:
+  py::object double_owned_;
+  py::object autodiff_owned_;
+  PyObject* const double_ptr_;
+  PyObject* const autodiff_ptr_;
+};
+
+// Arranges for `prog` to keep `evaluator` alive, in a way that Python garbage
+// collection can see, and for `evaluator` to own its evaluator functions.
+// Returns after `evaluator` no longer owns its functions directly.
+template <typename PyFunctionEvaluator>
+void BorrowEvaluatorFuncs(MathematicalProgram* prog,
+    std::shared_ptr<PyFunctionEvaluator> evaluator,
+    const std::string& location_hint) {
+  py::object evaluator_py = py::cast(evaluator);
+  internal::make_arbitrary_ref_cycle(
+      py::cast(prog, py_rvp::reference), evaluator_py, location_hint);
+  evaluator->funcs().Borrow(evaluator_py);
+}
+
+// TODO(eric.cousineau): Make a Python virtual base, and implement this in
+// Python instead.
+class PyFunctionCost;
+class PyFunctionConstraint;
+
+// Arranges for `prog` to keep alive the Python object of `evaluator` when it
+// is a kind of evaluator that borrows Python callables from its Python object
+// (PyFunctionCost, PyFunctionConstraint, or a MinimumValue constraint) that
+// was added to some other program. Does nothing for any other kind of
+// evaluator.
+template <typename EvaluatorBase>
+void KeepPyFunctionEvaluatorAlive(MathematicalProgram* prog,
+    const std::shared_ptr<EvaluatorBase>& evaluator,
+    const std::string& location_hint);
 
 // TODO(eric.cousineau): Make a Python virtual base, and implement this in
 // Python instead.
@@ -95,20 +179,21 @@ class PyFunctionCost : public Cost {
   PyFunctionCost(
       int num_vars, const py::callable& func, const std::string& description)
       : Cost(num_vars, description),
-        double_func_(Wrap<double, DoubleFunc>(func)),
-        autodiff_func_(Wrap<AutoDiffXd, AutoDiffFunc>(func)) {}
+        funcs_("PyFunctionCost", func, num_vars, 1, /* output_dim = */ 0) {}
+
+  UserEvaluatorFuncs& funcs() { return funcs_; }
 
  protected:
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
       Eigen::VectorXd* y) const override {
     y->resize(1);
-    (*y)[0] = double_func_(x);
+    (*y)[0] = funcs_.Eval<double, DoubleFunc>(x);
   }
 
   void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
       AutoDiffVecXd* y) const override {
     y->resize(1);
-    (*y)[0] = autodiff_func_(x);
+    (*y)[0] = funcs_.Eval<AutoDiffXd, AutoDiffFunc>(x);
   }
 
   void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>&,
@@ -118,14 +203,7 @@ class PyFunctionCost : public Cost {
   }
 
  private:
-  template <typename T, typename Func>
-  Func Wrap(py::callable func) {
-    return WrapUserEvaluatorFunc<T, Func>(py::str("PyFunctionCost"), func,
-        num_vars(), num_outputs(), /* output_dim = */ 0);
-  }
-
-  const DoubleFunc double_func_;
-  const AutoDiffFunc autodiff_func_;
+  UserEvaluatorFuncs funcs_;
 };
 
 // TODO(eric.cousineau): Make a Python virtual base, and implement this in
@@ -142,8 +220,10 @@ class PyFunctionConstraint : public Constraint {
       const Eigen::VectorXd& lb, const Eigen::VectorXd& ub,
       const std::string& description)
       : Constraint(lb.size(), num_vars, lb, ub, description),
-        double_func_(Wrap<double, DoubleFunc>(func)),
-        autodiff_func_(Wrap<AutoDiffXd, AutoDiffFunc>(func)) {}
+        funcs_("PyFunctionConstraint", func, num_vars, lb.size(),
+            /* output_dim = */ 1) {}
+
+  UserEvaluatorFuncs& funcs() { return funcs_; }
 
   using Constraint::set_bounds;
   using Constraint::UpdateLowerBound;
@@ -152,12 +232,12 @@ class PyFunctionConstraint : public Constraint {
  protected:
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
       Eigen::VectorXd* y) const override {
-    *y = double_func_(x);
+    *y = funcs_.Eval<double, DoubleFunc>(x);
   }
 
   void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
       AutoDiffVecXd* y) const override {
-    *y = autodiff_func_(x);
+    *y = funcs_.Eval<AutoDiffXd, AutoDiffFunc>(x);
   }
 
   void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>&,
@@ -167,15 +247,74 @@ class PyFunctionConstraint : public Constraint {
   }
 
  private:
-  template <typename T, typename Func>
-  Func Wrap(py::callable func) {
-    return WrapUserEvaluatorFunc<T, Func>(py::str("PyFunctionConstraint"), func,
-        num_vars(), num_outputs(), /* output_dim = */ 1);
-  }
-
-  const DoubleFunc double_func_;
-  const AutoDiffFunc autodiff_func_;
+  UserEvaluatorFuncs funcs_;
 };
+
+// Returns true iff `evaluator` is a kind of evaluator that borrows Python
+// callables from its Python object.
+template <typename EvaluatorBase>
+bool BorrowsPythonCallables(const std::shared_ptr<EvaluatorBase>& evaluator) {
+  return std::dynamic_pointer_cast<PyFunctionCost>(evaluator) != nullptr ||
+         std::dynamic_pointer_cast<PyFunctionConstraint>(evaluator) !=
+             nullptr ||
+         std::dynamic_pointer_cast<solvers::MinimumValueLowerBoundConstraint>(
+             evaluator) != nullptr ||
+         std::dynamic_pointer_cast<solvers::MinimumValueUpperBoundConstraint>(
+             evaluator) != nullptr ||
+         std::dynamic_pointer_cast<solvers::VisualizationCallback>(evaluator) !=
+             nullptr;
+}
+
+template <typename EvaluatorBase>
+void KeepPyFunctionEvaluatorAlive(MathematicalProgram* prog,
+    const std::shared_ptr<EvaluatorBase>& evaluator,
+    const std::string& location_hint) {
+  if (!BorrowsPythonCallables(evaluator)) {
+    return;
+  }
+  internal::make_arbitrary_ref_link(
+      py::cast(prog, py_rvp::reference), py::cast(evaluator), location_hint);
+}
+
+// Returns a Python clone of `self`, which keeps `self` alive. See the comment
+// at the definition of the Clone() binding.
+py::object CloneKeepingOriginalAlive(
+    const MathematicalProgram* self, const std::string& location_hint) {
+  py::object clone_py =
+      py::cast(self->Clone().release(), py_rvp::take_ownership);
+  internal::make_arbitrary_ref_link(clone_py,
+      py::cast(const_cast<MathematicalProgram*>(self), py_rvp::reference),
+      location_hint);
+  return clone_py;
+}
+
+// Casts `binding` to Python. If its evaluator borrows Python callables from
+// its Python object, makes the returned Binding object keep that Python object
+// alive. Without this link, a Binding that outlives its program would hold an
+// evaluator whose callables have been freed, once the garbage collector
+// collects the program and the evaluator's Python object.
+template <typename C>
+py::object CastBindingKeepingEvaluatorAlive(
+    const Binding<C>& binding, const std::string& location_hint) {
+  py::object binding_py = py::cast(binding);
+  const std::shared_ptr<C> evaluator = binding.evaluator();
+  if (BorrowsPythonCallables(evaluator)) {
+    internal::make_arbitrary_ref_link(
+        binding_py, py::cast(evaluator), location_hint);
+  }
+  return binding_py;
+}
+
+// As above, for a sequence of bindings.
+template <typename C>
+py::list CastBindingsKeepingEvaluatorsAlive(
+    const std::vector<Binding<C>>& bindings, const std::string& location_hint) {
+  py::list result;
+  for (const Binding<C>& binding : bindings) {
+    result.append(CastBindingKeepingEvaluatorAlive(binding, location_hint));
+  }
+  return result;
+}
 
 /// Helper to adapt SolverType to SolverId.
 template <typename Value>
@@ -434,7 +573,26 @@ void BindMathematicalProgram(py::module_ m) {
   class_<MathematicalProgram> prog_cls(m, "MathematicalProgram",
       py::dynamic_attr(), doc.MathematicalProgram.doc);
   prog_cls.def(py::init<>(), doc.MathematicalProgram.ctor.doc);
-  DefClone(&prog_cls);
+  // A clone shares its evaluators with the original program. Python callbacks
+  // are borrowed by those evaluators, and kept alive by the original program,
+  // so the clone must keep the original alive. This is DefClone(), plus a
+  // one-way link from the clone to the original. The link must not go both
+  // ways, or else the original would keep every clone ever made alive.
+  prog_cls  // BR
+      .def("Clone",
+          [](const MathematicalProgram* self) {
+            return CloneKeepingOriginalAlive(self, "MathematicalProgram.Clone");
+          })
+      .def("__copy__",
+          [](const MathematicalProgram* self) {
+            return CloneKeepingOriginalAlive(
+                self, "MathematicalProgram.__copy__");
+          })
+      .def("__deepcopy__",
+          [](const MathematicalProgram* self, py::dict /* memo */) {
+            return CloneKeepingOriginalAlive(
+                self, "MathematicalProgram.__deepcopy__");
+          });
 
   py::enum_<MathematicalProgram::NonnegativePolynomial>(prog_cls,
       "NonnegativePolynomial",
@@ -576,20 +734,44 @@ void BindMathematicalProgram(py::module_ m) {
               &MathematicalProgram::AddIndeterminates),
           py::arg("new_indeterminates"),
           doc.MathematicalProgram.AddIndeterminates.doc)
-      .def("AddVisualizationCallback",
-          static_cast<Binding<VisualizationCallback> (MathematicalProgram::*)(
-              const VisualizationCallback::CallbackFunction&,
-              const Eigen::Ref<const VectorXDecisionVariable>&)>(
-              &MathematicalProgram::AddVisualizationCallback),
+      .def(
+          "AddVisualizationCallback",
+          [](MathematicalProgram* self, PyVisualizationCallbackFunc callback,
+              const Eigen::Ref<const VectorXDecisionVariable>& vars) {
+            // The C++ callback borrows the Python one, so the Python evaluator
+            // object must keep it alive. The evaluator and program form a
+            // cycle that is visible to Python garbage collection, even when
+            // the callback captures the program.
+            PyObject* callback_ptr = callback.ptr();
+            auto binding = self->AddVisualizationCallback(
+                [callback_ptr](const Eigen::Ref<const Eigen::VectorXd>& x) {
+                  py::gil_scoped_acquire guard;
+                  auto func =
+                      py::cast<std::function<void(const Eigen::VectorXd&)>>(
+                          py::handle(callback_ptr));
+                  func(x);
+                },
+                vars);
+            py::object evaluator_py = py::cast(binding.evaluator());
+            const char* hint = "MathematicalProgram.AddVisualizationCallback";
+            internal::make_arbitrary_ref_cycle(
+                py::cast(self, py_rvp::reference), evaluator_py, hint);
+            internal::make_arbitrary_callback_lifetime(
+                evaluator_py, callback, hint);
+            return CastBindingKeepingEvaluatorAlive(binding, hint);
+          },
           doc.MathematicalProgram.AddVisualizationCallback.doc)
       .def(
           "AddCost",
           [](MathematicalProgram* self, py::callable func,
               const Eigen::Ref<const VectorXDecisionVariable>& vars,
               std::string& description) {
-            return self->AddCost(std::make_shared<PyFunctionCost>(
-                                     vars.size(), func, description),
-                vars);
+            auto cost = std::make_shared<PyFunctionCost>(
+                vars.size(), func, description);
+            const char* hint = "MathematicalProgram.AddCost";
+            BorrowEvaluatorFuncs(self, cost, hint);
+            return CastBindingKeepingEvaluatorAlive(
+                self->AddCost(cost, vars), hint);
           },
           py::arg("func"), py::arg("vars"), py::arg("description") = "",
           // N.B. There is no corresponding C++ method, so the docstring here
@@ -598,6 +780,8 @@ void BindMathematicalProgram(py::module_ m) {
       .def(
           "AddCost",
           [](MathematicalProgram* self, const Binding<Cost>& binding) {
+            KeepPyFunctionEvaluatorAlive(
+                self, binding.evaluator(), "MathematicalProgram.AddCost");
             return self->AddCost(binding);
           },
           py::arg("binding"),
@@ -740,10 +924,12 @@ void BindMathematicalProgram(py::module_ m) {
               const Eigen::VectorXd& lb, const Eigen::VectorXd& ub,
               const Eigen::Ref<const VectorXDecisionVariable>& vars,
               std::string& description) {
-            return self->AddConstraint(
-                std::make_shared<PyFunctionConstraint>(
-                    vars.size(), func, lb, ub, description),
-                vars);
+            auto constraint = std::make_shared<PyFunctionConstraint>(
+                vars.size(), func, lb, ub, description);
+            const char* hint = "MathematicalProgram.AddConstraint";
+            BorrowEvaluatorFuncs(self, constraint, hint);
+            return CastBindingKeepingEvaluatorAlive(
+                self->AddConstraint(constraint, vars), hint);
           },
           py::arg("func"), py::arg("lb"), py::arg("ub"), py::arg("vars"),
           py::arg("description") = "",
@@ -780,6 +966,8 @@ void BindMathematicalProgram(py::module_ m) {
       .def(
           "AddConstraint",
           [](MathematicalProgram* self, const Binding<Constraint>& binding) {
+            KeepPyFunctionEvaluatorAlive(
+                self, binding.evaluator(), "MathematicalProgram.AddConstraint");
             return self->AddConstraint(binding);
           },
           py::arg("binding"),
@@ -1313,9 +1501,20 @@ void BindMathematicalProgram(py::module_ m) {
       .def("solver_options", &MathematicalProgram::solver_options,
           py_rvp::reference_internal,
           doc.MathematicalProgram.solver_options.doc)
-      .def("generic_costs", &MathematicalProgram::generic_costs,
+      .def(
+          "generic_costs",
+          [](const MathematicalProgram& self) {
+            return CastBindingsKeepingEvaluatorsAlive(
+                self.generic_costs(), "MathematicalProgram.generic_costs");
+          },
           doc.MathematicalProgram.generic_costs.doc)
-      .def("generic_constraints", &MathematicalProgram::generic_constraints,
+      .def(
+          "generic_constraints",
+          [](const MathematicalProgram& self) {
+            return CastBindingsKeepingEvaluatorsAlive(
+                self.generic_constraints(),
+                "MathematicalProgram.generic_constraints");
+          },
           doc.MathematicalProgram.generic_constraints.doc)
       .def("linear_equality_constraints",
           &MathematicalProgram::linear_equality_constraints,
@@ -1351,15 +1550,30 @@ void BindMathematicalProgram(py::module_ m) {
       .def("linear_complementarity_constraints",
           &MathematicalProgram::linear_complementarity_constraints,
           doc.MathematicalProgram.linear_complementarity_constraints.doc)
-      .def("visualization_callbacks",
-          &MathematicalProgram::visualization_callbacks,
+      .def(
+          "visualization_callbacks",
+          [](const MathematicalProgram& self) {
+            return CastBindingsKeepingEvaluatorsAlive(
+                self.visualization_callbacks(),
+                "MathematicalProgram.visualization_callbacks");
+          },
           doc.MathematicalProgram.visualization_callbacks.doc)
-      .def("GetAllCosts", &MathematicalProgram::GetAllCosts,
+      .def(
+          "GetAllCosts",
+          [](const MathematicalProgram& self) {
+            return CastBindingsKeepingEvaluatorsAlive(
+                self.GetAllCosts(), "MathematicalProgram.GetAllCosts");
+          },
           doc.MathematicalProgram.GetAllCosts.doc)
       .def("GetLinearConstraints",
           &MathematicalProgram::GetAllLinearConstraints,
           doc.MathematicalProgram.GetAllLinearConstraints.doc)
-      .def("GetAllConstraints", &MathematicalProgram::GetAllConstraints,
+      .def(
+          "GetAllConstraints",
+          [](const MathematicalProgram& self) {
+            return CastBindingsKeepingEvaluatorsAlive(self.GetAllConstraints(),
+                "MathematicalProgram.GetAllConstraints");
+          },
           doc.MathematicalProgram.GetAllConstraints.doc)
       .def("num_vars", &MathematicalProgram::num_vars,
           doc.MathematicalProgram.num_vars.doc)
@@ -1536,8 +1750,9 @@ void BindSolutionResult(py::module_ m) {
 }
 
 void BindPyFunctionCost(py::module_ m) {
-  class_<PyFunctionCost, Cost, std::shared_ptr<PyFunctionCost>>(
-      m, "PyFunctionCost", "Cost with its evaluator as a Python function")
+  class_<PyFunctionCost, Cost, std::shared_ptr<PyFunctionCost>>(m,
+      "PyFunctionCost", py::dynamic_attr(),
+      "Cost with its evaluator as a Python function")
       .def(py::init<int, const py::callable&, const std::string&>(),
           py::arg("num_vars"), py::arg("func"), py::arg("description") = "",
           "Constructs a cost for a python function `func`, applied to "
@@ -1547,7 +1762,7 @@ void BindPyFunctionCost(py::module_ m) {
 void BindPyFunctionConstraint(py::module_ m) {
   class_<PyFunctionConstraint, Constraint,
       std::shared_ptr<PyFunctionConstraint>>(m, "PyFunctionConstraint",
-      "Constraint with its evaluator as a Python function")
+      py::dynamic_attr(), "Constraint with its evaluator as a Python function")
       .def(py::init<int, const py::callable&, const Eigen::VectorXd&,
                const Eigen::VectorXd&, const std::string&>(),
           py::arg("num_vars"), py::arg("func"), py::arg("lb"), py::arg("ub"),
