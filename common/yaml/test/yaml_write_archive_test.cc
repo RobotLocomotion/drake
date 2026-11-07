@@ -312,6 +312,20 @@ TEST_F(YamlWriteArchiveTest, Variant) {
        "!EigenStruct\n    value: [1.0, 2.0]");
 }
 
+TEST_F(YamlWriteArchiveTest, MonostateVariant) {
+  const auto test = [](const MonostateVariant& value,
+                       const std::string& expected) {
+    MonostateVariantStruct x;
+    x.value = value;
+    EXPECT_EQ(Save(x), WrapDoc(expected));
+  };
+
+  // Like std::nullopt, std::monostate omits the key entirely.
+  EXPECT_EQ(Save(MonostateVariantStruct{}), "doc:\n");
+  test(DoubleStruct{1.0}, "!DoubleStruct\n    value: 1.0");
+  test(std::string("foo"), "!!str foo");
+}
+
 TEST_F(YamlWriteArchiveTest, PrimitiveVariant) {
   const auto test = [](const PrimitiveVariant& value,
                        const std::string& expected) {
