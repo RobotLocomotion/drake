@@ -1300,13 +1300,13 @@ class MultibodyTree {
                                    EigenPtr<Matrix3X<T>> Js_w_AB_E) const;
 
   // Return a point's translational velocity Jacobian in a frame A with respect
-  // to "speeds" 𝑠, where 𝑠 is either q̇ ≜ [q̇₁ ... q̇ⱼ]ᵀ (time-derivatives of
-  // j generalized positions) or v ≜ [v₁ ... vₖ]ᵀ (k generalized velocities).
+  // to "speeds" 𝑠, where 𝑠 is q̇ ≜ [q̇₁ ... q̇ₙ]ᵀ (n = nq = number of generalized
+  // positions) or v ≜ [v₁ ... vₙ]ᵀ (n = nv = number of generalized velocities).
   // For each point Bi of (fixed to) a frame B whose translational velocity
   // `v_ABi` in a frame A is characterized by speeds 𝑠, Bi's translational
   // velocity Jacobian in A with respect to 𝑠 is defined as
   //
-  //      Js_v_ABi = [ ∂(v_ABi)/∂𝑠₁,  ...  ∂(v_ABi)/∂𝑠ₙ ]    (n is j or k)
+  //      Js_v_ABi = [ ∂(v_ABi)/∂𝑠₁,  ...  ∂(v_ABi)/∂𝑠ₙ ]    (n is nq or nv)
   //
   // Point Bi's velocity in A is linear in 𝑠₁, ... 𝑠ₙ and can be written
   // `v_ABi = Js_v_ABi ⋅ 𝑠`  where 𝑠 is [𝑠₁ ... 𝑠ₙ]ᵀ.
@@ -1323,8 +1323,7 @@ class MultibodyTree {
   // Fo (frame_F's origin) to points Bi (regarded as fixed to B), where each
   // position vector is expressed in frame F.
   // @param[in] frame_A The frame that measures `v_ABi` (Bi's velocity in A).
-  // @param[in] frame_E The frame in which `v_ABi` is expressed on input and
-  // the frame in which the Jacobian `Js_v_ABi` is expressed on output.
+  // @param[in] frame_E The frame in which v_ABi and Js_v_ABi are expressed.
   // @param[out] Js_v_ABi_E Point Bi's velocity Jacobian in frame A with
   // respect to speeds 𝑠 (which is either q̇ or v), expressed in frame E.
   // `Js_v_ABi_E` is a `3 x n` matrix, where n is the number of elements in 𝑠.

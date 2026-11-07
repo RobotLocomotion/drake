@@ -4873,12 +4873,12 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// For one point Bp fixed/welded to a frame B, calculates J𝑠_V_ABp, Bp's
   /// spatial velocity Jacobian in frame A with respect to "speeds" 𝑠.
   /// <pre>
-  ///      J𝑠_V_ABp ≜ [ ∂(V_ABp)/∂𝑠₁,  ...  ∂(V_ABp)/∂𝑠ₙ ]    (n is j or k)
+  ///      J𝑠_V_ABp ≜ [ ∂(V_ABp)/∂𝑠₁,  ...  ∂(V_ABp)/∂𝑠ₙ ]    (n is nq or nv)
   ///      V_ABp = J𝑠_V_ABp ⋅ 𝑠          V_ABp is linear in 𝑠 ≜ [𝑠₁ ... 𝑠ₙ]ᵀ
   /// </pre>
   /// `V_ABp` is Bp's spatial velocity in frame A and "speeds" 𝑠 is either
-  /// q̇ ≜ [q̇₁ ... q̇ⱼ]ᵀ (time-derivatives of j generalized positions) or
-  /// v ≜ [v₁ ... vₖ]ᵀ (k generalized velocities).
+  /// q̇ ≜ [q̇₁ ... q̇ₙ]ᵀ (n = nq = number of generalized positions) or
+  /// v ≜ [v₁ ... vₙ]ᵀ (n = nv = number of generalized velocities).
   ///
   /// @param[in] context The state of the multibody system.
   /// @param[in] with_respect_to Enum equal to JacobianWrtVariable::kQDot or
@@ -4888,13 +4888,12 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// @param[in] frame_B The frame on which point Bp is fixed/welded.
   /// @param[in] p_BoBp_B A position vector from Bo (frame_B's origin) to point
   /// Bp (regarded as fixed/welded to B), expressed in frame_B.
-  /// @param[in] frame_A The frame that measures `v_ABp` (Bp's velocity in A).
+  /// @param[in] frame_A The frame that measures V_ABp (Bp's spatial velocity).
   /// Note: It is natural to wonder why there is no parameter p_AoAp_A (similar
   /// to the parameter p_BoBp_B for frame_B).  There is no need for p_AoAp_A
   /// because Bp's velocity in A is defined as the derivative in frame A of
   /// Bp's position vector from _any_ point fixed to A.
-  /// @param[in] frame_E The frame in which `v_ABp` is expressed on input and
-  /// the frame in which the Jacobian `J𝑠_V_ABp` is expressed on output.
+  /// @param[in] frame_E The frame in which V_ABp and J𝑠_V_ABp are expressed.
   /// @param[out] Js_V_ABp_E Point Bp's spatial velocity Jacobian in frame A
   /// with respect to speeds 𝑠 (which is either q̇ or v), expressed in frame E.
   /// `J𝑠_V_ABp_E` is a `6 x n` matrix, where n is the number of elements in 𝑠.
@@ -4931,10 +4930,10 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// velocity Jacobian in frame A with respect to 𝑠 (see
   /// CalcJacobianSpatialVelocity()).
   /// <pre>
-  ///      H𝑠_V_ABp ≜ [ D₁(J𝑠_V_ABp), ... Dₙ(J𝑠_V_ABp) ]    (n is j or k)
+  ///      H𝑠_V_ABp ≜ [ D₁(J𝑠_V_ABp), ... Dₙ(J𝑠_V_ABp) ]    (n is nq or nv)
   /// </pre>
-  /// "speeds" 𝑠 is either q̇ ≜ [q̇₁ ... q̇ⱼ]ᵀ (time-derivatives of j generalized
-  /// positions) or v ≜ [v₁ ... vₖ]ᵀ (k generalized velocities). Since
+  /// Speeds 𝑠 are q̇ ≜ [q̇₁ ... q̇ₙ]ᵀ (n = nq = number of generalized positions)
+  /// or v ≜ [v₁ ... vₙ]ᵀ (n = nv = number of generalized velocities). Since
   /// J𝑠_V_ABp_E depends only on the generalized positions q, Dᵢ(J𝑠_V_ABp_E)
   /// denotes the time derivative in frame E of J𝑠_V_ABp_E (i.e., of its
   /// elements) when 𝑠 = eᵢ (𝑠ᵢ = 1 and all other speeds are zero). For 𝑠 = q̇
@@ -5033,12 +5032,12 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// Calculates J𝑠_w_AB, a frame B's angular velocity Jacobian in a frame A
   /// with respect to "speeds" 𝑠.
   /// <pre>
-  ///      J𝑠_w_AB ≜ [ ∂(w_AB)/∂𝑠₁,  ...  ∂(w_AB)/∂𝑠ₙ ]    (n is j or k)
+  ///      J𝑠_w_AB ≜ [ ∂(w_AB)/∂𝑠₁,  ...  ∂(w_AB)/∂𝑠ₙ ]    (n is nq or nv)
   ///      w_AB = J𝑠_w_AB ⋅ 𝑠          w_AB is linear in 𝑠 ≜ [𝑠₁ ... 𝑠ₙ]ᵀ
   /// </pre>
   /// `w_AB` is B's angular velocity in frame A and "speeds" 𝑠 is either
-  /// q̇ ≜ [q̇₁ ... q̇ⱼ]ᵀ (time-derivatives of j generalized positions) or
-  /// v ≜ [v₁ ... vₖ]ᵀ (k generalized velocities).
+  /// q̇ ≜ [q̇₁ ... q̇ₙ]ᵀ (n = nq = number of generalized positions) or
+  /// v ≜ [v₁ ... vₙ]ᵀ (n = nv = number of generalized velocities).
   ///
   /// @param[in] context The state of the multibody system.
   /// @param[in] with_respect_to Enum equal to JacobianWrtVariable::kQDot or
@@ -5047,8 +5046,7 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// positions) or with respect to 𝑠 = v (generalized velocities).
   /// @param[in] frame_B The frame B in `w_AB` (B's angular velocity in A).
   /// @param[in] frame_A The frame A in `w_AB` (B's angular velocity in A).
-  /// @param[in] frame_E The frame in which `w_AB` is expressed on input and
-  /// the frame in which the Jacobian `J𝑠_w_AB` is expressed on output.
+  /// @param[in] frame_E The frame in which w_AB and J𝑠_w_AB are expressed.
   /// @param[out] Js_w_AB_E Frame B's angular velocity Jacobian in frame A with
   /// respect to speeds 𝑠 (which is either q̇ or v), expressed in frame E.
   /// The Jacobian is a function of only generalized positions q (which are
@@ -5072,12 +5070,12 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// For each point Bi affixed/welded to a frame B, calculates J𝑠_v_ABi, Bi's
   /// translational velocity Jacobian in frame A with respect to "speeds" 𝑠.
   /// <pre>
-  ///      J𝑠_v_ABi ≜ [ ∂(v_ABi)/∂𝑠₁,  ...  ∂(v_ABi)/∂𝑠ₙ ]    (n is j or k)
+  ///      J𝑠_v_ABi ≜ [ ∂(v_ABi)/∂𝑠₁,  ...  ∂(v_ABi)/∂𝑠ₙ ]    (n is nq or nv)
   ///      v_ABi = J𝑠_v_ABi ⋅ 𝑠          v_ABi is linear in 𝑠 ≜ [𝑠₁ ... 𝑠ₙ]ᵀ
   /// </pre>
   /// `v_ABi` is Bi's translational velocity in frame A and "speeds" 𝑠 is either
-  /// q̇ ≜ [q̇₁ ... q̇ⱼ]ᵀ (time-derivatives of j generalized positions) or
-  /// v ≜ [v₁ ... vₖ]ᵀ (k generalized velocities).
+  /// q̇ ≜ [q̇₁ ... q̇ₙ]ᵀ (n = nq = number of generalized positions) or
+  /// v ≜ [v₁ ... vₙ]ᵀ (n = nv = number of generalized velocities).
   ///
   /// @param[in] context The state of the multibody system.
   /// @param[in] with_respect_to Enum equal to JacobianWrtVariable::kQDot or
@@ -5093,8 +5091,7 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// to the parameter p_BoBi_B for frame_B).  There is no need for p_AoAi_A
   /// because Bi's velocity in A is defined as the derivative in frame A of
   /// Bi's position vector from _any_ point affixed to A.
-  /// @param[in] frame_E The frame in which `v_ABi` is expressed on input and
-  /// the frame in which the Jacobian `J𝑠_v_ABi` is expressed on output.
+  /// @param[in] frame_E The frame in which v_ABi and J𝑠_v_ABi are expressed.
   /// @param[out] Js_v_ABi_E Point Bi's velocity Jacobian in frame A with
   /// respect to speeds 𝑠 (which is either q̇ or v), expressed in frame E.
   /// `J𝑠_v_ABi_E` is a `3*p x n` matrix, where p is the number of points Bi and
@@ -5104,7 +5101,7 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// @note When 𝑠 = q̇, `Jq̇_v_ABi = Jq_p_AoBi`.  In other words, point Bi's
   /// velocity Jacobian in frame A with respect to q̇ is equal to point Bi's
   /// position Jacobian from Ao (A's origin) in frame A with respect to q. <pre>
-  /// [∂(v_ABi)/∂q̇₁,  ...  ∂(v_ABi)/∂q̇ⱼ] = [∂(p_AoBi)/∂q₁,  ...  ∂(p_AoBi)/∂qⱼ]
+  /// [∂(v_ABi)/∂q̇₁,  ...  ∂(v_ABi)/∂q̇ₙ] = [∂(p_AoBi)/∂q₁,  ...  ∂(p_AoBi)/∂qₙ]
   /// </pre>
   /// Note: Each partial derivative of p_AoBi is taken in frame A.
   /// @see CalcJacobianPositionVector() for details on Jq_p_AoBi.
@@ -5126,7 +5123,7 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
 
   /// For each point Bi affixed/welded to a frame B, calculates Jq_p_AoBi, Bi's
   /// position vector Jacobian in frame A with respect to the generalized
-  /// positions q ≜ [q₁ ... qₙ]ᵀ as
+  /// positions q ≜ [q₁ ... qₙ]ᵀ (n = nq = number of generalized positions) as
   /// <pre>
   ///      Jq_p_AoBi ≜ [ ᴬ∂(p_AoBi)/∂q₁,  ...  ᴬ∂(p_AoBi)/∂qₙ ]
   /// </pre>
@@ -5144,8 +5141,8 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// on output.
   /// @param[out] Jq_p_AoBi_E Point Bi's position vector Jacobian in frame A
   /// with generalized positions q, expressed in frame E. Jq_p_AoBi_E is a
-  /// `3*k x n` matrix, where k is the number of points Bi and n is the number
-  /// of elements in q.  The Jacobian is a function of only generalized
+  /// `3*k x n` matrix, where k is the number of points Bi and n = nq is the
+  /// number of elements in q.  The Jacobian is a function of only generalized
   /// positions q (which are pulled from the context).
   /// @throws std::exception if Jq_p_AoBi_E is nullptr or not sized `3*k x n`.
   /// @note Jq̇_v_ABi = Jq_p_AoBi.  In other words, point Bi's velocity Jacobian
