@@ -13,7 +13,17 @@ drake_cc_package_library(
     visibility = ["//visibility:public"],
     deps = [
         ":cenic_integrator",
+        ":cenic_integrator_parameters",
         ":make_cenic_integrator",
+    ],
+)
+
+drake_cc_library(
+    name = "cenic_integrator_parameters",
+    hdrs = ["cenic_integrator_parameters.h"],
+    deps = [
+        "//common:name_value",
+        "//multibody/contact_solvers/icf:icf_solver_parameters",
     ],
 )
 

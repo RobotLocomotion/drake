@@ -115,6 +115,7 @@ drake_pybind_library(
         ":module_py",
         ":primitives_py",
         "//bindings/pydrake:trajectories_py",
+        "//bindings/pydrake/multibody:contact_solvers_py",
         "//bindings/pydrake/solvers",
     ],
 )
@@ -440,6 +441,7 @@ drake_py_unittest(
         ":test_util_py",
         "//bindings/pydrake:trajectories_py",
         "//bindings/pydrake/common/test_utilities",
+        "//bindings/pydrake/multibody:contact_solvers_py",
     ],
 )
 

@@ -23,6 +23,9 @@ class TestCenic(unittest.TestCase):
         parameters = dut.get_solver_parameters()
         self.assertIsNotNone(parameters)
         dut.SetSolverParameters(parameters=parameters)
+        self.assertFalse(dut.get_explicit_external_inputs())
+        dut.set_explicit_external_inputs(explicit_external_inputs=True)
+        self.assertTrue(dut.get_explicit_external_inputs())
 
         # Confirm the IntegratorBase inheritance.
         dut.set_fixed_step_mode(True)

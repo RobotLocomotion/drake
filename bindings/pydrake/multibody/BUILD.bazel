@@ -69,6 +69,7 @@ drake_pybind_library(
 drake_pybind_library(
     name = "contact_solvers_py",
     cc_deps = [
+        "//bindings/generated_docstrings:multibody_cenic",
         "//bindings/generated_docstrings:multibody_contact_solvers_icf",
         "//bindings/pydrake/common:serialize_pybind",
     ],

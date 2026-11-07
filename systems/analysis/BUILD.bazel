@@ -76,6 +76,7 @@ drake_cc_library(
     hdrs = ["simulator_config.h"],
     deps = [
         "//common:name_value",
+        "//multibody/cenic:cenic_integrator_parameters",
     ],
 )
 
@@ -101,6 +102,7 @@ drake_cc_library(
         "//systems/framework:leaf_system",
     ],
     implementation_deps = [
+        "//multibody/cenic:cenic_integrator",
         "//multibody/cenic:make_cenic_integrator",
     ],
 )
@@ -507,6 +509,8 @@ drake_cc_googletest(
     deps = [
         ":simulator",
         ":simulator_config_functions",
+        "//common/test_utilities:expect_throws_message",
+        "//common/yaml",
         "//multibody/cenic",
         "//planning:robot_diagram_builder",
     ],
