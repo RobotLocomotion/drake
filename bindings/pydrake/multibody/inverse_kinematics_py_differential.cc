@@ -1,4 +1,5 @@
 #include <memory>
+#include <optional>
 #include <vector>
 
 #include "drake/bindings/generated_docstrings/multibody_inverse_kinematics.h"
@@ -303,7 +304,10 @@ void DefineDifferentialIkSystem(py::module_ m) {
 
   {
     constexpr auto nested_cls_doc = cls_doc.Ingredient;
-    class_<Ingredient>(cls, "Ingredient", nested_cls_doc.doc);
+    // N.B. The dynamic_attr (inherited by the derived classes) lets an
+    // ingredient keep alive the Python callables that it borrows.
+    class_<Ingredient>(
+        cls, "Ingredient", nested_cls_doc.doc, py::dynamic_attr());
     // We're explicitly not binding `AddToProgram` because we expect only the
     // C++ DifferentialInverseKinematicsSystem would call it.
   }
@@ -402,8 +406,33 @@ void DefineDifferentialIkSystem(py::module_ m) {
     PyClassIngredient<NestedClass> nested_cls = BindIngredient<NestedClass>(
         "CollisionConstraint", nested_cls_doc, &cls);
     nested_cls  // BR
-        .def("SetSelectDataForCollisionConstraintFunction",
-            &NestedClass::SetSelectDataForCollisionConstraintFunction,
+        .def(
+            "SetSelectDataForCollisionConstraintFunction",
+            [](py::object self_py, std::optional<py::callable> select_data) {
+              NestedClass& self = py::cast<NestedClass&>(self_py);
+              if (!select_data.has_value()) {
+                // None restores the default clearance filtering.
+                self.SetSelectDataForCollisionConstraintFunction({});
+                self_py.attr("_select_data") = py::none();
+                return;
+              }
+              // The ingredient borrows the callable. The Python object of the
+              // ingredient keeps it alive in a single slot, in a way that
+              // Python's GC can see. Replacing the selector releases the
+              // previous one.
+              PyObject* ptr = select_data->ptr();
+              self.SetSelectDataForCollisionConstraintFunction(
+                  [ptr](const planning::DofMask& active_dof,
+                      const planning::RobotClearance& robot_clearance,
+                      Eigen::VectorXd* dist_out,
+                      Eigen::MatrixXd* ddist_dq_out) {
+                    py::gil_scoped_acquire guard;
+                    py::handle callback = ptr;
+                    callback(
+                        active_dof, robot_clearance, dist_out, ddist_dq_out);
+                  });
+              self_py.attr("_select_data") = *select_data;
+            },
             py::arg("select_data_for_collision_constraint"),
             nested_cls_doc.SetSelectDataForCollisionConstraintFunction.doc);
   }
