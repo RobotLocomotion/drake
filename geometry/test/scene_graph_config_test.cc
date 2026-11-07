@@ -64,7 +64,10 @@ GTEST_TEST(SceneGraphConfigTest, ValidateModulus) {
       "Invalid scene graph configuration:"
       " 'hydroelastic_modulus' \\(0\\) must be a positive value.");
   props.hydroelastic_modulus = std::numeric_limits<double>::quiet_NaN();
-  // TODO(#21167) document a disposition for NaN.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      config.ValidateOrThrow(),
+      "Invalid scene graph configuration:"
+      " 'hydroelastic_modulus' \\(nan\\) must be a positive value.");
 }
 
 GTEST_TEST(SceneGraphConfigTest, ValidateRezHint) {
@@ -106,7 +109,10 @@ GTEST_TEST(SceneGraphConfigTest, ValidateDynamicFriction) {
       "Invalid scene graph configuration:"
       " 'dynamic_friction' \\(-1\\) must be a non-negative value.");
   props.dynamic_friction = std::numeric_limits<double>::quiet_NaN();
-  // TODO(#21167) document a disposition for NaN.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      config.ValidateOrThrow(),
+      "Invalid scene graph configuration:"
+      " 'dynamic_friction' \\(nan\\) must be a non-negative value.");
 }
 
 GTEST_TEST(SceneGraphConfigTest, ValidateStaticFriction) {
@@ -118,7 +124,10 @@ GTEST_TEST(SceneGraphConfigTest, ValidateStaticFriction) {
       "Invalid scene graph configuration:"
       " 'static_friction' \\(-1\\) must be a non-negative value.");
   props.static_friction = std::numeric_limits<double>::quiet_NaN();
-  // TODO(#21167) document a disposition for NaN.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      config.ValidateOrThrow(),
+      "Invalid scene graph configuration:"
+      " 'static_friction' \\(nan\\) must be a non-negative value.");
 }
 
 GTEST_TEST(SceneGraphConfigTest, ValidateHuntCrossley) {
@@ -131,7 +140,10 @@ GTEST_TEST(SceneGraphConfigTest, ValidateHuntCrossley) {
       " 'hunt_crossley_dissipation' \\(-1\\) must be a non-negative"
       " value.");
   props.hunt_crossley_dissipation = std::numeric_limits<double>::quiet_NaN();
-  // TODO(#21167) document a disposition for NaN.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      config.ValidateOrThrow(),
+      "Invalid scene graph configuration:"
+      " 'hunt_crossley_dissipation' \\(nan\\) must be a non-negative value.");
 }
 
 GTEST_TEST(SceneGraphConfigTest, ValidateRelaxationTime) {
@@ -158,7 +170,10 @@ GTEST_TEST(SceneGraphConfigTest, ValidatePointStiffness) {
       "Invalid scene graph configuration:"
       " 'point_stiffness' \\(-1\\) must be a positive value.");
   props.point_stiffness = std::numeric_limits<double>::quiet_NaN();
-  // TODO(#21167) document a disposition for NaN.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      config.ValidateOrThrow(),
+      "Invalid scene graph configuration:"
+      " 'point_stiffness' \\(nan\\) must be a positive value.");
 }
 
 GTEST_TEST(SceneGraphConfigTest, ValidateCoulombFriction) {

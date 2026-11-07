@@ -87,7 +87,7 @@ void AddContactMaterial(
     ProximityProperties* properties) {
   DRAKE_DEMAND(properties != nullptr);
   if (dissipation.has_value()) {
-    if (*dissipation < 0) {
+    if (!(*dissipation >= 0)) {
       throw std::logic_error(fmt::format(
           "The dissipation can't be negative; given {}", *dissipation));
     }
@@ -96,7 +96,7 @@ void AddContactMaterial(
   }
 
   if (point_stiffness.has_value()) {
-    if (*point_stiffness <= 0) {
+    if (!(*point_stiffness > 0)) {
       throw std::logic_error(fmt::format(
           "The point_contact_stiffness must be strictly positive; given {}",
           *point_stiffness));
@@ -138,7 +138,7 @@ void AddCompliantHydroelasticProperties(double hydroelastic_modulus,
   // The bare minimum of defining a compliant geometry is to declare its
   // compliance type. Downstream consumers (ProximityEngine) will determine
   // if this is sufficient.
-  if (hydroelastic_modulus <= 0) {
+  if (!(hydroelastic_modulus > 0)) {
     throw std::logic_error(
         fmt::format("The hydroelastic modulus must be positive; given {}",
                     hydroelastic_modulus));

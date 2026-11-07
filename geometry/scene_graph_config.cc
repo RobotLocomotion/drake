@@ -10,8 +10,8 @@ namespace geometry {
 
 namespace {
 
-// Conditions, that if not met, could trigger an exception.
-// TODO(#21167) NaN values are not consistently accounted for.
+// Conditions, that if not met, could trigger an exception. NaN never meets
+// any of these conditions.
 enum Condition {
   kPositiveFinite,
   kNonNegativeFinite,
@@ -42,12 +42,12 @@ void ThrowUnlessAbsentOr(std::string_view name, std::optional<double> property,
       break;
     }
     case kPositive: {
-      should_throw = (value <= 0.0);
+      should_throw = !(value > 0.0);
       condition_name = "positive";
       break;
     }
     case kNonNegative: {
-      should_throw = (value < 0.0);
+      should_throw = !(value >= 0.0);
       condition_name = "non-negative";
       break;
     }

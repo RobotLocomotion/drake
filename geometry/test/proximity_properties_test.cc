@@ -1,5 +1,6 @@
 #include "drake/geometry/proximity_properties.h"
 
+#include <limits>
 #include <vector>
 
 #include <gtest/gtest.h>
@@ -88,6 +89,22 @@ GTEST_TEST(ProximityPropertiesTest, AddContactMaterial) {
     DRAKE_EXPECT_THROWS_MESSAGE(AddContactMaterial(d, 0, mu, &p),
                                 ".+stiffness must be strictly positive.+");
   }
+
+  const double kNaN = std::numeric_limits<double>::quiet_NaN();
+
+  // Error case: NaN dissipation.
+  {
+    ProximityProperties p;
+    DRAKE_EXPECT_THROWS_MESSAGE(AddContactMaterial(kNaN, ps, mu, &p),
+                                ".+dissipation can't be negative.+nan");
+  }
+
+  // Error case: NaN stiffness.
+  {
+    ProximityProperties p;
+    DRAKE_EXPECT_THROWS_MESSAGE(AddContactMaterial(d, kNaN, mu, &p),
+                                ".+stiffness must be strictly positive.+nan");
+  }
 }
 
 GTEST_TEST(ProximityPropertiesTest, AddRigidProperties) {
@@ -123,6 +140,13 @@ void CheckDisallowedModulusValues(
     ProximityProperties p;
     DRAKE_EXPECT_THROWS_MESSAGE(function_to_test(-1.3, &p),
                                 ".+elastic modulus must be positive.+");
+  }
+  // Error case: NaN hydroelastic modulus.
+  {
+    ProximityProperties p;
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        function_to_test(std::numeric_limits<double>::quiet_NaN(), &p),
+        ".+elastic modulus must be positive.+nan");
   }
 }
 

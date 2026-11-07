@@ -132,9 +132,10 @@ default values will be provided. Downstream consumers of the contact
 materials can optionally provide defaults for missing properties.
 
 Raises:
-    RuntimeError if ``dissipation`` is negative, ``point_stiffness``
-    is not positive, of any of the contact material properties have
-    already been defined in ``properties``.
+    RuntimeError if ``dissipation`` is negative or NaN,
+    ``point_stiffness`` is not positive (including NaN), or any of the
+    contact material properties have already been defined in
+    ``properties``.
 
 Precondition:
     ``properties`` is not nullptr.)""";
