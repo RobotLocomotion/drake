@@ -36,6 +36,52 @@ class _SchemaLoader(yaml.loader.SafeLoader):
         result.update({"_tag": tag})
         return result
 
+    def compose_node(self, parent, index):
+        """Overrides PyYAML's compose_node so that an alias (``*name``) yields
+        a copy of the anchored node, instead of the very same node.
+
+        By default PyYAML would return a single Python object that appears at
+        multiple places in the loaded document (including via merge keys,
+        ``<<: *name``), so that mutating one place silently mutates the
+        others. Drake's C++ yaml loading yields independent copies, so we do
+        the same here, by copying at the node level (like C++'s
+        ConvertJbederYamlNodeToDrakeYamlNode) before any merge keys are
+        flattened or objects are constructed.
+        """
+        is_alias = self.check_event(yaml.events.AliasEvent)
+        node = super().compose_node(parent, index)
+        if not is_alias:
+            return node
+        if node.end_mark is None:
+            raise yaml.composer.ComposerError(
+                None,
+                None,
+                "found an alias to an anchor that is not yet complete "
+                "(recursive aliases are not supported)",
+                node.start_mark,
+            )
+        return self._copy_node(node)
+
+    @staticmethod
+    def _copy_node(node):
+        # Scalar nodes (and marks) are never mutated, so they can be shared.
+        if isinstance(node, yaml.ScalarNode):
+            return node
+        if isinstance(node, yaml.SequenceNode):
+            value = [_SchemaLoader._copy_node(x) for x in node.value]
+        else:
+            value = [
+                (_SchemaLoader._copy_node(k), _SchemaLoader._copy_node(v))
+                for k, v in node.value
+            ]
+        return type(node)(
+            node.tag,
+            value,
+            node.start_mark,
+            node.end_mark,
+            flow_style=node.flow_style,
+        )
+
 
 _SchemaLoader.add_multi_constructor("", _SchemaLoader._handle_multi_variant)
 
