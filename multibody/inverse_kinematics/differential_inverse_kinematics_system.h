@@ -10,6 +10,7 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/name_value.h"
 #include "drake/common/string_unordered_map.h"
+#include "drake/geometry/optimization/hpolyhedron.h"
 #include "drake/planning/collision_checker.h"
 #include "drake/planning/dof_mask.h"
 #include "drake/planning/joint_limits.h"
@@ -36,6 +37,7 @@ problem, consisting of:
   - CartesianVelocityLimitConstraint
   - CollisionConstraint
   - JointVelocityLimitConstraint
+  - StaticStabilityConstraint
 
 In brief, we solve for `v_next` such that `Jv_TGs * v_next` is close to `Vd_TGs`
 subject to the constraints, where:
@@ -138,6 +140,7 @@ class DifferentialInverseKinematicsSystem final
   class JointCenteringCost;
   class JointVelocityLimitConstraint;
   class LeastSquaresCost;
+  class StaticStabilityConstraint;
 
   /** (Advanced) Constructs the DifferentialInverseKinematicsSystem with a
   user-provided recipe for the mathematical program formulation.
@@ -820,6 +823,98 @@ class DifferentialInverseKinematicsSystem::JointVelocityLimitConstraint final
  private:
   Config config_;
   planning::JointLimits joint_limits_;
+};
+
+/** Constrains the center of mass of the selected model instances to remain
+statically stable, i.e., its projection along F's z axis (assumed parallel to
+gravity) stays inside a convex support region, at least a margin away from each
+of the region's bounding lines:
+`∀i m ≤ dᵢ + n̂ᵢᵀ ⋅ Jv_FScm_xy ⋅ v_next ⋅ Δt`
+where:
+- F is the support frame, in whose xy plane the region is fixed (e.g., the
+  body frame of a mobile base);
+- the support region is the 2D polyhedron {p : A p ≤ b} in F's xy plane;
+- m is the margin;
+- n̂ᵢ = -aᵢ / |aᵢ| is the inward unit normal of the i'th row of A;
+- dᵢ = (bᵢ - aᵢᵀ ⋅ p_FScm_xy) / |aᵢ| is the signed distance from the center
+  of mass to the i'th bounding line (positive inside);
+- p_FScm_xy and Jv_FScm_xy are the xy components of the center of mass
+  position and of its translational velocity Jacobian w.r.t. the active dofs,
+  both measured and expressed in F.
+
+Because the Jacobian is measured in F, dofs that move F and all of the selected
+model instances together (e.g., the x, y, and yaw of a planar base carrying the
+whole robot) have zero columns.
+
+As with CollisionConstraint, a configuration already within the margin is
+required to return to it in a single step. If that is not possible, the program
+is infeasible and DifferentialInverseKinematicsSystem commands zero velocity.
+
+This is the differential analogue of ComInPolyhedronConstraint, specialized to
+a 2D region in F's xy plane.
+
+@warning This constraint assumes F's z axis is parallel to gravity (e.g., a
+mobile base on flat, level ground in a plant whose gravity is along -Wz); this
+is not checked. */
+class DifferentialInverseKinematicsSystem::StaticStabilityConstraint final
+    : public Ingredient {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(StaticStabilityConstraint);
+
+  struct Config {
+    /** Passes this object to an Archive.
+    Refer to @ref yaml_serialization "YAML Serialization" for background. */
+    template <typename Archive>
+    void Serialize(Archive* a) {
+      a->Visit(DRAKE_NVP(support_frame));
+      a->Visit(DRAKE_NVP(support_region));
+      a->Visit(DRAKE_NVP(margin));
+      a->Visit(DRAKE_NVP(model_instances));
+    }
+
+    /** The fully-scoped name of the support frame F. */
+    std::string support_frame;
+
+    /** The support region {p : A p ≤ b} in F's xy plane (in meters). Its
+    ambient dimension must be 2 and no row of A may be zero. To construct it
+    from the vertices of a support polygon, use
+    `HPolyhedron(VPolytope(vertices))`. A region with no rows adds no
+    constraint. (In Python, yaml_dump_typed does not support this field.) */
+    geometry::optimization::HPolyhedron support_region;
+
+    /** "m" in the class overview (in meters). Must be finite. Positive values
+    keep the center of mass inside the region; a negative value allows it up
+    to |m| outside. If m is larger than the radius of the largest circle
+    inscribed in the support region, no configuration satisfies the
+    constraint, so the system always commands zero velocity. */
+    double margin{0.0};
+
+    /** The names of the model instances whose mass contributes to the center
+    of mass. When empty, the collision checker's robot model instances are
+    used; note that those might not include, e.g., an uncontrolled base. */
+    std::vector<std::string> model_instances;
+  };
+
+  /** @throws std::exception if the config is invalid (see SetConfig). */
+  explicit StaticStabilityConstraint(const Config& config);
+  ~StaticStabilityConstraint() final;
+
+  /** Returns the current config. */
+  const Config& GetConfig() const { return config_; }
+
+  /** Replaces the config set in the constructor.
+  @throws std::exception if `support_region` or `margin` does not meet the
+    requirements in its Config documentation. */
+  void SetConfig(const Config& config);
+
+  /** @throws std::exception if `support_frame` or any of `model_instances`
+  does not name an element of the plant, or if the selected model instances
+  are empty or have zero total mass. */
+  std::vector<solvers::Binding<solvers::EvaluatorBase>> AddToProgram(
+      CallbackDetails* details) const final;
+
+ private:
+  Config config_;
 };
 
 }  // namespace multibody
