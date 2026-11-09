@@ -363,9 +363,21 @@ R"""(Parses model description input into a MultibodyPlant and (optionally)
 a SceneGraph. A variety of input formats are supported, and are
 recognized by filename suffixes:
 
-File format | Filename suffix ------------------------ |
---------------- URDF | ".urdf" SDFormat | ".sdf" MJCF (Mujoco XML) |
-".xml" Drake Model Directives | ".dmd.yaml" Wavefront OBJ | ".obj"
+.. list-table::
+   :header-rows: 1
+
+   * - File format
+     - Filename suffix
+   * - URDF
+     - ".urdf"
+   * - SDFormat
+     - ".sdf"
+   * - MJCF (Mujoco XML)
+     - ".xml"
+   * - Drake Model Directives
+     - ".dmd.yaml"
+   * - Wavefront OBJ
+     - ".obj"
 
 The output of parsing is one or more model instances added to the
 MultibodyPlant provided to the parser at construction.

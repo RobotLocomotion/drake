@@ -2281,14 +2281,34 @@ can be obtained before or after context creation through
 geometry∷SceneGraphInspector APIs as outlined below. MultibodyPlant
 expects the following properties for point contact modeling:
 
-|Group name|Property Name|Required|Property Type|Property Description|
-|:--------:|:-----------:|:------:|:----------------:|:-------------------|
-|material|coulomb_friction|yes¹|CoulombFriction<T>|Static and Dynamic
-friction.| |material|point_contact_stiffness|no²|T| Compliant point
-contact stiffness.| |material|hunt_crossley_dissipation |no²⁴|T|
-Compliant contact dissipation.|
-|material|relaxation_time|yes³⁴|T|Linear Kelvin–Voigt model
-parameter.|
+.. list-table::
+   :header-rows: 1
+
+   * - Group name
+     - Property Name
+     - Required
+     - Property Type
+     - Property Description
+   * - material
+     - coulomb_friction
+     - yes¹
+     - CoulombFriction<T>
+     - Static and Dynamic friction.
+   * - material
+     - point_contact_stiffness
+     - no²
+     - T
+     - Compliant point contact stiffness.
+   * - material
+     - hunt_crossley_dissipation
+     - no²⁴
+     - T
+     - Compliant contact dissipation.
+   * - material
+     - relaxation_time
+     - yes³⁴
+     - T
+     - Linear Kelvin–Voigt model parameter.
 
 ¹ Collision geometry is required to be registered with a
 geometry∷ProximityProperties object that contains the ("material",
@@ -6695,11 +6715,17 @@ options are used for any model elements that belong to model instances
 for which no options have been set explicitly. The default is to use a
 quaternion floating joint.
 
-| BaseBodyJointType∷ | Notes | | ------------------------ |
--------------------------------------- | | kQuaternionFloatingJoint |
-6 dofs, unrestricted orientation | | kRpyFloatingJoint † | 6 dofs,
-uses 3 angles for orientation | | kWeldJoint | 0 dofs, welded to World
-("anchored") |
+.. list-table::
+   :header-rows: 1
+
+   * - BaseBodyJointType∷
+     - Notes
+   * - kQuaternionFloatingJoint
+     - 6 dofs, unrestricted orientation
+   * - kRpyFloatingJoint †
+     - 6 dofs, uses 3 angles for orientation
+   * - kWeldJoint
+     - 0 dofs, welded to World ("anchored")
 
 † The 3-angle orientation representation used by RpyFloatingJoint can
 be easier to work with than a quaternion (especially for optimization)

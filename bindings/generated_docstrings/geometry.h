@@ -492,17 +492,38 @@ on C. We define C's initial configuration as ``C = {P₁, P₂, ..., Pₙ}``
 (for ``n`` geometry pairs). Each action is described as either
 persistent or transient.
 
-| Line | C | Action | | :--: | :------------------ |
-:-------------------------------------------------- | | 1 | ``{P₁, P₂,
-..., Pₙ}`` | Initial condition of the persistent base | | 2 | ``{P₂,
-..., Pₙ}`` | Remove P₁ from the persistent base | | 3 | ``{P₂, ...,
-Pₙ₋₁}`` | Remove Pₙ from the persistent base | | 4 | ``{P₂}`` | Remove
-all pairs except P₂ from the persistent base | | 5 | ``{P₂, P₄, P₅}``
-| Transient declaration #1 puts P₄ and P₅ into C | | 6 | ``{P₂, P₃,
-P₄, P₅}`` | Transient declaration #2 puts P₃ and P₄ into C | | 7 |
-``{P₂, P₃, P₄}`` | Remove declaration #1. | | 8 | ``{P₂, P₃, P₄}`` |
-Configuration flattened; #2 no longer exists | **Table 1**: An example
-sequence of operations on collision filters.
+.. list-table::
+   :header-rows: 1
+
+   * - Line
+     - C
+     - Action
+   * - 1
+     - ``{P₁, P₂, ..., Pₙ}``
+     - Initial condition of the persistent base
+   * - 2
+     - ``{P₂, ..., Pₙ}``
+     - Remove P₁ from the persistent base
+   * - 3
+     - ``{P₂, ..., Pₙ₋₁}``
+     - Remove Pₙ from the persistent base
+   * - 4
+     - ``{P₂}``
+     - Remove all pairs except P₂ from the persistent base
+   * - 5
+     - ``{P₂, P₄, P₅}``
+     - Transient declaration #1 puts P₄ and P₅ into C
+   * - 6
+     - ``{P₂, P₃, P₄, P₅}``
+     - Transient declaration #2 puts P₃ and P₄ into C
+   * - 7
+     - ``{P₂, P₃, P₄}``
+     - Remove declaration #1.
+   * - 8
+     - ``{P₂, P₃, P₄}``
+     - Configuration flattened; #2 no longer exists
+
+**Table 1**: An example sequence of operations on collision filters.
 
 Notes: - lines 2 - 4 represent a series of *persistent* operations,
 filtering pairs of geometry (aka removing them from C by calling
@@ -1120,10 +1141,19 @@ role.
 - Otherwise, the configured default color will be applied (see
 DrakeVisualizerParams).
 
-| Group name | Required | Property Name | Property Type | Property
-Description | | :--------: | :------: | :-----------: |
-:-------------: | :------------------- | | phong | no | diffuse | Rgba
-| The rgba value of the object surface. |
+.. list-table::
+   :header-rows: 1
+
+   * - Group name
+     - Required
+     - Property Name
+     - Property Type
+     - Property Description
+   * - phong
+     - no
+     - diffuse
+     - Rgba
+     - The rgba value of the object surface.
 
 *Appearance of OBJ files for non-deformable geometries*
 
@@ -3162,13 +3192,18 @@ containing library. No other values for KinematicsValue are supported.
 Currently, the following data types with the following scalar types
 are supported:
 
-Alias | Instantiation | Scalar types
--------------------------------------|--------------------------------------------------|-------------
-FramePoseVector<Scalar> |
-KinematicsVector<FrameId,RigidTransform<Scalar>> |
-double/AutoDiffXd/Expression GeometryConfigurationVector<Scalar> |
-KinematicsVector<GeometryId, VectorX<Scalar>> |
-double/AutoDiffXd/Expression)""";
+.. list-table::
+   :header-rows: 1
+
+   * - Alias
+     - Instantiation
+     - Scalar types
+   * - FramePoseVector<Scalar>
+     - KinematicsVector<FrameId,RigidTransform<Scalar>>
+     - double/AutoDiffXd/Expression
+   * - GeometryConfigurationVector<Scalar>
+     - KinematicsVector<GeometryId, VectorX<Scalar>>
+     - double/AutoDiffXd/Expression)""";
         // Symbol: drake::geometry::KinematicsVector::IsFinite
         struct /* IsFinite */ {
           // Source: drake/geometry/kinematics_vector.h
@@ -5895,10 +5930,36 @@ implementation. That has several implications, as described below:
 - This table shows which shapes can be declared for use in hydroelastic
 contact, and what compliance can be assigned.
 
-| Shape | Compliant | Rigid | | :-------: | :-------: | :---: | |
-Sphere | yes | yes | | Cylinder | yes | yes | | Box | yes | yes | |
-Capsule | yes | yes | | Ellipsoid | yes | yes | | HalfSpace | yes |
-yes | | Mesh | yesᵃ | yesᵇ | | Convex | yesᶜ | yesᶜ |
+.. list-table::
+   :header-rows: 1
+
+   * - Shape
+     - Compliant
+     - Rigid
+   * - Sphere
+     - yes
+     - yes
+   * - Cylinder
+     - yes
+     - yes
+   * - Box
+     - yes
+     - yes
+   * - Capsule
+     - yes
+     - yes
+   * - Ellipsoid
+     - yes
+     - yes
+   * - HalfSpace
+     - yes
+     - yes
+   * - Mesh
+     - yesᵃ
+     - yesᵇ
+   * - Convex
+     - yesᶜ
+     - yesᶜ
 
 - ᵃ The exact representation of a compliant mesh depends on the type of
 mesh file it references:
@@ -6067,50 +6128,269 @@ symmetric with respect to shape *ordering*, the pair (ShapeA, ShapeB)
 will be the same as (ShapeB, ShapeA), so we only fill in half of each
 table.
 
-| | Box | Capsule | Convex | Cylinder | Ellipsoid | HalfSpace | Mesh |
-Sphere | | --------: | :-----: | :------: | :-----: | :-------: |
-:--------: | :--------: | :-----: | :-----: | | Box | 2e-15 | ░░░░░░ |
-░░░░░ | ░░░░░░░ | ░░░░░░ | ░░░░░░ | ░░░░░ | ░░░░░ | | Capsule | 3e-5ᶜ
-| 2e-5ᶜ | ░░░░░ | ░░░░░░░ | ░░░░░░ | ░░░░░░ | ░░░░░ | ░░░░░ | | Convex
-| 2e-15ᶜ | 3e-5ᶜ | 2e-15ᶜ | ░░░░░░░ | ░░░░░░ | ░░░░░░ | ░░░░░ | ░░░░░
-| | Cylinder | 1e-3ᶜ | 4e-5ᶜ | 1e-3ᶜ | 2e-3ᶜ | ░░░░░░ | ░░░░░░ | ░░░░░
-| ░░░░░ | | Ellipsoid | 4e-4ᶜ | 2e-4ᶜ | 4e-4ᶜ | 2e-3ᶜ | 5e-4ᶜ | ░░░░░░
-| ░░░░░ | ░░░░░ | | HalfSpace | 6e-15 | 4e-15 | 3e-15ᶜ | 4e-15 | 3e-15
-| throwsᵃ | ░░░░░ | ░░░░░ | | Mesh | ᵇ | ᵇ | ᵇ | ᵇ | ᵇ | ᵇ | ᵇ | ░░░░░
-| | Sphere | 4e-15 | 5e-15 | 3e-5ᶜ | 5e-15 | 2e-4ᶜ | 3e-15 | ᵇ | 5e-15
-| ***Table 1***: Worst observed error (in m) for 2mm penetration
-between geometries approximately 20cm in size for ``T`` = ``double``.
+.. list-table::
+   :header-rows: 1
 
-| | Box | Capsule | Convex | Cylinder | Ellipsoid | HalfSpace | Mesh |
-Sphere | | --------: | :-----: | :------: | :-----: | :-------: |
-:--------: | :--------: | :-----: | :-----: | | Box | throwsᵈ | ░░░░░░
-| ░░░░░ | ░░░░░░░ | ░░░░░░ | ░░░░░░ | ░░░░░ | ░░░░░ | | Capsule |
-throwsᵈ | throwsᵈ | ░░░░░ | ░░░░░░░ | ░░░░░░ | ░░░░░░ | ░░░░░ | ░░░░░
-| | Convex | throwsᵈ | throwsᵈ | throwsᵈ | ░░░░░░░ | ░░░░░░ | ░░░░░░ |
-░░░░░ | ░░░░░ | | Cylinder | throwsᵈ | throwsᵈ | throwsᵈ | throwsᵈ |
-░░░░░░ | ░░░░░░ | ░░░░░ | ░░░░░ | | Ellipsoid | throwsᵈ | throwsᵈ |
-throwsᵈ | throwsᵈ | throwsᵈ | ░░░░░░ | ░░░░░ | ░░░░░ | | HalfSpace |
-throwsᵈ | throwsᵈ | throwsᵈ | throwsᵈ | throwsᵈ | throwsᵃ | ░░░░░ |
-░░░░░ | | Mesh | ᵇ | ᵇ | ᵇ | ᵇ | ᵇ | ᵇ | ᵇ | ░░░░░ | | Sphere | 2e-15
-| 5e-15 | throwsᵈ | 2e-15 | throwsᵈ | 2e-15 | ᵇ | 5e-15 | ***Table
-2***: Worst observed error (in m) for 2mm penetration between
+   * -
+     - Box
+     - Capsule
+     - Convex
+     - Cylinder
+     - Ellipsoid
+     - HalfSpace
+     - Mesh
+     - Sphere
+   * - Box
+     - 2e-15
+     - ░░░░░░
+     - ░░░░░
+     - ░░░░░░░
+     - ░░░░░░
+     - ░░░░░░
+     - ░░░░░
+     - ░░░░░
+   * - Capsule
+     - 3e-5ᶜ
+     - 2e-5ᶜ
+     - ░░░░░
+     - ░░░░░░░
+     - ░░░░░░
+     - ░░░░░░
+     - ░░░░░
+     - ░░░░░
+   * - Convex
+     - 2e-15ᶜ
+     - 3e-5ᶜ
+     - 2e-15ᶜ
+     - ░░░░░░░
+     - ░░░░░░
+     - ░░░░░░
+     - ░░░░░
+     - ░░░░░
+   * - Cylinder
+     - 1e-3ᶜ
+     - 4e-5ᶜ
+     - 1e-3ᶜ
+     - 2e-3ᶜ
+     - ░░░░░░
+     - ░░░░░░
+     - ░░░░░
+     - ░░░░░
+   * - Ellipsoid
+     - 4e-4ᶜ
+     - 2e-4ᶜ
+     - 4e-4ᶜ
+     - 2e-3ᶜ
+     - 5e-4ᶜ
+     - ░░░░░░
+     - ░░░░░
+     - ░░░░░
+   * - HalfSpace
+     - 6e-15
+     - 4e-15
+     - 3e-15ᶜ
+     - 4e-15
+     - 3e-15
+     - throwsᵃ
+     - ░░░░░
+     - ░░░░░
+   * - Mesh
+     - ᵇ
+     - ᵇ
+     - ᵇ
+     - ᵇ
+     - ᵇ
+     - ᵇ
+     - ᵇ
+     - ░░░░░
+   * - Sphere
+     - 4e-15
+     - 5e-15
+     - 3e-5ᶜ
+     - 5e-15
+     - 2e-4ᶜ
+     - 3e-15
+     - ᵇ
+     - 5e-15
+
+***Table 1***: Worst observed error (in m) for 2mm penetration between
+geometries approximately 20cm in size for ``T`` = ``double``.
+
+.. list-table::
+   :header-rows: 1
+
+   * -
+     - Box
+     - Capsule
+     - Convex
+     - Cylinder
+     - Ellipsoid
+     - HalfSpace
+     - Mesh
+     - Sphere
+   * - Box
+     - throwsᵈ
+     - ░░░░░░
+     - ░░░░░
+     - ░░░░░░░
+     - ░░░░░░
+     - ░░░░░░
+     - ░░░░░
+     - ░░░░░
+   * - Capsule
+     - throwsᵈ
+     - throwsᵈ
+     - ░░░░░
+     - ░░░░░░░
+     - ░░░░░░
+     - ░░░░░░
+     - ░░░░░
+     - ░░░░░
+   * - Convex
+     - throwsᵈ
+     - throwsᵈ
+     - throwsᵈ
+     - ░░░░░░░
+     - ░░░░░░
+     - ░░░░░░
+     - ░░░░░
+     - ░░░░░
+   * - Cylinder
+     - throwsᵈ
+     - throwsᵈ
+     - throwsᵈ
+     - throwsᵈ
+     - ░░░░░░
+     - ░░░░░░
+     - ░░░░░
+     - ░░░░░
+   * - Ellipsoid
+     - throwsᵈ
+     - throwsᵈ
+     - throwsᵈ
+     - throwsᵈ
+     - throwsᵈ
+     - ░░░░░░
+     - ░░░░░
+     - ░░░░░
+   * - HalfSpace
+     - throwsᵈ
+     - throwsᵈ
+     - throwsᵈ
+     - throwsᵈ
+     - throwsᵈ
+     - throwsᵃ
+     - ░░░░░
+     - ░░░░░
+   * - Mesh
+     - ᵇ
+     - ᵇ
+     - ᵇ
+     - ᵇ
+     - ᵇ
+     - ᵇ
+     - ᵇ
+     - ░░░░░
+   * - Sphere
+     - 2e-15
+     - 5e-15
+     - throwsᵈ
+     - 2e-15
+     - throwsᵈ
+     - 2e-15
+     - ᵇ
+     - 5e-15
+
+***Table 2***: Worst observed error (in m) for 2mm penetration between
 geometries approximately 20cm in size for ``T`` = drake∷AutoDiffXd
 "AutoDiffXd".
 
-| | Box | Capsule | Convex | Cylinder | Ellipsoid | HalfSpace | Mesh |
-Sphere | | --------: | :-----: | :------: | :-----: | :-------: |
-:--------: | :--------: | :-----: | :-----: | | Box | throwsᵉ | ░░░░░░
-| ░░░░░ | ░░░░░░░ | ░░░░░░ | ░░░░░░ | ░░░░░ | ░░░░░ | | Capsule |
-throwsᵉ | throwsᵉ | ░░░░░ | ░░░░░░░ | ░░░░░░ | ░░░░░░ | ░░░░░ | ░░░░░
-| | Convex | throwsᵉ | throwsᵉ | throwsᵉ | ░░░░░░░ | ░░░░░░ | ░░░░░░ |
-░░░░░ | ░░░░░ | | Cylinder | throwsᵉ | throwsᵉ | throwsᵉ | throwsᵉ |
-░░░░░░ | ░░░░░░ | ░░░░░ | ░░░░░ | | Ellipsoid | throwsᵉ | throwsᵉ |
-throwsᵉ | throwsᵉ | throwsᵉ | ░░░░░░ | ░░░░░ | ░░░░░ | | HalfSpace |
-throwsᵉ | throwsᵉ | throwsᵉ | throwsᵉ | throwsᵉ | throwsᵃ | ░░░░░ |
-░░░░░ | | Mesh | ᵇ | ᵇ | ᵇ | ᵇ | ᵇ | ᵇ | ᵇ | ░░░░░ | | Sphere |
-throwsᵉ | throwsᵉ | throwsᵉ | throwsᵉ | throwsᵉ | throwsᵉ | ᵇ |
-throwsᵉ | ***Table 3***: Support for ``T`` =
-drake∷symbolic∷Expression.
+.. list-table::
+   :header-rows: 1
+
+   * -
+     - Box
+     - Capsule
+     - Convex
+     - Cylinder
+     - Ellipsoid
+     - HalfSpace
+     - Mesh
+     - Sphere
+   * - Box
+     - throwsᵉ
+     - ░░░░░░
+     - ░░░░░
+     - ░░░░░░░
+     - ░░░░░░
+     - ░░░░░░
+     - ░░░░░
+     - ░░░░░
+   * - Capsule
+     - throwsᵉ
+     - throwsᵉ
+     - ░░░░░
+     - ░░░░░░░
+     - ░░░░░░
+     - ░░░░░░
+     - ░░░░░
+     - ░░░░░
+   * - Convex
+     - throwsᵉ
+     - throwsᵉ
+     - throwsᵉ
+     - ░░░░░░░
+     - ░░░░░░
+     - ░░░░░░
+     - ░░░░░
+     - ░░░░░
+   * - Cylinder
+     - throwsᵉ
+     - throwsᵉ
+     - throwsᵉ
+     - throwsᵉ
+     - ░░░░░░
+     - ░░░░░░
+     - ░░░░░
+     - ░░░░░
+   * - Ellipsoid
+     - throwsᵉ
+     - throwsᵉ
+     - throwsᵉ
+     - throwsᵉ
+     - throwsᵉ
+     - ░░░░░░
+     - ░░░░░
+     - ░░░░░
+   * - HalfSpace
+     - throwsᵉ
+     - throwsᵉ
+     - throwsᵉ
+     - throwsᵉ
+     - throwsᵉ
+     - throwsᵃ
+     - ░░░░░
+     - ░░░░░
+   * - Mesh
+     - ᵇ
+     - ᵇ
+     - ᵇ
+     - ᵇ
+     - ᵇ
+     - ᵇ
+     - ᵇ
+     - ░░░░░
+   * - Sphere
+     - throwsᵉ
+     - throwsᵉ
+     - throwsᵉ
+     - throwsᵉ
+     - throwsᵉ
+     - throwsᵉ
+     - ᵇ
+     - throwsᵉ
+
+***Table 3***: Support for ``T`` = drake∷symbolic∷Expression.
 
 - ᵃ Penetration depth between two HalfSpace instances has no meaning; either
 they don't intersect, or they have infinite penetration.
@@ -6273,51 +6553,270 @@ symmetric with respect to shape *ordering*, the pair (ShapeA, ShapeB)
 will be the same as (ShapeB, ShapeA), so we only fill in half the
 table.
 
-| | Box | Capsule | Convex | Cylinder | Ellipsoid | HalfSpace | Mesh |
-Sphere | | --------: | :-----: | :------: | :-----: | :-------: |
-:--------: | :--------: | :-----: | :-----: | | Box | 4e-15 | ░░░░░░ |
-░░░░░ | ░░░░░░░ | ░░░░░░ | ░░░░░░ | ░░░░░ | ░░░░░ | | Capsule | 3e-6 |
-2e-5 | ░░░░░ | ░░░░░░░ | ░░░░░░ | ░░░░░░ | ░░░░░ | ░░░░░ | | Convex |
-3e-15 | 2e-5 | 3e-15 | ░░░░░░░ | ░░░░░░ | ░░░░░░ | ░░░░░ | ░░░░░ | |
-Cylinder | 6e-6 | 1e-5 | 6e-6 | 2e-5 | ░░░░░░ | ░░░░░░ | ░░░░░ | ░░░░░
-| | Ellipsoid | 9e-6 | 5e-6 | 9e-6 | 5e-5 | 2e-5 | ░░░░░░ | ░░░░░ |
-░░░░░ | | HalfSpace | throwsᵃ | throwsᵃ | throwsᵃ | throwsᵃ | throwsᵃ
-| throwsᵃ | ░░░░░ | ░░░░░ | | Mesh | ᶜ | ᶜ | ᶜ | ᶜ | ᶜ | throwsᵃ | ᶜ |
-░░░░░ | | Sphere | 4e-15 | 6e-15 | 3e-6 | 5e-15 | 4e-5 | 3e-15 | ᶜ |
-6e-15 | ***Table 4***: Worst observed error (in m) for 2mm
+.. list-table::
+   :header-rows: 1
+
+   * -
+     - Box
+     - Capsule
+     - Convex
+     - Cylinder
+     - Ellipsoid
+     - HalfSpace
+     - Mesh
+     - Sphere
+   * - Box
+     - 4e-15
+     - ░░░░░░
+     - ░░░░░
+     - ░░░░░░░
+     - ░░░░░░
+     - ░░░░░░
+     - ░░░░░
+     - ░░░░░
+   * - Capsule
+     - 3e-6
+     - 2e-5
+     - ░░░░░
+     - ░░░░░░░
+     - ░░░░░░
+     - ░░░░░░
+     - ░░░░░
+     - ░░░░░
+   * - Convex
+     - 3e-15
+     - 2e-5
+     - 3e-15
+     - ░░░░░░░
+     - ░░░░░░
+     - ░░░░░░
+     - ░░░░░
+     - ░░░░░
+   * - Cylinder
+     - 6e-6
+     - 1e-5
+     - 6e-6
+     - 2e-5
+     - ░░░░░░
+     - ░░░░░░
+     - ░░░░░
+     - ░░░░░
+   * - Ellipsoid
+     - 9e-6
+     - 5e-6
+     - 9e-6
+     - 5e-5
+     - 2e-5
+     - ░░░░░░
+     - ░░░░░
+     - ░░░░░
+   * - HalfSpace
+     - throwsᵃ
+     - throwsᵃ
+     - throwsᵃ
+     - throwsᵃ
+     - throwsᵃ
+     - throwsᵃ
+     - ░░░░░
+     - ░░░░░
+   * - Mesh
+     - ᶜ
+     - ᶜ
+     - ᶜ
+     - ᶜ
+     - ᶜ
+     - throwsᵃ
+     - ᶜ
+     - ░░░░░
+   * - Sphere
+     - 4e-15
+     - 6e-15
+     - 3e-6
+     - 5e-15
+     - 4e-5
+     - 3e-15
+     - ᶜ
+     - 6e-15
+
+***Table 4***: Worst observed error (in m) for 2mm
 penetration/separation between geometries approximately 20cm in size
 for ``T`` = ``double``.
 
-| | Box | Capsule | Convex | Cylinder | Ellipsoid | HalfSpace | Mesh |
-Sphere | | --------: | :-----: | :------: | :-----: | :-------: |
-:--------: | :--------: | :-----: | :-----: | | Box | throwsᵇ | ░░░░░░
-| ░░░░░ | ░░░░░░░ | ░░░░░░ | ░░░░░░ | ░░░░░ | ░░░░░ | | Capsule |
-throwsᵇ | throwsᵇ | ░░░░░ | ░░░░░░░ | ░░░░░░ | ░░░░░░ | ░░░░░ | ░░░░░
-| | Convex | throwsᵇ | throwsᵇ | throwsᵇ | ░░░░░░░ | ░░░░░░ | ░░░░░░ |
-░░░░░ | ░░░░░ | | Cylinder | throwsᵇ | throwsᵇ | throwsᵇ | throwsᵇ |
-░░░░░░ | ░░░░░░ | ░░░░░ | ░░░░░ | | Ellipsoid | throwsᵇ | throwsᵇ |
-throwsᵇ | throwsᵇ | throwsᵇ | ░░░░░░ | ░░░░░ | ░░░░░ | | HalfSpace |
-throwsᵃ | throwsᵃ | throwsᵃ | throwsᵃ | throwsᵃ | throwsᵃ | ░░░░░ |
-░░░░░ | | Mesh | ᶜ | ᶜ | ᶜ | ᶜ | ᶜ | throwsᵃ | ᶜ | ░░░░░ | | Sphere |
-2e-15 | throwsᵇ | throwsᵇ | throwsᵇ | throwsᵇ | 2e-15 | ᶜ | 5e-15 |
+.. list-table::
+   :header-rows: 1
+
+   * -
+     - Box
+     - Capsule
+     - Convex
+     - Cylinder
+     - Ellipsoid
+     - HalfSpace
+     - Mesh
+     - Sphere
+   * - Box
+     - throwsᵇ
+     - ░░░░░░
+     - ░░░░░
+     - ░░░░░░░
+     - ░░░░░░
+     - ░░░░░░
+     - ░░░░░
+     - ░░░░░
+   * - Capsule
+     - throwsᵇ
+     - throwsᵇ
+     - ░░░░░
+     - ░░░░░░░
+     - ░░░░░░
+     - ░░░░░░
+     - ░░░░░
+     - ░░░░░
+   * - Convex
+     - throwsᵇ
+     - throwsᵇ
+     - throwsᵇ
+     - ░░░░░░░
+     - ░░░░░░
+     - ░░░░░░
+     - ░░░░░
+     - ░░░░░
+   * - Cylinder
+     - throwsᵇ
+     - throwsᵇ
+     - throwsᵇ
+     - throwsᵇ
+     - ░░░░░░
+     - ░░░░░░
+     - ░░░░░
+     - ░░░░░
+   * - Ellipsoid
+     - throwsᵇ
+     - throwsᵇ
+     - throwsᵇ
+     - throwsᵇ
+     - throwsᵇ
+     - ░░░░░░
+     - ░░░░░
+     - ░░░░░
+   * - HalfSpace
+     - throwsᵃ
+     - throwsᵃ
+     - throwsᵃ
+     - throwsᵃ
+     - throwsᵃ
+     - throwsᵃ
+     - ░░░░░
+     - ░░░░░
+   * - Mesh
+     - ᶜ
+     - ᶜ
+     - ᶜ
+     - ᶜ
+     - ᶜ
+     - throwsᵃ
+     - ᶜ
+     - ░░░░░
+   * - Sphere
+     - 2e-15
+     - throwsᵇ
+     - throwsᵇ
+     - throwsᵇ
+     - throwsᵇ
+     - 2e-15
+     - ᶜ
+     - 5e-15
+
 ***Table 5***: Worst observed error (in m) for 2mm
 penetration/separation between geometries approximately 20cm in size
 for ``T`` = drake∷AutoDiffXd "AutoDiffXd".
 
-| | Box | Capsule | Convex | Cylinder | Ellipsoid | HalfSpace | Mesh |
-Sphere | | --------: | :-----: | :------: | :-----: | :-------: |
-:--------: | :--------: | :-----: | :-----: | | Box | throwsᵈ | ░░░░░░
-| ░░░░░ | ░░░░░░░ | ░░░░░░ | ░░░░░░ | ░░░░░ | ░░░░░ | | Capsule |
-throwsᵈ | throwsᵈ | ░░░░░ | ░░░░░░░ | ░░░░░░ | ░░░░░░ | ░░░░░ | ░░░░░
-| | Convex | throwsᵈ | throwsᵈ | throwsᵈ | ░░░░░░░ | ░░░░░░ | ░░░░░░ |
-░░░░░ | ░░░░░ | | Cylinder | throwsᵈ | throwsᵈ | throwsᵈ | throwsᵈ |
-░░░░░░ | ░░░░░░ | ░░░░░ | ░░░░░ | | Ellipsoid | throwsᵈ | throwsᵈ |
-throwsᵈ | throwsᵈ | throwsᵈ | ░░░░░░ | ░░░░░ | ░░░░░ | | HalfSpace |
-throwsᵃ | throwsᵃ | throwsᵃ | throwsᵃ | throwsᵃ | throwsᵃ | ░░░░░ |
-░░░░░ | | Mesh | ᶜ | ᶜ | ᶜ | ᶜ | ᶜ | throwsᵃ | ᶜ | ░░░░░ | | Sphere |
-throwsᵈ | throwsᵈ | throwsᵈ | throwsᵈ | throwsᵈ | throwsᵈ | ᶜ |
-throwsᵈ | ***Table 6***: Support for ``T`` =
-drake∷symbolic∷Expression.
+.. list-table::
+   :header-rows: 1
+
+   * -
+     - Box
+     - Capsule
+     - Convex
+     - Cylinder
+     - Ellipsoid
+     - HalfSpace
+     - Mesh
+     - Sphere
+   * - Box
+     - throwsᵈ
+     - ░░░░░░
+     - ░░░░░
+     - ░░░░░░░
+     - ░░░░░░
+     - ░░░░░░
+     - ░░░░░
+     - ░░░░░
+   * - Capsule
+     - throwsᵈ
+     - throwsᵈ
+     - ░░░░░
+     - ░░░░░░░
+     - ░░░░░░
+     - ░░░░░░
+     - ░░░░░
+     - ░░░░░
+   * - Convex
+     - throwsᵈ
+     - throwsᵈ
+     - throwsᵈ
+     - ░░░░░░░
+     - ░░░░░░
+     - ░░░░░░
+     - ░░░░░
+     - ░░░░░
+   * - Cylinder
+     - throwsᵈ
+     - throwsᵈ
+     - throwsᵈ
+     - throwsᵈ
+     - ░░░░░░
+     - ░░░░░░
+     - ░░░░░
+     - ░░░░░
+   * - Ellipsoid
+     - throwsᵈ
+     - throwsᵈ
+     - throwsᵈ
+     - throwsᵈ
+     - throwsᵈ
+     - ░░░░░░
+     - ░░░░░
+     - ░░░░░
+   * - HalfSpace
+     - throwsᵃ
+     - throwsᵃ
+     - throwsᵃ
+     - throwsᵃ
+     - throwsᵃ
+     - throwsᵃ
+     - ░░░░░
+     - ░░░░░
+   * - Mesh
+     - ᶜ
+     - ᶜ
+     - ᶜ
+     - ᶜ
+     - ᶜ
+     - throwsᵃ
+     - ᶜ
+     - ░░░░░
+   * - Sphere
+     - throwsᵈ
+     - throwsᵈ
+     - throwsᵈ
+     - throwsᵈ
+     - throwsᵈ
+     - throwsᵈ
+     - ᶜ
+     - throwsᵈ
+
+***Table 6***: Support for ``T`` = drake∷symbolic∷Expression.
 
 - ᵃ We don't currently support queries between HalfSpace and any other shape
 (except for Sphere).
@@ -6344,18 +6843,93 @@ unique solution. For example, any direction is qualified to be the
 gradient for two concentric spheres. Or two boxes touching at their
 vertices can pick a gradient from a continuous family of directions.
 
-| | Box | Capsule | Convex | Cylinder | Ellipsoid | HalfSpace | Mesh |
-Sphere | | --------: | :--: | :------: | :-----: | :-------: |
-:--------: | :--------: | :-----: | :-----: | | Box | Ok | ░░░░░░ |
-░░░░░ | ░░░░░░░ | ░░░░░░ | ░░░░░░ | ░░░░░ | ░░░░░ | | Capsule | NaN |
-NaN | ░░░░░ | ░░░░░░░ | ░░░░░░ | ░░░░░░ | ░░░░░ | ░░░░░ | | Convex |
-NaN | NaN | NaN | ░░░░░░░ | ░░░░░░ | ░░░░░░ | ░░░░░ | ░░░░░ | |
-Cylinder | NaN | NaN | NaN | NaN | ░░░░░░ | ░░░░░░ | ░░░░░ | ░░░░░ | |
-Ellipsoid | NaN | NaN | NaN | NaN | NaN | ░░░░░░ | ░░░░░ | ░░░░░ | |
-HalfSpace | NaN | NaN | NaN | NaN | NaN | NaN | ░░░░░ | ░░░░░ | | Mesh
-| NaN | NaN | NaN | NaN | NaN | NaN | NaN | ░░░░░ | | Sphere | Ok | Ok
-| Okᵃ | Ok | Okᵃ | Ok | Okᵃ | Ok | ***Table 7***: Support for
-signed-distance gradients when two geometries touch at zero distance.
+.. list-table::
+   :header-rows: 1
+
+   * -
+     - Box
+     - Capsule
+     - Convex
+     - Cylinder
+     - Ellipsoid
+     - HalfSpace
+     - Mesh
+     - Sphere
+   * - Box
+     - Ok
+     - ░░░░░░
+     - ░░░░░
+     - ░░░░░░░
+     - ░░░░░░
+     - ░░░░░░
+     - ░░░░░
+     - ░░░░░
+   * - Capsule
+     - NaN
+     - NaN
+     - ░░░░░
+     - ░░░░░░░
+     - ░░░░░░
+     - ░░░░░░
+     - ░░░░░
+     - ░░░░░
+   * - Convex
+     - NaN
+     - NaN
+     - NaN
+     - ░░░░░░░
+     - ░░░░░░
+     - ░░░░░░
+     - ░░░░░
+     - ░░░░░
+   * - Cylinder
+     - NaN
+     - NaN
+     - NaN
+     - NaN
+     - ░░░░░░
+     - ░░░░░░
+     - ░░░░░
+     - ░░░░░
+   * - Ellipsoid
+     - NaN
+     - NaN
+     - NaN
+     - NaN
+     - NaN
+     - ░░░░░░
+     - ░░░░░
+     - ░░░░░
+   * - HalfSpace
+     - NaN
+     - NaN
+     - NaN
+     - NaN
+     - NaN
+     - NaN
+     - ░░░░░
+     - ░░░░░
+   * - Mesh
+     - NaN
+     - NaN
+     - NaN
+     - NaN
+     - NaN
+     - NaN
+     - NaN
+     - ░░░░░
+   * - Sphere
+     - Ok
+     - Ok
+     - Okᵃ
+     - Ok
+     - Okᵃ
+     - Ok
+     - Okᵃ
+     - Ok
+
+***Table 7***: Support for signed-distance gradients when two
+geometries touch at zero distance.
 
 - ᵃ Return the gradient as a Vector3d of NaN if the sphere has zero radius.
 
@@ -6415,14 +6989,49 @@ matrix of shape pairs, but a list of shapes. Otherwise, the
 methodology is the same as described, with the point being represented
 as a zero-radius sphere.
 
-| Scalar | Box | Capsule | Convex | Cylinder | Ellipsoid | HalfSpace |
-Mesh | Sphere | | :--------: | :-----: | :------: | :-----: |
-:-------: | :--------: | :--------: | :-----: | :-----: | | double |
-2e-15 | 5e-15 | 6e-15 | 3e-15 | 3e-5ᵇ | 5e-15 | 6e-15ᶜ | 4e-15 | |
-AutoDiffXd | 1e-15 | 7e-15 | ᵃ | ᵃ | ᵃ | 5e-15 | ᵃ | 4e-15 | |
-Expression | ᵃ | ᵃ | ᵃ | ᵃ | ᵃ | ᵃ | ᵃ | ᵃ | ***Table 8***: Worst
-observed error (in m) for 2mm penetration/separation between geometry
-approximately 20cm in size and a point.
+.. list-table::
+   :header-rows: 1
+
+   * - Scalar
+     - Box
+     - Capsule
+     - Convex
+     - Cylinder
+     - Ellipsoid
+     - HalfSpace
+     - Mesh
+     - Sphere
+   * - double
+     - 2e-15
+     - 5e-15
+     - 6e-15
+     - 3e-15
+     - 3e-5ᵇ
+     - 5e-15
+     - 6e-15ᶜ
+     - 4e-15
+   * - AutoDiffXd
+     - 1e-15
+     - 7e-15
+     - ᵃ
+     - ᵃ
+     - ᵃ
+     - 5e-15
+     - ᵃ
+     - 4e-15
+   * - Expression
+     - ᵃ
+     - ᵃ
+     - ᵃ
+     - ᵃ
+     - ᵃ
+     - ᵃ
+     - ᵃ
+     - ᵃ
+
+***Table 8***: Worst observed error (in m) for 2mm
+penetration/separation between geometry approximately 20cm in size and
+a point.
 
 - ᵃ Unsupported geometry/scalar combinations are simply ignored; no results
 are reported for that geometry.

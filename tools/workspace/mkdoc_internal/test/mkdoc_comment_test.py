@@ -69,6 +69,336 @@ Cras semper auctor neque vitae tempus quam pellentesque nec.
 """.rstrip()
         self.assertEqual(process_comment(input), output)
 
+    def test_markdown_table(self):
+        input = """\
+/// Before.
+///
+/// | Name | `Value` |
+/// |:-----|--------:|
+/// | a    | 1       |
+/// | b    | x \\| y   |
+///
+/// After.
+""".rstrip()
+        output = """\
+Before.
+
+.. list-table::
+   :header-rows: 1
+
+   * - Name
+     - ``Value``
+   * - a
+     - 1
+   * - b
+     - x \\| y
+
+After."""
+        self.assertEqual(process_comment(input), output)
+
+    def test_html_table(self):
+        input = """\
+/// Before.
+///
+/// <table>
+/// <tr><th>Name</th><th>Value</th></tr>
+/// <tr><td>a</td><td>1</td></tr>
+/// <tr><td>b</td>
+///     <td>two
+///     lines</td></tr>
+/// </table>
+///
+/// After.
+""".rstrip()
+        output = """\
+Before.
+
+.. list-table::
+   :header-rows: 1
+
+   * - Name
+     - Value
+   * - a
+     - 1
+   * - b
+     - two lines
+
+After."""
+        self.assertEqual(process_comment(input), output)
+
+    def test_table_in_verbatim_regions_untouched(self):
+        # Fenced code, @code, <pre>, and @verbatim (including the backslash
+        # spellings) must not have their contents converted to tables.
+        for open_tag, close_tag in [
+            ("```", "```"),
+            ("@code", "@endcode"),
+            ("\\code", "\\endcode"),
+            ("<pre>", "</pre>"),
+            ("@verbatim", "@endverbatim"),
+            ("\\verbatim", "\\endverbatim"),
+        ]:
+            with self.subTest(open_tag=open_tag):
+                input = (
+                    f"/// {open_tag}\n"
+                    "/// 0    |\n"
+                    "/// 1/2  | 1/2\n"
+                    "/// -----|----\n"
+                    "/// 1    | 2/9\n"
+                    f"/// {close_tag}"
+                )
+                output = process_comment(input)
+                self.assertNotIn("list-table", output)
+                self.assertIn("-----|----", output)
+                self.assertIn("1    | 2/9", output)
+
+    def test_markdown_table_requires_pipe_separator(self):
+        # A line with a pipe followed by a horizontal rule is not a table.
+        output = process_comment("/// Compute |x|\n/// -----\n/// more")
+        self.assertNotIn("list-table", output)
+        # The separator must have as many columns as the header.
+        input = "/// | a | b | c |\n/// |---|---|\n/// | 1 | 2 |"
+        self.assertNotIn("list-table", process_comment(input))
+
+    def test_markdown_table_ends_at_mismatched_row(self):
+        input = """\
+/// | a | b | c |
+/// |---|---|---|
+/// | 1 | 2 | 3 |
+/// where a | b is meant
+""".rstrip()
+        output = process_comment(input)
+        self.assertTrue(
+            output.endswith("     - 3\n\nwhere a | b is meant"), output
+        )
+
+    def test_table_cell_escaping(self):
+        input = """\
+/// | a | b | c |
+/// |---|---|---|
+/// | - | \\|x\\| | .. |
+/// |   | `p\\|q` | 1. |
+""".rstrip()
+        output = process_comment(input)
+        self.assertEqual(
+            output,
+            """\
+.. list-table::
+   :header-rows: 1
+
+   * - a
+     - b
+     - c
+   * - \\-
+     - \\|x\\|
+     - \\..
+   * -
+     - ``p|q``
+     - \\1.""",
+        )
+
+    def test_table_cell_markup(self):
+        # Line breaks and lists in cells must not split the row.
+        input = """\
+/// | a | b |
+/// |---|---|
+/// | x<br>y | @p z and _it_ |
+///
+/// <table><tr><td><ul><li>one</li><li>two</li></ul></td><td>x</td></tr>
+/// </table>
+""".rstrip()
+        output = process_comment(input)
+        self.assertEqual(
+            output,
+            """\
+.. list-table::
+   :header-rows: 1
+
+   * - a
+     - b
+   * - x y
+     - ``z`` and *it*
+
+.. list-table::
+
+   * - • one • two
+     - x""",
+        )
+
+    def test_header_only_table(self):
+        # list-table rejects :header-rows: when there is no body.
+        output = process_comment("/// | a | b |\n/// |---|---|")
+        self.assertEqual(output, ".. list-table::\n\n   * - a\n     - b")
+        output = process_comment(
+            "/// <table><tr><th>A</th><th>B</th></tr></table>"
+        )
+        self.assertEqual(output, ".. list-table::\n\n   * - A\n     - B")
+
+    def test_html_table_with_pipe_and_empty_cell(self):
+        output = process_comment(
+            "/// <table><tr><td>a|b</td><td></td></tr></table>"
+        )
+        self.assertEqual(output, ".. list-table::\n\n   * - a\\|b\n     -")
+
+    def test_html_table_caption(self):
+        input = (
+            "/// <table><caption>Cap</caption>"
+            "<tr><th>H</th><th>I</th></tr>"
+            "<tr><td>1</td><td>2</td></tr></table>"
+        )
+        output = process_comment(input)
+        self.assertEqual(
+            output,
+            """\
+.. list-table:: Cap
+   :header-rows: 1
+
+   * - H
+     - I
+   * - 1
+     - 2""",
+        )
+
+    def test_markdown_table_row_spans(self):
+        # Doxygen merges a cell into the one above it with a lone ^. A
+        # list-table can't express that, so a grid table is used.
+        input = """\
+/// | Time   | Event   | Detail   |
+/// |--------|---------|----------|
+/// | 200 ms | capture | first    |
+/// | 400 ms | ^       | ^        |
+/// | 600 ms | send    | last `x` |
+""".rstrip()
+        output = process_comment(input)
+        self.assertEqual(
+            output,
+            """\
++--------+---------+------------+
+| Time   | Event   | Detail     |
++========+=========+============+
+| 200 ms | capture | first      |
++--------+         |            |
+| 400 ms |         |            |
++--------+---------+------------+
+| 600 ms | send    | last ``x`` |
++--------+---------+------------+""",
+        )
+
+    def test_html_table_row_and_column_spans(self):
+        input = (
+            "/// <table>"
+            "<tr><th>A</th><th>B</th><th>C</th></tr>"
+            "<tr><td rowspan=2>r</td><td colspan=2>wide cell here</td></tr>"
+            "<tr><td>p</td><td>q</td></tr>"
+            "</table>"
+        )
+        output = process_comment(input)
+        self.assertEqual(
+            output,
+            """\
++---+---+------------+
+| A | B | C          |
++===+===+============+
+| r | wide cell here |
+|   +---+------------+
+|   | p | q          |
++---+---+------------+""",
+        )
+
+    def test_html_table_colspan_in_header_and_caption(self):
+        input = (
+            "/// <table><caption>Cap</caption>"
+            "<tr><th colspan=2>H</th></tr>"
+            "<tr><td>1</td><td>2</td></tr></table>"
+        )
+        output = process_comment(input)
+        self.assertEqual(
+            output,
+            """\
+.. table:: Cap
+
+   +-------+
+   | H     |
+   +===+===+
+   | 1 | 2 |
+   +---+---+""",
+        )
+
+    def test_grid_table_wide_characters(self):
+        # Wide (East Asian) characters take two columns in a grid table.
+        input = (
+            "/// <table><tr><td>ωₙ ✔</td><td rowspan=2>漢字</td></tr>"
+            "<tr><td>b</td></tr></table>"
+        )
+        output = process_comment(input)
+        self.assertEqual(
+            output,
+            """\
++------+------+
+| ωₙ ✔ | 漢字 |
++------+      |
+| b    |      |
++------+------+""",
+        )
+
+    def test_span_across_header_drops_header(self):
+        # A span can't cross the header boundary of a grid table.
+        input = "/// | a | b |\n/// |---|---|\n/// | ^ | y |"
+        output = process_comment(input)
+        self.assertEqual(
+            output,
+            """\
++---+---+
+| a | b |
+|   +---+
+|   | y |
++---+---+""",
+        )
+
+    def test_table_in_list_item(self):
+        input = """\
+///  - When x
+///    cont.
+///    A | B
+///    - | -
+///    1 | 2
+///    See http://x
+///  - Next
+""".rstrip()
+        output = process_comment(input)
+        self.assertEqual(output.split("\n\n")[0], "- When x\n  cont.")
+        # The table is indented to belong to the list item, and the text that
+        # follows it is not swallowed into the directive.
+        self.assertIn(
+            "\n\n  .. list-table::\n     :header-rows: 1\n\n     * - A\n"
+            "       - B\n     * - 1\n       - 2\n\nSee http://x",
+            output,
+        )
+
+    def test_table_after_return(self):
+        input = """\
+/// @return
+/// | a | b |
+/// |---|---|
+/// | 1 | 2 |
+///
+/// After.
+""".rstrip()
+        output = process_comment(input)
+        self.assertEqual(
+            output,
+            """\
+Returns:
+    .. list-table::
+       :header-rows: 1
+
+       * - a
+         - b
+       * - 1
+         - 2
+
+After.""",
+        )
+
     def test_replace_exceptions(self):
         input = """\
 void func();
