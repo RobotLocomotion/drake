@@ -365,8 +365,8 @@ def _cc_linkonly_library_impl(ctx):
 cc_linkonly_library = rule(
     implementation = _cc_linkonly_library_impl,
     doc = """
-Links the given dependencies but discards the entire compilation context,
-i.e., include paths and preprocessor definitions.
+Links the given dependencies, preserving runfiles but discarding the entire
+compilation context, i.e., include paths and preprocessor definitions.
 """,
     attrs = {
         "deps": attr.label_list(providers = [CcInfo]),
@@ -379,12 +379,6 @@ def _cc_nolink_library_impl(ctx):
         cc_infos = [dep[CcInfo] for dep in ctx.attr.deps],
     )
     return [
-        DefaultInfo(
-            runfiles = ctx.runfiles(
-                collect_data = True,
-                collect_default = True,
-            ),
-        ),
         CcInfo(
             compilation_context = deps_cc_infos.compilation_context,
             linking_context = None,
@@ -395,7 +389,7 @@ cc_nolink_library = rule(
     implementation = _cc_nolink_library_impl,
     doc = """
 Provides access to the header files and preprocessor definitions from the given
-dependencies but discards all linked libraries and linker options.
+dependencies but discards all linked libraries, linker options, and runfiles.
 """,
     attrs = {
         "deps": attr.label_list(providers = [CcInfo]),
