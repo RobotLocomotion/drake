@@ -4,6 +4,7 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <map>
 #include <memory>
 #include <numbers>
 #include <set>
@@ -441,60 +442,95 @@ void MaybeWriteSceneHtml(int columns, int tile_mm) {
   drake::log()->info("Wrote {}", path.string());
 }
 
+// A settled scene for one case, kept for the whole program run, along with a
+// copy of its settled state and the problem size it reports.
+struct CachedScene {
+  Scene scene;
+  double settled_time{};
+  // Only the state is saved, not the parameters. SceneGraph keeps its
+  // GeometryState in a parameter; stepping updates the poses in it (and the
+  // broadphase bounding volumes), but not its structure, and the poses are
+  // recomputed from the restored state. Copying the parameter instead would
+  // rebuild the broadphase trees from scratch, which measurably slows the
+  // geometry query.
+  std::unique_ptr<systems::State<double>> settled_state;
+  int num_nv{};
+  int num_hydro{};
+  int num_point_pair{};
+  double settled_max_speed{};
+};
+
+// Returns the settled scene for the given case, building and settling it on
+// first use. Building and settling the larger scenes takes seconds, and
+// Google Benchmark calls SetUp() once per timing run (more than once per case
+// while it searches for an iteration count), so each case is settled only
+// once and shared by all of its runs and by all of the benchmarks.
+CachedScene& GetSettledScene(int columns, int tile_mm) {
+  static never_destroyed<std::map<std::pair<int, int>, CachedScene>> cache;
+  auto [iter, inserted] = cache.access().try_emplace({columns, tile_mm});
+  CachedScene& cached = iter->second;
+  if (!inserted) return cached;
+
+  cached.scene = MakeSettledScene(columns, tile_mm / 1000.0);
+  const Scene& scene = cached.scene;
+  const Context<double>& root_context = scene.simulator->get_context();
+  cached.settled_time = root_context.get_time();
+  cached.settled_state = root_context.CloneState();
+
+  // Record the size of the problem, for the benchmark report.
+  const auto& query_port = scene.scene_graph->get_query_output_port();
+  const auto& query = query_port.Eval<QueryObject<double>>(
+      scene.scene_graph->GetMyContextFromRoot(root_context));
+  std::vector<geometry::ContactSurface<double>> surfaces;
+  std::vector<PenetrationAsPointPair<double>> point_pairs;
+  query.ComputeContactSurfacesWithFallback(
+      HydroelasticContactRepresentation::kPolygon, &surfaces, &point_pairs);
+  cached.num_nv = scene.plant->num_velocities();
+  cached.num_hydro = static_cast<int>(surfaces.size());
+  cached.num_point_pair = static_cast<int>(point_pairs.size());
+
+  // Record how well the scene has settled, as the largest speed of any
+  // generalized velocity (m/s or rad/s).
+  const Context<double>& plant_context =
+      scene.plant->GetMyContextFromRoot(root_context);
+  cached.settled_max_speed =
+      scene.plant->GetVelocities(plant_context).cwiseAbs().maxCoeff();
+
+  // A scene with no contact would make every number meaningless.
+  DRAKE_DEMAND(cached.num_hydro + cached.num_point_pair > 0);
+  return cached;
+}
+
 class HydroelasticClutter : public benchmark::Fixture {
  public:
   HydroelasticClutter() { tools::performance::AddMinMaxStatistics(this); }
 
-  // Google Benchmark calls SetUp() once per timing run, and more than once
-  // per case while it searches for an iteration count. Building and settling
-  // the larger scenes takes seconds; pass --benchmark_min_time=<N>x to bound
-  // the number of runs.
+  // Restores the case's cached scene to its settled state, so that every run
+  // starts from the same state.
   void SetUp(benchmark::State& state) override {
     const int columns = state.range(0);
     const int tile_mm = state.range(1);
     MaybeWriteSceneHtml(columns, tile_mm);
 
-    Scene scene = MakeSettledScene(columns, tile_mm / 1000.0);
-    plant_ = scene.plant;
-    scene_graph_ = scene.scene_graph;
-    diagram_ = std::move(scene.diagram);
-    simulator_ = std::move(scene.simulator);
+    cached_ = &GetSettledScene(columns, tile_mm);
+    plant_ = cached_->scene.plant;
+    scene_graph_ = cached_->scene.scene_graph;
+    simulator_ = cached_->scene.simulator.get();
     root_context_ = &simulator_->get_mutable_context();
     plant_context_ = &plant_->GetMyMutableContextFromRoot(root_context_);
+    root_context_->SetTime(cached_->settled_time);
+    root_context_->get_mutable_state().SetFrom(*cached_->settled_state);
+    // The initialization events already ran before the scene settled.
+    simulator_->Initialize({.suppress_initialization_events = true});
     next_step_ = static_cast<int>(std::round(kWarmupTime / kTimeStep));
-
-    // Record the size of the problem, for the benchmark report.
-    const auto& query_port = scene_graph_->get_query_output_port();
-    const auto& query = query_port.Eval<QueryObject<double>>(
-        scene_graph_->GetMyContextFromRoot(*root_context_));
-    std::vector<geometry::ContactSurface<double>> surfaces;
-    std::vector<PenetrationAsPointPair<double>> point_pairs;
-    query.ComputeContactSurfacesWithFallback(
-        HydroelasticContactRepresentation::kPolygon, &surfaces, &point_pairs);
-    num_nv_ = plant_->num_velocities();
-    num_hydro_ = static_cast<int>(surfaces.size());
-    num_point_pair_ = static_cast<int>(point_pairs.size());
-
-    // Record how well the scene has settled, as the largest speed of any
-    // generalized velocity (m/s or rad/s).
-    settled_max_speed_ =
-        plant_->GetVelocities(*plant_context_).cwiseAbs().maxCoeff();
-
-    // A scene with no contact would make every number meaningless.
-    DRAKE_DEMAND(num_hydro_ + num_point_pair_ > 0);
-  }
-
-  void TearDown(benchmark::State&) override {
-    simulator_.reset();
-    diagram_.reset();
   }
 
  protected:
   void ReportProblemSize(benchmark::State* state) const {
-    state->counters["nv"] = num_nv_;
-    state->counters["hydro_contacts"] = num_hydro_;
-    state->counters["point_pair_contacts"] = num_point_pair_;
-    state->counters["settled_max_speed"] = settled_max_speed_;
+    state->counters["nv"] = cached_->num_nv;
+    state->counters["hydro_contacts"] = cached_->num_hydro;
+    state->counters["point_pair_contacts"] = cached_->num_point_pair;
+    state->counters["settled_max_speed"] = cached_->settled_max_speed;
   }
 
   // Invalidates the poses so that every query recomputes them, as a
@@ -508,17 +544,14 @@ class HydroelasticClutter : public benchmark::Fixture {
     plant_->SetPositions(plant_context_, plant_->GetPositions(*plant_context_));
   }
 
+  // All owned by the cache.
+  const CachedScene* cached_{};
   MultibodyPlant<double>* plant_{};
   SceneGraph<double>* scene_graph_{};
-  std::unique_ptr<Diagram<double>> diagram_;
-  Context<double>* root_context_{};  // Owned by simulator_.
+  systems::Simulator<double>* simulator_{};
+  Context<double>* root_context_{};
   Context<double>* plant_context_{};
-  std::unique_ptr<systems::Simulator<double>> simulator_;
   int next_step_{};
-  int num_nv_{};
-  int num_hydro_{};
-  int num_point_pair_{};
-  double settled_max_speed_{};
 };
 
 // The geometry query alone: poses, broadphase, and all narrowphase contact
@@ -579,7 +612,7 @@ BENCHMARK_REGISTER_F(HydroelasticClutter, SimulationStep)->Apply(AddArgs);
 // Like //tools/performance:gflags_main, but without its memory manager. That
 // library replaces malloc() et al. with allocation-counting versions, which
 // would perturb the timing of this allocation-heavy code, and its memory
-// reporting adds another (slow) SetUp() per case.
+// reporting adds another run per case.
 int main(int argc, char** argv) {
   benchmark::MaybeReenterWithoutASLR(argc, argv);
   gflags::SetUsageMessage("see drake/multibody/benchmarking/README.md");

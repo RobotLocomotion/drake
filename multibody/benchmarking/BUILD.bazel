@@ -102,10 +102,10 @@ drake_cc_googlebench_binary(
     ],
     add_test_rule = True,
     test_rule_args = [
-        # When testing, only run the smallest scene, and only its query. Every
-        # case settles its scene before timing anything, which is slow in debug
-        # builds, and the other scenes cost seconds apiece even when optimized.
-        "--benchmark_filter=ContactSurfaces/3/60",
+        # This test is slow in debug builds. So, we'll limit ourselves to the
+        # smallest case. However, we'll allow all benchmarks to evaluate because
+        # the common scene only needs to reach its settled state once.
+        "--benchmark_filter=/3/60",
         # Lands in the test's undeclared outputs directory.
         "--scene_html_dir=scenes",
     ],

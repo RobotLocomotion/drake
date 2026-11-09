@@ -128,8 +128,8 @@ edge length (mm) of the desk pieces:
 The reported counters `nv`, `hydro_contacts`, and `point_pair_contacts` give the
 size of each problem, and `settled_max_speed` (the largest generalized velocity
 after the warmup) shows how close to rest the scene is. Building and settling a
-scene takes seconds, and Google Benchmark repeats that while it searches for an
-iteration count; pass `--benchmark_min_time=<N>x` to bound the number of runs.
+scene takes seconds, so each case is settled once per process and shared by all
+of its timing runs and by both benchmarks.
 The smoke test fails if the scene has no contacts at all.
 
 The desk tiles, the sticks and the free bodies come from independent random
