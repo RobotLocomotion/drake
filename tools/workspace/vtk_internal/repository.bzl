@@ -202,6 +202,7 @@ def vtk_internal_repository(
             # - Use alphabetical order within a directory when listing patches.
             ":patches/upstream/common_executionmodel_disable_static_destructors.patch",  # noqa
             ":patches/upstream/vtkpugixml_never_destroyed.patch",
+            ":patches/upstream/vtksys_static_string_locals.patch",
             ":patches/common_core_fmt9.patch",
             ":patches/common_core_nobacktrace.patch",
             ":patches/common_core_rm_cin_prompting.patch",
