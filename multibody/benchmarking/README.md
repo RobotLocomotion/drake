@@ -138,6 +138,29 @@ other benchmarks here, wall-clock times are specific to a machine; prefer to
 compare before and after on the same machine (for example, with instruction
 counts from `perf stat`, which are far less noisy than times).
 
+## Inspecting the scene
+
+Because the scene exists only in code, the benchmark can write it out for
+viewing. Pass `--scene_html_dir=<dir>` and, for each case that runs, a Meshcat
+recording of the scene settling (from its initial poses through the warmup) is
+written to `<dir>/hydroelastic_clutter_<columns>_<tile>.html`. Open it in any
+browser; it is self-contained. Use `--benchmark_filter` to choose which cases
+are written; each case is written once, even though both benchmarks use it.
+
+    $ bazel run //multibody/benchmarking:hydroelastic_clutter -- \
+        --benchmark_filter='.*/12/60' --benchmark_min_time=1x \
+        --scene_html_dir=scenes
+
+A relative directory is relative to where `bazel run` was invoked; it is
+created if needed. The recording shows the proximity geometry: the desk and
+floor are translucent gray (so the sticks beneath show through), the sticks
+orange, the free bodies' rigid parts red, and their compliant hulls blue.
+
+The recording is made from a separate copy of the scene, so the timed scene
+has no visualizer in it, and the timings are unaffected. Writing a file does
+cost one extra warmup per case. The smoke test exercises this option; its file
+lands in the test's undeclared outputs.
+
 # iiwa_relaxed_pos_ik
 
 A benchmark for InverseKinematics.
