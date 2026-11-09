@@ -23,6 +23,9 @@ Thanks to Philip E. Gill and Elizabeth Wong for their kind support.
 
 <div class="note" markdown="1">
 Please note the following compatibility requirements for using Drake via Python:
+* Drake's pip packages contain the SNOPT solver by default.
+* Drake's pip packages support the MOSEK™ solver on an opt-in basis by using the
+`[mosek]` extra. The user must supply their own MOSEK™ license.
 * Drake's pip packages do not support the Gurobi solver. To use
 Gurobi, you will need to build Drake from source following the instructions
 in [Source Installation](/from_source.html).
@@ -43,9 +46,11 @@ Create a virtual environment, install Drake, and activate the environment:
 
 ```bash
 python3 -m venv env
-env/bin/pip install drake
+env/bin/pip install drake[mosek]
 source env/bin/activate
 ```
+
+The `[mosek]` extra may be omitted if the user doesn't have a MOSEK™ license.
 
 Refer to [Quickstart](/installation.html#quickstart) for next steps.
 
@@ -71,7 +76,7 @@ desired date:
 python3 -m venv env
 env/bin/pip install \
     --extra-index-url https://drake-packages.csail.mit.edu/whl/nightly/ \
-    'drake==0.0.YYYYMMDD'
+    'drake[mosek]==0.0.YYYYMMDD'
 source env/bin/activate
 ```
 
@@ -82,6 +87,9 @@ instead of `==0.0.YYYYMMDD` as shown below:
 python3 -m venv env
 env/bin/pip install \
     --extra-index-url https://drake-packages.csail.mit.edu/whl/nightly/ \
-    'drake<0.1'
+    'drake[mosek]<0.1'
 source env/bin/activate
 ```
+
+In both examples above, the `[mosek]` extra may be omitted if the user doesn't
+have a MOSEK™ license.

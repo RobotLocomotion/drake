@@ -8648,6 +8648,15 @@ SolverInterface∷enabled() returns true. Iff it is set to any non-empty
 value, then the solver is enabled; otherwise, the solver is not
 enabled.
 
+To use ``MosekSolver`` from ``pydrake`` installed via Drake's wheel
+files (i.e., via ``pip``), you must install ``pydrake`` using the
+``mosek`` extra:
+
+
+.. code-block:: txt
+
+    pip install drake[mosek]
+
 Note:
     MOSEK™ only cares about the initial guess of integer variables.
     The initial guess of continuous variables are not passed to
