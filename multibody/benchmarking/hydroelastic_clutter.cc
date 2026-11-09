@@ -1,8 +1,15 @@
 #include <cmath>
 #include <cstdint>
+#include <cstdlib>
+#include <filesystem>
+#include <fstream>
+#include <iostream>
 #include <memory>
 #include <numbers>
+#include <set>
+#include <stdexcept>
 #include <string>
+#include <string_view>
 #include <tuple>
 #include <utility>
 #include <vector>
@@ -10,14 +17,20 @@
 #include <Eigen/Core>
 #include <benchmark/benchmark.h>
 #include <fmt/format.h>
+#include <gflags/gflags.h>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/memory_file.h"
+#include "drake/common/never_destroyed.h"
+#include "drake/common/text_logging.h"
 #include "drake/geometry/in_memory_mesh.h"
+#include "drake/geometry/meshcat.h"
+#include "drake/geometry/meshcat_visualizer.h"
 #include "drake/geometry/proximity_properties.h"
 #include "drake/geometry/query_object.h"
 #include "drake/geometry/query_results/contact_surface.h"
 #include "drake/geometry/query_results/penetration_as_point_pair.h"
+#include "drake/geometry/rgba.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/geometry/shape_specification.h"
 #include "drake/math/rigid_transform.h"
@@ -60,7 +73,19 @@ two free bodies, so nv = 12 * columns. The default 12-column, 60 mm case has
 nv = 144 and produces roughly 80 hydroelastic contacts, similar in size
 to a cluttered tabletop. The 250 mm case has the same free bodies on a coarser
 desk (fewer, larger contacting pairs). The 64-column case checks how costs
-scale with the number of degrees of freedom (e.g., Jacobian assembly). */
+scale with the number of degrees of freedom (e.g., Jacobian assembly).
+
+To inspect a scene, pass --scene_html_dir=<dir>. For each case that runs (see
+--benchmark_filter), a recording of the scene settling is written to
+<dir>/hydroelastic_clutter_<columns>_<tile>.html, which can be opened in any
+browser. The recording uses a separate copy of the scene, so the timed one is
+unaffected. */
+
+DEFINE_string(scene_html_dir, "",
+              "If not empty, writes a Meshcat recording of each case's scene "
+              "settling to an html file in this directory. A relative path is "
+              "relative to the directory `bazel run` was invoked from, or to "
+              "the undeclared outputs directory when run as a test.");
 
 namespace drake {
 namespace multibody {
@@ -144,16 +169,24 @@ InMemoryMesh MakePrism(double radius, double height, int sides) {
   return InMemoryMesh{MemoryFile(std::move(obj), ".obj", "prism")};
 }
 
-ProximityProperties MakeRigidProperties() {
+// Returns properties with the scene's contact material and the given `color`.
+// The ("phong", "diffuse") `color` is only used by --scene_html_dir; it has no
+// effect on contact.
+ProximityProperties MakeProperties(const geometry::Rgba& color) {
   ProximityProperties properties;
   geometry::AddContactMaterial(kDissipation, {}, {}, &properties);
+  properties.AddProperty("phong", "diffuse", color);
+  return properties;
+}
+
+ProximityProperties MakeRigidProperties(const geometry::Rgba& color) {
+  ProximityProperties properties = MakeProperties(color);
   geometry::AddRigidHydroelasticProperties(0.05, &properties);
   return properties;
 }
 
-ProximityProperties MakeCompliantProperties() {
-  ProximityProperties properties;
-  geometry::AddContactMaterial(kDissipation, {}, {}, &properties);
+ProximityProperties MakeCompliantProperties(const geometry::Rgba& color) {
+  ProximityProperties properties = MakeProperties(color);
   geometry::AddCompliantHydroelasticProperties(kSize / 3, 1e6, &properties);
   return properties;
 }
@@ -174,8 +207,15 @@ std::vector<FreeBody> AddScene(int columns, double tile,
   Rng tile_rng(1);
   Rng stick_rng(2);
   Rng body_rng(3);
-  const ProximityProperties rigid = MakeRigidProperties();
-  const ProximityProperties compliant = MakeCompliantProperties();
+  // The desk and floor are rigid and translucent.
+  const ProximityProperties transparent_rigid =
+      MakeRigidProperties(geometry::Rgba(0.6, 0.6, 0.6, 0.4));
+  const ProximityProperties orange_rigid =
+      MakeRigidProperties(geometry::Rgba(0.8, 0.5, 0.2));
+  const ProximityProperties red_rigid =
+      MakeRigidProperties(geometry::Rgba(0.7, 0.2, 0.2));
+  const ProximityProperties blue_compliant =
+      MakeCompliantProperties(geometry::Rgba(0.3, 0.5, 0.9));
 
   const int side = static_cast<int>(std::ceil(std::sqrt(columns)));
   const double pitch = kSize * 1.6;
@@ -184,7 +224,7 @@ std::vector<FreeBody> AddScene(int columns, double tile,
   // The floor, so that nothing can fall forever.
   plant->RegisterCollisionGeometry(
       plant->world_body(), RigidTransformd(Eigen::Vector3d(0, 0, -1.05)),
-      Box(20, 20, 0.1), "floor", rigid);
+      Box(20, 20, 0.1), "floor", transparent_rigid);
 
   // The desk: overlapping yawed tiles whose tops are flush with the surface.
   const int num_tiles = static_cast<int>(std::ceil(extent / (tile * 0.8)));
@@ -198,7 +238,7 @@ std::vector<FreeBody> AddScene(int columns, double tile,
           plant->world_body(),
           RigidTransformd(RollPitchYawd(0, 0, yaw),
                           Eigen::Vector3d(x, y, kDeskTop - 0.02)),
-          Box(tile, tile, 0.04), fmt::format("tile{}", k++), rigid);
+          Box(tile, tile, 0.04), fmt::format("tile{}", k++), transparent_rigid);
     }
   }
 
@@ -226,11 +266,11 @@ std::vector<FreeBody> AddScene(int columns, double tile,
     if (s % 2 == 0) {
       plant->RegisterCollisionGeometry(plant->world_body(), X_WS,
                                        Convex(InMemoryMesh(stick_mesh)), name,
-                                       rigid);
+                                       orange_rigid);
     } else {
       plant->RegisterCollisionGeometry(plant->world_body(), X_WS,
                                        Box(0.02, 0.02, kStickLength), name,
-                                       rigid);
+                                       orange_rigid);
     }
   }
 
@@ -251,9 +291,9 @@ std::vector<FreeBody> AddScene(int columns, double tile,
     for (int layer = 0; layer < kLayers; ++layer) {
       const RigidBody<double>& body =
           plant->AddRigidBody(fmt::format("b{}", n), inertia);
-      plant->RegisterCollisionGeometry(body, RigidTransformd(),
-                                       Convex(InMemoryMesh(hulls[n % 6])),
-                                       fmt::format("hull{}", n), compliant);
+      plant->RegisterCollisionGeometry(
+          body, RigidTransformd(), Convex(InMemoryMesh(hulls[n % 6])),
+          fmt::format("hull{}", n), blue_compliant);
       for (int q = 0; q < kPartsPerBody; ++q) {
         const double angle =
             2 * std::numbers::pi * q / kPartsPerBody + body_rng.Uniform(0, 1);
@@ -264,7 +304,7 @@ std::vector<FreeBody> AddScene(int columns, double tile,
                             Eigen::Vector3d(kSize * 0.45 * std::cos(angle),
                                             kSize * 0.45 * std::sin(angle), 0)),
             Convex(InMemoryMesh(part_mesh)), fmt::format("part{}_{}", n, q),
-            rigid);
+            red_rigid);
       }
       const double roll = body_rng.Uniform(-0.1, 0.1);
       const double pitch_angle = body_rng.Uniform(-0.1, 0.1);
@@ -284,6 +324,122 @@ std::vector<FreeBody> AddScene(int columns, double tile,
   return free_bodies;
 }
 
+// A settled scene, ready to simulate.
+struct Scene {
+  MultibodyPlant<double>* plant{};
+  SceneGraph<double>* scene_graph{};
+  std::unique_ptr<Diagram<double>> diagram;
+  // Declared after `diagram`, which it references, so it's destroyed first.
+  std::unique_ptr<systems::Simulator<double>> simulator;
+};
+
+// Builds the scene for one case and lets it settle. If `meshcat` is not null,
+// the scene's proximity geometry is visualized and its settling is recorded.
+Scene MakeSettledScene(int columns, double tile,
+                       std::shared_ptr<geometry::Meshcat> meshcat = nullptr) {
+  Scene scene;
+  MultibodyPlantConfig config;
+  config.time_step = kTimeStep;
+  config.contact_model = "hydroelastic_with_fallback";
+  DiagramBuilder<double> builder;
+  std::tie(scene.plant, scene.scene_graph) =
+      AddMultibodyPlant(config, &builder);
+  const std::vector<FreeBody> free_bodies =
+      AddScene(columns, tile, scene.plant);
+  scene.plant->Finalize();
+  geometry::MeshcatVisualizer<double>* visualizer{};
+  if (meshcat != nullptr) {
+    geometry::MeshcatVisualizerParams params;
+    params.role = geometry::Role::kProximity;
+    visualizer = &geometry::MeshcatVisualizer<double>::AddToBuilder(
+        &builder, *scene.scene_graph, std::move(meshcat), std::move(params));
+  }
+  scene.diagram = builder.Build();
+
+  std::unique_ptr<Context<double>> context =
+      scene.diagram->CreateDefaultContext();
+  Context<double>& plant_context =
+      scene.plant->GetMyMutableContextFromRoot(context.get());
+  for (const FreeBody& fb : free_bodies) {
+    scene.plant->SetFreeBodyPose(&plant_context, *fb.body, fb.X_WB);
+  }
+  scene.simulator = std::make_unique<systems::Simulator<double>>(
+      *scene.diagram, std::move(context));
+
+  // Let the scene settle, so that we time steady-state contact.
+  if (visualizer != nullptr) visualizer->StartRecording();
+  scene.simulator->Initialize();
+  scene.simulator->AdvanceTo(kWarmupTime);
+  if (visualizer != nullptr) {
+    visualizer->StopRecording();
+    visualizer->PublishRecording();
+  }
+  return scene;
+}
+
+// The directory that scene recordings are written to, as resolved from
+// --scene_html_dir by ValidateSceneHtmlDir(). Empty if none are to be written.
+std::filesystem::path& scene_html_dir() {
+  static never_destroyed<std::filesystem::path> dir;
+  return dir.access();
+}
+
+// Validates --scene_html_dir as gflags parses it: resolves and creates the
+// directory and confirms that a Meshcat can be constructed, so that a bad flag
+// or environment is reported (and the program exits) before any timing begins.
+bool ValidateSceneHtmlDir(const char* flagname, const std::string& value) {
+  scene_html_dir().clear();
+  if (value.empty()) return true;
+  try {
+    // Resolve a relative path against the undeclared outputs directory when
+    // run as a test (by either `bazel test` or `bazel run`), or else against
+    // the directory the user expects (rather than the runfiles tree) under
+    // `bazel run`.
+    std::filesystem::path dir(value);
+    if (dir.is_relative()) {
+      for (const char* env :
+           {"TEST_UNDECLARED_OUTPUTS_DIR", "BUILD_WORKING_DIRECTORY"}) {
+        if (const char* base = std::getenv(env)) {
+          dir = std::filesystem::path(base) / dir;
+          break;
+        }
+      }
+    }
+    std::filesystem::create_directories(dir);
+    // Construction fails if, e.g., DRAKE_ALLOW_NETWORK disallows Meshcat.
+    geometry::Meshcat meshcat;
+    scene_html_dir() = dir;
+    return true;
+  } catch (const std::exception& e) {
+    fmt::print(stderr, "--{}: {}\n", flagname, e.what());
+    return false;
+  }
+}
+DEFINE_validator(scene_html_dir, &ValidateSceneHtmlDir);
+
+// If requested by --scene_html_dir, writes the recording of the given case's
+// scene settling. Each case is written at most once per program run.
+// @throws std::exception if the file can't be written.
+void MaybeWriteSceneHtml(int columns, int tile_mm) {
+  if (scene_html_dir().empty()) return;
+  static never_destroyed<std::set<std::pair<int, int>>> written;
+  if (!written.access().insert({columns, tile_mm}).second) return;
+
+  const std::filesystem::path path =
+      scene_html_dir() /
+      fmt::format("hydroelastic_clutter_{}_{}.html", columns, tile_mm);
+
+  auto meshcat = std::make_shared<geometry::Meshcat>();
+  MakeSettledScene(columns, tile_mm / 1000.0, meshcat);
+  std::ofstream file(path);
+  file << meshcat->StaticHtml();
+  file.close();
+  if (!file) {
+    throw std::runtime_error(fmt::format("Failed to write {}", path.string()));
+  }
+  drake::log()->info("Wrote {}", path.string());
+}
+
 class HydroelasticClutter : public benchmark::Fixture {
  public:
   HydroelasticClutter() { tools::performance::AddMinMaxStatistics(this); }
@@ -294,29 +450,16 @@ class HydroelasticClutter : public benchmark::Fixture {
   // the number of runs.
   void SetUp(benchmark::State& state) override {
     const int columns = state.range(0);
-    const double tile = state.range(1) / 1000.0;
+    const int tile_mm = state.range(1);
+    MaybeWriteSceneHtml(columns, tile_mm);
 
-    MultibodyPlantConfig config;
-    config.time_step = kTimeStep;
-    config.contact_model = "hydroelastic_with_fallback";
-    DiagramBuilder<double> builder;
-    std::tie(plant_, scene_graph_) = AddMultibodyPlant(config, &builder);
-    const std::vector<FreeBody> free_bodies = AddScene(columns, tile, plant_);
-    plant_->Finalize();
-    diagram_ = builder.Build();
-
-    context_ = diagram_->CreateDefaultContext();
-    plant_context_ = &plant_->GetMyMutableContextFromRoot(context_.get());
-    root_context_ = context_.get();
-    for (const FreeBody& fb : free_bodies) {
-      plant_->SetFreeBodyPose(plant_context_, *fb.body, fb.X_WB);
-    }
-    simulator_ = std::make_unique<systems::Simulator<double>>(
-        *diagram_, std::move(context_));
-    simulator_->Initialize();
-
-    // Let the scene settle, so that we time steady-state contact.
-    simulator_->AdvanceTo(kWarmupTime);
+    Scene scene = MakeSettledScene(columns, tile_mm / 1000.0);
+    plant_ = scene.plant;
+    scene_graph_ = scene.scene_graph;
+    diagram_ = std::move(scene.diagram);
+    simulator_ = std::move(scene.simulator);
+    root_context_ = &simulator_->get_mutable_context();
+    plant_context_ = &plant_->GetMyMutableContextFromRoot(root_context_);
     next_step_ = static_cast<int>(std::round(kWarmupTime / kTimeStep));
 
     // Record the size of the problem, for the benchmark report.
@@ -367,8 +510,7 @@ class HydroelasticClutter : public benchmark::Fixture {
   MultibodyPlant<double>* plant_{};
   SceneGraph<double>* scene_graph_{};
   std::unique_ptr<Diagram<double>> diagram_;
-  std::unique_ptr<Context<double>> context_;
-  Context<double>* root_context_{};  // Owned by simulator_ after SetUp().
+  Context<double>* root_context_{};  // Owned by simulator_.
   Context<double>* plant_context_{};
   std::unique_ptr<systems::Simulator<double>> simulator_;
   int next_step_{};
@@ -433,4 +575,26 @@ BENCHMARK_REGISTER_F(HydroelasticClutter, SimulationStep)->Apply(AddArgs);
 }  // namespace multibody
 }  // namespace drake
 
-BENCHMARK_MAIN();
+// Like //tools/performance:gflags_main, but without its memory manager. That
+// library replaces malloc() et al. with allocation-counting versions, which
+// would perturb the timing of this allocation-heavy code, and its memory
+// reporting adds another (slow) SetUp() per case.
+int main(int argc, char** argv) {
+  benchmark::MaybeReenterWithoutASLR(argc, argv);
+  gflags::SetUsageMessage("see drake/multibody/benchmarking/README.md");
+  for (int i = 1; i < argc; ++i) {
+    if (std::string_view(argv[i]) == "--help") {
+      gflags::ShowUsageWithFlags(argv[0]);
+      std::cout << "\n\n";
+      std::cout << "Flags from @google_benchmark:\n";
+      benchmark::Initialize(&argc, argv);
+      return 0;
+    }
+  }
+  benchmark::Initialize(&argc, argv);
+  gflags::ParseCommandLineNonHelpFlags(&argc, &argv, true);
+  if (benchmark::ReportUnrecognizedArguments(argc, argv)) return 1;
+  benchmark::RunSpecifiedBenchmarks();
+  benchmark::Shutdown();
+  return 0;
+}
