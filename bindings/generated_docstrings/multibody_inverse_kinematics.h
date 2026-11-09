@@ -955,7 +955,8 @@ optimization problem, consisting of: - one primary objective
 (JointCenteringCost) to resolve the nullspace within the primary
 objective, and - various optional constraints: -
 CartesianPositionLimitConstraint - CartesianVelocityLimitConstraint -
-CollisionConstraint - JointVelocityLimitConstraint
+CollisionConstraint - JointVelocityLimitConstraint -
+StaticStabilityConstraint
 
 In brief, we solve for ``v_next`` such that ``Jv_TGs * v_next`` is
 close to ``Vd_TGs`` subject to the constraints, where: - v_next is the
@@ -1781,6 +1782,126 @@ all of the ingredients in this recipe.)""";
             const char* doc = R"""()""";
           } num_ingredients;
         } Recipe;
+        // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::StaticStabilityConstraint
+        struct /* StaticStabilityConstraint */ {
+          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
+          const char* doc =
+R"""(Constrains the center of mass of the selected model instances to
+remain statically stable, i.e., its projection along gravity stays
+inside a convex support region, at least a margin away from each of
+the region's bounding lines: ``∀i m ≤ dᵢ + n̂ᵢᵀ ⋅ Jv_FScm_xy ⋅ v_next
+⋅ Δt`` where: - F is the support frame, in whose xy plane the region
+is fixed (e.g., the body frame of a mobile base); - the support region
+is the 2D polyhedron {p : A p ≤ b} in F's xy plane; - m is the margin;
+- n̂ᵢ = -aᵢ / |aᵢ| is the inward unit normal of the i'th row of A; -
+dᵢ = (bᵢ - aᵢᵀ ⋅ p_FScm_xy) / |aᵢ| is the signed distance from the
+center of mass to the i'th bounding line (positive inside); -
+p_FScm_xy and Jv_FScm_xy are the xy components of the center of mass
+position and of its translational velocity Jacobian w.r.t. the active
+dofs, both measured and expressed in F.
+
+Because the Jacobian is measured in F, dofs that move F and all of the
+selected model instances together (e.g., the x, y, and yaw of a planar
+base carrying the whole robot) have zero columns.
+
+As with CollisionConstraint, a configuration already within the margin
+is required to return to it in a single step. If that is not possible,
+the program is infeasible and DifferentialInverseKinematicsSystem
+commands zero velocity.
+
+This is the differential analogue of ComInPolyhedronConstraint,
+specialized to a 2D region in F's xy plane.
+
+Warning:
+    This constraint assumes F's z axis is parallel to gravity (i.e.,
+    the ground is flat and level); this is not checked.)""";
+          // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::StaticStabilityConstraint::AddToProgram
+          struct /* AddToProgram */ {
+            // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
+            const char* doc =
+R"""(Raises:
+    RuntimeError if ``support_frame`` or any of ``model_instances``
+    does not name an element of the plant, or if the selected model
+    instances are empty or have zero total mass.)""";
+          } AddToProgram;
+          // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::StaticStabilityConstraint::Config
+          struct /* Config */ {
+            // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
+            const char* doc = R"""()""";
+            // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::StaticStabilityConstraint::Config::Serialize
+            struct /* Serialize */ {
+              // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
+              const char* doc =
+R"""(Passes this object to an Archive. Refer to yaml_serialization "YAML
+Serialization" for background.)""";
+            } Serialize;
+            // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::StaticStabilityConstraint::Config::margin
+            struct /* margin */ {
+              // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
+              const char* doc =
+R"""("m" in the class overview (in meters). Must be finite. Positive values
+keep the center of mass inside the region; a negative value allows it
+up to |m| outside.)""";
+            } margin;
+            // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::StaticStabilityConstraint::Config::model_instances
+            struct /* model_instances */ {
+              // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
+              const char* doc =
+R"""(The names of the model instances whose mass contributes to the center
+of mass. When empty, the collision checker's robot model instances are
+used; note that those might not include, e.g., an uncontrolled base.)""";
+            } model_instances;
+            // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::StaticStabilityConstraint::Config::support_frame
+            struct /* support_frame */ {
+              // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
+              const char* doc =
+R"""(The fully-scoped name of the support frame F.)""";
+            } support_frame;
+            // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::StaticStabilityConstraint::Config::support_region
+            struct /* support_region */ {
+              // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
+              const char* doc =
+R"""(The support region {p : A p ≤ b} in F's xy plane (in meters). Its
+ambient dimension must be 2 and no row of A may be zero. To construct
+it from the vertices of a support polygon, use
+``HPolyhedron(VPolytope(vertices))``. A region with no rows adds no
+constraint. (In Python, yaml_dump_typed does not support this field.))""";
+            } support_region;
+            auto Serialize__fields() const {
+              return std::array{
+                std::make_pair("margin", margin.doc),
+                std::make_pair("model_instances", model_instances.doc),
+                std::make_pair("support_frame", support_frame.doc),
+                std::make_pair("support_region", support_region.doc),
+              };
+            }
+          } Config;
+          // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::StaticStabilityConstraint::GetConfig
+          struct /* GetConfig */ {
+            // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
+            const char* doc = R"""(Returns the current config.)""";
+          } GetConfig;
+          // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::StaticStabilityConstraint::SetConfig
+          struct /* SetConfig */ {
+            // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
+            const char* doc =
+R"""(Replaces the config set in the constructor.
+
+Raises:
+    RuntimeError if ``support_region`` does not have ambient dimension
+    2 or if any row of its A matrix is zero.
+
+Raises:
+    RuntimeError if ``margin`` is not finite.)""";
+          } SetConfig;
+          // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::StaticStabilityConstraint::StaticStabilityConstraint
+          struct /* ctor */ {
+            // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
+            const char* doc =
+R"""(Raises:
+    RuntimeError if the config is invalid (see SetConfig).)""";
+          } ctor;
+        } StaticStabilityConstraint;
         // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::Vd_TG_limit
         struct /* Vd_TG_limit */ {
           // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
