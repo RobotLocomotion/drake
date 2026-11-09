@@ -131,18 +131,14 @@ MeshcatMouseSpring::CalcAppliedSpatialForceFromDrag(
   // Note that we're using default_mass() because getting access to the current
   // parameterized mass is more trouble than it's worth. A shadow body (which
   // Finalize() adds to break a kinematic loop) has no mass of its own, so for a
-  // shadow we use the mass of its primary, the body it was split from. That is
-  // the full mass, not the even share the dynamics give each copy: while the
-  // loop's weld holds, the copies move together as the unsplit body, so
-  // dragging any one of them should pull as hard as dragging that body would.
-  // A share would make a split body feel N+1 times heavier (for N shadows).
-  // Any other body is its own primary.
+  // shadow we use the mass of its primary_link(), the body it was split from.
+  // That is the full mass, not the even share the dynamics give each copy:
+  // while the loop's weld holds, the copies move together as the unsplit body,
+  // so dragging any one of them should pull as hard as dragging that body
+  // would. A share would make a split body feel N+1 times heavier (for N
+  // shadows). Any other body is its own primary link.
   // TODO(vincekurtz): consider using composite mass instead of body mass.
-  const BodyIndex primary_index = multibody::internal::GetInternalTree(plant_)
-                                      .graph()
-                                      .link_by_index(body_index)
-                                      .primary_link();
-  const double mass = plant_.get_body(primary_index).default_mass();
+  const double mass = plant_.get_body(body_index).primary_link().default_mass();
   const Vector3d f_W = mass * a_W;
 
   ExternallyAppliedSpatialForce<double> force;

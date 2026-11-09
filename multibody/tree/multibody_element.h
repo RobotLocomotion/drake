@@ -37,6 +37,8 @@ class DeformableModel;
 ///   - free joints added to connect lone bodies or free-floating trees
 ///     to World
 ///   - fixed offset frames added when joints are modeled by mobilizers
+///   - shadow bodies, and their body frames, added to break kinematic loops
+///     (see MultibodyPlant::SetEnableLoopTopology())
 ///   - all mobilizers.
 ///
 /// @tparam_default_scalar

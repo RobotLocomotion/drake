@@ -675,6 +675,7 @@ class TestPlant(unittest.TestCase):
         self._test_multibody_tree_element_mixin(T, body)
         self.assertIsInstance(body.name(), str)
         self.assertIsInstance(body.scoped_name(), ScopedName)
+        self.assertIs(body.primary_link(), body)
         self.assertIsInstance(body.is_floating_base_body(), bool)
         self.assertIsInstance(body.has_quaternion_dofs(), bool)
         self.assertIsInstance(body.default_mass(), float)

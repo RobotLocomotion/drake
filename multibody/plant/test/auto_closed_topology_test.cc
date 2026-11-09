@@ -234,13 +234,18 @@ SpanningForest minimizes the maximum branch length (hence it splits the middle
 link): the coupler's primary link is reached via the driver and the coupler's
 shadow link is reached via the rocker, yielding two length-2 branches. The
 primary link is the coupler except half of its mass properties are given to
-the coupler shadow link (which is named coupler$1). */
+the coupler shadow link (which is named coupler$1). The shadow's primary_link()
+is the coupler; every other link is its own primary link. */
 GTEST_TEST(ClosedTopologyTest, CouplerIsSplit) {
   FourBar four_bar;
   MultibodyPlant<double>& plant = four_bar.plant();
   // World + driver + coupler + rocker.
   EXPECT_EQ(plant.num_bodies(), 4);
   EXPECT_EQ(plant.num_user_bodies(), 4);
+  // Before Finalize() there are no shadows.
+  for (BodyIndex i(0); i < plant.num_bodies(); ++i) {
+    EXPECT_EQ(&plant.get_body(i).primary_link(), &plant.get_body(i));
+  }
   plant.Finalize();
 
   // World + driver + coupler + rocker + the coupler's shadow, which comes
@@ -252,10 +257,13 @@ GTEST_TEST(ClosedTopologyTest, CouplerIsSplit) {
   const Link<double>& shadow = GetSoleShadowLink(plant);
   EXPECT_EQ(shadow.name(), "coupler$1");
   EXPECT_TRUE(shadow.is_ephemeral());
+  EXPECT_EQ(&shadow.primary_link(), &plant.GetBodyByName("coupler"));
 
-  // Every user-defined link remains non-ephemeral.
-  for (const char* name : {"driver", "coupler", "rocker"}) {
-    EXPECT_FALSE(plant.GetBodyByName(name).is_ephemeral());
+  // Every user-defined link remains non-ephemeral, and its own primary link.
+  for (BodyIndex i(0); i < plant.num_user_bodies(); ++i) {
+    const Link<double>& link = plant.get_body(i);
+    EXPECT_FALSE(link.is_ephemeral());
+    EXPECT_EQ(&link.primary_link(), &link);
   }
 }
 
@@ -368,8 +376,8 @@ GTEST_TEST(ClosedTopologyTest, ShadowHasNoMassProperties) {
     return method +
            "\\(\\): RigidBody 'coupler\\$1' is a shadow link, which "
            "Finalize\\(\\) created to break a kinematic loop. A shadow link "
-           "has no mass properties of its own; use its primary link 'coupler' "
-           "instead.";
+           "has no mass properties of its own; use its primary_link\\(\\), "
+           "'coupler', instead.";
   };
   DRAKE_EXPECT_THROWS_MESSAGE(shadow.default_mass(),
                               expected_message("default_mass"));
@@ -530,9 +538,11 @@ GTEST_TEST(ClosedTopologyTest, MassPropertySumsCountASplitLinkOnce) {
 
 /* CalcSpatialInertia() counts a split link once, as a whole, however its list
 of bodies names it: as the primary, as a shadow, or as both. Assembled, that is
-just the coupler's full spatial inertia at the coupler's pose. With the loop
-pulled apart it is the split model the solver is simulating, with half the
-coupler's mass properties at each copy's own pose. */
+just the coupler's full spatial inertia at the coupler's pose, which in the
+coupler's own frame is what the coupler itself reports. With the loop pulled
+apart it is the split model the solver is simulating, with half the coupler's
+mass properties at each copy's own pose, so then even in the coupler's own frame
+it differs from what the coupler reports. */
 GTEST_TEST(ClosedTopologyTest, CalcSpatialInertiaCountsTheWholeSplitLink) {
   constexpr double kTol = 1e-14;
   FourBar four_bar;
@@ -568,6 +578,18 @@ GTEST_TEST(ClosedTopologyTest, CalcSpatialInertiaCountsTheWholeSplitLink) {
   EXPECT_TRUE(CompareMatrices(calc_coupler_inertia().CopyToFullMatrix6(),
                               M_CWo_W.CopyToFullMatrix6(), kTol));
 
+  // Naming just the coupler, in the coupler's own frame C.
+  auto calc_coupler_inertia_in_C = [&]() {
+    return plant.CalcSpatialInertia(*context, coupler.body_frame(),
+                                    {coupler.index()});
+  };
+
+  // Assembled, that is just what the coupler itself reports.
+  EXPECT_TRUE(CompareMatrices(
+      calc_coupler_inertia_in_C().CopyToFullMatrix6(),
+      coupler.CalcSpatialInertiaInBodyFrame(*context).CopyToFullMatrix6(),
+      kTol));
+
   // Pulled apart, each copy's share at its own pose.
   plant.GetJointByName<RevoluteJoint>("world_driver")
       .set_angle(context.get(), 0.3);
@@ -584,6 +606,24 @@ GTEST_TEST(ClosedTopologyTest, CalcSpatialInertiaCountsTheWholeSplitLink) {
   }
   EXPECT_TRUE(CompareMatrices(calc_coupler_inertia().CopyToFullMatrix6(),
                               M_SWo_W_expected.CopyToFullMatrix6(), kTol));
+
+  // In the coupler's own frame that split model is no longer what the coupler
+  // itself reports, which is still its full, user-defined spatial inertia.
+  SpatialInertia<double> M_SCo_C_expected = SpatialInertia<double>::Zero();
+  for (const Link<double>* copy : {&coupler, &shadow}) {
+    const math::RigidTransformd X_CL =
+        copy->body_frame().CalcPose(*context, coupler.body_frame());
+    M_SCo_C_expected += GetSpatialInertiaShare(plant, *context, *copy)
+                            .ReExpress(X_CL.rotation())
+                            .Shift(-X_CL.translation());
+  }
+  const SpatialInertia<double> M_SCo_C = calc_coupler_inertia_in_C();
+  EXPECT_TRUE(CompareMatrices(M_SCo_C.CopyToFullMatrix6(),
+                              M_SCo_C_expected.CopyToFullMatrix6(), kTol));
+  EXPECT_FALSE(CompareMatrices(
+      M_SCo_C.CopyToFullMatrix6(),
+      coupler.CalcSpatialInertiaInBodyFrame(*context).CopyToFullMatrix6(),
+      0.01));
 
   // Naming the same body twice is still an error.
   DRAKE_EXPECT_THROWS_MESSAGE(
@@ -804,6 +844,9 @@ GTEST_TEST(ClosedTopologyTest, OneLinkCanHaveTwoShadows) {
   EXPECT_FALSE(primary.is_ephemeral());
   EXPECT_TRUE(shadow1.is_ephemeral());
   EXPECT_TRUE(shadow2.is_ephemeral());
+  EXPECT_EQ(&primary.primary_link(), &primary);
+  EXPECT_EQ(&shadow1.primary_link(), &primary);
+  EXPECT_EQ(&shadow2.primary_link(), &primary);
   EXPECT_NE(primary.mobod_index(), shadow1.mobod_index());
   EXPECT_NE(primary.mobod_index(), shadow2.mobod_index());
   EXPECT_NE(shadow1.mobod_index(), shadow2.mobod_index());
@@ -1017,6 +1060,7 @@ GTEST_TEST(ClosedTopologyTest, RetargetingSurvivesScalarConversion) {
 
   const Link<AutoDiffXd>& shadow_ad = plant_ad->GetBodyByName("coupler$1");
   EXPECT_TRUE(shadow_ad.is_ephemeral());
+  EXPECT_EQ(&shadow_ad.primary_link(), &plant_ad->GetBodyByName("coupler"));
 
   const Joint<AutoDiffXd>& loop_joint_ad =
       plant_ad->GetJointByName("coupler_rocker");

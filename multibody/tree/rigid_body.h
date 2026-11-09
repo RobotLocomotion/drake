@@ -274,6 +274,16 @@ class RigidBody : public MultibodyElement<T> {
   /// @note "link" is the terminology used in urdf/sdformat.
   const RigidBodyFrame<T>& body_frame() const { return link_frame(); }
 
+  /// Returns the "primary" link of this %RigidBody (%Link). To break a
+  /// kinematic loop, Finalize() can split a link into a primary link and one or
+  /// more "shadow" links; see MultibodyPlant::SetEnableLoopTopology(). For a
+  /// shadow link, this returns the link it was split from, which reports the
+  /// link's mass properties (a shadow link has none of its own). Any other link
+  /// is its own primary link, so for it this returns `*this`.
+  /// @throws std::exception if this element is not associated with a
+  ///   MultibodyPlant.
+  const Link<T>& primary_link() const;
+
   // TODO(rpoyner-tri): consider extending the design to allow locking on
   //  non-floating bodies.
 

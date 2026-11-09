@@ -4578,7 +4578,21 @@ Raises:
 
 Note:
     The mass and inertia of the world_body() does not contribute to
-    the the returned spatial inertia.)""";
+    the the returned spatial inertia.
+
+Note:
+    Until a loop's weld constraint is satisfied, a split body
+    contributes as in the split model that the solver is simulating:
+    an equal share of its mass properties at the pose of its primary
+    and of each shadow (see SetEnableLoopTopology()). So then, for a
+    primary body P, ``CalcSpatialInertia(context, P.body_frame(),
+    {P.index()})`` can differ from
+    ``P.CalcSpatialInertiaInBodyFrame(context)``, which reports P's
+    full, user-defined mass properties. Also, because naming any copy
+    counts the whole body, results don't add up across lists that
+    divide a split body's copies between them: ``{primary}`` and
+    ``{shadow}`` each give the whole body, as does ``{primary,
+    shadow}``.)""";
         } CalcSpatialInertia;
         // Symbol: drake::multibody::MultibodyPlant::CalcSpatialMomentumInWorldAboutPoint
         struct /* CalcSpatialMomentumInWorldAboutPoint */ {
@@ -5197,7 +5211,13 @@ associated with that id (nullptr if there is no such body).)""";
         struct /* GetBodyIndices */ {
           // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
-R"""(Returns a list of body indices associated with ``model_instance``.)""";
+R"""(Returns a list of body indices associated with ``model_instance``.
+After Finalize(), the list includes any shadow bodies that Finalize()
+split from this model instance's bodies to break kinematic loops; see
+SetEnableLoopTopology(). A shadow body has no mass properties of its
+own. RigidBody∷is_ephemeral() is true for a shadow body (and for no
+other body), and RigidBody∷primary_link() returns the body it was
+split from.)""";
         } GetBodyIndices;
         // Symbol: drake::multibody::MultibodyPlant::GetCollisionGeometriesForBody
         struct /* GetCollisionGeometriesForBody */ {
@@ -6899,14 +6919,15 @@ physics is restored.
 A shadow link is a body like any other in most respects (it has a pose
 and a velocity, for example), but it has no mass properties of its
 own: the primary link reports the link's full, user-defined mass
-properties, and asking a shadow link for its mass properties throws.
-Calculations that sum over several bodies (total mass, center of mass,
-spatial momentum, energy, and CalcSpatialInertia()) count a split link
-once, as its primary and shadows together. Until a loop's weld
-constraint is satisfied, these describe the split model that the
-solver is simulating, in which the primary and each shadow carry an
-equal share of the mass at their own poses. Shadow bodies always come
-after all the user's bodies; see num_user_bodies().
+properties, and asking a shadow link for its mass properties throws;
+ask its RigidBody∷primary_link() instead. Calculations that sum over
+several bodies (total mass, center of mass, spatial momentum, energy,
+and CalcSpatialInertia()) count a split link once, as its primary and
+shadows together. Until a loop's weld constraint is satisfied, these
+describe the split model that the solver is simulating, in which the
+primary and each shadow carry an equal share of the mass at their own
+poses. Shadow bodies always come after all the user's bodies; see
+num_user_bodies().
 
 Parameter ``enable``:
     Whether Finalize() should automatically model closed kinematic

@@ -66,6 +66,14 @@ ScopedName RigidBody<T>::scoped_name() const {
 }
 
 template <typename T>
+const Link<T>& RigidBody<T>::primary_link() const {
+  DRAKE_THROW_UNLESS(this->has_parent_tree());
+  const internal::MultibodyTree<T>& tree = this->get_parent_tree();
+  return tree.get_link(
+      tree.graph().link_by_index(this->index()).primary_link());
+}
+
+template <typename T>
 void RigidBody<T>::Lock(systems::Context<T>* context) const {
   ThrowIfNotFinalized(__func__);
   if (!is_floating_base_body()) {
@@ -165,14 +173,11 @@ void RigidBody<T>::ThrowIfNotFinalized(const char* source_method) const {
 
 template <typename T>
 void RigidBody<T>::ThrowEphemeralInertiaError(const char* source_method) const {
-  const internal::MultibodyTree<T>& tree = this->get_parent_tree();
-  const LinkIndex primary_index =
-      tree.graph().link_by_index(this->index()).primary_link();
   throw std::logic_error(fmt::format(
       "{}(): RigidBody '{}' is a shadow link, which Finalize() created to "
       "break a kinematic loop. A shadow link has no mass properties of its "
-      "own; use its primary link '{}' instead.",
-      source_method, this->name(), tree.get_link(primary_index).name()));
+      "own; use its primary_link(), '{}', instead.",
+      source_method, this->name(), primary_link().name()));
 }
 
 template <typename T>

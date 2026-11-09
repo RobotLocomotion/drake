@@ -319,11 +319,7 @@ GTEST_TEST(MeshcatMouseSpringLoopTest, DragShadowBody) {
   ASSERT_EQ(plant.num_bodies(), 4);  // World, A, B, and a shadow.
   const RigidBody<double>& shadow = plant.get_body(BodyIndex(3));
   ASSERT_TRUE(shadow.is_ephemeral());
-  const RigidBody<double>& primary =
-      plant.get_body(multibody::internal::GetInternalTree(plant)
-                         .graph()
-                         .link_by_index(shadow.index())
-                         .primary_link());
+  const RigidBody<double>& primary = shadow.primary_link();
   ASSERT_NE(&primary, &shadow);
 
   constexpr double kStiffness = 100.0;  // 1/s².

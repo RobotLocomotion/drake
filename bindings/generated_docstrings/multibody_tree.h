@@ -5228,7 +5228,9 @@ of the user-specified model. These are called "ephemeral" elements and
 can be identified using the ``is_ephemeral()`` function here. Examples
 include - free joints added to connect lone bodies or free-floating
 trees to World - fixed offset frames added when joints are modeled by
-mobilizers - all mobilizers.)""";
+mobilizers - shadow bodies, and their body frames, added to break
+kinematic loops (see MultibodyPlant∷SetEnableLoopTopology()) - all
+mobilizers.)""";
         // Symbol: drake::multibody::MultibodyElement::DeclareAbstractParameter
         struct /* DeclareAbstractParameter */ {
           // Source: drake/multibody/tree/multibody_element.h
@@ -7846,6 +7848,22 @@ R"""((Internal use only) Returns this Link's unique ordinal. Currently
 identical to the index but will differ when we permit removal of Links
 as we do for Joints.)""";
         } ordinal;
+        // Symbol: drake::multibody::RigidBody::primary_link
+        struct /* primary_link */ {
+          // Source: drake/multibody/tree/rigid_body.h
+          const char* doc =
+R"""(Returns the "primary" link of this RigidBody (%Link). To break a
+kinematic loop, Finalize() can split a link into a primary link and
+one or more "shadow" links; see
+MultibodyPlant∷SetEnableLoopTopology(). For a shadow link, this
+returns the link it was split from, which reports the link's mass
+properties (a shadow link has none of its own). Any other link is its
+own primary link, so for it this returns ``*this``.
+
+Raises:
+    RuntimeError if this element is not associated with a
+    MultibodyPlant.)""";
+        } primary_link;
         // Symbol: drake::multibody::RigidBody::scoped_name
         struct /* scoped_name */ {
           // Source: drake/multibody/tree/rigid_body.h
