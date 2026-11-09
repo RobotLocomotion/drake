@@ -15,6 +15,7 @@
 // #include "drake/common/schema/rotation.h"
 // #include "drake/common/schema/stochastic.h"
 // #include "drake/common/schema/transform.h"
+// #include "drake/common/schema/unchanged.h"
 
 // Symbol: pydrake_doc_common_schema
 constexpr struct /* pydrake_doc_common_schema */ {
@@ -639,6 +640,21 @@ R"""(Sets the rotation field to the given deterministic RPY, in degrees.)""";
           };
         }
       } Transform;
+      // Symbol: drake::schema::Unchanged
+      struct /* Unchanged */ {
+        // Source: drake/common/schema/unchanged.h
+        const char* doc =
+R"""(A tag type intended for use by YAML Serialization to affirmatively
+indicate that some value should remain unchanged. Refer to
+yaml_serialization "YAML Serialization" for background.)""";
+        // Symbol: drake::schema::Unchanged::Serialize
+        struct /* Serialize */ {
+          // Source: drake/common/schema/unchanged.h
+          const char* doc =
+R"""(Passes this object to an Archive. Refer to yaml_serialization "YAML
+Serialization" for background.)""";
+        } Serialize;
+      } Unchanged;
       // Symbol: drake::schema::Uniform
       struct /* Uniform */ {
         // Source: drake/common/schema/stochastic.h
