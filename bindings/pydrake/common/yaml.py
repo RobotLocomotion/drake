@@ -262,20 +262,6 @@ def _is_nullable(schema):
     return False
 
 
-def _get_nested_optional_type(schema):
-    """If the given schema (i.e., type) is equivalent to an Optional[Foo], then
-    returns Foo. Otherwise, returns None.
-    """
-    generic_base = typing.get_origin(schema)
-    if _is_union(generic_base):
-        generic_args = typing.get_args(schema)
-        NoneType = type(None)
-        if len(generic_args) == 2 and generic_args[-1] == NoneType:
-            (nested_type, _) = generic_args
-            return nested_type
-    return None
-
-
 def _create_from_schema(*, schema, forthcoming_value):
     """Given a schema (i.e., a type), returns a default-constructed instance
     of that schema type, modulo a few exceptional cases that are specific to
@@ -380,31 +366,6 @@ def _merge_yaml_dict_item_into_target(
         setter(new_value)
         return
 
-    # Handle nullable types (std::optional<T> or typing.Optional[T]).
-    nested_optional_type = _get_nested_optional_type(value_schema)
-    if nested_optional_type is not None:
-        # If the yaml was null, the Python field will be None.
-        if yaml_value is None:
-            setter(None)
-            return
-        # Create a non-null default value, if necessary.
-        old_value = getter()
-        if old_value is None:
-            setter(
-                _create_from_schema(
-                    schema=nested_optional_type, forthcoming_value=yaml_value
-                )
-            )
-        # Now we can parse Optional[Foo] like a plain Foo.
-        _merge_yaml_dict_item_into_target(
-            options=options,
-            name=name,
-            yaml_value=yaml_value,
-            target=target,
-            value_schema=nested_optional_type,
-        )
-        return
-
     # Handle pathlib.Path.
     if value_schema == Path:
         if not isinstance(yaml_value, str):
@@ -483,7 +444,9 @@ def _merge_yaml_dict_item_into_target(
         setter(new_value)
         return
 
-    # Handle schema sum types (std::variant<...> or typing.Union[...]).
+    # Handle schema sum types (std::variant<...> or typing.Union[...]). This
+    # also covers nullable types (std::optional<T> or typing.Optional[T]),
+    # which are just a sum type that includes None.
     if _is_union(generic_base):
         # The YAML data might be a scalar value (as opposed to a mapping).
         yaml_value_type = type(yaml_value)
@@ -800,14 +763,9 @@ def _yaml_dump_typed_item(*, obj, schema):
             result[key] = value_plain
         return result
 
-    # Handle nullable types (std::optional<T> or typing.Optional[T]).
-    optional_schema = _get_nested_optional_type(schema)
-    if optional_schema is not None:
-        if obj is None:
-            return None
-        return _yaml_dump_typed_item(obj=obj, schema=optional_schema)
-
-    # Handle schema sum types (std::variant<...> or typing.Union[...]).
+    # Handle schema sum types (std::variant<...> or typing.Union[...]). This
+    # also covers nullable types (std::optional<T> or typing.Optional[T]),
+    # which are just a sum type that includes None.
     if _is_union(generic_base):
         if obj is None:
             if type(None) in generic_args:
