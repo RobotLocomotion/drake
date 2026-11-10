@@ -6,6 +6,7 @@ underlying LinkJointGraph/SpanningForest. This file tests that
    link and all of its shadows,
  - a primary link still reports its full mass properties, a shadow link has
    none of its own, and sums over bodies count each shard of a split link once,
+ - a kinematics-only model can leave a split link's mass properties NaN,
  - splitting a primary link into more than two pieces works,
  - loop joints are correctly retargeted from a frame on the primary to
    a corresponding frame on the shadow,
@@ -20,6 +21,7 @@ kinematic loop. See examples/multibody/four_bar for runnable examples of similar
 mechanisms. The multiple-shadow links test uses a double loop that gives one
 primary link two shadows. */
 
+#include <cmath>
 #include <memory>
 #include <optional>
 #include <string>
@@ -447,15 +449,24 @@ GTEST_TEST(ClosedTopologyTest, RuntimeMassChangeReSplits) {
 /* The calculations that sum mass properties over bodies count the split coupler
 once, as the coupler and its shadow together. Here we check that against known
 values in the as-parsed (assembled) configuration. Then, with the loop pulled
-apart, we check that the calculations agree with each other and with the split
-model they are supposed to describe, in which the coupler and its shadow each
-carry half the coupler's mass at their own poses. */
+apart and moving, we check that the calculations (of positions, velocities and
+accelerations) agree with each other and with the split model they are supposed
+to describe, in which the coupler and its shadow each carry half the coupler's
+mass at their own poses. */
 GTEST_TEST(ClosedTopologyTest, MassPropertySumsCountASplitLinkOnce) {
   constexpr double kTol = 1e-14;
-  FourBar four_bar;
+  // The center of mass acceleration needs the dynamics, which must be discrete:
+  // the continuous dynamics doesn't support the loop's weld constraint.
+  FourBar four_bar(1e-3 /* discrete */);
   MultibodyPlant<double>& plant = four_bar.plant();
   plant.Finalize();
-  auto context = plant.CreateDefaultContext();
+  // The discrete dynamics needs the plant's geometry query input port
+  // connected, so we take the plant's Context from the diagram's.
+  std::unique_ptr<systems::Diagram<double>> diagram = four_bar.Build();
+  std::unique_ptr<systems::Context<double>> diagram_context =
+      diagram->CreateDefaultContext();
+  systems::Context<double>* context =
+      &plant.GetMyMutableContextFromRoot(diagram_context.get());
   const Frame<double>& world_frame = plant.world_frame();
   const std::vector<ModelInstanceIndex> four_bar_instance{
       plant.GetModelInstanceByName("four_bar_loop")};
@@ -474,11 +485,9 @@ GTEST_TEST(ClosedTopologyTest, MassPropertySumsCountASplitLinkOnce) {
       p_WoScm_W_expected, kTol));
 
   // Now pull the loop apart, and set it moving.
-  plant.GetJointByName<RevoluteJoint>("world_driver")
-      .set_angle(context.get(), 0.3);
-  plant.GetJointByName<RevoluteJoint>("world_rocker")
-      .set_angle(context.get(), -0.4);
-  plant.SetVelocities(context.get(), Eigen::Vector4d(0.7, -0.2, 0.5, 0.3));
+  plant.GetJointByName<RevoluteJoint>("world_driver").set_angle(context, 0.3);
+  plant.GetJointByName<RevoluteJoint>("world_rocker").set_angle(context, -0.4);
+  plant.SetVelocities(context, Eigen::Vector4d(0.7, -0.2, 0.5, 0.3));
   const Link<double>& coupler = plant.GetBodyByName("coupler");
   const Link<double>& shadow = plant.GetBodyByName("coupler$1");
   ASSERT_FALSE(coupler.EvalPoseInWorld(*context).IsNearlyEqualTo(
@@ -534,6 +543,57 @@ GTEST_TEST(ClosedTopologyTest, MassPropertySumsCountASplitLinkOnce) {
       &Js_v_WScm_W);
   EXPECT_TRUE(CompareMatrices(Js_v_WScm_W * plant.GetVelocities(*context),
                               v_WScm_W, kTol));
+  plant.CalcJacobianCenterOfMassTranslationalVelocity(
+      *context, four_bar_instance, JacobianWrtVariable::kV, world_frame,
+      world_frame, &Js_v_WScm_W);
+  EXPECT_TRUE(CompareMatrices(Js_v_WScm_W * plant.GetVelocities(*context),
+                              v_WScm_W, kTol));
+
+  // The split model's center of mass acceleration and bias acceleration, from
+  // each link's share of the mass at its own center of mass, moving with that
+  // link.
+  Vector3<double> sum_mi_ai = Vector3<double>::Zero();
+  Vector3<double> sum_mi_abiasi = Vector3<double>::Zero();
+  for (BodyIndex i(1); i < plant.num_bodies(); ++i) {
+    const Link<double>& link = plant.get_body(i);
+    const SpatialInertia<double>& M_LLo_L =
+        GetSpatialInertiaShare(plant, *context, link);
+    const Vector3<double>& p_LoLcm_L = M_LLo_L.get_com();
+    const Vector3<double> p_LoLcm_W =
+        link.EvalPoseInWorld(*context).rotation() * p_LoLcm_L;
+    const Vector3<double>& w_WL_W =
+        link.EvalSpatialVelocityInWorld(*context).rotational();
+    sum_mi_ai +=
+        M_LLo_L.get_mass() * link.EvalSpatialAccelerationInWorld(*context)
+                                 .Shift(p_LoLcm_W, w_WL_W)
+                                 .translational();
+    sum_mi_abiasi += M_LLo_L.get_mass() *
+                     plant.CalcBiasTranslationalAcceleration(
+                         *context, JacobianWrtVariable::kV, link.body_frame(),
+                         p_LoLcm_L, world_frame, world_frame);
+  }
+
+  // With the loop pulled apart, its weld constraint pulls hard, so the
+  // accelerations are large; we compare them relative to their size.
+  const Vector3<double> a_WScm_W = sum_mi_ai / mass;
+  const double acceleration_tol = kTol * a_WScm_W.norm();
+  EXPECT_TRUE(CompareMatrices(
+      plant.CalcCenterOfMassTranslationalAccelerationInWorld(*context),
+      a_WScm_W, acceleration_tol));
+  EXPECT_TRUE(
+      CompareMatrices(plant.CalcCenterOfMassTranslationalAccelerationInWorld(
+                          *context, four_bar_instance),
+                      a_WScm_W, acceleration_tol));
+  const Vector3<double> abias_WScm_W = sum_mi_abiasi / mass;
+  EXPECT_TRUE(CompareMatrices(
+      plant.CalcBiasCenterOfMassTranslationalAcceleration(
+          *context, JacobianWrtVariable::kV, world_frame, world_frame),
+      abias_WScm_W, kTol));
+  EXPECT_TRUE(
+      CompareMatrices(plant.CalcBiasCenterOfMassTranslationalAcceleration(
+                          *context, four_bar_instance, JacobianWrtVariable::kV,
+                          world_frame, world_frame),
+                      abias_WScm_W, kTol));
 }
 
 /* CalcSpatialInertia() counts a split link once, as a whole, however its list
@@ -641,6 +701,39 @@ GTEST_TEST(ClosedTopologyTest, MassChecksUseThePrimaryLink) {
   plant.Finalize();
   // The shadow's mobilized body is terminal, so it gets checked.
   EXPECT_NO_THROW(GetInternalTree(plant).ThrowDefaultMassInertiaError());
+}
+
+/* A kinematics-only model may leave mass properties unspecified, as NaN. A link
+split to break a loop then gets a NaN share, which must not be an error, just as
+NaN mass properties aren't for a link that isn't split. Kinematics works, a sum
+over no bodies is zero, and a sum that includes the split link is NaN. */
+GTEST_TEST(ClosedTopologyTest, KinematicsOnlyLoopCanHaveNaNMassProperties) {
+  MultibodyPlant<double> plant(0.0 /* continuous */);
+  plant.SetEnableLoopTopology(true);
+  const SpatialInertia<double> M = SpatialInertia<double>::NaN();
+  const Link<double>& driver = plant.AddRigidBody("driver", M);
+  const Link<double>& coupler = plant.AddRigidBody("coupler", M);
+  const Link<double>& rocker = plant.AddRigidBody("rocker", M);
+  const Vector3<double> axis = Vector3<double>::UnitY();
+  plant.AddJoint<RevoluteJoint>("world_driver", plant.world_body(), {}, driver,
+                                {}, axis);
+  plant.AddJoint<RevoluteJoint>("world_rocker", plant.world_body(), {}, rocker,
+                                {}, axis);
+  plant.AddJoint<RevoluteJoint>("driver_coupler", driver, {}, coupler, {},
+                                axis);
+  plant.AddJoint<RevoluteJoint>("coupler_rocker", coupler, {}, rocker, {},
+                                axis);
+  plant.Finalize();
+  const Link<double>& shadow = GetSoleShadowLink(plant);
+  auto context = plant.CreateDefaultContext();
+
+  EXPECT_NO_THROW(shadow.primary_link().EvalPoseInWorld(*context));
+  EXPECT_NO_THROW(shadow.EvalPoseInWorld(*context));
+  EXPECT_TRUE(
+      std::isnan(GetSpatialInertiaShare(plant, *context, shadow).get_mass()));
+  EXPECT_EQ(plant.CalcTotalMass(*context, {}), 0.0);
+  EXPECT_EQ(plant.CalcTotalMass(*context, {world_model_instance()}), 0.0);
+  EXPECT_TRUE(std::isnan(plant.CalcTotalMass(*context)));
 }
 
 /* A shadow link carries no geometry of its own. It is an internal modeling

@@ -1877,9 +1877,12 @@ void MultibodyTree<T>::CalcFrameBodyPoses(
       SpatialInertia<T> M_LLo_L =
           source_link.CalcSpatialInertiaInBodyFrame(context);
       if (num_copies > 1) {
-        M_LLo_L =
-            SpatialInertia<T>(M_LLo_L.get_mass() / num_copies,
-                              M_LLo_L.get_com(), M_LLo_L.get_unit_inertia());
+        // Like the parameter conversion that produced M_LLo_L, we skip the
+        // validity check. A kinematics-only model may leave mass properties
+        // NaN, and dividing a valid mass by num_copies leaves it valid.
+        M_LLo_L = SpatialInertia<T>(
+            M_LLo_L.get_mass() / num_copies, M_LLo_L.get_com(),
+            M_LLo_L.get_unit_inertia(), /* skip_validity_check = */ true);
       }
       frame_body_poses->SetM_LLo_L(link_ordinal, M_LLo_L);
 
@@ -2781,9 +2784,11 @@ SpatialInertia<T> MultibodyTree<T>::CalcSpatialInertia(
     // several of these. So we add every copy, each with its share of the mass
     // properties at its own pose. That is what the dynamics see, even while
     // the loop is unassembled. Any other link is its own primary and has no
-    // shadows.
+    // shadows. Since we add a primary and its shadows together, a primary that
+    // is already added means its link has already been counted.
     const LinkJointGraph::Link& primary =
         graph().link_by_index(graph().link_by_index(link_index).primary_link());
+    if (is_added[primary.index()]) continue;
     add_link_inertia(primary.index());
     for (LinkIndex shadow_index : primary.shadow_links()) {
       add_link_inertia(shadow_index);
