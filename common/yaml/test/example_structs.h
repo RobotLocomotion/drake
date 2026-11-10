@@ -406,15 +406,6 @@ struct MonostateVariantStruct {
   MonostateVariant value = "kNominalDouble";
 };
 
-struct OptionalMonostateVariantStruct {
-  template <typename Archive>
-  void Serialize(Archive* a) {
-    a->Visit(DRAKE_NVP(value));
-  }
-
-  std::optional<MonostateVariant> value;
-};
-
 struct PromotionBasicStruct {
   template <typename Archive>
   void Serialize(Archive* a) {

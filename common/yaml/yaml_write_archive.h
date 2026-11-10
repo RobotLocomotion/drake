@@ -297,6 +297,12 @@ class YamlWriteArchive final {
   }
 
   // Returns true iff the variant's alternatives include std::monostate.
+  //
+  // N.B. A schema should spell "nullable" exactly one way: std::optional<T> for
+  // a single type, or std::variant<std::monostate, ...> for several types. Do
+  // not combine them (e.g., std::optional<std::variant<std::monostate, ...>>);
+  // both forms are written as an omitted key, so that nesting does not survive
+  // a round trip.
   template <typename... Types>
   static constexpr bool HasMonostate(const std::variant<Types...>*) {
     return (std::is_same_v<Types, std::monostate> || ...);

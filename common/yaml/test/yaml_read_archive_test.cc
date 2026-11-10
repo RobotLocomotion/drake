@@ -786,16 +786,6 @@ TEST_P(YamlReadArchiveTest, MonostateVariant) {
   }
 }
 
-TEST_P(YamlReadArchiveTest, MonostateVariantNested) {
-  for (const char* doc : {"doc:\n  value:", "doc: {}"}) {
-    const auto& a = AcceptNoThrow<OptionalMonostateVariantStruct>(Load(doc));
-    EXPECT_FALSE(a.value.has_value()) << doc;
-  }
-  const auto& b = AcceptNoThrow<OptionalMonostateVariantStruct>(
-      Load("doc:\n  value: !!str foo"));
-  EXPECT_EQ(std::get<std::string>(b.value.value()), "foo");
-}
-
 TEST_P(YamlReadArchiveTest, PrimitiveVariant) {
   const auto test = [](const std::string& doc,
                        const PrimitiveVariant& expected) {

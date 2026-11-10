@@ -326,18 +326,6 @@ TEST_F(YamlWriteArchiveTest, MonostateVariant) {
   test(std::string("foo"), "!!str foo");
 }
 
-TEST_F(YamlWriteArchiveTest, MonostateVariantNested) {
-  // An optional<variant<monostate, ...>> has two ways to be "unset", and both
-  // omit the key entirely. (Reading that back always yields std::nullopt, so
-  // the distinction between the two is not preserved by a round trip.)
-  OptionalMonostateVariantStruct a;
-  EXPECT_EQ(Save(a), "doc:\n");
-  a.value = std::monostate{};
-  EXPECT_EQ(Save(a), "doc:\n");
-  a.value = std::string("foo");
-  EXPECT_EQ(Save(a), WrapDoc("!!str foo"));
-}
-
 TEST_F(YamlWriteArchiveTest, PrimitiveVariant) {
   const auto test = [](const PrimitiveVariant& value,
                        const std::string& expected) {
