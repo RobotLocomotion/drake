@@ -141,12 +141,12 @@ class QueryObject;
  %SceneGraph cannot know what geometry _should_ be part of the shared world.
  Other systems are responsible for introducing geometry into the world. This
  process (defining geometry and informing %SceneGraph) is called
- _registering_ the geometry. Geometry can be registered as  _anchored_ or
- _dynamic_, and is always registered to (associated with) a SourceId.
+ _registering_ the geometry. Geometry is either  _anchored_ or _dynamic_, and is
+ always registered to (associated with) a SourceId.
 
  Dynamic geometry can move; more specifically, its kinematics (e.g., pose)
- depends on a system's Context. Particularly, a non-deformable dynamic geometry
- is _fixed_ to a _frame_ whose kinematics values depend on a context. As the
+ depends on a system's state. Particularly, a non-deformable dynamic geometry
+ is _fixed_ to a _frame_ whose kinematics values depend on state. As the
  frame moves, the geometries fixed to it move with it. On the other hand, a
  deformable dynamic geometry has a mesh representation whose vertices' positions
  can change and are expressed in the frame it is registered in. Therefore, to
@@ -172,11 +172,21 @@ class QueryObject;
      - Rigid geometries can also be posed relative to another registered
      geometry. It will be affixed to _that_ geometry's frame.
 
- Anchored geometry is _independent_ of the context (i.e., it doesn't move).
- Anchored geometries are always affixed to the immobile world frame. As such,
- registering a frame is _not_ required for registering anchored geometry
- (see GeometrySource::RegisterAnchoredGeometry()). However, the source still
- "owns" the anchored geometry.
+ Anchored geometries are rigid geometries whose poses do not depend on the
+ system's state. %SceneGraph exploits this for performance, and never tests two
+ anchored geometries against each other (see CollisionFilterManager).
+
+ First, the geometry is affixed directly to the immobile world frame.
+ Registering a frame is _not_ required for registering such geometry (see
+ GeometrySource::RegisterAnchoredGeometry()). However, the source still "owns"
+ the anchored geometry.
+
+ Second, the parent frame of a dynamic geometry is declared anchored after
+ registration. All geometries affixed to that frame are treated as anchored. The
+ pose of such a frame can still change, but only based on system parameters.
+ Only Drake code can declare a frame anchored; it is not available to general
+ geometry sources. For example, MultibodyPlant anchors the frames of bodies
+ welded (directly or indirectly) to the world.
 
  _Updating Kinematics_
 
@@ -683,6 +693,38 @@ class SceneGraph final : public systems::LeafSystem<T> {
    the provided context.  */
   void RemoveGeometry(systems::Context<T>* context, SourceId source_id,
                       GeometryId geometry_id) const;
+
+#ifndef DRAKE_DOXYGEN_CXX
+  /* (Internal use only) Marks the given frames as *anchored* in this
+   %SceneGraph's model: their world poses are a function of parameters alone,
+   never of state (q, v, or time). Geometry on an anchored frame becomes
+   anchored geometry -- it is no longer re-posed and re-fit every step, and it
+   can no longer collide with other anchored geometry -- while continuing to
+   report its true parent frame.
+
+   "Anchored" does not mean "immutable". A frame welded to the world through a
+   parameterized offset moves when that parameter changes, and %SceneGraph
+   notices and refreshes. What an anchored frame may not do is move as a
+   function of state. The caller must continue to provide poses for anchored
+   frames like any other registered frame.
+
+   This is internal because declaring a frame anchored when it is not is a
+   silent correctness problem: the broadphase would degrade visibly, but the
+   collision filter would quietly block the frame's geometry against all other
+   anchored geometry while it actually moves. MultibodyPlant, whose weld
+   analysis proves the property, is the intended caller.
+
+   A frame may be anchored only if its parent is; the world frame is anchored
+   by construction. Already-anchored frames are ignored. Anchoring cannot be
+   undone, so the whole set is validated before any of it is applied.
+
+   @throws std::exception if any id is not a registered frame, or if any
+                          frame's parent is neither anchored nor a member of
+                          `frame_ids`.
+   @throws std::exception if there are any active, transient collision filter
+                          declarations (see CollisionFilterManager). */
+  void AnchorFrames(const std::vector<FrameId>& frame_ids);
+#endif
 
   //@}
 

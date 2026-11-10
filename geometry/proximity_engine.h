@@ -86,6 +86,9 @@ class ProximityEngine {
   /* Provides access to the mutable collision filter this engine uses. */
   CollisionFilter& collision_filter();
 
+  /* Provides const access to this engine's collision filter. */
+  const CollisionFilter& collision_filter() const;
+
   /* Updates the engine's broadphase culling of inactive dynamic geometries to
    reflect the given net change to the collision filter's inactive set (see
    CollisionFilterManager::Deactivate()) -- a mechanism to resolve issue #24607.

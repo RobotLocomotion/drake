@@ -26,7 +26,12 @@ class GeometryState;
  A SceneGraph instance contains the set of geometries with assigned proximity
  properties `G = R ⋃ V ⋃ A = {g₀, g₁, ..., gₙ}`, where R is the set of
  dynamic rigid geometries, V is the set of deformable geometries, and A is the
- set of anchored rigid geometries. These three sets are pairwise disjoint.
+ set of anchored rigid geometries. These three sets are pairwise disjoint. An
+ anchored geometry is a rigid geometry whose pose in the world frame does not
+ depend on state (although it may change if parameters change); this includes
+ all rigid geometries registered directly on the world frame or affixed to
+ geometry frames that have themselves been marked as anchored. A dynamic rigid
+ geometry is any rigid geometry that is not anchored.
  Many proximity queries operate on pairs of geometries (e.g., (gᵢ, gⱼ)). Those
  queries operate on a theoretical set of *candidate pairs*, `C ⊂ G × G`. C lacks
  many geometry pairs that have been excluded from consideration.
