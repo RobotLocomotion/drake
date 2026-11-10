@@ -756,13 +756,11 @@ TEST_P(YamlReadArchiveTest, Variant) {
 }
 
 TEST_P(YamlReadArchiveTest, MonostateVariant) {
-  // A null (explicit or implicit) selects std::monostate.
+  // A null (implicit or explicit) selects std::monostate.
   for (const char* doc :
        {"doc:\n  value:", "doc:\n  value: null", "doc:\n  value: ~"}) {
-    MonostateVariantStruct start;
-    start.value = DoubleStruct{1.0};
-    YamlReadArchive(Load(doc), GetParam()).Accept(&start);
-    EXPECT_TRUE(std::holds_alternative<std::monostate>(start.value)) << doc;
+    const auto& x = AcceptNoThrow<MonostateVariantStruct>(Load(doc));
+    EXPECT_TRUE(std::holds_alternative<std::monostate>(x.value)) << doc;
   }
 
   // Tagged values select the matching alternative.
@@ -778,9 +776,14 @@ TEST_P(YamlReadArchiveTest, MonostateVariant) {
       AcceptIntoDummy<MonostateVariantStruct>(Load("doc:\n  value: foo")),
       ".*has unsupported type tag.*while selecting a variant<>.*");
 
-  // A missing key leaves the default (std::monostate) alone.
-  const auto& z = AcceptEmptyDoc<MonostateVariantStruct>();
-  EXPECT_TRUE(std::holds_alternative<std::monostate>(z.value));
+  // A missing key leaves the default alone, or else (like std::optional)
+  // selects std::monostate.
+  const auto& z = AcceptNoThrow<MonostateVariantStruct>(Load("doc: {}"));
+  if (GetParam().allow_cpp_with_no_yaml) {
+    EXPECT_EQ(std::get<std::string>(z.value), "kNominalDouble");
+  } else {
+    EXPECT_TRUE(std::holds_alternative<std::monostate>(z.value));
+  }
 }
 
 TEST_P(YamlReadArchiveTest, PrimitiveVariant) {

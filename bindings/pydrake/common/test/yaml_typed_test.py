@@ -164,9 +164,7 @@ class VariantStruct:
 
 @dc.dataclass
 class MonostateVariantStruct:
-    # The Python flavor of the C++ MonostateVariantStruct (where None in Python
-    # corresponds to std::monostate in C++).
-    value: None | FloatStruct | str = None
+    value: None | FloatStruct | str = "kNominalDouble"
     __eq__ = _dataclass_eq
 
 
@@ -828,16 +826,15 @@ class TestYamlTypedRead(unittest.TestCase, metaclass=ValueParameterizedTest):
 
     @run_with_multiple_values(_all_typed_read_options())
     def test_read_monostate_variant(self, *, options):
-        # This mirrors the C++ YamlReadArchiveTest.MonostateVariant.
+        # A null (implicit or explicit) selects None.
         for data in ["value:", "value: null", "value: ~"]:
             with self.subTest(data=data):
                 x = yaml_load_typed(
-                    schema=MonostateVariantStruct,
-                    data=data,
-                    defaults=MonostateVariantStruct(FloatStruct(1.0)),
-                    **options,
+                    schema=MonostateVariantStruct, data=data, **options
                 )
                 self.assertIsNone(x.value)
+
+        # Tagged values select the matching alternative.
         x = yaml_load_typed(
             schema=MonostateVariantStruct,
             data="value: !FloatStruct { value: 2.0 }",
@@ -848,6 +845,23 @@ class TestYamlTypedRead(unittest.TestCase, metaclass=ValueParameterizedTest):
             schema=MonostateVariantStruct, data="value: !!str foo", **options
         )
         self.assertEqual(x, MonostateVariantStruct("foo"))
+
+        # An untagged non-null node never selects None. Unlike C++ (where this
+        # is an error), Python accepts an untagged scalar whenever its type is
+        # one of the Union's alternatives, so "foo" selects str. We cannot match
+        # the C++ expectation without changing the existing Union semantics.
+        x = yaml_load_typed(
+            schema=MonostateVariantStruct, data="value: foo", **options
+        )
+        self.assertEqual(x, MonostateVariantStruct("foo"))
+
+        # A missing key leaves the default alone, or else (like Optional)
+        # selects None.
+        x = yaml_load_typed(schema=MonostateVariantStruct, data="{}", **options)
+        if options["allow_schema_with_no_yaml"]:
+            self.assertEqual(x, MonostateVariantStruct("kNominalDouble"))
+        else:
+            self.assertIsNone(x.value)
 
     @run_with_multiple_values(_all_typed_read_options())
     def test_read_variant_found_no_tag(self, *, options):
@@ -1386,7 +1400,6 @@ class TestYamlTypedWrite(unittest.TestCase):
             yaml_dump_typed(VariantStruct(value=None))
 
     def test_write_monostate_variant(self):
-        # This mirrors the C++ YamlWriteArchiveTest.MonostateVariant.
         cases = [
             (
                 # Like an unset Optional, None omits the key entirely.
@@ -1394,15 +1407,15 @@ class TestYamlTypedWrite(unittest.TestCase):
                 "{}\n",
             ),
             (
-                "foo",
-                "value: !!str 'foo'\n",
-            ),
-            (
                 FloatStruct(1.0),
                 dedent("""\
                 value: !FloatStruct
                   value: 1.0
                 """),
+            ),
+            (
+                "foo",
+                "value: !!str 'foo'\n",
             ),
         ]
         for value, expected_doc in cases:

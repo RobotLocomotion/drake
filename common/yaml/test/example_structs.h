@@ -403,7 +403,7 @@ struct MonostateVariantStruct {
     a->Visit(DRAKE_NVP(value));
   }
 
-  MonostateVariant value;
+  MonostateVariant value = "kNominalDouble";
 };
 
 struct PromotionBasicStruct {

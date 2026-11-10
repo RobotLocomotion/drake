@@ -296,6 +296,12 @@ class YamlWriteArchive final {
     this->visit_order_.pop_back();
   }
 
+  // Returns true iff the variant's alternatives include std::monostate.
+  template <typename... Types>
+  static constexpr bool HasMonostate(const std::variant<Types...>*) {
+    return (std::is_same_v<Types, std::monostate> || ...);
+  }
+
   // This is used for std::variant or similar.
   template <typename NVP>
   void VisitVariant(const NVP& nvp) {
@@ -303,44 +309,49 @@ class YamlWriteArchive final {
     // setting a YAML type tag iff required.
     const char* const name = nvp.name();
     auto& variant = *nvp.value();
+    using Variant = std::remove_cvref_t<decltype(variant)>;
+
+    // Bail out if the variant holds std::monostate (i.e., is unset). Like an
+    // unset std::optional, it writes nothing at all (not even the key name).
+    if constexpr (HasMonostate(static_cast<const Variant*>(nullptr))) {
+      if (std::holds_alternative<std::monostate>(variant)) {
+        // Since we are not going to add ourselves to root_, we should not list
+        // our name in the visit_order either.  This undoes the addition of our
+        // name that was performed by the Visit() call on the variant<...>
+        // value.
+        this->visit_order_.pop_back();
+        return;
+      }
+    }
+
     const bool needs_tag = variant.index() > 0;
-    bool is_monostate = false;
     std::visit(
-        [this, name, needs_tag, &is_monostate](auto&& unwrapped) {
+        [this, name, needs_tag](auto&& unwrapped) {
           using T = std::remove_cvref_t<decltype(unwrapped)>;
           if constexpr (std::is_same_v<T, std::monostate>) {
-            // Like an unset std::optional, a std::monostate writes nothing at
-            // all (not even the key name).
-            is_monostate = true;
-            return;
+            // This was already handled above.
+            DRAKE_UNREACHABLE();
           } else {
             this->Visit(drake::MakeNameValue(name, &unwrapped));
-          }
-          if (needs_tag) {
-            Node& node = root_.At(name);
-            if constexpr (std::is_same_v<T, bool>) {
-              node.SetTag(JsonSchemaTag::kBool, /* important = */ true);
-            } else if constexpr (std::is_integral_v<T>) {
-              node.SetTag(JsonSchemaTag::kInt, /* important = */ true);
-            } else if constexpr (std::is_floating_point_v<T>) {
-              node.SetTag(JsonSchemaTag::kFloat, /* important = */ true);
-            } else if constexpr (std::is_same_v<T, std::string>) {
-              node.SetTag(JsonSchemaTag::kStr, /* important = */ true);
-            } else if constexpr (std::is_same_v<T, std::vector<std::byte>>) {
-              node.SetTag(std::string(internal::Node::kTagBinary));
-            } else {
-              node.SetTag(YamlWriteArchive::GetVariantTag<T>());
+            if (needs_tag) {
+              Node& node = root_.At(name);
+              if constexpr (std::is_same_v<T, bool>) {
+                node.SetTag(JsonSchemaTag::kBool, /* important = */ true);
+              } else if constexpr (std::is_integral_v<T>) {
+                node.SetTag(JsonSchemaTag::kInt, /* important = */ true);
+              } else if constexpr (std::is_floating_point_v<T>) {
+                node.SetTag(JsonSchemaTag::kFloat, /* important = */ true);
+              } else if constexpr (std::is_same_v<T, std::string>) {
+                node.SetTag(JsonSchemaTag::kStr, /* important = */ true);
+              } else if constexpr (std::is_same_v<T, std::vector<std::byte>>) {
+                node.SetTag(std::string(internal::Node::kTagBinary));
+              } else {
+                node.SetTag(YamlWriteArchive::GetVariantTag<T>());
+              }
             }
           }
         },
         variant);
-    if (is_monostate) {
-      // Since we are not going to add ourselves to root_, we should not list
-      // our name in the visit_order either. This undoes the addition of our
-      // name that was performed by the Visit() call on the variant value.
-      this->visit_order_.pop_back();
-      return;
-    }
     // The above call to this->Visit() for the *unwrapped* value pushed our
     // name onto the visit_order a second time, duplicating work performed by
     // the Visit() for the *wrapped* value.  We'll undo that duplication now.

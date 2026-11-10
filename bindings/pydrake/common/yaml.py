@@ -596,9 +596,9 @@ def _merge_yaml_dict_into_target(*, options, yaml_dict, target, target_schema):
     static_field_map = _enumerate_field_types(target_schema)
     schema_names = list(static_field_map.keys())
     schema_optionals = {
-            name
-            for name, sub_schema in static_field_map.items()
-            if _get_nested_optional_type(sub_schema) is not None
+        name
+        for name, sub_schema in static_field_map.items()
+        if _is_nullable(sub_schema)
     }
     yaml_names = list(yaml_dict.keys())
     extra_yaml_names = [name for name in yaml_names if name not in schema_names]

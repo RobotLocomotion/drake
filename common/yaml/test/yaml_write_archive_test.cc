@@ -321,7 +321,7 @@ TEST_F(YamlWriteArchiveTest, MonostateVariant) {
   };
 
   // Like std::nullopt, std::monostate omits the key entirely.
-  EXPECT_EQ(Save(MonostateVariantStruct{}), "doc:\n");
+  EXPECT_EQ(Save(MonostateVariantStruct{std::monostate{}}), "doc:\n");
   test(DoubleStruct{1.0}, "!DoubleStruct\n    value: 1.0");
   test(std::string("foo"), "!!str foo");
 }

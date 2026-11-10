@@ -284,12 +284,24 @@ class YamlReadArchive final {
                 VisitShouldMemorizeType::kNo);
   }
 
+  // Returns true iff the variant's alternatives include std::monostate.
+  template <typename... Types>
+  static constexpr bool HasMonostate(const std::variant<Types...>*) {
+    return (std::is_same_v<Types, std::monostate> || ...);
+  }
+
   template <typename NVP>
   void VisitVariant(const NVP& nvp) {
     const internal::Node* sub_node = MaybeGetSubNode(nvp.name());
     if (sub_node == nullptr) {
       if (!options_.allow_cpp_with_no_yaml) {
-        ReportError("is missing");
+        // Like a missing std::optional, a missing std::monostate is unset.
+        if constexpr (HasMonostate(static_cast<const typename NVP::value_type*>(
+                          nullptr))) {
+          *nvp.value() = std::monostate{};
+        } else {
+          ReportError("is missing");
+        }
       }
       return;
     }

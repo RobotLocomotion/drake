@@ -125,11 +125,6 @@ void RecursiveEmit(const internal::Node& node, YAML::Emitter* emitter,
   }
   node.Visit(overloaded{
       [&](const internal::Node::ScalarData& data) {
-        if (node_tag == internal::Node::kTagNull) {
-          // Don't let a null get emitted as the quoted string "null".
-          sink->OnNull(no_mark, no_anchor);
-          return;
-        }
         if (emitted_tag.empty() && node_tag == internal::Node::kTagStr &&
             DoesPlainScalarResolveToNonStrInYamlCoreSchema(data.scalar)) {
           // We need to force this scalar to be seen as a string, so we'll turn
