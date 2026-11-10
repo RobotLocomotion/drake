@@ -393,12 +393,17 @@ A SceneGraph instance contains the set of geometries with assigned
 proximity properties ``G = R ⋃ V ⋃ A = {g₀, g₁, ..., gₙ}``, where R is
 the set of dynamic rigid geometries, V is the set of deformable
 geometries, and A is the set of anchored rigid geometries. These three
-sets are pairwise disjoint. Many proximity queries operate on pairs of
-geometries (e.g., (gᵢ, gⱼ)). Those queries operate on a theoretical
-set of *candidate pairs*, ``C ⊂ G × G``. C lacks many geometry pairs
-that have been excluded from consideration. CollisionFilterManager
-excludes many pairs intrinsically and provides mechanisms for the
-users to exclude even more pairs.
+sets are pairwise disjoint. An anchored geometry is a rigid geometry
+whose pose in the world frame does not depend on state (although it
+may change if parameters change); this includes all rigid geometries
+registered directly on the world frame or affixed to geometry frames
+that have themselves been marked as anchored. A dynamic rigid geometry
+is any rigid geometry that is not anchored. Many proximity queries
+operate on pairs of geometries (e.g., (gᵢ, gⱼ)). Those queries operate
+on a theoretical set of *candidate pairs*, ``C ⊂ G × G``. C lacks many
+geometry pairs that have been excluded from consideration.
+CollisionFilterManager excludes many pairs intrinsically and provides
+mechanisms for the users to exclude even more pairs.
 
 Intrinsic Exclusions
 
@@ -2366,6 +2371,48 @@ Note:
           const char* doc =
 R"""(Implementation of SceneGraph∷AddRenderer().)""";
         } AddRenderer;
+        // Symbol: drake::geometry::GeometryState::AnchorFrames
+        struct /* AnchorFrames */ {
+          // Source: drake/geometry/geometry_state.h
+          const char* doc =
+R"""(Marks the given frames as *anchored*: their world poses are a function
+of parameters alone, never of state (q, v, or time). Geometry on an
+anchored frame becomes anchored geometry, with all the consequences
+that already carries -- it is no longer re-posed and re-fit every
+step, and it can no longer collide with other anchored geometry --
+while continuing to report its true parent frame.
+
+"Anchored" does not mean "immutable". A frame welded to the world
+through a parameterized offset moves when that parameter changes, and
+SceneGraph notices and refreshes. What an anchored frame may not do is
+move as a function of state; that is what makes a single, batch
+invalidation the right granularity.
+
+A frame may be anchored only if its parent is anchored. The world
+frame is anchored by construction, which gives that rule its base
+case. Every frame in ``frame_ids`` must therefore have a parent that
+is either already anchored or is itself in ``frame_ids``; order within
+``frame_ids`` does not matter. Note that children of an anchored frame
+are *not* anchored automatically -- anchoring is opt-in per frame,
+with the parent as a precondition.
+
+Frames already anchored are a no-op, so a caller may include the world
+frame (as the world-welded subgraph of a MultibodyPlant does) without
+filtering.
+
+Anchoring a frame is irreversible.
+
+Raises:
+    RuntimeError if any id in ``frame_ids`` is not a registered frame.
+
+Raises:
+    RuntimeError if any frame's parent is neither anchored nor a
+    member of ``frame_ids``.
+
+Raises:
+    RuntimeError if there are any active, transient collision filter
+    declarations.)""";
+        } AnchorFrames;
         // Symbol: drake::geometry::GeometryState::ApplyProximityDefaults
         struct /* ApplyProximityDefaults */ {
           // Source: drake/geometry/geometry_state.h
@@ -7674,44 +7721,55 @@ through which the producer's identity is validated.
 SceneGraph cannot know what geometry *should* be part of the shared
 world. Other systems are responsible for introducing geometry into the
 world. This process (defining geometry and informing SceneGraph) is
-called *registering* the geometry. Geometry can be registered as
-*anchored* or *dynamic*, and is always registered to (associated with)
-a SourceId.
+called *registering* the geometry. Geometry is either *anchored* or
+*dynamic*, and is always registered to (associated with) a SourceId.
 
 Dynamic geometry can move; more specifically, its kinematics (e.g.,
-pose) depends on a system's Context. Particularly, a non-deformable
+pose) depends on a system's state. Particularly, a non-deformable
 dynamic geometry is *fixed* to a *frame* whose kinematics values
-depend on a context. As the frame moves, the geometries fixed to it
-move with it. On the other hand, a deformable dynamic geometry has a
-mesh representation whose vertices' positions can change and are
-expressed in the frame it is registered in. Therefore, to register
-dynamic geometry a frame must be registered first. These registered
-frames serve as the basis for repositioning geometry in the shared
-world. The geometry source is responsible for providing up-to-date
-kinematics values for those registered frames upon request (via an
-appropriate output port on the source LeafSystem connecting to the
-appropriate input port on SceneGraph). The geometry source that
-registers deformable geometry is also responsible to provide the
-positions of the mesh vertices of the deformable geometry in the
-registered-in frame. The work flow is as follows: 1. A LeafSystem
-registers itself as a geometry source, acquiring a SourceId
-(RegisterSource()). 2. The source registers a frame
-(GeometrySource∷RegisterFrame()). - A frame always has a "parent"
-frame. It can implicitly be the world frame, *or* another frame
-registered by the source. 3. Register one or more non-deformable
-geometries to a frame (RegisterGeometry()), and/or one or more
-deformable geometries to a frame (RegisterDeformableGeometry()). - A
-non-deformable geometry's pose is relative to the frame to which the
-geometry is fixed. For deformable geometries, the positions of their
-mesh vertices are expressed in the registered-in frame. - Rigid
-geometries can also be posed relative to another registered geometry.
-It will be affixed to *that* geometry's frame.
+depend on state. As the frame moves, the geometries fixed to it move
+with it. On the other hand, a deformable dynamic geometry has a mesh
+representation whose vertices' positions can change and are expressed
+in the frame it is registered in. Therefore, to register dynamic
+geometry a frame must be registered first. These registered frames
+serve as the basis for repositioning geometry in the shared world. The
+geometry source is responsible for providing up-to-date kinematics
+values for those registered frames upon request (via an appropriate
+output port on the source LeafSystem connecting to the appropriate
+input port on SceneGraph). The geometry source that registers
+deformable geometry is also responsible to provide the positions of
+the mesh vertices of the deformable geometry in the registered-in
+frame. The work flow is as follows: 1. A LeafSystem registers itself
+as a geometry source, acquiring a SourceId (RegisterSource()). 2. The
+source registers a frame (GeometrySource∷RegisterFrame()). - A frame
+always has a "parent" frame. It can implicitly be the world frame,
+*or* another frame registered by the source. 3. Register one or more
+non-deformable geometries to a frame (RegisterGeometry()), and/or one
+or more deformable geometries to a frame
+(RegisterDeformableGeometry()). - A non-deformable geometry's pose is
+relative to the frame to which the geometry is fixed. For deformable
+geometries, the positions of their mesh vertices are expressed in the
+registered-in frame. - Rigid geometries can also be posed relative to
+another registered geometry. It will be affixed to *that* geometry's
+frame.
 
-Anchored geometry is *independent* of the context (i.e., it doesn't
-move). Anchored geometries are always affixed to the immobile world
-frame. As such, registering a frame is *not* required for registering
-anchored geometry (see GeometrySource∷RegisterAnchoredGeometry()).
-However, the source still "owns" the anchored geometry.
+Anchored geometries are rigid geometries whose poses do not depend on
+the system's state. SceneGraph exploits this for performance, and
+never tests two anchored geometries against each other (see
+CollisionFilterManager).
+
+First, the geometry is affixed directly to the immobile world frame.
+Registering a frame is *not* required for registering such geometry
+(see GeometrySource∷RegisterAnchoredGeometry()). However, the source
+still "owns" the anchored geometry.
+
+Second, the parent frame of a dynamic geometry is declared anchored
+after registration. All geometries affixed to that frame are treated
+as anchored. The pose of such a frame can still change, but only based
+on system parameters. Only Drake code can declare a frame anchored; it
+is not available to general geometry sources. For example,
+MultibodyPlant anchors the frames of bodies welded (directly or
+indirectly) to the world.
 
 *Updating Kinematics*
 
@@ -7895,6 +7953,11 @@ R"""(systems∷Context-modifying variant of AddRenderer(). Rather than
 modifying SceneGraph's model, it modifies the copy of the model stored
 in the provided context.)""";
         } AddRenderer;
+        // Symbol: drake::geometry::SceneGraph::AnchorFrames
+        struct /* AnchorFrames */ {
+          // Source: drake/geometry/scene_graph.h
+          const char* doc = R"""()""";
+        } AnchorFrames;
         // Symbol: drake::geometry::SceneGraph::AssignRole
         struct /* AssignRole */ {
           // Source: drake/geometry/scene_graph.h
@@ -9058,9 +9121,12 @@ Raises:
         struct /* NumAnchoredGeometries */ {
           // Source: drake/geometry/scene_graph_inspector.h
           const char* doc =
-R"""(Reports the total number of *anchored* non-deformable geometries. This
-should provide the same answer as calling NumGeometriesForFrame() with
-the world frame id.)""";
+R"""(Reports the total number of *anchored* geometries in the scene graph.
+Anchored geometries are rigid geometries whose poses in the world
+frame do not depend on state; this includes all rigid geometries
+registered directly on the world frame. An anchored geometry's pose
+can still change if parameters change. Deformable geometries are never
+anchored.)""";
         } NumAnchoredGeometries;
         // Symbol: drake::geometry::SceneGraphInspector::NumDeformableGeometriesWithRole
         struct /* NumDeformableGeometriesWithRole */ {
@@ -9074,7 +9140,10 @@ graph with the indicated role.)""";
           // Source: drake/geometry/scene_graph_inspector.h
           const char* doc =
 R"""(Reports the total number of *dynamic* geometries in the scene graph.
-This include all deformable geometries.)""";
+Dynamic geometries are those whose poses (or, for deformable
+geometries, configurations) depend on state. This includes all
+deformable geometries. Every geometry is either dynamic or anchored
+(see NumAnchoredGeometries()).)""";
         } NumDynamicGeometries;
         // Symbol: drake::geometry::SceneGraphInspector::NumFramesForSource
         struct /* NumFramesForSource */ {
