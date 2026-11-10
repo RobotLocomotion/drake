@@ -220,8 +220,9 @@ const Link<double>& GetSoleShadowLink(const MultibodyPlant<double>& plant) {
 M_LLo_L. For a split link's primary or one of its shadows that is an even share
 of the primary's mass properties; for any other link it is just that link's mass
 properties. The public API doesn't expose this: a primary link reports its full
-mass properties, and a shadow has none. */
-SpatialInertia<double> GetSpatialInertiaShare(
+mass properties, and a shadow has none. The result is a reference into
+`context`'s cache. */
+const SpatialInertia<double>& GetSpatialInertiaShare(
     const MultibodyPlant<double>& plant,
     const systems::Context<double>& context, const Link<double>& link) {
   return link.get_M_LLo_L(GetInternalTree(plant).EvalFrameBodyPoses(context));
@@ -340,7 +341,7 @@ GTEST_TEST(ClosedTopologyTest, ShadowMassIsSplitEvenly) {
       0.5 * coupler.default_rotational_inertia().CopyToFullMatrix3();
   for (const Link<double>* copy : {&coupler, &shadow}) {
     SCOPED_TRACE(copy->name());
-    const SpatialInertia<double> M_LLo_L =
+    const SpatialInertia<double>& M_LLo_L =
         GetSpatialInertiaShare(plant, *context, *copy);
     EXPECT_NEAR(M_LLo_L.get_mass(), 0.5, kTol);
     EXPECT_TRUE(
@@ -489,7 +490,7 @@ GTEST_TEST(ClosedTopologyTest, MassPropertySumsCountASplitLinkOnce) {
   Vector3<double> sum_mi_pi = Vector3<double>::Zero();
   for (BodyIndex i(1); i < plant.num_bodies(); ++i) {
     const Link<double>& link = plant.get_body(i);
-    const SpatialInertia<double> M_LLo_L =
+    const SpatialInertia<double>& M_LLo_L =
         GetSpatialInertiaShare(plant, *context, link);
     mass += M_LLo_L.get_mass();
     sum_mi_pi += M_LLo_L.get_mass() *
@@ -867,7 +868,7 @@ GTEST_TEST(ClosedTopologyTest, OneLinkCanHaveTwoShadows) {
   const Matrix3<double> one_third_I_LLo_L =
       primary.default_rotational_inertia().CopyToFullMatrix3() / 3.0;
   for (const Link<double>* copy : {&primary, &shadow1, &shadow2}) {
-    const SpatialInertia<double> M_LLo_L =
+    const SpatialInertia<double>& M_LLo_L =
         GetSpatialInertiaShare(plant, *context, *copy);
     EXPECT_NEAR(M_LLo_L.get_mass(), kLink6Mass / 3.0, kTol);
     EXPECT_TRUE(
@@ -885,7 +886,7 @@ GTEST_TEST(ClosedTopologyTest, OneLinkCanHaveTwoShadows) {
   primary.SetMass(context.get(), kUpdatedLink6Mass);
   EXPECT_EQ(primary.get_mass(*context), kUpdatedLink6Mass);
   for (const Link<double>* copy : {&primary, &shadow1, &shadow2}) {
-    const SpatialInertia<double> M_LLo_L =
+    const SpatialInertia<double>& M_LLo_L =
         GetSpatialInertiaShare(plant, *context, *copy);
     EXPECT_NEAR(M_LLo_L.get_mass(), kUpdatedLink6Mass / 3.0, kTol);
     EXPECT_TRUE(
