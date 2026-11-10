@@ -26,10 +26,10 @@ fi
 
 case "${PYTHON_MANAGER}" in
     pip)
-        pip install "${WHEEL}"
+        pip install "${WHEEL}"[mosek]
         ;;
     uv)
-        ${HOME}/.local/bin/uv pip install "${WHEEL}"
+        ${HOME}/.local/bin/uv pip install "${WHEEL}"[mosek]
         ;;
     *)
         echo "Unknown virtual environment manager '${PYTHON_MANAGER}'" >&2
