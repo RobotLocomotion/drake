@@ -37,6 +37,7 @@ drake_cc_googlebench_binary(
         "//systems/analysis:simulator",
         "//systems/framework:diagram_builder",
         "//tools/performance:fixture_common",
+        "@eigen",
     ],
     add_test_rule = True,
     test_rule_args = [
@@ -71,6 +72,42 @@ drake_cc_googlebench_binary(
 drake_py_experiment_binary(
     name = "cassie_experiment",
     googlebench_binary = ":cassie",
+)
+
+drake_cc_googlebench_binary(
+    name = "hydroelastic_clutter",
+    srcs = ["hydroelastic_clutter.cc"],
+    deps = [
+        "//common:memory_file",
+        "//geometry:in_memory_mesh",
+        "//geometry:proximity_properties",
+        "//geometry:scene_graph",
+        "//geometry:shape_specification",
+        "//geometry/query_results:contact_surface",
+        "//geometry/query_results:penetration_as_point_pair",
+        "//math:geometric_transform",
+        "//multibody/plant",
+        "//multibody/plant:multibody_plant_config_functions",
+        "//multibody/tree",
+        "//multibody/tree:spatial_inertia",
+        "//systems/analysis:simulator",
+        "//systems/framework:diagram_builder",
+        "//tools/performance:fixture_common",
+        "@eigen",
+    ],
+    add_test_rule = True,
+    test_rule_args = [
+        # When testing, only run the smallest scene, and only its query. Every
+        # case settles its scene before timing anything, which is slow in debug
+        # builds, and the other scenes cost seconds apiece even when optimized.
+        "--benchmark_filter=ContactSurfaces/3/60",
+    ],
+    test_rule_timeout = "moderate",
+)
+
+drake_py_experiment_binary(
+    name = "hydroelastic_clutter_experiment",
+    googlebench_binary = ":hydroelastic_clutter",
 )
 
 drake_cc_googlebench_binary(
