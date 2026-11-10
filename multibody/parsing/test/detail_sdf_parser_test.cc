@@ -1,6 +1,7 @@
 #include "drake/multibody/parsing/detail_sdf_parser.h"
 
 #include <filesystem>
+#include <fstream>
 #include <limits>
 #include <map>
 #include <memory>
@@ -11,6 +12,7 @@
 #include <string>
 #include <vector>
 
+#include <fmt/format.h>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <sdf/parser.hh>
@@ -18,6 +20,7 @@
 #include "drake/common/find_resource.h"
 #include "drake/common/never_destroyed.h"
 #include "drake/common/scope_exit.h"
+#include "drake/common/temp_directory.h"
 #include "drake/common/test_utilities/diagnostic_policy_test_base.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
@@ -52,7 +55,9 @@ namespace multibody {
 namespace internal {
 namespace {
 
+using ::testing::HasSubstr;
 using ::testing::MatchesRegex;
+using ::testing::Not;
 
 using drake::internal::DiagnosticDetail;
 using drake::internal::DiagnosticPolicy;
@@ -6081,6 +6086,107 @@ TEST_F(SdfParserTest, MergeIncludeInterfaceApi2) {
   SCOPED_TRACE("MergeIncludeInterfaceApi2");
   TestMergeIncludeWithInterfaceApi(plant_, scene_graph_, "top");
   TestMergeIncludeWithInterfaceApi(plant_, scene_graph_, "another_top");
+}
+
+// A merge-include into the model instance of an earlier parse (see the
+// prefix problem in Drake issue #25128, "Merge includes ignore the parser
+// prefix and land in an earlier parse's instance")
+// must not repose bodies that the included model did not export. Before the
+// fix, doing so wrote an error through a dangling sdf::Errors pointer and
+// crashed. N.B. The expected message below comes from the whole-instance
+// canonical link choice in ParseNestedInterfaceModel (a separate problem), so
+// this test will need updating when that is fixed.
+TEST_F(SdfParserTest, MergeIncludeReposturesOnlyExportedBodies) {
+  const std::string urdf = temp_directory() + "/reposture_exported.urdf";
+  std::ofstream(urdf) << R"""(<robot name='u'>
+  <link name='R'/>
+  <link name='B'/>
+  <joint name='RB' type='fixed'><parent link='R'/><child link='B'/></joint>
+</robot>)""";
+  EXPECT_EQ(AddModelsFromSdfString("<sdf version='1.12'><model name='m'>"
+                                   "<link name='X'/></model></sdf>")
+                .size(),
+            1);
+  EXPECT_TRUE(error_records_.empty());
+  AddModelsFromSdfString(fmt::format(R"""(<sdf version='1.12'>
+  <model name='m'>
+    <include merge='true'><uri>file://{}</uri><name>u</name></include>
+  </model>
+</sdf>)""",
+                                     urdf));
+  // The failure comes from the earlier parse's link X. libsdformat reports it
+  // as a few related errors; we don't pin down the exact count or wording.
+  EXPECT_THAT(TakeError(), MatchesRegex(".*attached_to name\\[X\\].*"));
+  // Had the reposture function visited X (an unexported body), it would have
+  // added a "Frame name [X] not found" error. Make sure none remain.
+  while (NumErrors() > 0) {
+    EXPECT_THAT(TakeError(), Not(HasSubstr("Frame name [X] not found")));
+  }
+  ClearDiagnostics();
+}
+
+// Errors found while reposturing a merge-included model are merged into the
+// load's errors, and so are reported (and abort the load) like any others.
+// Here, the URDF's link named `__model__` collides with the model frame, so
+// libsdformat's pose graph is invalid and resolving each of the included
+// model's two bodies fails.
+TEST_F(SdfParserTest, MergeIncludeRepostureErrorsAreReported) {
+  const std::string urdf = temp_directory() + "/reposture_errors.urdf";
+  std::ofstream(urdf) << R"""(<robot name='u'>
+  <link name='__model__'/>
+  <link name='B'/>
+  <joint name='J' type='fixed'>
+    <parent link='__model__'/><child link='B'/>
+  </joint>
+</robot>)""";
+  const auto models = AddModelsFromSdfString(fmt::format(
+      R"""(<sdf version='1.12'>
+  <model name='m'>
+    <include merge='true'><uri>file://{}</uri><name>u</name></include>
+  </model>
+</sdf>)""",
+      urdf));
+  EXPECT_TRUE(models.empty());
+  // libsdformat's own errors come first, so the actionable one leads.
+  ASSERT_FALSE(error_records_.empty());
+  EXPECT_THAT(error_records_.front().message,
+              testing::HasSubstr("Link with non-unique name [__model__]"));
+  // The reposture function reports one error per body that the URDF exported,
+  // attributed to the included file. libsdformat's errors have no file path.
+  int reposture_count = 0;
+  for (const auto& record : error_records_) {
+    if (record.filename.has_value() &&
+        record.filename->find("reposture_errors.urdf") != std::string::npos) {
+      EXPECT_THAT(record.message,
+                  testing::HasSubstr("multiple incoming edges"));
+      ++reposture_count;
+    }
+  }
+  EXPECT_EQ(reposture_count, 2);
+  ClearDiagnostics();
+}
+
+// Same input as above, but with the default (throwing) policy: the user must
+// see libsdformat's actionable error, not a secondary reposture symptom thrown
+// from inside libsdformat's Load().
+TEST_F(SdfParserTest, MergeIncludeRepostureErrorsThrowActionableError) {
+  const std::string urdf = temp_directory() + "/reposture_throw.urdf";
+  std::ofstream(urdf) << R"""(<robot name='u'>
+  <link name='__model__'/>
+  <link name='B'/>
+  <joint name='J' type='fixed'>
+    <parent link='__model__'/><child link='B'/>
+  </joint>
+</robot>)""";
+  ThrowErrors();
+  DRAKE_EXPECT_THROWS_MESSAGE(AddModelsFromSdfString(fmt::format(
+                                  R"""(<sdf version='1.12'>
+  <model name='m'>
+    <include merge='true'><uri>file://{}</uri><name>u</name></include>
+  </model>
+</sdf>)""",
+                                  urdf)),
+                              ".*Link with non-unique name \\[__model__\\].*");
 }
 
 TEST_F(SdfParserTest, MergeIncludeIntoWorld) {
