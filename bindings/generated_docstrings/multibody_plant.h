@@ -2547,7 +2547,22 @@ Build the underlying tree structure of the multibody model, - declare
 the plant's state, - declare the plant's input and output ports, -
 declare collision filters to ignore collisions among rigid bodies: -
 between rigid bodies connected by a joint, - within subgraphs of
-welded rigid bodies.
+welded rigid bodies. - anchor the SceneGraph frames of the rigid
+bodies welded (directly or transitively) to the world.
+
+Rather than declaring collision filters among the bodies welded to the
+world, MultibodyPlant declares their frames to be *anchored*, so their
+rigid geometries become anchored geometries. The geometries still
+follow their bodies if a weld's parameters change, but no two anchored
+geometries can collide. This has two consequences beyond the filters
+listed above: - Collisions between geometries of two bodies welded to
+the world cannot be re-enabled, e.g., by
+CollisionFilterDeclaration∷AllowBetween(). - The geometries of a body
+welded to the world never collide with *any* other anchored geometry
+in the same SceneGraph. That includes geometry another source
+registered with SceneGraph∷RegisterAnchoredGeometry() and the
+geometries of bodies welded to the world in another MultibodyPlant
+connected to the same SceneGraph.
 
 Note that MultibodyPlant will *not* introduce any automatic collision
 filters on deformable bodies. Collision filters for deformable bodies
