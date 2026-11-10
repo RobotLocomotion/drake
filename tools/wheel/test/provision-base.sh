@@ -22,8 +22,8 @@ case "${ID}" in
     ;;
   amzn)
     dnf update -y
-    # Install uv (even under test configurations in which it's not strictly
-    # needed, for image caching).
+    # Install uv and its prerequisites (even under test configurations in which
+    # it's not strictly needed, for image caching).
     dnf install -y wget tar gzip
     wget -qO- https://astral.sh/uv/install.sh | sh
     ;;
