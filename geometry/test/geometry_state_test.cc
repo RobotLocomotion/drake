@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <filesystem>
 #include <fstream>
+#include <limits>
 #include <map>
 #include <memory>
 #include <optional>
@@ -160,7 +161,7 @@ class GeometryStateTester {
   }
 
   void FinalizePoseUpdate() {
-    state_->FinalizePoseUpdate(state_->kinematics_data_,
+    state_->FinalizePoseUpdate(&state_->kinematics_data_,
                                &state_->mutable_proximity_engine(),
                                state_->GetMutableRenderEngines());
   }
@@ -973,13 +974,30 @@ TEST_F(GeometryStateTest, GeometryStatistics) {
   EXPECT_EQ(geometry_state_.NumDynamicGeometries(),
             single_tree_dynamic_rigid_geometry_count());
   EXPECT_EQ(geometry_state_.NumAnchoredGeometries(), anchored_geometry_count());
-  EXPECT_EQ(
-      geometry_state_.NumAnchoredGeometries(),
-      geometry_state_.NumGeometriesForFrame(InternalFrame::world_frame_id()));
+  EXPECT_EQ(geometry_state_.NumAnchoredGeometries() +
+                geometry_state_.NumDynamicGeometries(),
+            geometry_state_.get_num_geometries());
   EXPECT_EQ(geometry_state_.get_num_geometries(),
             single_tree_rigid_geometry_count());
   const SourceId false_id = SourceId::get_new_id();
   EXPECT_FALSE(geometry_state_.SourceIsRegistered(false_id));
+}
+
+// Anchored and dynamic geometries are classified by whether their frames are
+// anchored, not by whether they are registered on the world frame.
+TEST_F(GeometryStateTest, GeometryStatisticsWithAnchoredFrame) {
+  SetUpSingleSourceTree();
+  const int num_dynamic = geometry_state_.NumDynamicGeometries();
+  const int num_anchored = geometry_state_.NumAnchoredGeometries();
+  // frames_[0] is a child of the world frame.
+  gs_tester_.AnchorFrameBitsOnly(frames_[0]);
+  EXPECT_EQ(geometry_state_.NumDynamicGeometries(),
+            num_dynamic - kGeometryCount);
+  EXPECT_EQ(geometry_state_.NumAnchoredGeometries(),
+            num_anchored + kGeometryCount);
+  EXPECT_EQ(geometry_state_.NumAnchoredGeometries() +
+                geometry_state_.NumDynamicGeometries(),
+            geometry_state_.get_num_geometries());
 }
 
 TEST_F(GeometryStateTest, GetOwningSourceName) {
@@ -2784,7 +2802,7 @@ TEST_F(GeometryStateTest, DeactivateReachesProximityEngine) {
 // Rigid geometry registered on an anchored frame is anchored and is added to
 // the proximity engine at X_WG = X_WF * X_FG. Likewise, ChangeShape() on an
 // anchored geometry re-adds it at its new pose.
-TEST_F(GeometryStateTest, RegisterGeometryOnAnchoredFrame) {
+TEST_F(GeometryStateTest, AnchoredGeometryPoseAtAddition) {
   const SourceId s_id = geometry_state_.RegisterNewSource("test_source");
   const FrameId anchored_frame_id =
       geometry_state_.RegisterFrame(s_id, GeometryFrame("anchored"));
@@ -2907,6 +2925,268 @@ TEST_F(GeometryStateTest, RenderPosesOfAnchoredGeometry) {
   geometry_state_.ChangeShape(s_id, world_id, Sphere(1.0), X_WG_world);
   ASSERT_TRUE(renderer->is_registered(world_id));
   EXPECT_TRUE(renderer->world_pose(world_id).IsExactlyEqualTo(X_WG_world));
+}
+
+// AnchorFrames() validates its input. The rule is that a frame may be anchored
+// only if its parent is -- the world frame being the anchored base case.
+TEST_F(GeometryStateTest, AnchorFramesValidation) {
+  SetUpSingleSourceTree(Assign::kProximity);
+  const auto& internal_frames = gs_tester_.get_frames();
+
+  // f2 is a child of f1; f0 and f1 are children of the world frame.
+  ASSERT_TRUE(internal_frames.at(frames_[2]).has_parent(frames_[1]));
+
+  // An unregistered frame id is rejected.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      geometry_state_.AnchorFrames({FrameId::get_new_id()}),
+      ".*no frame is registered with the id.*");
+
+  // f2 alone is rejected: its parent f1 is not anchored. The message names
+  // both frames, since its audience is someone debugging their frame tree.
+  DRAKE_EXPECT_THROWS_MESSAGE(geometry_state_.AnchorFrames({frames_[2]}),
+                              ".*cannot anchor frame 'f2'.*parent frame "
+                              "'f1' is neither anchored nor part.*");
+
+  // Listing the parent alongside the child works, in either order: validation
+  // is a single order-free pass.
+  DRAKE_EXPECT_NO_THROW(geometry_state_.AnchorFrames({frames_[2], frames_[1]}));
+  EXPECT_TRUE(internal_frames.at(frames_[1]).is_anchored());
+  EXPECT_TRUE(internal_frames.at(frames_[2]).is_anchored());
+
+  // Already-anchored frames are a no-op, so a caller may include the world
+  // frame (as MultibodyPlant's world-welded subgraph does) without filtering.
+  DRAKE_EXPECT_NO_THROW(geometry_state_.AnchorFrames(
+      {InternalFrame::world_frame_id(), frames_[1]}));
+
+  // And now that f1 is anchored, f0 can still be anchored independently --
+  // anchoring one frame says nothing about its siblings.
+  EXPECT_FALSE(internal_frames.at(frames_[0]).is_anchored());
+  DRAKE_EXPECT_NO_THROW(geometry_state_.AnchorFrames({frames_[0]}));
+}
+
+// Anchoring reclaims invariant filter pairs, which the collision filter can
+// only do with no transient history. AnchorFrames() is where the user learns
+// that.
+TEST_F(GeometryStateTest, AnchorFramesThrowsForTransients) {
+  SetUpSingleSourceTree(Assign::kProximity);
+  geometry_state_.collision_filter_manager().ApplyTransient(
+      CollisionFilterDeclaration().ExcludeWithin(
+          GeometrySet({geometries_[0], geometries_[1]})));
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      geometry_state_.AnchorFrames({frames_[0]}),
+      "AnchorFrames\\(\\): frames cannot be anchored while there are active, "
+      "transient collision filter declarations.");
+}
+
+// Promotion turns a frame's geometry into anchored geometry, with all the
+// consequences that already carries, while the geometry keeps reporting its
+// true parent frame.
+TEST_F(GeometryStateTest, AnchorFramesPromotesGeometry) {
+  SetUpSingleSourceTree(Assign::kProximity);
+  const ProximityEngine<double>& engine = gs_tester_.proximity_engine();
+  const internal::CollisionFilter& filter = engine.collision_filter();
+  const auto& geometries = gs_tester_.get_geometries();
+
+  const int total = geometry_state_.NumDynamicGeometries() +
+                    geometry_state_.NumAnchoredGeometries();
+  const int dynamic_before = geometry_state_.NumDynamicGeometries();
+  // f0's geometries: the first kGeometryCount entries of geometries_.
+  const std::vector<GeometryId> f0_geometries(
+      geometries_.begin(), geometries_.begin() + kGeometryCount);
+
+  for (const GeometryId id : f0_geometries) {
+    ASSERT_TRUE(geometries.at(id).is_dynamic());
+    ASSERT_FALSE(filter.IsAnchored(id));
+  }
+
+  geometry_state_.AnchorFrames({frames_[0]});
+
+  for (const GeometryId id : f0_geometries) {
+    // The geometry is anchored, but still reports its real parent frame.
+    EXPECT_FALSE(geometries.at(id).is_dynamic());
+    EXPECT_EQ(geometry_state_.GetFrameId(id), frames_[0]);
+    EXPECT_TRUE(filter.IsAnchored(id));
+  }
+
+  // The dynamic/anchored accounting shifts, in the state and in the engine.
+  EXPECT_EQ(geometry_state_.NumDynamicGeometries(),
+            dynamic_before - kGeometryCount);
+  EXPECT_EQ(geometry_state_.NumDynamicGeometries() +
+                geometry_state_.NumAnchoredGeometries(),
+            total);
+  EXPECT_EQ(engine.num_dynamic(), dynamic_before - kGeometryCount);
+
+  // Promoted geometry cannot collide with other anchored geometry -- including
+  // the declared-anchored geometry it has never met.
+  EXPECT_TRUE(
+      geometry_state_.CollisionFiltered(f0_geometries[0], f0_geometries[1]));
+  EXPECT_TRUE(
+      geometry_state_.CollisionFiltered(f0_geometries[0], anchored_geometry_));
+  // But it still collides with geometry that is still dynamic.
+  EXPECT_FALSE(geometry_state_.CollisionFiltered(f0_geometries[0],
+                                                 geometries_[kGeometryCount]));
+}
+
+// Deformable geometry is registered on the world frame, which is the anchored
+// base case -- but it is free to move, so it must stay dynamic.
+TEST_F(GeometryStateTest, AnchorFramesLeavesDeformableDynamic) {
+  SetUpSingleSourceTree(Assign::kProximity);
+  const auto& geometries = gs_tester_.get_geometries();
+
+  auto instance = make_unique<GeometryInstance>(
+      RigidTransformd::Identity(), make_unique<Sphere>(1.0), "deformable");
+  instance->set_proximity_properties(ProximityProperties());
+  const GeometryId deformable_id = geometry_state_.RegisterDeformableGeometry(
+      source_id_, InternalFrame::world_frame_id(), std::move(instance), 2.0);
+
+  EXPECT_TRUE(geometries.at(deformable_id).is_dynamic());
+  EXPECT_FALSE(gs_tester_.proximity_engine().collision_filter().IsAnchored(
+      deformable_id));
+
+  // Re-anchoring the world frame changes nothing for it.
+  geometry_state_.AnchorFrames({InternalFrame::world_frame_id()});
+  EXPECT_TRUE(geometries.at(deformable_id).is_dynamic());
+}
+
+// Anchored poses are a function of parameters, so they are refreshed when an
+// anchored frame's world pose actually changes rather than every step. The
+// engine must hold each promoted geometry's *true* world pose, not the
+// registration-time placeholder it was moved with.
+TEST_F(GeometryStateTest, AnchoredPosesTrackTheirFrame) {
+  SetUpSingleSourceTree(Assign::kProximity);
+  const GeometryId g0 = geometries_[0];
+
+  // Promote f0 before any pose has been pushed through. At this moment the
+  // engine's object still carries the pose it was registered with.
+  geometry_state_.AnchorFrames({frames_[0]});
+
+  // Where the *engine* thinks the geometry is. Signed distance is computed
+  // from the fcl object's own transform, so this catches a missed refresh,
+  // which reading GeometryState's own X_WGs would not.
+  auto engine_distance_to = [this](GeometryId id, const Vector3d& p_WQ) {
+    const std::vector<SignedDistanceToPoint<double>> results =
+        geometry_state_.ComputeSignedDistanceToPoint(
+            p_WQ, std::numeric_limits<double>::infinity());
+    for (const auto& result : results) {
+      if (result.id_G == id) return result.distance;
+    }
+    throw std::runtime_error("No distance reported for the given geometry");
+  };
+  // g0 is a unit sphere, so its surface lies one unit from its origin.
+  auto expected_distance = [](const RigidTransformd& X_WG,
+                              const Vector3d& p_WQ) {
+    return (p_WQ - X_WG.translation()).norm() - 1.0;
+  };
+  const Vector3d p_WQ{20, -30, 40};
+
+  auto set_poses = [this]() {
+    FramePoseVector<double> poses;
+    for (int f = 0; f < static_cast<int>(frames_.size()); ++f) {
+      poses.set_value(frames_[f], X_PFs_[f]);
+    }
+    gs_tester_.SetFramePoses(source_id_, poses,
+                             &gs_tester_.mutable_kinematics_data());
+    gs_tester_.FinalizePoseUpdate();
+  };
+
+  set_poses();
+  // f0 sits at <1, 2, 3>, so the placeholder and the truth differ; a missed
+  // refresh here would leave the geometry at X_FG.
+  const RigidTransformd X_WG_expected = X_WFs_[0] * X_FGs_[0];
+  EXPECT_NEAR(engine_distance_to(g0, p_WQ),
+              expected_distance(X_WG_expected, p_WQ), 1e-12);
+
+  // Re-posing with the same values must leave it correct (and, being a
+  // parameter-valued pose, costs no refresh).
+  set_poses();
+  EXPECT_NEAR(engine_distance_to(g0, p_WQ),
+              expected_distance(X_WG_expected, p_WQ), 1e-12);
+
+  // Moving the anchored frame -- as changing a weld parameter does -- is
+  // detected, and the anchored geometry follows.
+  const RigidTransformd X_WF0_new(Vector3d{-7, 11, 0.5});
+  {
+    FramePoseVector<double> poses;
+    poses.set_value(frames_[0], X_WF0_new);
+    for (int f = 1; f < static_cast<int>(frames_.size()); ++f) {
+      poses.set_value(frames_[f], X_PFs_[f]);
+    }
+    gs_tester_.SetFramePoses(source_id_, poses,
+                             &gs_tester_.mutable_kinematics_data());
+    gs_tester_.FinalizePoseUpdate();
+  }
+  EXPECT_NEAR(engine_distance_to(g0, p_WQ),
+              expected_distance(X_WF0_new * X_FGs_[0], p_WQ), 1e-12);
+}
+
+// Geometry registered onto an already-anchored frame is anchored from the
+// start, and lands at X_WF * X_FG rather than X_FG.
+TEST_F(GeometryStateTest, RegisterGeometryOnAnchoredFrame) {
+  SetUpSingleSourceTree(Assign::kProximity);
+  const ProximityEngine<double>& engine = gs_tester_.proximity_engine();
+  geometry_state_.AnchorFrames({frames_[0]});
+
+  FramePoseVector<double> poses;
+  for (int f = 0; f < static_cast<int>(frames_.size()); ++f) {
+    poses.set_value(frames_[f], X_PFs_[f]);
+  }
+  gs_tester_.SetFramePoses(source_id_, poses,
+                           &gs_tester_.mutable_kinematics_data());
+  gs_tester_.FinalizePoseUpdate();
+
+  const int anchored_before = engine.num_anchored();
+  const int dynamic_before = engine.num_dynamic();
+
+  const RigidTransformd X_FG(Vector3d{0.25, -0.5, 2});
+  const GeometryId late_id = geometry_state_.RegisterGeometry(
+      source_id_, frames_[0],
+      make_unique<GeometryInstance>(X_FG, make_unique<Sphere>(1), "late"));
+  geometry_state_.AssignRole(source_id_, late_id, ProximityProperties());
+
+  EXPECT_FALSE(gs_tester_.get_geometries().at(late_id).is_dynamic());
+  EXPECT_TRUE(engine.collision_filter().IsAnchored(late_id));
+  // It went into the engine's *anchored* collection, not merely got marked.
+  EXPECT_EQ(engine.num_anchored(), anchored_before + 1);
+  EXPECT_EQ(engine.num_dynamic(), dynamic_before);
+  // It lands at X_WF * X_FG, not X_FG.
+  const Vector3d p_WQ{20, -30, 40};
+  double distance = std::numeric_limits<double>::quiet_NaN();
+  for (const auto& result : geometry_state_.ComputeSignedDistanceToPoint(
+           p_WQ, std::numeric_limits<double>::infinity())) {
+    if (result.id_G == late_id) distance = result.distance;
+  }
+  EXPECT_NEAR(distance, (p_WQ - (X_WFs_[0] * X_FG).translation()).norm() - 1.0,
+              1e-12);
+  // It is filtered against its anchored siblings without materializing pairs.
+  EXPECT_TRUE(geometry_state_.CollisionFiltered(late_id, geometries_[0]));
+
+  // The other ordering: registered with no proximity role, the role assigned
+  // afterwards. AssignRole() reads the frame's status at the time of the call,
+  // so this lands in the anchored collection too.
+  const GeometryId later_id = geometry_state_.RegisterGeometry(
+      source_id_, frames_[0],
+      make_unique<GeometryInstance>(X_FG, make_unique<Sphere>(1), "later"));
+  EXPECT_FALSE(gs_tester_.get_geometries().at(later_id).is_dynamic());
+  EXPECT_EQ(engine.num_anchored(), anchored_before + 1);  // Not in yet.
+  geometry_state_.AssignRole(source_id_, later_id, ProximityProperties());
+  EXPECT_EQ(engine.num_anchored(), anchored_before + 2);
+  EXPECT_EQ(engine.num_dynamic(), dynamic_before);
+  EXPECT_TRUE(engine.collision_filter().IsAnchored(later_id));
+}
+
+// Removing promoted geometry works: the engine routes removal by which
+// collection actually holds the object, not by a separately tracked bit.
+TEST_F(GeometryStateTest, RemoveAnchoredPromotedGeometry) {
+  SetUpSingleSourceTree(Assign::kProximity);
+  const ProximityEngine<double>& engine = gs_tester_.proximity_engine();
+  geometry_state_.AnchorFrames({frames_[0]});
+  const int anchored_before = engine.num_anchored();
+
+  DRAKE_EXPECT_NO_THROW(
+      geometry_state_.RemoveGeometry(source_id_, geometries_[0]));
+  EXPECT_EQ(engine.num_anchored(), anchored_before - 1);
+  EXPECT_FALSE(engine.collision_filter().IsAnchored(geometries_[0]));
 }
 
 // Only dynamic geometry participates in the engine's broadphase culling, but

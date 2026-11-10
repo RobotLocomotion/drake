@@ -161,7 +161,8 @@ class CollisionFilter {
    GeometryState::AnchorFrames(). Like AddGeometry()'s `is_anchored`, it is a
    one-way trip: there is no un-anchor.
 
-   @throws std::exception if there are any transient declarations active. */
+   @pre No id in `ids` names a deformable geometry.
+   @pre There are no transient declarations active. */
   void SetAnchored(const std::vector<GeometryId>& ids);
 
   /* Removes a geometry from the filter system. All filtered collision pairs
@@ -333,8 +334,7 @@ class CollisionFilter {
    entirely in CanCollideWith()'s membership test. */
   std::unordered_set<GeometryId> inactive_;
 
-  /* The anchored set `A` (see the class documentation): membership is declared
-   when a geometry is added and is never edited afterwards. Like inactive_, it
+  /* The anchored set `A` (see the class documentation). Like inactive_, it
    is independent of the pairwise filter sets and of the transient history --
    its effect lives entirely in CanCollideWith()'s membership test. */
   std::unordered_set<GeometryId> anchored_;

@@ -684,6 +684,35 @@ class SceneGraph final : public systems::LeafSystem<T> {
   void RemoveGeometry(systems::Context<T>* context, SourceId source_id,
                       GeometryId geometry_id) const;
 
+  /** (Internal use only) Marks the given frames as *anchored* in this
+   %SceneGraph's model: their world poses are a function of parameters alone,
+   never of state (q, v, or time). Geometry on an anchored frame becomes
+   anchored geometry -- it is no longer re-posed and re-fit every step, and it
+   can no longer collide with other anchored geometry -- while continuing to
+   report its true parent frame.
+
+   "Anchored" does not mean "immutable". A frame welded to the world through a
+   parameterized offset moves when that parameter changes, and %SceneGraph
+   notices and refreshes. What an anchored frame may not do is move as a
+   function of state.
+
+   This is internal because declaring a frame anchored when it is not is a
+   silent correctness problem: the broadphase would degrade visibly, but the
+   collision filter would quietly block the frame's geometry against all other
+   anchored geometry while it actually moves. MultibodyPlant, whose weld
+   analysis proves the property, is the intended caller.
+
+   A frame may be anchored only if its parent is; the world frame is anchored
+   by construction. Already-anchored frames are ignored. Anchoring cannot be
+   undone, so the whole set is validated before any of it is applied.
+
+   @throws std::exception if any id is not a registered frame, or if any
+                          frame's parent is neither anchored nor a member of
+                          `frame_ids`.
+   @throws std::exception if there are any active, transient collision filter
+                          declarations (see CollisionFilterManager). */
+  void AnchorFrames(const std::vector<FrameId>& frame_ids);
+
   //@}
 
   /** @name     Managing RenderEngine instances      */

@@ -146,7 +146,7 @@ class InternalGeometry {
    anchored are dynamic.
 
    The frame's status is cached here rather than looked up through
-   GeometryState on each of the ~10 call sites. Caching is safe because
+   GeometryState on each of its various call sites. Caching is safe because
    anchoring is irreversible and one frame's anchored status never changes as a
    side effect of another frame's. */
   bool is_dynamic() const { return !frame_is_anchored_ || is_deformable(); }

@@ -143,13 +143,18 @@ class SceneGraphInspector {
    with the indicated role.  */
   int NumDeformableGeometriesWithRole(Role role) const;
 
-  /** Reports the total number of _dynamic_ geometries in the scene graph. This
-   include all deformable geometries.  */
+  /** Reports the total number of _dynamic_ geometries in the scene graph.
+   Dynamic geometries are those whose poses (or, for deformable geometries,
+   configurations) depend on state. This includes all deformable geometries.
+   Every geometry is either dynamic or anchored (see NumAnchoredGeometries()).
+   */
   int NumDynamicGeometries() const;
 
-  /** Reports the total number of _anchored_ non-deformable geometries. This
-   should provide the same answer as calling NumGeometriesForFrame() with the
-   world frame id.  */
+  /** Reports the total number of _anchored_ geometries in the scene graph.
+   Anchored geometries are rigid geometries whose poses in the world frame do
+   not depend on state; this includes all rigid geometries registered directly
+   on the world frame. An anchored geometry's pose can still change if
+   parameters change. Deformable geometries are never anchored.  */
   int NumAnchoredGeometries() const;
 
   /** Returns all pairs of geometries that are candidates for collision (in no

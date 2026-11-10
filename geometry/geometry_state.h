@@ -123,6 +123,22 @@ struct KinematicsData {
   // Mesh representations for deformable geometries that move passively with the
   // simulated control mesh, keyed by roles.
   std::map<Role, internal::DrivenMeshData> driven_mesh_data;
+
+  // Set when an anchored frame's world pose in X_WFs changed (or may have),
+  // meaning the proximity engine's anchored geometry needs re-posing and
+  // anchored_tree_ needs refitting. FinalizePoseUpdate() acts on it and clears
+  // it.
+  //
+  // It defaults to *true* on purpose. At the moment a frame is anchored, the
+  // engine's newly-moved objects still hold their registration-time poses
+  // while X_WFs holds whatever was last computed, so a flag defaulting to
+  // false would make the first update compare two stale values, find them
+  // equal, and leave every anchored geometry at its placeholder pose --
+  // invisible in any test whose fixtures sit at the identity. Defaulting to
+  // true costs one refresh per fresh GeometryState and makes the safe
+  // direction the default one; a context cloned from a clean state copies the
+  // cleared flag and pays nothing.
+  bool anchored_poses_dirty{true};
 };
 
 // A wrapper around a shared_ptr<T> where copying calls T::Clone() instead of
@@ -487,6 +503,38 @@ class GeometryState {
   /** Implementation of SceneGraph::RemoveGeometry().  */
   void RemoveGeometry(SourceId source_id, GeometryId geometry_id);
 
+  /** Marks the given frames as *anchored*: their world poses are a function of
+   parameters alone, never of state (q, v, or time). Geometry on an anchored
+   frame becomes anchored geometry, with all the consequences that already
+   carries -- it is no longer re-posed and re-fit every step, and it can no
+   longer collide with other anchored geometry -- while continuing to report
+   its true parent frame.
+
+   "Anchored" does not mean "immutable". A frame welded to the world through a
+   parameterized offset moves when that parameter changes, and SceneGraph
+   notices and refreshes. What an anchored frame may not do is move as a
+   function of state; that is what makes a single, batch invalidation the right
+   granularity.
+
+   A frame may be anchored only if its parent is anchored. The world frame is
+   anchored by construction, which gives that rule its base case. Every frame
+   in `frame_ids` must therefore have a parent that is either already anchored
+   or is itself in `frame_ids`; order within `frame_ids` does not matter. Note
+   that children of an anchored frame are *not* anchored automatically --
+   anchoring is opt-in per frame, with the parent as a precondition.
+
+   Frames already anchored are a no-op, so a caller may include the world frame
+   (as the world-welded subgraph of a MultibodyPlant does) without filtering.
+
+   Anchoring a frame is irreversible.
+
+   @throws std::exception if any id in `frame_ids` is not a registered frame.
+   @throws std::exception if any frame's parent is neither anchored nor a
+                          member of `frame_ids`.
+   @throws std::exception if there are any active, transient collision filter
+                          declarations. */
+  void AnchorFrames(const std::vector<FrameId>& frame_ids);
+
   /** Reports whether the canonicalized version of the given candidate geometry
    name is considered valid. This tests the requirements described in the
    documentation of @ref canonicalized_geometry_names "GeometryInstance". When
@@ -823,9 +871,10 @@ class GeometryState {
                                           GeometryId geometry_id);
 
   // Method that updates the proximity engine and the render engines with the
-  // up-to-date _pose_ data in `kinematics_data`.
+  // up-to-date _pose_ data in `kinematics_data`. Takes the data mutably so it
+  // can clear the anchored-pose dirty flag it acts on.
   void FinalizePoseUpdate(
-      const internal::KinematicsData<T>& kinematics_data,
+      internal::KinematicsData<T>* kinematics_data,
       internal::ProximityEngine<T>* proximity_engine,
       std::vector<render::RenderEngine*> render_engines) const;
 

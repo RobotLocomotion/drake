@@ -1768,6 +1768,32 @@ void MultibodyPlant<T>::ApplyDefaultCollisionFilters() {
     if (subgraph.size() <= 1) {
       continue;
     }
+    if (subgraph.contains(world_index())) {
+      // Bodies welded to the world cannot move as a function of state, so we
+      // tell SceneGraph to anchor their frames rather than filtering the
+      // subgraph pairwise. That covers the same pairs -- no two anchored
+      // geometries can collide -- as an O(1) predicate instead of n(n-1)/2
+      // materialized pairs, and it additionally keeps their geometry out of
+      // the dynamic broadphase. For a few hundred static bodies the pairwise
+      // form dominates Finalize() time and per-context memory.
+      //
+      // Note that never creating those filters is the point; creating them and
+      // removing them afterwards still pays to build them.
+      std::vector<geometry::FrameId> frame_ids;
+      frame_ids.reserve(subgraph.size());
+      for (BodyIndex body_index : subgraph) {
+        // Bodies with no registered geometry have no frame to anchor.
+        std::optional<geometry::FrameId> frame_id =
+            GetBodyFrameIdIfExists(body_index);
+        if (frame_id.has_value()) frame_ids.push_back(*frame_id);
+      }
+      // Every body frame is registered as a child of the world frame (see
+      // RegisterGeometry()), so the parent rule is satisfied trivially. The
+      // world body's own frame *is* the world frame, which is already
+      // anchored; AnchorFrames() treats that as a no-op.
+      scene_graph_->AnchorFrames(frame_ids);
+      continue;
+    }
     // Map body indices to pointers.
     std::vector<const RigidBody<T>*> subgraph_bodies;
     for (BodyIndex body_index : subgraph) {

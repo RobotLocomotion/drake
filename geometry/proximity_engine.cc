@@ -1797,6 +1797,11 @@ CollisionFilter& ProximityEngine<T>::collision_filter() {
 }
 
 template <typename T>
+const CollisionFilter& ProximityEngine<T>::collision_filter() const {
+  return impl_->collision_filter();
+}
+
+template <typename T>
 void ProximityEngine<T>::ApplyActiveStatusChange(
     const CollisionFilter::ActiveStatusChange& change) {
   impl_->ApplyActiveStatusChange(change);
