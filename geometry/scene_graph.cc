@@ -370,6 +370,11 @@ void SceneGraph<T>::RemoveGeometry(SourceId source_id, GeometryId geometry_id) {
 }
 
 template <typename T>
+void SceneGraph<T>::AnchorFrames(const std::vector<FrameId>& frame_ids) {
+  hub_.mutable_model().AnchorFrames(frame_ids);
+}
+
+template <typename T>
 void SceneGraph<T>::RemoveGeometry(Context<T>* context, SourceId source_id,
                                    GeometryId geometry_id) const {
   auto& g_state = mutable_geometry_state(context);
@@ -695,7 +700,7 @@ void SceneGraph<T>::CalcPoseUpdate(const Context<T>& context, int*) const {
     }
   }
 
-  state.FinalizePoseUpdate(kinematics_data, &state.mutable_proximity_engine(),
+  state.FinalizePoseUpdate(&kinematics_data, &state.mutable_proximity_engine(),
                            state.GetMutableRenderEngines());
 }
 

@@ -1629,6 +1629,126 @@ GTEST_TEST(MultibodyPlantTest, FilterWorldWelds) {
   ASSERT_EQ(contacts.size(), 0);
 }
 
+// Finalize() anchors the SceneGraph frames of bodies welded to the world.
+// Anchored geometry isn't re-posed every step, but it must still follow its
+// body when a parameter changes the body's pose -- here, the pose of the
+// FixedOffsetFrame the body is welded to. Signed distance is computed from the
+// proximity engine's own copy of each geometry's pose, so it detects geometry
+// that was left behind.
+GTEST_TEST(MultibodyPlantTest, WorldWeldedGeometryFollowsParameters) {
+  DiagramBuilder<double> builder;
+  auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.0);
+  const double kRadius = 1.0;
+  const auto M = SpatialInertia<double>::SolidSphereWithMass(1.0, kRadius);
+  const auto& frame_F =
+      plant.AddFrame(std::make_unique<FixedOffsetFrame<double>>(
+          "F", plant.world_frame(), RigidTransformd(Vector3d(5, 0, 0))));
+  const RigidBody<double>& welded = plant.AddRigidBody("welded", M);
+  plant.WeldFrames(frame_F, welded.body_frame());
+  plant.RegisterCollisionGeometry(welded, RigidTransformd(),
+                                  geometry::Sphere(kRadius), "welded",
+                                  CoulombFriction<double>());
+  // A free body, left at its default pose at the origin.
+  const RigidBody<double>& free = plant.AddRigidBody("free", M);
+  plant.RegisterCollisionGeometry(free, RigidTransformd(),
+                                  geometry::Sphere(kRadius), "free",
+                                  CoulombFriction<double>());
+  plant.Finalize();
+  // Confirm we're exercising anchored geometry.
+  ASSERT_EQ(scene_graph.model_inspector().NumAnchoredGeometries(), 1);
+
+  auto diagram = builder.Build();
+  auto context = diagram->CreateDefaultContext();
+  Context<double>& plant_context =
+      plant.GetMyMutableContextFromRoot(context.get());
+  const Context<double>& sg_context =
+      scene_graph.GetMyContextFromRoot(*context);
+  auto distance = [&]() {
+    const auto& query_object =
+        scene_graph.get_query_output_port().Eval<QueryObject<double>>(
+            sg_context);
+    const auto results =
+        query_object.ComputeSignedDistancePairwiseClosestPoints();
+    DRAKE_DEMAND(results.size() == 1);
+    return results[0].distance;
+  };
+
+  EXPECT_NEAR(distance(), 5 - 2 * kRadius, 1e-14);
+
+  frame_F.SetPoseInParentFrame(&plant_context,
+                               RigidTransformd(Vector3d(10, 0, 0)));
+  EXPECT_NEAR(distance(), 10 - 2 * kRadius, 1e-14);
+}
+
+// The geometries of bodies welded to the world are anchored, so they can't
+// collide with each other even when collisions are explicitly allowed, nor
+// with anchored geometry registered by another source. They still collide with
+// dynamic geometry.
+GTEST_TEST(MultibodyPlantTest, WorldWeldedGeometryIsAnchored) {
+  using geometry::CollisionFilterDeclaration;
+  using geometry::GeometrySet;
+
+  DiagramBuilder<double> builder;
+  auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.0);
+  const double kRadius = 1.0;
+  const auto M = SpatialInertia<double>::SolidSphereWithMass(1.0, kRadius);
+  // All of the geometries below sit at the origin, so every pair that is a
+  // collision candidate is in contact.
+  auto add_body = [&](const std::string& name) {
+    const RigidBody<double>& body = plant.AddRigidBody(name, M);
+    return plant.RegisterCollisionGeometry(body, RigidTransformd(),
+                                           geometry::Sphere(kRadius), name,
+                                           CoulombFriction<double>());
+  };
+  const GeometryId welded_a = add_body("welded_a");
+  const GeometryId welded_b = add_body("welded_b");
+  const GeometryId free = add_body("free");
+  plant.WeldFrames(plant.world_frame(),
+                   plant.GetBodyByName("welded_a").body_frame());
+  plant.WeldFrames(plant.world_frame(),
+                   plant.GetBodyByName("welded_b").body_frame());
+
+  const geometry::SourceId other_source = scene_graph.RegisterSource("other");
+  auto ground_instance = std::make_unique<GeometryInstance>(
+      RigidTransformd(), geometry::Sphere(kRadius), "ground");
+  ground_instance->set_proximity_properties(geometry::ProximityProperties());
+  const GeometryId ground = scene_graph.RegisterAnchoredGeometry(
+      other_source, std::move(ground_instance));
+  plant.Finalize();
+
+  auto diagram = builder.Build();
+  auto context = diagram->CreateDefaultContext();
+  Context<double>& sg_context =
+      scene_graph.GetMyMutableContextFromRoot(context.get());
+
+  using Pair = std::pair<GeometryId, GeometryId>;
+  auto contact_pairs = [&]() {
+    const auto& query_object =
+        scene_graph.get_query_output_port().Eval<QueryObject<double>>(
+            sg_context);
+    std::vector<Pair> pairs;
+    for (const auto& contact : query_object.ComputePointPairPenetration()) {
+      pairs.emplace_back(std::min(contact.id_A, contact.id_B),
+                         std::max(contact.id_A, contact.id_B));
+    }
+    return pairs;
+  };
+  auto sorted = [](GeometryId a, GeometryId b) {
+    return Pair(std::min(a, b), std::max(a, b));
+  };
+  using ::testing::UnorderedElementsAre;
+  const auto expected = UnorderedElementsAre(
+      sorted(free, welded_a), sorted(free, welded_b), sorted(free, ground));
+  EXPECT_THAT(contact_pairs(), expected);
+
+  // Explicitly allowing collisions among the anchored geometries changes
+  // nothing.
+  scene_graph.collision_filter_manager(&sg_context)
+      .Apply(CollisionFilterDeclaration().AllowWithin(
+          GeometrySet({welded_a, welded_b, ground})));
+  EXPECT_THAT(contact_pairs(), expected);
+}
+
 // Ensure that all welded subgraphs are collision filtered.
 GTEST_TEST(MultibodyPlantTest, FilterWeldedSubgraphs) {
   // Build a chain with two welded subgraphs; a chain of 3, followed later by a

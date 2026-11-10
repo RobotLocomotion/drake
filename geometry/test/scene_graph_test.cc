@@ -761,6 +761,29 @@ TEST_F(SceneGraphTest, RoleManagementSmokeTest) {
   EXPECT_EQ(scene_graph_.RemoveRole(s_id, g_id, Role::kIllustration), 1);
 }
 
+// SceneGraph::AnchorFrames() is a thin wrapper on
+// GeometryState::AnchorFrames(). This is just a smoke test that it reaches the
+// model; it relies on GeometryState to properly unit test the full behavior.
+// Anchoring is observed through the collision candidates: two anchored
+// geometries are never candidates.
+TEST_F(SceneGraphTest, AnchorFramesSmokeTest) {
+  const SourceId s_id = scene_graph_.RegisterSource("test");
+  std::vector<FrameId> frame_ids;
+  for (const char* name : {"f1", "f2"}) {
+    const FrameId f_id = scene_graph_.RegisterFrame(s_id, GeometryFrame(name));
+    auto instance = make_sphere_instance();
+    instance->set_proximity_properties(ProximityProperties());
+    scene_graph_.RegisterGeometry(s_id, f_id, std::move(instance));
+    frame_ids.push_back(f_id);
+  }
+
+  const SceneGraphInspector<double>& inspector = scene_graph_.model_inspector();
+  ASSERT_EQ(inspector.GetCollisionCandidates().size(), 1);
+
+  scene_graph_.AnchorFrames(frame_ids);
+  EXPECT_EQ(inspector.GetCollisionCandidates().size(), 0);
+}
+
 // For SceneGraph::ChangeShape to be correct, we need to make sure it invokes
 // GeometryState correctly. So, we'll invoke it and look for minimum evidence
 // that the change has happened (i.e., we report a different shape) and rely

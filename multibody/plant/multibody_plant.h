@@ -968,17 +968,26 @@ call to Finalize() must be performed. This call will:
 - declare collision filters to ignore collisions among rigid bodies:
   - between rigid bodies connected by a joint,
   - within subgraphs of welded rigid bodies.
+- anchor the SceneGraph frames of the rigid bodies welded (directly or
+  transitively) to the world.
+
+Rather than declaring collision filters among the bodies welded to the world,
+MultibodyPlant declares their frames to be *anchored*, so their rigid geometries
+become anchored geometries. The geometries still follow their bodies if a weld's
+parameters change, but no two anchored geometries can collide. This has two
+consequences beyond the filters listed above:
+- Collisions between geometries of two bodies welded to the world cannot be
+  re-enabled, e.g., by CollisionFilterDeclaration::AllowBetween().
+- The geometries of a body welded to the world never collide with *any* other
+  anchored geometry in the same SceneGraph. That includes geometry another
+  source registered with SceneGraph::RegisterAnchoredGeometry() and the
+  geometries of bodies welded to the world in another %MultibodyPlant
+  connected to the same SceneGraph.
 
 Note that MultibodyPlant will *not* introduce any automatic collision filters on
 deformable bodies. Collision filters for deformable bodies can be explicitly
 applied via ExcludeCollisionGeometriesWithCollisionFilterGroupPair() or during
 parsing.
-
-<!-- TODO(amcastro-tri): Consider making the actual geometry registration
-     with GS AFTER Finalize() so that we can tell if there are any bodies
-     welded to the world to which we could just assign anchored geometry
-     instead of dynamic geometry. This is an optimization and the API, and
-     pre/post-finalize conditions should not change. -->
 
 @anchor mbp_table_of_contents
 
@@ -6404,6 +6413,8 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   // consider collisions:
   // * between rigid geometries affixed to bodies connected by a joint
   // * within subgraphs of welded-together rigid bodies
+  // The subgraph welded to the world is not filtered; its bodies' frames are
+  // anchored in SceneGraph instead (see @ref mbp_finalize_stage).
   // Note that collisions involving deformable bodies are not filtered by
   // default.
   void ApplyDefaultCollisionFilters();
