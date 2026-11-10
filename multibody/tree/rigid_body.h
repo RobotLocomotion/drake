@@ -9,6 +9,7 @@
 #include "drake/common/unused.h"
 #include "drake/multibody/tree/acceleration_kinematics_cache.h"
 #include "drake/multibody/tree/frame.h"
+#include "drake/multibody/tree/frame_body_pose_cache.h"
 #include "drake/multibody/tree/mobilizer.h"
 #include "drake/multibody/tree/multibody_element.h"
 #include "drake/multibody/tree/multibody_forces.h"
@@ -276,10 +277,10 @@ class RigidBody : public MultibodyElement<T> {
 
   /// Returns the "primary" link of this %RigidBody (%Link). To break a
   /// kinematic loop, Finalize() can split a link into a primary link and one or
-  /// more "shadow" links; see MultibodyPlant::SetEnableLoopTopology(). For a
-  /// shadow link, this returns the link it was split from, which reports the
-  /// link's mass properties (a shadow link has none of its own). Any other link
-  /// is its own primary link, so for it this returns `*this`.
+  /// more "shadow" links. For a shadow link, this returns the link it was split
+  /// from, which reports the link's mass properties (a shadow link has none of
+  /// its own). Any other link is its own primary link, so for it this returns
+  /// `*this`.
   /// @throws std::exception if this element is not associated with a
   ///   MultibodyPlant.
   const Link<T>& primary_link() const;
@@ -419,7 +420,7 @@ class RigidBody : public MultibodyElement<T> {
   /// Context. The default constant mass value is used to initialize the mass
   /// parameter in the Context.
   /// @throws std::exception if this is a shadow link, which has no mass
-  ///   properties of its own (see MultibodyPlant::SetEnableLoopTopology()).
+  ///   properties of its own; ask its primary_link() instead.
   double default_mass() const {
     ThrowIfEphemeralInertia(__func__);
     return default_spatial_inertia_.get_mass();
@@ -431,7 +432,7 @@ class RigidBody : public MultibodyElement<T> {
   /// @retval p_BoBcm_B The position of this body B's center of mass `Bcm`
   /// measured from Bo (B's frame origin) and expressed in B (body B's frame).
   /// @throws std::exception if this is a shadow link, which has no mass
-  ///   properties of its own (see MultibodyPlant::SetEnableLoopTopology()).
+  ///   properties of its own; ask its primary_link() instead.
   const Vector3<double>& default_com() const {
     ThrowIfEphemeralInertia(__func__);
     return default_spatial_inertia_.get_com();
@@ -443,7 +444,7 @@ class RigidBody : public MultibodyElement<T> {
   /// SpatialInertia.
   /// @retval G_BBo_B rigid body B's unit inertia about Bo, expressed in B.
   /// @throws std::exception if this is a shadow link, which has no mass
-  ///   properties of its own (see MultibodyPlant::SetEnableLoopTopology()).
+  ///   properties of its own; ask its primary_link() instead.
   const UnitInertia<double>& default_unit_inertia() const {
     ThrowIfEphemeralInertia(__func__);
     return default_spatial_inertia_.get_unit_inertia();
@@ -455,7 +456,7 @@ class RigidBody : public MultibodyElement<T> {
   /// this body.
   /// @retval I_BBo_B body B's rotational inertia about Bo, expressed in B.
   /// @throws std::exception if this is a shadow link, which has no mass
-  ///   properties of its own (see MultibodyPlant::SetEnableLoopTopology()).
+  ///   properties of its own; ask its primary_link() instead.
   RotationalInertia<double> default_rotational_inertia() const {
     ThrowIfEphemeralInertia(__func__);
     return default_spatial_inertia_.CalcRotationalInertia();
@@ -465,7 +466,7 @@ class RigidBody : public MultibodyElement<T> {
   /// Bo (B's origin) and expressed in B (this body's frame).
   /// @retval M_BBo_B body B's spatial inertia about Bo, expressed in B.
   /// @throws std::exception if this is a shadow link, which has no mass
-  ///   properties of its own (see MultibodyPlant::SetEnableLoopTopology()).
+  ///   properties of its own; ask its primary_link() instead.
   const SpatialInertia<double>& default_spatial_inertia() const {
     ThrowIfEphemeralInertia(__func__);
     return default_spatial_inertia_;
@@ -475,7 +476,7 @@ class RigidBody : public MultibodyElement<T> {
   /// @param[in] context contains the state of the multibody system.
   /// @pre the context makes sense for use by this %RigidBody.
   /// @throws std::exception if this is a shadow link, which has no mass
-  ///   properties of its own (see MultibodyPlant::SetEnableLoopTopology()).
+  ///   properties of its own; ask its primary_link() instead.
   const T& get_mass(const systems::Context<T>& context) const {
     ThrowIfEphemeralInertia(__func__);
     const systems::BasicVector<T>& spatial_inertia_parameter =
@@ -571,7 +572,7 @@ class RigidBody : public MultibodyElement<T> {
   /// to Bcm (B's center of mass), expressed in B.
   /// @pre the context makes sense for use by this %RigidBody.
   /// @throws std::exception if this is a shadow link, which has no mass
-  ///   properties of its own (see MultibodyPlant::SetEnableLoopTopology()).
+  ///   properties of its own; ask its primary_link() instead.
   Vector3<T> CalcCenterOfMassInBodyFrame(
       const systems::Context<T>& context) const {
     ThrowIfEphemeralInertia(__func__);
@@ -587,7 +588,7 @@ class RigidBody : public MultibodyElement<T> {
   /// @retval v_WBcm_W The translational velocity of Bcm (this body's
   /// center of mass) in the world frame W, expressed in W.
   /// @throws std::exception if this is a shadow link, which has no mass
-  ///   properties of its own (see MultibodyPlant::SetEnableLoopTopology()).
+  ///   properties of its own; ask its primary_link() instead.
   Vector3<T> CalcCenterOfMassTranslationalVelocityInWorld(
       const systems::Context<T>& context) const;
 
@@ -600,7 +601,7 @@ class RigidBody : public MultibodyElement<T> {
   /// this method performs an expensive forward dynamics computation, whereas
   /// once evaluated, successive calls to this method are inexpensive.
   /// @throws std::exception if this is a shadow link, which has no mass
-  ///   properties of its own (see MultibodyPlant::SetEnableLoopTopology()).
+  ///   properties of its own; ask its primary_link() instead.
   Vector3<T> CalcCenterOfMassTranslationalAccelerationInWorld(
       const systems::Context<T>& context) const;
 
@@ -613,7 +614,7 @@ class RigidBody : public MultibodyElement<T> {
   /// (B's unit inertia about Bo expressed in B).
   /// @pre the context makes sense for use by this %RigidBody.
   /// @throws std::exception if this is a shadow link, which has no mass
-  ///   properties of its own (see MultibodyPlant::SetEnableLoopTopology()).
+  ///   properties of its own; ask its primary_link() instead.
   SpatialInertia<T> CalcSpatialInertiaInBodyFrame(
       const systems::Context<T>& context) const {
     ThrowIfEphemeralInertia(__func__);
@@ -707,6 +708,20 @@ class RigidBody : public MultibodyElement<T> {
             spatial_inertia_parameter_index_);
     spatial_inertia_parameter.SetFrom(
         internal::parameter_conversion::ToBasicVector(M_Bo_B));
+  }
+
+  /// (Internal use only) Returns M_LLo_L, this link L's spatial inertia about
+  /// its origin Lo, expressed in L, as the dynamics use it. That is L's full
+  /// mass properties unless Finalize() split L to break a kinematic loop. Then
+  /// the primary link and each of its shadow links carry an even share of the
+  /// primary's mass properties, and this returns L's share. Unlike the
+  /// mass-property getters above, this doesn't throw for a shadow link.
+  /// @param[in] frame_body_pose_cache The FrameBodyPoseCache, evaluated from
+  ///   the Context of interest.
+  /// @pre `frame_body_pose_cache` is up to date (this is not checked).
+  const SpatialInertia<T>& get_M_LLo_L(
+      const internal::FrameBodyPoseCache<T>& frame_body_pose_cache) const {
+    return frame_body_pose_cache.get_M_LLo_L(this->ordinal());
   }
 
   /// @name Internal methods to access position kinematics quantities.

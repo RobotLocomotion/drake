@@ -2570,13 +2570,11 @@ void MultibodyTree<T>::CalcPointsVelocities(
 
 template <typename T>
 T MultibodyTree<T>::CalcTotalMass(const systems::Context<T>& context) const {
-  const FrameBodyPoseCache<T>& frame_body_pose_cache =
-      EvalFrameBodyPoses(context);
+  const FrameBodyPoseCache<T>& frame_cache = EvalFrameBodyPoses(context);
   T total_mass = 0;
   for (BodyIndex body_index(1); body_index < num_links(); ++body_index) {
     const RigidBody<T>& body = get_link(body_index);
-    const T& body_mass =
-        frame_body_pose_cache.get_M_LLo_L(body.ordinal()).get_mass();
+    const T& body_mass = body.get_M_LLo_L(frame_cache).get_mass();
     total_mass += body_mass;
   }
   return total_mass;
@@ -2586,15 +2584,13 @@ template <typename T>
 T MultibodyTree<T>::CalcTotalMass(
     const systems::Context<T>& context,
     const std::vector<ModelInstanceIndex>& model_instances) const {
-  const FrameBodyPoseCache<T>& frame_body_pose_cache =
-      EvalFrameBodyPoses(context);
+  const FrameBodyPoseCache<T>& frame_cache = EvalFrameBodyPoses(context);
   T total_mass = 0;
   for (BodyIndex body_index(1); body_index < num_links(); ++body_index) {
     const RigidBody<T>& body = get_link(body_index);
     if (std::find(model_instances.begin(), model_instances.end(),
                   body.model_instance()) != model_instances.end()) {
-      const T& body_mass =
-          frame_body_pose_cache.get_M_LLo_L(body.ordinal()).get_mass();
+      const T& body_mass = body.get_M_LLo_L(frame_cache).get_mass();
       total_mass += body_mass;
     }
   }
@@ -2612,8 +2608,7 @@ Vector3<T> MultibodyTree<T>::CalcCenterOfMassPositionInWorld(
     throw std::logic_error(message);
   }
 
-  const FrameBodyPoseCache<T>& frame_body_pose_cache =
-      EvalFrameBodyPoses(context);
+  const FrameBodyPoseCache<T>& frame_cache = EvalFrameBodyPoses(context);
   T total_mass = 0;
   Vector3<T> sum_mi_pi = Vector3<T>::Zero();
 
@@ -2622,13 +2617,11 @@ Vector3<T> MultibodyTree<T>::CalcCenterOfMassPositionInWorld(
     const RigidBody<T>& body = get_link(body_index);
 
     // total_mass = ∑ mᵢ.
-    const T& body_mass =
-        frame_body_pose_cache.get_M_LLo_L(body.ordinal()).get_mass();
+    const T& body_mass = body.get_M_LLo_L(frame_cache).get_mass();
     total_mass += body_mass;
 
     // sum_mi_pi = ∑ mᵢ * pi_WoBcm_W.
-    const Vector3<T>& pi_BoBcm_B =
-        frame_body_pose_cache.get_M_LLo_L(body.ordinal()).get_com();
+    const Vector3<T>& pi_BoBcm_B = body.get_M_LLo_L(frame_cache).get_com();
     const Vector3<T> pi_WoBcm_W = body.EvalPoseInWorld(context) * pi_BoBcm_B;
     sum_mi_pi += body_mass * pi_WoBcm_W;
   }
@@ -2656,8 +2649,7 @@ Vector3<T> MultibodyTree<T>::CalcCenterOfMassPositionInWorld(
     throw std::logic_error(message);
   }
 
-  const FrameBodyPoseCache<T>& frame_body_pose_cache =
-      EvalFrameBodyPoses(context);
+  const FrameBodyPoseCache<T>& frame_cache = EvalFrameBodyPoses(context);
   T total_mass = 0;
   Vector3<T> sum_mi_pi = Vector3<T>::Zero();
 
@@ -2674,14 +2666,12 @@ Vector3<T> MultibodyTree<T>::CalcCenterOfMassPositionInWorld(
     const RigidBody<T>& body = get_link(body_index);
     if (std::find(model_instances.begin(), model_instances.end(),
                   body.model_instance()) != model_instances.end()) {
-      const T& body_mass =
-          frame_body_pose_cache.get_M_LLo_L(body.ordinal()).get_mass();
+      const T& body_mass = body.get_M_LLo_L(frame_cache).get_mass();
       total_mass += body_mass;  // total_mass = ∑ mᵢ.
       ++number_of_non_world_bodies_processed;
 
       // sum_mi_pi = ∑ mᵢ * pi_WoBcm_W.
-      const Vector3<T>& pi_BoBcm_B =
-          frame_body_pose_cache.get_M_LLo_L(body.ordinal()).get_com();
+      const Vector3<T>& pi_BoBcm_B = body.get_M_LLo_L(frame_cache).get_com();
       const Vector3<T> pi_WoBcm_W = body.EvalPoseInWorld(context) * pi_BoBcm_B;
       sum_mi_pi += body_mass * pi_WoBcm_W;
     }
@@ -2776,7 +2766,7 @@ SpatialInertia<T> MultibodyTree<T>::CalcSpatialInertia(
   };
 
   // Now add in all the links' spatial inertias to M_SWo_W, ignoring World and
-  // accounting or all shards of a split link.
+  // accounting for all shards of a split link.
   for (LinkIndex link_index : link_indexes) {
     if (link_index == world_index()) continue;  // World inertia does not add.
 
@@ -2824,8 +2814,7 @@ Vector3<T> MultibodyTree<T>::CalcCenterOfMassTranslationalVelocityInWorld(
     throw std::logic_error(message);
   }
 
-  const FrameBodyPoseCache<T>& frame_body_pose_cache =
-      EvalFrameBodyPoses(context);
+  const FrameBodyPoseCache<T>& frame_cache = EvalFrameBodyPoses(context);
   T total_mass = 0;
   Vector3<T> sum_mi_vi = Vector3<T>::Zero();
 
@@ -2834,8 +2823,7 @@ Vector3<T> MultibodyTree<T>::CalcCenterOfMassTranslationalVelocityInWorld(
     const RigidBody<T>& body = get_link(body_index);
 
     // total_mass = ∑ mᵢ.
-    const T& body_mass =
-        frame_body_pose_cache.get_M_LLo_L(body.ordinal()).get_mass();
+    const T& body_mass = body.get_M_LLo_L(frame_cache).get_mass();
     total_mass += body_mass;
 
     // sum_mi_vi = ∑ mᵢ * vi_WBcm_W.
@@ -2871,8 +2859,7 @@ Vector3<T> MultibodyTree<T>::CalcCenterOfMassTranslationalVelocityInWorld(
     throw std::logic_error(message);
   }
 
-  const FrameBodyPoseCache<T>& frame_body_pose_cache =
-      EvalFrameBodyPoses(context);
+  const FrameBodyPoseCache<T>& frame_cache = EvalFrameBodyPoses(context);
   T total_mass = 0;
   Vector3<T> sum_mi_vi = Vector3<T>::Zero();
 
@@ -2889,8 +2876,7 @@ Vector3<T> MultibodyTree<T>::CalcCenterOfMassTranslationalVelocityInWorld(
     const RigidBody<T>& body = get_link(body_index);
     if (std::find(model_instances.begin(), model_instances.end(),
                   body.model_instance()) != model_instances.end()) {
-      const T& body_mass =
-          frame_body_pose_cache.get_M_LLo_L(body.ordinal()).get_mass();
+      const T& body_mass = body.get_M_LLo_L(frame_cache).get_mass();
       total_mass += body_mass;  // total_mass = ∑ mᵢ.
       ++number_of_non_world_bodies_processed;
 
@@ -2930,8 +2916,7 @@ Vector3<T> MultibodyTree<T>::CalcCenterOfMassTranslationalAccelerationInWorld(
     throw std::logic_error(message);
   }
 
-  const FrameBodyPoseCache<T>& frame_body_pose_cache =
-      EvalFrameBodyPoses(context);
+  const FrameBodyPoseCache<T>& frame_cache = EvalFrameBodyPoses(context);
 
   // To ensure a sensible exception message is issued if the system's mass is
   // zero or negative, check if ∑ mᵢ ≤ 0 _before_ calculating ∑ mᵢ * aᵢ.
@@ -2941,8 +2926,7 @@ Vector3<T> MultibodyTree<T>::CalcCenterOfMassTranslationalAccelerationInWorld(
   T total_mass = 0;
   for (BodyIndex body_index(1); body_index < num_links(); ++body_index) {
     const RigidBody<T>& body = get_link(body_index);
-    const T& body_mass =
-        frame_body_pose_cache.get_M_LLo_L(body.ordinal()).get_mass();
+    const T& body_mass = body.get_M_LLo_L(frame_cache).get_mass();
     total_mass += body_mass;  // total_mass = ∑ mᵢ.
   }
 
@@ -2956,8 +2940,7 @@ Vector3<T> MultibodyTree<T>::CalcCenterOfMassTranslationalAccelerationInWorld(
   Vector3<T> sum_mi_ai = Vector3<T>::Zero();
   for (BodyIndex body_index(1); body_index < num_links(); ++body_index) {
     const RigidBody<T>& body = get_link(body_index);
-    const T& body_mass =
-        frame_body_pose_cache.get_M_LLo_L(body.ordinal()).get_mass();
+    const T& body_mass = body.get_M_LLo_L(frame_cache).get_mass();
     const Vector3<T> ai_WBcm_W =
         CalcLinkCenterOfMassTranslationalAccelerationInWorld(context, body);
     sum_mi_ai += body_mass * ai_WBcm_W;  // sum_mi_ai = ∑ mᵢ * ai_WBcm_W.
@@ -2982,8 +2965,7 @@ Vector3<T> MultibodyTree<T>::CalcCenterOfMassTranslationalAccelerationInWorld(
     throw std::logic_error(message);
   }
 
-  const FrameBodyPoseCache<T>& frame_body_pose_cache =
-      EvalFrameBodyPoses(context);
+  const FrameBodyPoseCache<T>& frame_cache = EvalFrameBodyPoses(context);
 
   // To ensure a sensible exception message is issued if the system's mass is
   // zero or negative, check if ∑ mᵢ ≤ 0 _before_ calculating ∑ mᵢ * aᵢ.
@@ -2998,8 +2980,7 @@ Vector3<T> MultibodyTree<T>::CalcCenterOfMassTranslationalAccelerationInWorld(
     const RigidBody<T>& body = get_link(body_index);
     if (std::find(model_instances.begin(), model_instances.end(),
                   body.model_instance()) != model_instances.end()) {
-      const T& body_mass =
-          frame_body_pose_cache.get_M_LLo_L(body.ordinal()).get_mass();
+      const T& body_mass = body.get_M_LLo_L(frame_cache).get_mass();
       total_mass += body_mass;  // total_mass = ∑ mᵢ.
       ++number_of_non_world_bodies_processed;
     }
@@ -3033,8 +3014,7 @@ Vector3<T> MultibodyTree<T>::CalcCenterOfMassTranslationalAccelerationInWorld(
     const RigidBody<T>& body = get_link(body_index);
     if (std::find(model_instances.begin(), model_instances.end(),
                   body.model_instance()) != model_instances.end()) {
-      const T& body_mass =
-          frame_body_pose_cache.get_M_LLo_L(body.ordinal()).get_mass();
+      const T& body_mass = body.get_M_LLo_L(frame_cache).get_mass();
       const Vector3<T> ai_WBcm_W =
           CalcLinkCenterOfMassTranslationalAccelerationInWorld(context, body);
       sum_mi_ai += body_mass * ai_WBcm_W;  // sum_mi_ai = ∑ mᵢ * ai_WBcm_W.
@@ -3200,7 +3180,7 @@ Vector3<T> MultibodyTree<T>::CalcLinkCenterOfMassTranslationalVelocityInWorld(
   // Form p_LoLcm_W, the position of Lcm from Lo, expressed in W. (Splitting a
   // link to break a loop changes only its mass, not its center of mass.)
   const Vector3<T>& p_LoLcm_L =
-      EvalFrameBodyPoses(context).get_M_LLo_L(link_L.ordinal()).get_com();
+      link_L.get_M_LLo_L(EvalFrameBodyPoses(context)).get_com();
   const RotationMatrix<T>& R_WL =
       EvalLinkPoseInWorld(context, link_L).rotation();
   const Vector3<T> p_LoLcm_W = R_WL * p_LoLcm_L;
@@ -3217,7 +3197,7 @@ MultibodyTree<T>::CalcLinkCenterOfMassTranslationalAccelerationInWorld(
     const systems::Context<T>& context, const Link<T>& link_L) const {
   // Form p_LoLcm_W, the position of Lcm from Lo, expressed in W.
   const Vector3<T>& p_LoLcm_L =
-      EvalFrameBodyPoses(context).get_M_LLo_L(link_L.ordinal()).get_com();
+      link_L.get_M_LLo_L(EvalFrameBodyPoses(context)).get_com();
   const RotationMatrix<T>& R_WL =
       EvalLinkPoseInWorld(context, link_L).rotation();
   const Vector3<T> p_LoLcm_W = R_WL * p_LoLcm_L;
@@ -4178,20 +4158,17 @@ void MultibodyTree<T>::CalcJacobianCenterOfMassTranslationalVelocity(
     throw std::logic_error(message);
   }
 
-  const FrameBodyPoseCache<T>& frame_body_pose_cache =
-      EvalFrameBodyPoses(context);
+  const FrameBodyPoseCache<T>& frame_cache = EvalFrameBodyPoses(context);
   Js_v_AScm_E->setZero();
   T composite_mass = 0;
   for (BodyIndex body_index(1); body_index < num_links(); ++body_index) {
     const RigidBody<T>& body = get_link(body_index);
-    const Vector3<T>& pi_BoBcm =
-        frame_body_pose_cache.get_M_LLo_L(body.ordinal()).get_com();
+    const Vector3<T>& pi_BoBcm = body.get_M_LLo_L(frame_cache).get_com();
     MatrixX<T> Jsi_v_ABcm_E(3, num_columns);
     CalcJacobianTranslationalVelocity(
         context, with_respect_to, body.body_frame(), body.body_frame(),
         pi_BoBcm, frame_A, frame_E, &Jsi_v_ABcm_E);
-    const T& body_mass =
-        frame_body_pose_cache.get_M_LLo_L(body.ordinal()).get_mass();
+    const T& body_mass = body.get_M_LLo_L(frame_cache).get_mass();
     *Js_v_AScm_E += body_mass * Jsi_v_ABcm_E;
     composite_mass += body_mass;
   }
@@ -4226,8 +4203,7 @@ void MultibodyTree<T>::CalcJacobianCenterOfMassTranslationalVelocity(
     throw std::logic_error(message);
   }
 
-  const FrameBodyPoseCache<T>& frame_body_pose_cache =
-      EvalFrameBodyPoses(context);
+  const FrameBodyPoseCache<T>& frame_cache = EvalFrameBodyPoses(context);
   T total_mass = 0;
   Js_v_AScm_E->setZero();
 
@@ -4244,16 +4220,14 @@ void MultibodyTree<T>::CalcJacobianCenterOfMassTranslationalVelocity(
     const RigidBody<T>& body = get_link(body_index);
     if (std::find(model_instances.begin(), model_instances.end(),
                   body.model_instance()) != model_instances.end()) {
-      const T& body_mass =
-          frame_body_pose_cache.get_M_LLo_L(body.ordinal()).get_mass();
+      const T& body_mass = body.get_M_LLo_L(frame_cache).get_mass();
       total_mass += body_mass;  // total_mass = ∑ mᵢ.
       ++number_of_non_world_bodies_processed;
 
       // sum_mi_Ji = ∑ (mᵢ Jᵢ), where mᵢ is the mass of the iᵗʰ body and
       // Jᵢ is Bᵢcm's translational velocity Jacobian in frame A, expressed in
       // frame E (Bᵢcm is the center of mass of the iᵗʰ body).
-      const Vector3<T>& pi_BoBcm =
-          frame_body_pose_cache.get_M_LLo_L(body.ordinal()).get_com();
+      const Vector3<T>& pi_BoBcm = body.get_M_LLo_L(frame_cache).get_com();
       MatrixX<T> Jsi_v_ABcm_E(3, num_columns);
       CalcJacobianTranslationalVelocity(
           context, with_respect_to, body.body_frame(), body.body_frame(),
@@ -4294,19 +4268,16 @@ Vector3<T> MultibodyTree<T>::CalcBiasCenterOfMassTranslationalAcceleration(
     throw std::logic_error(message);
   }
 
-  const FrameBodyPoseCache<T>& frame_body_pose_cache =
-      EvalFrameBodyPoses(context);
+  const FrameBodyPoseCache<T>& frame_cache = EvalFrameBodyPoses(context);
   T composite_mass = 0;
   Vector3<T> asBias_AScm_E = Vector3<T>::Zero();
   for (BodyIndex body_index(1); body_index < num_links(); ++body_index) {
     const RigidBody<T>& body = get_link(body_index);
-    const Vector3<T>& pi_BoBcm_B =
-        frame_body_pose_cache.get_M_LLo_L(body.ordinal()).get_com();
+    const Vector3<T>& pi_BoBcm_B = body.get_M_LLo_L(frame_cache).get_com();
     const Frame<T>& frame_B = body.body_frame();
     const SpatialAcceleration<T> AsBiasi_AScm_E = CalcBiasSpatialAcceleration(
         context, with_respect_to, frame_B, pi_BoBcm_B, frame_A, frame_E);
-    const T& body_mass =
-        frame_body_pose_cache.get_M_LLo_L(body.ordinal()).get_mass();
+    const T& body_mass = body.get_M_LLo_L(frame_cache).get_mass();
     asBias_AScm_E += body_mass * AsBiasi_AScm_E.translational();
     composite_mass += body_mass;
   }
@@ -4335,8 +4306,7 @@ Vector3<T> MultibodyTree<T>::CalcBiasCenterOfMassTranslationalAcceleration(
     throw std::logic_error(message);
   }
 
-  const FrameBodyPoseCache<T>& frame_body_pose_cache =
-      EvalFrameBodyPoses(context);
+  const FrameBodyPoseCache<T>& frame_cache = EvalFrameBodyPoses(context);
   T total_mass = 0;
   Vector3<T> sum_mi_aBiasi = Vector3<T>::Zero();
   // Sum over all bodies contained in model_instances except for the 0th body
@@ -4352,8 +4322,7 @@ Vector3<T> MultibodyTree<T>::CalcBiasCenterOfMassTranslationalAcceleration(
     const RigidBody<T>& body = get_link(body_index);
     if (std::find(model_instances.begin(), model_instances.end(),
                   body.model_instance()) != model_instances.end()) {
-      const T& body_mass =
-          frame_body_pose_cache.get_M_LLo_L(body.ordinal()).get_mass();
+      const T& body_mass = body.get_M_LLo_L(frame_cache).get_mass();
       total_mass += body_mass;  // total_mass = ∑ mᵢ.
       ++number_of_non_world_bodies_processed;
 
@@ -4361,8 +4330,7 @@ Vector3<T> MultibodyTree<T>::CalcBiasCenterOfMassTranslationalAcceleration(
       // and aBiasᵢ is Bᵢcm's bias translational acceleration in frame A,
       // expressed in frame E (Bᵢcm is the center of mass of the iᵗʰ body).
       const Frame<T>& frame_B = body.body_frame();
-      const Vector3<T>& pi_BoBcm_B =
-          frame_body_pose_cache.get_M_LLo_L(body.ordinal()).get_com();
+      const Vector3<T>& pi_BoBcm_B = body.get_M_LLo_L(frame_cache).get_com();
       const Vector3<T> aBiasi_ABcm_E = CalcBiasTranslationalAcceleration(
           context, with_respect_to, frame_B, pi_BoBcm_B, frame_A, frame_E);
       sum_mi_aBiasi += body_mass * aBiasi_ABcm_E;

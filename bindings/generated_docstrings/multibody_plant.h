@@ -4569,7 +4569,7 @@ Parameter ``body_indexes``:
 
 Note:
     The mass and inertia of the world_body() does not contribute to
-    the the returned spatial inertia, even if World is listed.
+    the returned spatial inertia, even if World is listed.
 
 Note:
     Until a loop's weld constraint is satisfied, a split body
@@ -6916,7 +6916,7 @@ and a velocity, for example), but its mass properties are derived from
 its primary link, and will change if the primary's do. Any attempt to
 ask a shadow link about its mass properties will throw; ask its
 RigidBody∷primary_link() instead. The primary link reports the link's
-full, user-defined mass properties. Physically, however a primary and
+full, user-defined mass properties. Physically, however, a primary and
 its shadows each carry an even share of the mass and inertia.
 Calculations that sum over several bodies (e.g., total mass, center of
 mass, spatial inertia and momentum, energy) obey the physics; for
@@ -8359,10 +8359,9 @@ See also:
           const char* doc =
 R"""(Returns the number of ephemeral weld constraints that Finalize() added
 in order to close topological loops. Each of these welds a shadow link
-to the link it is split from; see SetEnableLoopTopology(). These are
-included in num_constraints() and num_weld_constraints(), and are
-indistinguishable from user-added welds to the constraint solvers.
-Returns zero prior to Finalize().)""";
+to the link it is split from. These are included in num_constraints()
+and num_weld_constraints(), and are indistinguishable from user-added
+welds to the constraint solvers. Returns zero prior to Finalize().)""";
         } num_loop_constraints;
         // Symbol: drake::multibody::MultibodyPlant::num_misc_continuous_states
         struct /* num_misc_continuous_states */ {

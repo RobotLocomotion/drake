@@ -1863,8 +1863,8 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// primary link, and will change if the primary's do. Any attempt to ask a
   /// shadow link about its mass properties will throw; ask its
   /// RigidBody::primary_link() instead. The primary link reports the link's
-  /// full, user-defined mass properties. Physically, however a primary and its
-  /// shadows each carry an even share of the mass and inertia. Calculations
+  /// full, user-defined mass properties. Physically, however, a primary and
+  /// its shadows each carry an even share of the mass and inertia. Calculations
   /// that sum over several bodies (e.g., total mass, center of mass, spatial
   /// inertia and momentum, energy) obey the physics; for example, they take
   /// account of the individual poses of the primary and shadow links which can
@@ -1980,10 +1980,9 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
 
   /// Returns the number of ephemeral weld constraints that Finalize() added in
   /// order to close topological loops. Each of these welds a shadow link to the
-  /// link it is split from; see SetEnableLoopTopology(). These are included in
-  /// num_constraints() and num_weld_constraints(), and are indistinguishable
-  /// from user-added welds to the constraint solvers. Returns zero prior to
-  /// Finalize().
+  /// link it is split from. These are included in num_constraints() and
+  /// num_weld_constraints(), and are indistinguishable from user-added welds to
+  /// the constraint solvers. Returns zero prior to Finalize().
   int num_loop_constraints() const {
     return internal_tree().graph().num_loop_constraints();
   }
@@ -4196,7 +4195,7 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   ///  shadows, works as is.
   ///
   /// @note The mass and inertia of the world_body() does not contribute to the
-  ///  the returned spatial inertia, even if World is listed.
+  ///  returned spatial inertia, even if World is listed.
   /// @note Until a loop's weld constraint is satisfied, a split body
   ///  contributes as in the split model that the solver is simulating: an equal
   ///  share of its mass properties at the pose of its primary and of each

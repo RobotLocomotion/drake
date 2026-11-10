@@ -219,24 +219,21 @@ void IcfBuilder<T>::UpdateModel(
   // primary and shadows of a body split to break a kinematic loop is an even
   // share of the primary's mass (a shadow has no mass of its own).
   const MultibodyTree<T>& tree = GetInternalTree(plant_);
-  const FrameBodyPoseCache<T>& frame_body_pose_cache =
-      tree.EvalFrameBodyPoses(context);
+  const FrameBodyPoseCache<T>& frame_cache = tree.EvalFrameBodyPoses(context);
   for (int b = 0; b < plant_.num_bodies(); ++b) {
     const auto& body = plant_.get_body(BodyIndex(b));
     // If the body has zero mass, we assign it the mass of its composite.
     // TODO(amcastro-tri): consider using forest.link_composites() in
     // combination with LinkJointGraph::Link::composite() to precompute
     // composite's masses.
-    params->body_mass[b] =
-        frame_body_pose_cache.get_M_LLo_L(body.ordinal()).get_mass();
+    params->body_mass[b] = body.get_M_LLo_L(frame_cache).get_mass();
     if (params->body_mass[b] == 0.0) {
       const LinkJointGraph& graph = tree.graph();
       const auto composite = graph.GetLinksWeldedTo(body.index());
       T composite_mass = 0.0;
       for (BodyIndex c : composite) {
         composite_mass +=
-            frame_body_pose_cache.get_M_LLo_L(plant_.get_body(c).ordinal())
-                .get_mass();
+            plant_.get_body(c).get_M_LLo_L(frame_cache).get_mass();
       }
       if (composite_mass == 0.0) {
         throw std::logic_error(

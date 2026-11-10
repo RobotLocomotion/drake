@@ -7128,8 +7128,7 @@ Precondition:
 
 Raises:
     RuntimeError if this is a shadow link, which has no mass
-    properties of its own (see
-    MultibodyPlant∷SetEnableLoopTopology()).)""";
+    properties of its own; ask its primary_link() instead.)""";
         } CalcCenterOfMassInBodyFrame;
         // Symbol: drake::multibody::RigidBody::CalcCenterOfMassTranslationalAccelerationInWorld
         struct /* CalcCenterOfMassTranslationalAccelerationInWorld */ {
@@ -7153,8 +7152,7 @@ Note:
 
 Raises:
     RuntimeError if this is a shadow link, which has no mass
-    properties of its own (see
-    MultibodyPlant∷SetEnableLoopTopology()).)""";
+    properties of its own; ask its primary_link() instead.)""";
         } CalcCenterOfMassTranslationalAccelerationInWorld;
         // Symbol: drake::multibody::RigidBody::CalcCenterOfMassTranslationalVelocityInWorld
         struct /* CalcCenterOfMassTranslationalVelocityInWorld */ {
@@ -7172,8 +7170,7 @@ Returns ``v_WBcm_W``:
 
 Raises:
     RuntimeError if this is a shadow link, which has no mass
-    properties of its own (see
-    MultibodyPlant∷SetEnableLoopTopology()).)""";
+    properties of its own; ask its primary_link() instead.)""";
         } CalcCenterOfMassTranslationalVelocityInWorld;
         // Symbol: drake::multibody::RigidBody::CalcSpatialInertiaInBodyFrame
         struct /* CalcSpatialInertiaInBodyFrame */ {
@@ -7196,8 +7193,7 @@ Precondition:
 
 Raises:
     RuntimeError if this is a shadow link, which has no mass
-    properties of its own (see
-    MultibodyPlant∷SetEnableLoopTopology()).)""";
+    properties of its own; ask its primary_link() instead.)""";
         } CalcSpatialInertiaInBodyFrame;
         // Symbol: drake::multibody::RigidBody::CloneToScalar
         struct /* CloneToScalar */ {
@@ -7462,8 +7458,7 @@ Returns ``p_BoBcm_B``:
 
 Raises:
     RuntimeError if this is a shadow link, which has no mass
-    properties of its own (see
-    MultibodyPlant∷SetEnableLoopTopology()).)""";
+    properties of its own; ask its primary_link() instead.)""";
         } default_com;
         // Symbol: drake::multibody::RigidBody::default_mass
         struct /* default_mass */ {
@@ -7480,8 +7475,7 @@ Note:
 
 Raises:
     RuntimeError if this is a shadow link, which has no mass
-    properties of its own (see
-    MultibodyPlant∷SetEnableLoopTopology()).)""";
+    properties of its own; ask its primary_link() instead.)""";
         } default_mass;
         // Symbol: drake::multibody::RigidBody::default_rotational_inertia
         struct /* default_rotational_inertia */ {
@@ -7497,8 +7491,7 @@ Returns ``I_BBo_B``:
 
 Raises:
     RuntimeError if this is a shadow link, which has no mass
-    properties of its own (see
-    MultibodyPlant∷SetEnableLoopTopology()).)""";
+    properties of its own; ask its primary_link() instead.)""";
         } default_rotational_inertia;
         // Symbol: drake::multibody::RigidBody::default_spatial_inertia
         struct /* default_spatial_inertia */ {
@@ -7512,8 +7505,7 @@ Returns ``M_BBo_B``:
 
 Raises:
     RuntimeError if this is a shadow link, which has no mass
-    properties of its own (see
-    MultibodyPlant∷SetEnableLoopTopology()).)""";
+    properties of its own; ask its primary_link() instead.)""";
         } default_spatial_inertia;
         // Symbol: drake::multibody::RigidBody::default_unit_inertia
         struct /* default_unit_inertia */ {
@@ -7529,8 +7521,7 @@ Returns ``G_BBo_B``:
 
 Raises:
     RuntimeError if this is a shadow link, which has no mass
-    properties of its own (see
-    MultibodyPlant∷SetEnableLoopTopology()).)""";
+    properties of its own; ask its primary_link() instead.)""";
         } default_unit_inertia;
         // Symbol: drake::multibody::RigidBody::floating_position_suffix
         struct /* floating_position_suffix */ {
@@ -7615,6 +7606,24 @@ Precondition:
 See also:
     is_floating_base_body(), MultibodyPlant∷Finalize())""";
         } floating_velocity_suffix;
+        // Symbol: drake::multibody::RigidBody::get_M_LLo_L
+        struct /* get_M_LLo_L */ {
+          // Source: drake/multibody/tree/rigid_body.h
+          const char* doc =
+R"""((Internal use only) Returns M_LLo_L, this link L's spatial inertia
+about its origin Lo, expressed in L, as the dynamics use it. That is
+L's full mass properties unless Finalize() split L to break a
+kinematic loop. Then the primary link and each of its shadow links
+carry an even share of the primary's mass properties, and this returns
+L's share. Unlike the mass-property getters above, this doesn't throw
+for a shadow link.
+
+Parameter ``frame_body_pose_cache``:
+    The FrameBodyPoseCache, evaluated from the Context of interest.
+
+Precondition:
+    ``frame_body_pose_cache`` is up to date (this is not checked).)""";
+        } get_M_LLo_L;
         // Symbol: drake::multibody::RigidBody::get_angular_acceleration_in_world
         struct /* get_angular_acceleration_in_world */ {
           // Source: drake/multibody/tree/rigid_body.h
@@ -7655,8 +7664,7 @@ Precondition:
 
 Raises:
     RuntimeError if this is a shadow link, which has no mass
-    properties of its own (see
-    MultibodyPlant∷SetEnableLoopTopology()).)""";
+    properties of its own; ask its primary_link() instead.)""";
         } get_mass;
         // Symbol: drake::multibody::RigidBody::get_origin_acceleration_in_world
         struct /* get_origin_acceleration_in_world */ {
@@ -7853,11 +7861,10 @@ as we do for Joints.)""";
           const char* doc =
 R"""(Returns the "primary" link of this RigidBody (%Link). To break a
 kinematic loop, Finalize() can split a link into a primary link and
-one or more "shadow" links; see
-MultibodyPlant∷SetEnableLoopTopology(). For a shadow link, this
-returns the link it was split from, which reports the link's mass
-properties (a shadow link has none of its own). Any other link is its
-own primary link, so for it this returns ``*this``.
+one or more "shadow" links. For a shadow link, this returns the link
+it was split from, which reports the link's mass properties (a shadow
+link has none of its own). Any other link is its own primary link, so
+for it this returns ``*this``.
 
 Raises:
     RuntimeError if this element is not associated with a
