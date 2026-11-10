@@ -613,6 +613,25 @@ def _merge_yaml_dict_into_target(*, options, yaml_dict, target, target_schema):
     """
     assert isinstance(yaml_dict, collections.abc.Mapping), yaml_dict
     assert target is not None
+    # A bound C++ type whose fields must be set together (e.g., because its
+    # Serialize checks invariants among them) provides _yaml_load_set_fields.
+    # We merge the yaml into a dict of its current field values (read using
+    # _yaml_dump_get_attribute), and then pass every field in __fields__ as a
+    # keyword argument in a single call. The hook validates them and either
+    # updates the target or raises.
+    if hasattr(target, "_yaml_load_set_fields"):
+        staged = {
+            name: _yaml_dump_get_attribute(obj=target, name=name)
+            for name in _enumerate_field_types(target_schema)
+        }
+        _merge_yaml_dict_into_target(
+            options=options,
+            yaml_dict=yaml_dict,
+            target=staged,
+            target_schema=target_schema,
+        )
+        target._yaml_load_set_fields(**staged)
+        return
     static_field_map = _enumerate_field_types(target_schema)
     schema_names = list(static_field_map.keys())
     schema_optionals = {

@@ -3,11 +3,15 @@
  pydrake.geometry.optimization module. */
 
 #include <memory>
+#include <stdexcept>
 #include <string>
+#include <string_view>
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
 #include <vector>
+
+#include <fmt/format.h>
 
 #include "drake/bindings/generated_docstrings/geometry_optimization.h"
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
@@ -392,6 +396,68 @@ void DefineConvexSetBaseClassAndSubclasses(py::module_ m) {
         [](Class* self, std::pair<Eigen::MatrixXd, Eigen::VectorXd> args) {
           new (self) Class(std::get<0>(args), std::get<1>(args));
         });
+    // Add the same __fields__ that DefAttributesUsingSerialize would have
+    // (which we can't use, because it sets the fields one at a time). Keep in
+    // sync with HPolyhedron::Serialize.
+    {
+      py::list fields;
+      auto add_field = [&fields](const char* name, py::object type) {
+        auto field = py::module_::import_("types").attr("SimpleNamespace")();
+        py::setattr(field, "name", py::str(name));
+        py::setattr(field, "type", type);
+        fields.append(field);
+      };
+      const py::object ndarray = py::module_::import_("numpy").attr("ndarray");
+      add_field(
+          "ambient_dimension", py::module_::import_("builtins").attr("int"));
+      add_field("A", ndarray);
+      add_field("b", ndarray);
+      cls.def_prop_ro_static("__fields__",
+          [fields_tuple = py::tuple(fields)](py::object /* cls */) {  // BR
+            return fields_tuple;
+          });
+    }
+    // Use _rewrite_yaml_dump_attr_name to instruct yaml_dump_typed to access
+    // the "_foo" property instead of "foo" (which is a method).
+    cls.def_static("_rewrite_yaml_dump_attr_name",
+        [](std::string_view name) { return fmt::format("_{}", name); });
+    cls.def_prop_ro("_ambient_dimension",
+        [](const Class& self) { return self.ambient_dimension(); });
+    cls.def_prop_ro(
+        "_A", [](const Class& self) { return Eigen::MatrixXd(self.A()); });
+    cls.def_prop_ro(
+        "_b", [](const Class& self) { return Eigen::VectorXd(self.b()); });
+    // yaml_load_typed sets all of the fields at once, so that (as in C++) the
+    // invariants are checked only after every field has been loaded.
+    cls.def(
+        "_yaml_load_set_fields",
+        [](Class& self, int ambient_dimension, const py::object& A_in,
+            const py::object& b_in) {
+          // Like the C++ YAML reader, demote an empty or Nx0 A to 0x0, and
+          // reject an A that is not a sequence of sequences.
+          Eigen::MatrixXd A(0, 0);
+          const int A_ndim = py::cast<int>(A_in.attr("ndim"));
+          if (A_ndim == 2) {
+            A = py::cast<Eigen::MatrixXd>(A_in);
+            if (A.cols() == 0) {
+              A.resize(0, 0);
+            }
+          } else if (!(A_ndim == 1 && py::cast<int>(A_in.attr("size")) == 0)) {
+            throw std::logic_error("HPolyhedron: A must be a matrix");
+          }
+          if (py::cast<int>(b_in.attr("ndim")) != 1) {
+            throw std::logic_error("HPolyhedron: b must be a vector");
+          }
+          if (A.cols() != ambient_dimension) {
+            throw std::logic_error(fmt::format(
+                "HPolyhedron: the number of columns in A ({}) does not match "
+                "ambient_dimension ({})",
+                A.cols(), ambient_dimension));
+          }
+          // The constructor checks the remaining invariants.
+          self = HPolyhedron(A, py::cast<Eigen::VectorXd>(b_in));
+        },
+        py::arg("ambient_dimension"), py::arg("A"), py::arg("b"));
   }
 
   // Hyperellipsoid

@@ -249,7 +249,7 @@ class TestDiffIkSystems(unittest.TestCase):
             else:
                 self.assertEqual(dut_value, expected_value)
 
-    def _check_ingredient_config(self, dut_type, params, check_yaml=True):
+    def _check_ingredient_config(self, dut_type, params):
         """Tests an ingredient Config struct's common APIs. This returns the
         instance of Config resulting from dut_type(**params).
         """
@@ -266,23 +266,18 @@ class TestDiffIkSystems(unittest.TestCase):
         self.assertIn(list(params.keys())[0], repr(dut))
         copy.copy(dut)
 
-        if check_yaml:
-            dumped = yaml_dump_typed(dut)
-            from_yaml = yaml_load_typed(schema=dut_type, data=dumped)
-            self._config_matches_params(from_yaml, params)
+        dumped = yaml_dump_typed(dut)
+        from_yaml = yaml_load_typed(schema=dut_type, data=dumped)
+        self._config_matches_params(from_yaml, params)
 
         return dut
 
-    def _check_ingredient(
-        self, dut_type, params1, params2, ctor=None, check_yaml=True
-    ):
+    def _check_ingredient(self, dut_type, params1, params2, ctor=None):
         """Check the expected properties of an Ingredient. If the Ingredient
         is not simply constructed from an instance of its Config, then `ctor`
         should be provided to serve as the constructor.
         """
-        config = self._check_ingredient_config(
-            dut_type.Config, params1, check_yaml
-        )
+        config = self._check_ingredient_config(dut_type.Config, params1)
 
         dut = dut_type(config) if ctor is None else ctor(config)
 
@@ -461,13 +456,8 @@ class TestDiffIkSystems(unittest.TestCase):
             "model_instances": ["robot"],
         }
 
-        # TODO(cohnt) Check the YAML round trip once pydrake's HPolyhedron
-        # supports yaml_dump_typed.
         self._check_ingredient(
-            Ingredient,
-            params,
-            params | {"model_instances": []},
-            check_yaml=False,
+            Ingredient, params, params | {"model_instances": []}
         )
 
     def test_diff_ik_system(self):
