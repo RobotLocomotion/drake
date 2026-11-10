@@ -755,6 +755,37 @@ TEST_P(YamlReadArchiveTest, Variant) {
   test("doc:\n  value: !DoubleStruct { value: 1.0 }", DoubleStruct{1.0});
 }
 
+TEST_P(YamlReadArchiveTest, MonostateVariant) {
+  // A null (implicit or explicit) selects std::monostate.
+  for (const char* doc :
+       {"doc:\n  value:", "doc:\n  value: null", "doc:\n  value: ~"}) {
+    const auto& x = AcceptNoThrow<MonostateVariantStruct>(Load(doc));
+    EXPECT_TRUE(std::holds_alternative<std::monostate>(x.value)) << doc;
+  }
+
+  // Tagged values select the matching alternative.
+  const auto& x = AcceptNoThrow<MonostateVariantStruct>(
+      Load("doc:\n  value: !DoubleStruct { value: 2.0 }"));
+  EXPECT_EQ(std::get<DoubleStruct>(x.value).value, 2.0);
+  const auto& y =
+      AcceptNoThrow<MonostateVariantStruct>(Load("doc:\n  value: !!str foo"));
+  EXPECT_EQ(std::get<std::string>(y.value), "foo");
+
+  // An untagged non-null node never selects std::monostate.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      AcceptIntoDummy<MonostateVariantStruct>(Load("doc:\n  value: foo")),
+      ".*has unsupported type tag.*while selecting a variant<>.*");
+
+  // A missing key leaves the default alone, or else (like std::optional)
+  // selects std::monostate.
+  const auto& z = AcceptNoThrow<MonostateVariantStruct>(Load("doc: {}"));
+  if (GetParam().allow_cpp_with_no_yaml) {
+    EXPECT_EQ(std::get<std::string>(z.value), "kNominalDouble");
+  } else {
+    EXPECT_TRUE(std::holds_alternative<std::monostate>(z.value));
+  }
+}
+
 TEST_P(YamlReadArchiveTest, PrimitiveVariant) {
   const auto test = [](const std::string& doc,
                        const PrimitiveVariant& expected) {
