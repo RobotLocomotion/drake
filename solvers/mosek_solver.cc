@@ -100,7 +100,6 @@ bool MosekSolver::is_available() {
       dlclose(dlhandle);
       return true;
     } else {
-      dlclose(dlhandle);
       return false;
     }
 #else
