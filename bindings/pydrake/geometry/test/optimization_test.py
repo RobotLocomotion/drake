@@ -2,12 +2,14 @@ import pydrake.geometry.optimization as mut  # ruff: isort: skip
 
 import copy
 import os.path
+import textwrap
 import unittest
 
 import numpy as np
 
 from pydrake.common import Parallelism, RandomGenerator, temp_directory
 from pydrake.common.test_utilities.pickle_compare import assert_pickle
+from pydrake.common.yaml import yaml_dump_typed, yaml_load, yaml_load_typed
 from pydrake.geometry import (
     Box,
     Capsule,
@@ -360,6 +362,98 @@ class TestGeometryOptimization(unittest.TestCase):
         hpoly = mut.HPolyhedron(prog=prog)
         self.assertEqual(hpoly.ambient_dimension(), 1)
         self.assertEqual(hpoly.A().shape, (1, 1))
+
+    def test_h_polyhedron_yaml(self):
+        def check_round_trip(hpoly):
+            dumped = yaml_dump_typed(hpoly)
+            loaded = yaml_load_typed(schema=mut.HPolyhedron, data=dumped)
+            self.assertEqual(
+                loaded.ambient_dimension(), hpoly.ambient_dimension()
+            )
+            np.testing.assert_array_equal(loaded.A(), hpoly.A())
+            np.testing.assert_array_equal(loaded.b(), hpoly.b())
+            return dumped
+
+        dumped = check_round_trip(
+            mut.HPolyhedron(A=[[1.0, 2.0], [-3.0, 0.5]], b=[4.0, 5.0])
+        )
+        # The dump matches the field names of the C++ serialization.
+        self.assertEqual(
+            yaml_load(data=dumped).keys(),
+            {"ambient_dimension", "A", "b"},
+        )
+        check_round_trip(mut.HPolyhedron.MakeUnitBox(dim=3))
+        check_round_trip(mut.HPolyhedron())
+
+        # Loading into a non-default HPolyhedron with a different dimension.
+        loaded = yaml_load_typed(
+            schema=mut.HPolyhedron,
+            data="ambient_dimension: 1\nA: [[2.0]]\nb: [3.0]",
+            defaults=mut.HPolyhedron.MakeUnitBox(dim=2),
+        )
+        np.testing.assert_array_equal(loaded.A(), [[2.0]])
+        np.testing.assert_array_equal(loaded.b(), [3.0])
+
+        # Compatible with C++ YAML in both directions.
+        regions = {"box": mut.HPolyhedron.MakeBox(lb=[-1, -2], ub=[3, 4])}
+        filename = f"{temp_directory()}/hpolyhedron.yaml"
+        mut.SaveIrisRegionsYamlFile(filename=filename, regions=regions)
+        from_cpp = yaml_load_typed(
+            schema=dict[str, mut.HPolyhedron], filename=filename
+        )
+        np.testing.assert_array_equal(from_cpp["box"].A(), regions["box"].A())
+        np.testing.assert_array_equal(from_cpp["box"].b(), regions["box"].b())
+        yaml_dump_typed(
+            regions, schema=dict[str, mut.HPolyhedron], filename=filename
+        )
+        to_cpp = mut.LoadIrisRegionsYamlFile(filename=filename)
+        np.testing.assert_array_equal(to_cpp["box"].A(), regions["box"].A())
+        np.testing.assert_array_equal(to_cpp["box"].b(), regions["box"].b())
+
+        # Like C++, an empty or Nx0 A loads as 0x0.
+        for data in [
+            "ambient_dimension: 0\nA: []\nb: []",
+            "ambient_dimension: 0\nA: [[], []]\nb: []",
+        ]:
+            with self.subTest(data=data):
+                loaded = yaml_load_typed(schema=mut.HPolyhedron, data=data)
+                self.assertEqual(loaded.A().shape, (0, 0))
+                with open(filename, "w") as f:
+                    f.write("ok:\n" + textwrap.indent(data, "  "))
+                to_cpp = mut.LoadIrisRegionsYamlFile(filename=filename)
+                self.assertEqual(to_cpp["ok"].A().shape, (0, 0))
+
+        # Python rejects the same invalid data as C++, including incomplete
+        # data (when the default value doesn't fill the gap) and zero-row
+        # polyhedra (whose empty A, like in C++, loads as 0x0).
+        bad_data = [
+            ("ambient_dimension: 3\nA: [[1.0, 0.0]]\nb: [1.0]", "columns in A"),
+            (
+                "ambient_dimension: 2\nA: [[1.0, 0.0]]\nb: [1.0, 2.0]",
+                "size of b",
+            ),
+            ("ambient_dimension: 2\nA: [[1.0, 0.0]]", "size of b"),
+            ("ambient_dimension: 3", "columns in A"),
+            ("ambient_dimension: 2\nA: []\nb: []", "columns in A"),
+            ("ambient_dimension: 1\nA: [2.0]\nb: [1.0]", "must be a matrix"),
+            ("ambient_dimension: 0\nA: [[[]]]\nb: []", "must be a matrix"),
+            ("ambient_dimension: 1\nA: [[1.0]]\nb: [.inf]", "b must be finite"),
+            ("ambient_dimension: 1\nA: [[.inf]]\nb: [1.0]", "A must be finite"),
+            (
+                "ambient_dimension: 2\nA: [[1.0, .nan]]\nb: [1.0]",
+                "A must be finite",
+            ),
+        ]
+        for data, message in bad_data:
+            with self.subTest(data=data):
+                with self.assertRaisesRegex(RuntimeError, message):
+                    yaml_load_typed(schema=mut.HPolyhedron, data=data)
+                with open(filename, "w") as f:
+                    f.write("bad:\n" + textwrap.indent(data, "  "))
+                # C++'s HPolyhedron::CheckInvariants uses DRAKE_THROW_UNLESS,
+                # which pydrake raises as SystemExit.
+                with self.assertRaises((RuntimeError, SystemExit)):
+                    mut.LoadIrisRegionsYamlFile(filename=filename)
 
     def test_hyper_ellipsoid(self):
         mut.Hyperellipsoid()
