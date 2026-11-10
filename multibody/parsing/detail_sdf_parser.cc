@@ -3098,8 +3098,9 @@ void AddJointsToInterfaceModel(const MultibodyPlant<double>& plant,
 
 // This is a forward-declaration of an anonymous helper that's defined later
 // in this file.
-sdf::ParserConfig MakeSdfParserConfig(const ParsingWorkspace&,
-                                      const std::string& /* root_dir */);
+sdf::ParserConfig MakeSdfParserConfig(
+    const ParsingWorkspace&, const std::string& /* root_dir */,
+    const std::shared_ptr<sdf::Errors>& /* reposture_errors */);
 
 sdf::Error MakeSdfError(sdf::ErrorCode code, const DiagnosticDetail& detail) {
   sdf::Error result(code, detail.message);
@@ -3122,21 +3123,42 @@ ModelInstanceIndex GetOrCreateModelInstanceByName(
 
 sdf::InterfaceModelPtr ConvertToInterfaceModel(
     MultibodyPlant<double>* plant, std::string model_name,
-    const InterfaceModelHelper& interface_model_helper, sdf::Errors* errors,
-    const DiagnosticPolicy& diagnostic,
+    const InterfaceModelHelper& interface_model_helper,
+    const DiagnosticPolicy& diagnostic, std::string source_filename,
+    std::shared_ptr<sdf::Errors> reposture_errors,
     RigidTransformd X_WP = RigidTransformd::Identity()) {
+  DRAKE_DEMAND(reposture_errors != nullptr);
   auto model_instance = interface_model_helper.model_instance();
+  // libsdformat invokes the reposture function later, during Root::Load(),
+  // long after the custom parser callback (and its sdf::Errors) is gone. The
+  // function therefore reports into `reposture_errors`, which it co-owns; the
+  // top-level parse merges that collection into its own errors once Load()
+  // returns. We also only repose the bodies this interface model exported.
   sdf::RepostureFunction reposture_model =
-      [plant, model_instance,
-       errors](const sdf::InterfaceModelPoseGraph& graph) {
+      [plant, reposture_errors = std::move(reposture_errors),
+       source_filename = std::move(source_filename),
+       body_indices = interface_model_helper.body_indices()](
+          const sdf::InterfaceModelPoseGraph& graph) {
         // N.B. This should also posture the model appropriately.
-        for (auto interface_link_ind : plant->GetBodyIndices(model_instance)) {
+        for (auto interface_link_ind : body_indices) {
           const auto& interface_link = plant->get_body(interface_link_ind);
 
           gz::math::Pose3d X_WL;
           sdf::Errors inner_errors =
               graph.ResolveNestedFramePose(X_WL, interface_link.name());
-          PropagateErrors(std::move(inner_errors), errors);
+          bool failed = false;
+          for (sdf::Error& e : inner_errors) {
+            failed = failed || IsError(e);
+            // These errors have no location; attribute them to the file.
+            if (!e.FilePath().has_value()) {
+              e.SetFilePath(source_filename);
+            }
+            reposture_errors->push_back(std::move(e));
+          }
+          // Don't stamp a bogus pose on a body whose pose didn't resolve.
+          if (failed) {
+            continue;
+          }
           plant->SetDefaultFloatingBaseBodyPose(interface_link,
                                                 ToRigidTransform(X_WL));
         }
@@ -3180,9 +3202,7 @@ sdf::InterfaceModelPtr ConvertToInterfaceModel(
 // parsers comply with this assumption.
 sdf::InterfaceModelPtr ParseNestedInterfaceModel(
     const ParsingWorkspace& workspace, const sdf::NestedInclude& include,
-    sdf::Errors* errors, const std::string& root_dir) {
-  const sdf::ParserConfig parser_config =
-      MakeSdfParserConfig(workspace, root_dir);
+    sdf::Errors* errors, const std::shared_ptr<sdf::Errors>& reposture_errors) {
   auto& [options, package_map, diagnostic, builder, plant, scene_graph,
          collision_resolver, parser_selector] = workspace;
   const std::string resolved_filename{include.ResolvedFileName()};
@@ -3283,7 +3303,8 @@ sdf::InterfaceModelPtr ParseNestedInterfaceModel(
   // This will be populated for the first model instance.
   sdf::InterfaceModelPtr main_interface_model;
   main_interface_model = ConvertToInterfaceModel(
-      plant, model_name, interface_model_helper, errors, subdiagnostic);
+      plant, model_name, interface_model_helper, subdiagnostic,
+      resolved_filename, reposture_errors);
   if (main_interface_model == nullptr) {
     return nullptr;
   }
@@ -3386,9 +3407,13 @@ gz::math::Inertiald CalculateMeshInertia(const ParsingWorkspace& workspace,
 // able to eliminate the `root_dir` argument.
 // Note that this function keeps an alias of the inputs `workspace` and
 // `root_dir` in its return value. Therefore, the lifetime of the inputs must be
-// greater than that of the returned parser config object.
-sdf::ParserConfig MakeSdfParserConfig(const ParsingWorkspace& workspace,
-                                      const std::string& root_dir) {
+// greater than that of the returned parser config object. In contrast, the
+// config shares ownership of `reposture_errors`; custom-parsed interface models
+// append errors found during Root::Load() there, and the caller should merge
+// them into its own errors after loading.
+sdf::ParserConfig MakeSdfParserConfig(
+    const ParsingWorkspace& workspace, const std::string& root_dir,
+    const std::shared_ptr<sdf::Errors>& reposture_errors) {
   // The error severity settings here are somewhat subtle. We set all of them
   // to ERR so that reports will append into an sdf::Errors collection instead
   // of spamming into spdlog. However, when grabbing the reports out of the
@@ -3417,9 +3442,10 @@ sdf::ParserConfig MakeSdfParserConfig(const ParsingWorkspace& workspace,
   });
 
   parser_config.RegisterCustomModelParser(
-      [&workspace, &root_dir](const sdf::NestedInclude& include,
-                              sdf::Errors& errors) {
-        return ParseNestedInterfaceModel(workspace, include, &errors, root_dir);
+      [&workspace, reposture_errors](const sdf::NestedInclude& include,
+                                     sdf::Errors& errors) {
+        return ParseNestedInterfaceModel(workspace, include, &errors,
+                                         reposture_errors);
       });
 
   auto mesh_inertia_calculator =
@@ -3464,8 +3490,10 @@ std::optional<ModelInstanceIndex> AddModelFromSdf(
     const ParsingWorkspace& workspace) {
   DRAKE_THROW_UNLESS(!workspace.plant->is_finalized());
 
+  const std::string root_dir = data_source.GetRootDir();
+  const auto reposture_errors = std::make_shared<sdf::Errors>();
   sdf::ParserConfig parser_config =
-      MakeSdfParserConfig(workspace, data_source.GetRootDir());
+      MakeSdfParserConfig(workspace, root_dir, reposture_errors);
 
   sdf::Root root;
 
@@ -3476,6 +3504,9 @@ std::optional<ModelInstanceIndex> AddModelFromSdf(
   const std::vector<JointIndex> joint_indices_before_load =
       workspace.plant->GetJointIndices();
   sdf::Errors errors = LoadSdf(diagnostic, &root, data_source, parser_config);
+  // Merge in any errors found by reposture functions during Load().
+  errors.insert(errors.end(), reposture_errors->begin(),
+                reposture_errors->end());
   if (diagnostic.PropagateErrors(errors)) {
     return std::nullopt;
   }
@@ -3518,8 +3549,10 @@ std::vector<ModelInstanceIndex> AddModelsFromSdf(
     const ParsingWorkspace& workspace) {
   DRAKE_THROW_UNLESS(!workspace.plant->is_finalized());
 
+  const std::string root_dir = data_source.GetRootDir();
+  const auto reposture_errors = std::make_shared<sdf::Errors>();
   sdf::ParserConfig parser_config =
-      MakeSdfParserConfig(workspace, data_source.GetRootDir());
+      MakeSdfParserConfig(workspace, root_dir, reposture_errors);
 
   sdf::Root root;
 
@@ -3530,6 +3563,9 @@ std::vector<ModelInstanceIndex> AddModelsFromSdf(
   const std::vector<JointIndex> joint_indices_before_load =
       workspace.plant->GetJointIndices();
   sdf::Errors errors = LoadSdf(diagnostic, &root, data_source, parser_config);
+  // Merge in any errors found by reposture functions during Load().
+  errors.insert(errors.end(), reposture_errors->begin(),
+                reposture_errors->end());
   if (diagnostic.PropagateErrors(errors)) {
     return {};
   }
