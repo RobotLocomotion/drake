@@ -109,6 +109,66 @@ TEST_F(InertiaVisualizerConfigTest, InertiaButNoIllustrationConfig) {
   EXPECT_TRUE(meshcat_->HasPath("/drake/inertia/InertiaVisualizer/acrobot"));
 }
 
+// The visualizer registers one SceneGraph frame per body it draws an ellipsoid
+// for, so a body is drawn iff a frame named for it turns up in SceneGraph.
+bool IsDrawn(const MultibodyPlant<double>& plant,
+             const SceneGraph<double>& scene_graph,
+             const multibody::RigidBody<double>& body) {
+  const geometry::SceneGraphInspector<double>& inspector =
+      scene_graph.model_inspector();
+  const std::string name = fmt::format(
+      "InertiaVisualizer::{}::{}",
+      plant.GetModelInstanceName(body.model_instance()), body.name());
+  const std::vector<geometry::FrameId> frame_ids = inspector.GetAllFrameIds();
+  return std::any_of(frame_ids.begin(), frame_ids.end(),
+                     [&](geometry::FrameId frame_id) {
+                       return inspector.GetName(frame_id) == name;
+                     });
+}
+
+// Anchored bodies (World and any body welded to it, directly or indirectly)
+// can't move, so they get no inertia ellipsoid.
+GTEST_TEST(InertiaVisualizerTest, AnchoredBodiesAreSkipped) {
+  constexpr char kSdf[] = R"""(
+  <?xml version="1.0"?>
+  <sdf version="1.7">
+    <model name="anchored">
+      <link name="base"/>
+      <link name="tool"/>
+      <link name="free"/>
+      <joint name="world_base" type="fixed">
+        <parent>world</parent>
+        <child>base</child>
+      </joint>
+      <joint name="base_tool" type="fixed">
+        <parent>base</parent>
+        <child>tool</child>
+      </joint>
+    </model>
+  </sdf>
+  )""";
+  systems::DiagramBuilder<double> builder;
+  auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.01);
+  Parser(&plant).AddModelsFromString(kSdf, "sdf");
+  plant.Finalize();
+
+  const multibody::RigidBody<double>& base = plant.GetBodyByName("base");
+  const multibody::RigidBody<double>& tool = plant.GetBodyByName("tool");
+  const multibody::RigidBody<double>& free = plant.GetBodyByName("free");
+  // Each of these has a SceneGraph frame, so the visualizer could have drawn
+  // it.
+  for (const auto* body : {&base, &tool, &free}) {
+    ASSERT_TRUE(plant.GetBodyFrameIdIfExists(body->index()).has_value());
+  }
+
+  InertiaVisualizer<double>::AddToBuilder(&builder, plant, &scene_graph);
+
+  EXPECT_FALSE(IsDrawn(plant, scene_graph, plant.world_body()));
+  EXPECT_FALSE(IsDrawn(plant, scene_graph, base));
+  EXPECT_FALSE(IsDrawn(plant, scene_graph, tool));
+  EXPECT_TRUE(IsDrawn(plant, scene_graph, free));
+}
+
 // When MultibodyPlant models a closed kinematic loop it splits a link into a
 // primary link and a "shadow" link, which has no mass properties of its own.
 // Only the user's bodies get inertia ellipsoids, and the split link's shows its
@@ -157,26 +217,11 @@ GTEST_TEST(InertiaVisualizerTest, ShadowLinkIsSkipped) {
 
   InertiaVisualizer<double>::AddToBuilder(&builder, plant, &scene_graph);
 
-  // The visualizer registers one frame per body it draws an ellipsoid for, so
-  // a body is drawn iff a frame named for it turns up in SceneGraph.
-  const geometry::SceneGraphInspector<double>& inspector =
-      scene_graph.model_inspector();
-  std::vector<std::string> frame_names;
-  for (const geometry::FrameId frame_id : inspector.GetAllFrameIds()) {
-    frame_names.push_back(inspector.GetName(frame_id));
-  }
-  auto is_drawn = [&](const multibody::RigidBody<double>& body) {
-    const std::string name = fmt::format(
-        "InertiaVisualizer::{}::{}",
-        plant.GetModelInstanceName(body.model_instance()), body.name());
-    return std::find(frame_names.begin(), frame_names.end(), name) !=
-           frame_names.end();
-  };
   const multibody::RigidBody<double>& upper = plant.GetBodyByName("upper");
   const multibody::RigidBody<double>& lower = plant.GetBodyByName("lower");
-  EXPECT_TRUE(is_drawn(upper));
-  EXPECT_TRUE(is_drawn(lower));
-  EXPECT_FALSE(is_drawn(shadow));
+  EXPECT_TRUE(IsDrawn(plant, scene_graph, upper));
+  EXPECT_TRUE(IsDrawn(plant, scene_graph, lower));
+  EXPECT_FALSE(IsDrawn(plant, scene_graph, shadow));
 
   // The two links have the same (default) mass properties, so the one that was
   // split gets the same ellipsoid as the one that wasn't, showing its full

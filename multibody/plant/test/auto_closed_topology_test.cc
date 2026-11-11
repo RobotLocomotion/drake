@@ -4,8 +4,9 @@ kinematic loop using the shadow links and loop constraints produced by the
 underlying LinkJointGraph/SpanningForest. This file tests that
  - adding shadow links splits mass properties properly among the primary
    link and all of its shadows,
- - a primary link still reports its full mass properties, a shadow link has
-   none of its own, and sums over bodies count each shard of a split link once,
+ - a primary link still reports its full mass properties, shadow link mass
+   properties can't be accessed directly, and sums over bodies deal correctly
+   with split links,
  - a kinematics-only model can leave a split link's mass properties NaN,
  - splitting a primary link into more than two pieces works,
  - loop joints are correctly retargeted from a frame on the primary to
@@ -218,12 +219,12 @@ const Link<double>& GetSoleShadowLink(const MultibodyPlant<double>& plant) {
   return plant.get_body(shadows[0]);
 }
 
-/* Returns the share of `link`'s mass properties that the dynamics give it, as
-M_LLo_L. For a split link's primary or one of its shadows that is an even share
-of the primary's mass properties; for any other link it is just that link's mass
-properties. The public API doesn't expose this: a primary link reports its full
-mass properties, and a shadow has none. The result is a reference into
-`context`'s cache. */
+/* Returns the share of `link`'s mass properties as seen in the physical
+simulation, as M_LLo_L. For a split link's primary or one of its shadows
+that is an even share of the primary's mass properties; for any other link
+it is just that link's mass properties. The public API doesn't expose this:
+a primary link reports its full mass properties, and a shadow's mass properties
+are not accessible. The result is a reference into `context`'s cache. */
 const SpatialInertia<double>& GetSpatialInertiaShare(
     const MultibodyPlant<double>& plant,
     const systems::Context<double>& context, const Link<double>& link) {
@@ -362,10 +363,10 @@ GTEST_TEST(ClosedTopologyTest, ShadowMassIsSplitEvenly) {
   }
 }
 
-/* A shadow link has no mass properties of its own, so asking it for any of them
-throws, and the message points to the primary link instead. That includes the
-defaults, the Context values, and the center of mass motion, as well as the
-setters. */
+/* A shadow link's mass properties are entirely dependent on its original
+unsplit body, so asking it for any of them throws, with a message pointing to
+the primary link instead. That includes the defaults, the Context values, and
+the center of mass motion, as well as the setters. */
 GTEST_TEST(ClosedTopologyTest, ShadowHasNoMassProperties) {
   FourBar four_bar;
   MultibodyPlant<double>& plant = four_bar.plant();
@@ -597,12 +598,17 @@ GTEST_TEST(ClosedTopologyTest, MassPropertySumsCountASplitLinkOnce) {
 }
 
 /* CalcSpatialInertia() counts a split link once, as a whole, however its list
-of bodies names it: as the primary, as a shadow, or as both. Assembled, that is
-just the coupler's full spatial inertia at the coupler's pose, which in the
-coupler's own frame is what the coupler itself reports. With the loop pulled
-apart it is the split model the solver is simulating, with half the coupler's
-mass properties at each copy's own pose, so then even in the coupler's own frame
-it differs from what the coupler reports. */
+of bodies names it: as the primary, as a shadow, or as both.
+
+When assembled, we expect to get the original unsplit link's full spatial
+inertia at the primary link's pose (which is also the pose of each of its
+shadow links). In the primary link's own frame, this should be the same as
+what that link reports for its own (user-defined) spatial inertia.
+
+When unassembled, the physical model consists of the split links at different
+poses, each link with half the original mass and inertia. The _system_ spatial
+inertia of that system differs from the original unsplit link's spatial inertia
+so we expect a different result. */
 GTEST_TEST(ClosedTopologyTest, CalcSpatialInertiaCountsTheWholeSplitLink) {
   constexpr double kTol = 1e-14;
   FourBar four_bar;

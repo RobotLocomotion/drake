@@ -295,9 +295,11 @@ TEST_F(MeshcatMouseSpringTest, ConstructorErrors) {
 }
 
 // A shadow body, which Finalize() adds to break a kinematic loop (see
-// MultibodyPlant::SetEnableLoopTopology()), has no mass of its own. Dragging
-// one applies the force to the shadow, where the dragged geometry is, scaled by
-// the full mass of the body it was split from, as for dragging that body.
+// MultibodyPlant::SetEnableLoopTopology()), shares mass properties with its
+// primary link. Normally shadows aren't visible in the visualizer so can't
+// be dragged. However, if geometry has been added to a shadow then it can be
+// dragged. In that case it should use the _full_ user-specified mass of the
+// original, unsplit link as its weighting.
 GTEST_TEST(MeshcatMouseSpringLoopTest, DragShadowBody) {
   SceneGraph<double> scene_graph;
   MultibodyPlant<double> plant(0.0);

@@ -255,9 +255,9 @@ GTEST_TEST(IcfBuilder, WeldConstraint) {
 }
 
 // To model a kinematic loop, Finalize() splits one of the loop's links into a
-// primary link and a shadow link, welded together. The shadow has no mass of
-// its own to report, but the dynamics give each copy an even share of the
-// link's mass, and those are the masses ICF must use.
+// primary link and a shadow link, welded together. When simulating, the
+// primary and shadow share the mass properties evenly, and those are the
+// properties ICF must use.
 GTEST_TEST(IcfBuilder, LoopTopologyBodyMasses) {
   systems::DiagramBuilder<double> diagram_builder;
   multibody::MultibodyPlantConfig plant_config{.time_step = 0.0};
@@ -287,7 +287,7 @@ GTEST_TEST(IcfBuilder, LoopTopologyBodyMasses) {
                          .graph()
                          .link_by_index(shadow.index())
                          .primary_link());
-  const RigidBody<double>& unsplit = &primary == &body_A ? body_B : body_A;
+  const RigidBody<double>& unsplit = (&primary == &body_A) ? body_B : body_A;
 
   auto diagram = diagram_builder.Build();
   auto diagram_context = diagram->CreateDefaultContext();

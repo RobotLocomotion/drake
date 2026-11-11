@@ -215,9 +215,8 @@ void IcfBuilder<T>::UpdateModel(
   }
 
   // Body mass is affected by context parameters, so needs to be refreshed
-  // every step. We use each body's mass as the dynamics see it, which for the
-  // primary and shadows of a body split to break a kinematic loop is an even
-  // share of the primary's mass (a shadow has no mass of its own).
+  // every step. We use each body's mass as it will be simulated, meaning
+  // that primary links and their shadows share the primary's mass evenly.
   const MultibodyTree<T>& tree = GetInternalTree(plant_);
   const FrameBodyPoseCache<T>& frame_cache = tree.EvalFrameBodyPoses(context);
   for (int b = 0; b < plant_.num_bodies(); ++b) {

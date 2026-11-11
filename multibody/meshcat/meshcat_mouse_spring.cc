@@ -129,14 +129,11 @@ MeshcatMouseSpring::CalcAppliedSpatialForceFromDrag(
   const Vector3d a_W = stiffness_ * d_W - std::sqrt(stiffness_) * v_WBq;
 
   // Note that we're using default_mass() because getting access to the current
-  // parameterized mass is more trouble than it's worth. A shadow body (which
-  // Finalize() adds to break a kinematic loop) has no mass of its own, so for a
-  // shadow we use the mass of its primary_link(), the body it was split from.
-  // That is the full mass, not the even share the dynamics give each copy:
-  // while the loop's weld holds, the copies move together as the unsplit body,
-  // so dragging any one of them should pull as hard as dragging that body
-  // would. A share would make a split body feel N+1 times heavier (for N
-  // shadows). Any other body is its own primary link.
+  // parameterized mass is more trouble than it's worth. For links that have
+  // been split into a primary and shadows, we use the full user-specified mass
+  // of the original link for both the primary and its shadows.
+  // That's because we expect the primary and shadows to be welded together,
+  // so they move together and will feel like the original link.
   // TODO(vincekurtz): consider using composite mass instead of body mass.
   const double mass = plant_.get_body(body_index).primary_link().default_mass();
   const Vector3d f_W = mass * a_W;

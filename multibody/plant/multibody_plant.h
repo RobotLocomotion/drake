@@ -4185,27 +4185,31 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// single composite body at the configuration specified in the `context`.
   ///
   /// @param[in] context Contains the configuration of the set S of bodies.
-  /// @param[in] frame_F specifies the about-point Fo (frame_F's origin) and
+  /// @param[in] frame_F Specifies the about-point Fo (frame_F's origin) and
   ///  the expressed-in frame for the returned spatial inertia.
   /// @param[in] body_indexes Array of selected bodies. This method does not
-  ///  distinguish among welded bodies, joint-connected bodies, etc. For a
-  ///  body that was split to break a kinematic loop, all shards (primary
-  ///  link and shadow links) contribute to the result if any one or
-  ///  more of them is listed. So a list from GetBodyIndices(), which includes
-  ///  shadows, works as is.
+  ///  distinguish among welded bodies, joint-connected bodies, etc. Bodies
+  ///  that are split to break a kinematic loop are handled specially: when
+  ///  a split body's primary link or any of its shadow links is first
+  ///  encountered in body_indexes, the contributions from all of its links
+  ///  (primary and shadows in their current configurations) are calculated.
+  ///  If one of those links is encountered later, it is skipped. Thus a list
+  ///  from GetBodyIndices(), which may include shadow links, works as is.
   ///
   /// @note The mass and inertia of the world_body() does not contribute to the
   ///  returned spatial inertia, even if World is listed.
-  /// @note Until a loop's weld constraint is satisfied, a split body
-  ///  contributes as in the split model that the solver is simulating: an equal
-  ///  share of its mass properties at the pose of its primary and of each
-  ///  shadow. So then, for a primary body P, `CalcSpatialInertia(context,
-  ///  P.body_frame(), {P.index()})` can differ from
-  ///  `P.CalcSpatialInertiaInBodyFrame(context)`, which reports P's full,
-  ///  user-defined mass properties. Also, because naming any copy counts the
-  ///  whole body, results don't add up across lists that divide a split body's
-  ///  copies between them: `{primary}` and `{shadow}` each give the whole body,
-  ///  as does `{primary, shadow}`.
+  /// @note The primary link and its shadow links contribute independently to
+  ///  the _system_ spatial inertia calculated here. When unassembled, their
+  ///  poses will differ. As noted above, _any one_ of those links represents
+  ///  the full collection of primary and shadows. Thus, when the system is
+  ///  unassembled, asking for the _system_ spatial inertia of a primary link
+  ///  may give a different result than asking the primary link for its own
+  ///  spatial inertia. That is, for primary link P, the system spatial inertia
+  ///  returned by `CalcSpatialInertia(context, P.body_frame(), {P.index()})`
+  ///  may differ from `P.CalcSpatialInertiaInBodyFrame(context)`, which
+  ///  reports P's full, user-defined mass properties. Listing `{primary}`,
+  ///  `{shadow}` or `{primary, shadow}` all give the same _system_ spatial
+  ///  inertia.
   ///
   /// @throws std::exception if `frame_F` does not belong to `this` plant.
   /// @throws std::exception if body_indexes contains an invalid BodyIndex or
@@ -5519,9 +5523,9 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   int num_bodies() const { return internal_tree().num_links(); }
 
   /// Returns the number of RigidBody (Link) elements in the model that are not
-  /// shadow bodies: the "world" RigidBody plus every body added with
-  /// AddRigidBody(). Finalize() adds a shadow body for each kinematic loop
-  /// it breaks. This equals num_bodies() unless Finalize() broke a loop.
+  /// shadow bodies: i.e., the "world" RigidBody plus every body added with
+  /// AddRigidBody(). Finalize() adds a shadow body for each kinematic loop it
+  /// breaks. num_user_bodies() == num_bodies() unless Finalize() broke a loop.
   int num_user_bodies() const {
     return internal_tree().graph().num_user_links();
   }

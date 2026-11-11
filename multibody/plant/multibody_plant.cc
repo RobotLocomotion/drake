@@ -1428,8 +1428,9 @@ void MultibodyPlant<T>::Finalize() {
   // Next, register the shadow links with SceneGraph so that we can visualize
   // them. This can be used to add visual geometry to the shadow links if
   // desired (typically for pedagogical or debugging purposes -- shadow links
-  // are normally invisible). A shadow link has no mass properties of its own,
-  // so it gets no inertia ellipsoid; its primary's shows the full mass.
+  // are normally invisible). A shadow link's mass properties are defined by
+  // its primary link so a shadow won't get an inertia ellipsoid in the
+  // visualizer. Instead the primary shows the full inertia.
   for (BodyIndex index(0); index < num_bodies(); ++index) {
     const RigidBody<T>& body = get_body(index);
     if (body.is_ephemeral()) {
@@ -2159,9 +2160,8 @@ void MultibodyPlant<T>::EstimatePointContactParameters(
   //  - Only scan free bodies for weight.
   //  - Consider an estimate of maximum velocities (context dependent).
   // Right now we are being very conservative and use the maximum mass in the
-  // system.
-  // Shadow bodies (see SetEnableLoopTopology()) have no mass of their own, and
-  // come after all the user's bodies.
+  // system. Shadow bodies (see SetEnableLoopTopology()) are ignored here;
+  // we only consider the mass of user-defined bodies.
   double mass = 0.0;
   for (BodyIndex body_index(0); body_index < num_user_bodies(); ++body_index) {
     const RigidBody<T>& body = get_body(body_index);

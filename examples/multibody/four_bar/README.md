@@ -114,11 +114,13 @@ needs none of that. Beyond the one call to `SetEnableLoopTopology()`, the loop
 is modeled with no user intervention at all, and the shadow link normally goes
 unnoticed.
 
-That includes mass properties. Internally, the dynamics divide a split link's
-mass and inertia evenly between the primary link and its shadow, but the
-primary still reports the full mass properties it was defined with. The shadow
-has none of its own, so asking it for them throws. Quantities summed over the
-model, such as `CalcTotalMass()`, count the split link once.
+A shadow link's mass properties are fully dependent on its primary link's mass
+properties. Internally, mass properties are split evenly between the primary
+link and its shadows, but the primary still reports its full mass properties (as
+defined by the user) for user-facing APIs. The mass properties of a shadow are
+inaccessible through user-facing APIs; querying for them throws an exception.
+Quantities summed over the model, such as `CalcTotalMass()`, appropriately
+account for the mass properties of the primary link and its shadows.
 
 ## Describing an unassembled loop in SDFormat
 

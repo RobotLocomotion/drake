@@ -26,30 +26,21 @@ InertiaVisualizer<T>::InertiaVisualizer(
   DRAKE_THROW_UNLESS(scene_graph != nullptr);
   source_id_ = scene_graph->RegisterSource("inertia_visualizer");
 
-  // For all MbP bodies, except for those welded to the world and any shadow
-  // bodies (which come last) ... A shadow body, which Finalize() adds to break
-  // a kinematic loop, has no mass properties of its own; the ellipsoid of the
-  // body it was split from shows the full mass.
-  const std::vector<const multibody::RigidBody<T>*> world_bodies =
-      plant.GetBodiesWeldedTo(plant.world_body());
-  const int num_bodies = plant.num_user_bodies();
-  for (multibody::BodyIndex i{0}; i < num_bodies; ++i) {
-    bool welded = false;
-    for (const auto* world_body : world_bodies) {
-      if (world_body->index() == i) {
-        welded = true;
-        break;
-      }
-    }
-    if (welded) {
+  // Add an inertia ellipsoid for all MbP links except:
+  // - Anchored links (World and any link welded to it, directly or indirectly)
+  // - Shadow links (indexes higher than those for user links)
+  // - Links without a SceneGraph frame (nowhere to put the ellipsoid)
+  // For shadow links, the primary link from which it was split will show
+  // the full user-defined inertia.
+  const int num_user_bodies = plant.num_user_bodies();
+  for (multibody::BodyIndex i{0}; i < num_user_bodies; ++i) {
+    const multibody::RigidBody<T>& body = plant.get_body(i);
+    if (plant.IsAnchored(body)) {
       continue;
     }
-    const multibody::RigidBody<T>& body = plant.get_body(i);
 
-    // Not every body necessarily has a SceneGraph frame -- none of them do if
-    // `plant` was never registered as a geometry source. We would have nothing
-    // to hang an inertia ellipsoid on for such a body, so skip it rather than
-    // dereferencing an empty optional.
+    // Not every body necessarily has a SceneGraph frame. We would have nothing
+    // to hang an inertia ellipsoid on for such a body, so skip it.
     const std::optional<geometry::FrameId> Bo_frame =
         plant.GetBodyFrameIdIfExists(i);
     if (!Bo_frame.has_value()) {

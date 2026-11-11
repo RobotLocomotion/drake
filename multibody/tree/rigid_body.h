@@ -278,9 +278,9 @@ class RigidBody : public MultibodyElement<T> {
   /// Returns the "primary" link of this %RigidBody (%Link). To break a
   /// kinematic loop, Finalize() can split a link into a primary link and one or
   /// more "shadow" links. For a shadow link, this returns the link it was split
-  /// from, which reports the link's mass properties (a shadow link has none of
-  /// its own). Any other link is its own primary link, so for it this returns
-  /// `*this`.
+  /// from; otherwise returns `*this`. (Although mass properties are shared
+  /// between a primary and its shadows, mass properties are only accessible
+  /// through the primary.)
   /// @throws std::exception if this element is not associated with a
   ///   MultibodyPlant.
   const Link<T>& primary_link() const;
