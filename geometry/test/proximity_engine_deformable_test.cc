@@ -170,7 +170,7 @@ class ProximityEngineDeformableContactTest : public testing::Test {
         const RigidTransformd X_WG_registered = geometry.pose_in_world();
         EXPECT_TRUE(X_WG.IsExactlyEqualTo(X_WG_registered));
         EXPECT_TRUE(deformable_contact_geometries().is_rigid(id));
-        engine_.RemoveGeometry(id, true);
+        engine_.RemoveGeometry(id);
         EXPECT_FALSE(deformable_contact_geometries().is_rigid(id));
       }
     }
@@ -185,7 +185,7 @@ class ProximityEngineDeformableContactTest : public testing::Test {
         const RigidTransformd X_WG_registered = geometry.pose_in_world();
         EXPECT_TRUE(X_WG.IsExactlyEqualTo(X_WG_registered));
         EXPECT_TRUE(deformable_contact_geometries().is_rigid(id));
-        engine_.RemoveGeometry(id, false);
+        engine_.RemoveGeometry(id);
         EXPECT_FALSE(deformable_contact_geometries().is_rigid(id));
       }
     }
@@ -228,7 +228,8 @@ TEST_F(ProximityEngineDeformableContactTest, ReplacePropertiesRigid) {
   const RigidTransform<double> X_FG(RollPitchYawd(1, 2, 3), Vector3d(4, 5, 6));
   InternalGeometry sphere(
       SourceId::get_new_id(), make_unique<Sphere>(kSphereRadius),
-      FrameId::get_new_id(), GeometryId::get_new_id(), "sphere", X_FG);
+      FrameId::get_new_id(), /* frame_is_anchored = */ false,
+      GeometryId::get_new_id(), "sphere", X_FG);
 
   // Note: The order of these tests matter; one builds on the next. Re-ordering
   // *may* break the test.
@@ -299,10 +300,10 @@ TEST_F(ProximityEngineDeformableContactTest, ReplacePropertiesRigid) {
 // Tests that replacing properties for deformable geometries yields expected
 // behaviors.
 TEST_F(ProximityEngineDeformableContactTest, ReplacePropertiesDeformable) {
-  InternalGeometry sphere(SourceId::get_new_id(),
-                          make_unique<Sphere>(kSphereRadius),
-                          FrameId::get_new_id(), GeometryId::get_new_id(),
-                          "sphere", RigidTransformd{}, 1.0);
+  InternalGeometry sphere(
+      SourceId::get_new_id(), make_unique<Sphere>(kSphereRadius),
+      FrameId::get_new_id(), /* frame_is_anchored = */ false,
+      GeometryId::get_new_id(), "sphere", RigidTransformd{}, 1.0);
 
   // Case: throws when the id doesn't refer to a valid geometry.
   DRAKE_EXPECT_THROWS_MESSAGE(
@@ -345,6 +346,26 @@ TEST_F(ProximityEngineDeformableContactTest, AddAndRemoveDeformableGeometry) {
                               ".*does not contain a deformable geometry.*");
 }
 
+// AnchorGeometries() skips deformable ids -- deformable geometry is never
+// anchored -- and the filter must agree. Were a deformable marked anchored in
+// the filter, it would silently lose contact with all anchored geometry.
+TEST_F(ProximityEngineDeformableContactTest, AnchorGeometriesSkipsDeformable) {
+  const GeometryId deformable_id = AddDeformableSphere();
+  const GeometryId rigid_id = GeometryId::get_new_id();
+  engine_.AddDynamicGeometry(Sphere(kSphereRadius), {}, rigid_id, {});
+  const GeometryId ground_id = GeometryId::get_new_id();
+  engine_.AddAnchoredGeometry(HalfSpace(), {}, ground_id, {});
+
+  engine_.AnchorGeometries({rigid_id, deformable_id});
+
+  const CollisionFilter& filter = engine_.collision_filter();
+  EXPECT_TRUE(filter.IsAnchored(rigid_id));
+  EXPECT_FALSE(filter.IsAnchored(deformable_id));
+  EXPECT_TRUE(deformable_contact_geometries().is_deformable(deformable_id));
+  EXPECT_TRUE(filter.CanCollideWith(deformable_id, ground_id));
+  EXPECT_TRUE(filter.CanCollideWith(deformable_id, rigid_id));
+}
+
 TEST_F(ProximityEngineDeformableContactTest, UpdatePose) {
   ProximityProperties props = MakeProximityPropsForRigidGeometry(1.0);
   const GeometryId id = GeometryId::get_new_id();
@@ -356,6 +377,29 @@ TEST_F(ProximityEngineDeformableContactTest, UpdatePose) {
 
   RigidTransformd X_WG(RollPitchYawd(0.1, 0.2, 0.3), Vector3d(0.4, 0.5, 0.6));
   engine_.UpdateWorldPoses({{id, X_WG}});
+  EXPECT_TRUE(rigid_geometry(id).pose_in_world().IsExactlyEqualTo(X_WG));
+}
+
+// UpdateWorldPoses() only maintains the deformable-contact representation of
+// *dynamic* rigid geometry. Once a geometry is anchored after the fact, its
+// pose can still change (via parameters), so RefreshAnchoredPoses() must keep
+// that representation current, or deformable contact sees a stale pose.
+TEST_F(ProximityEngineDeformableContactTest, RefreshAnchoredPoses) {
+  ProximityProperties props = MakeProximityPropsForRigidGeometry(1.0);
+  const GeometryId id = GeometryId::get_new_id();
+  const RigidTransformd X_WG_initial(RollPitchYawd(1, 2, 3), Vector3d(4, 5, 6));
+  engine_.AddDynamicGeometry(Sphere(1.0), X_WG_initial, id, props);
+  ASSERT_TRUE(deformable_contact_geometries().is_rigid(id));
+
+  engine_.AnchorGeometries({id});
+  // The anchored geometry's pose is no longer touched by UpdateWorldPoses().
+  const RigidTransformd X_WG(RollPitchYawd(0.1, 0.2, 0.3),
+                             Vector3d(0.4, 0.5, 0.6));
+  engine_.UpdateWorldPoses({{id, X_WG}});
+  ASSERT_TRUE(
+      rigid_geometry(id).pose_in_world().IsExactlyEqualTo(X_WG_initial));
+
+  engine_.RefreshAnchoredPoses({{id, X_WG}});
   EXPECT_TRUE(rigid_geometry(id).pose_in_world().IsExactlyEqualTo(X_WG));
 }
 

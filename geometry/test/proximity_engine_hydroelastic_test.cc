@@ -127,9 +127,10 @@ TEST_F(ProximityEngineHydroelasticTest, ReplaceProperties) {
   using enum HydroelasticType;
 
   const double radius = 0.5;
-  InternalGeometry sphere(SourceId::get_new_id(), make_unique<Sphere>(radius),
-                          FrameId::get_new_id(), GeometryId::get_new_id(),
-                          "sphere", RigidTransformd());
+  InternalGeometry sphere(
+      SourceId::get_new_id(), make_unique<Sphere>(radius),
+      FrameId::get_new_id(), /* frame_is_anchored = */ false,
+      GeometryId::get_new_id(), "sphere", RigidTransformd());
 
   // Note: The order of these tests matter; one builds on the next. Re-ordering
   // *may* break the test.

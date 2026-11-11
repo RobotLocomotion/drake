@@ -17,6 +17,7 @@
 #include <fmt/format.h>
 
 #include "drake/common/default_scalars.h"
+#include "drake/common/drake_export.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/string_unordered_map.h"
 #include "drake/geometry/geometry_ids.h"
@@ -315,7 +316,14 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     DRAKE_DEMAND(!change.empty());
     for (const GeometryId id : change.deactivated) {
       const auto iter = dynamic_objects_.find(id);
-      DRAKE_DEMAND(iter != dynamic_objects_.end());
+      // Only dynamic geometry is culled from the broadphase. Anchored geometry
+      // lives in anchored_tree_ and deformable geometry in
+      // geometries_for_deformable_contact_; neither has a dynamic-tree
+      // membership to change. The filter's inactive set still blocks them.
+      if (iter == dynamic_objects_.end()) {
+        DRAKE_DEMAND(IsRegisteredAsRigid(id) || IsRegisteredAsDeformable(id));
+        continue;
+      }
       DRAKE_DEMAND(inactive_dynamic_geometries_.insert(id).second);
       CollisionObjectd* object = iter->second.get();
       dynamic_tree_.unregisterObject(object);
@@ -330,7 +338,10 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     }
     for (const GeometryId id : change.activated) {
       const auto iter = dynamic_objects_.find(id);
-      DRAKE_DEMAND(iter != dynamic_objects_.end());
+      if (iter == dynamic_objects_.end()) {
+        DRAKE_DEMAND(IsRegisteredAsRigid(id) || IsRegisteredAsDeformable(id));
+        continue;
+      }
       DRAKE_DEMAND(inactive_dynamic_geometries_.erase(id) != 0);
       CollisionObjectd* object = iter->second.get();
       inactive_dynamic_tree_.unregisterObject(object);
@@ -408,22 +419,16 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     const double margin =
         props.GetPropertyOrDefault<double>(kHydroGroup, kMargin, 0.0);
 
-    CollisionObjectd* object = geometry.is_dynamic()
-                                   ? dynamic_objects_[geometry.id()].get()
-                                   : anchored_objects_[geometry.id()].get();
-    DRAKE_DEMAND(object != nullptr);
-
+    const ObjectLocation location = GetLocationOf(geometry.id());
     InflateAabbForHydroelasticTypesOnly(geometry.shape(), geometry.id(), margin,
-                                        object);
+                                        location.object);
 
-    if (inactive_dynamic_geometries_.contains(geometry.id())) {
-      // The geometry is inactive, so its tree is inactive_dynamic_tree_. That
-      // tree gets updated at need in EnsureInactiveDynamicUpToDate().
+    if (location.tree == &inactive_dynamic_tree_) {
+      // The geometry is inactive. That tree gets updated at need in
+      // EnsureInactiveDynamicUpToDate().
       inactive_dynamic_stale_ = true;
-    } else if (geometry.is_dynamic()) {
-      dynamic_tree_.update();
     } else {
-      anchored_tree_.update();
+      location.tree->update();
     }
   }
 
@@ -459,7 +464,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     hydroelastic_geometries_.RemoveGeometry(id);
     hydroelastic_geometries_.MaybeAddGeometry(geometry.shape(), id,
                                               new_properties);
-    const RigidTransformd X_WG = GetX_WG(id, geometry.is_dynamic());
+    const RigidTransformd X_WG = GetX_WG(id);
     geometries_for_deformable_contact_.RemoveGeometry(id);
     geometries_for_deformable_contact_.MaybeAddRigidGeometry(
         geometry.shape(), id, new_properties, X_WG);
@@ -481,25 +486,134 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   // "AddDynamicGeometry() or AddAnchoredGeometry()") and has not been since
   // removed (via "RemoveGeometry()").
   bool IsRegisteredAsRigid(GeometryId id) const {
-    return dynamic_objects_.contains(id) || anchored_objects_.contains(id);
+    return FindLocationOf(id).has_value();
+  }
+
+  // Where a rigid geometry's fcl object lives: the map that owns it and the
+  // broadphase tree it is registered in, along with the object itself.
+  struct DRAKE_NO_EXPORT ObjectLocation {
+    MapGeometryIdToFclCollisionObject* objects{};
+    FclDynamicAABBTreeCollisionManager* tree{};
+    CollisionObjectd* object{};
+  };
+
+  // The one place that decides which collection holds a rigid geometry.
+  // Deriving every lookup, removal and migration from actual membership --
+  // rather than from a separately-tracked dynamic/anchored bit -- is what
+  // keeps the partition from going stale when a geometry is anchored after
+  // the fact (see AnchorGeometries()).
+  //
+  // Two independent properties (anchored, inactive) span three trees; this
+  // gives every combination a single defined answer, including the one that is
+  // easy to miss: a geometry that is anchored while inactive lives in
+  // anchored_tree_ and is no longer culled. The filter's inactive set still
+  // blocks it, so that costs traversal, not correctness.
+  //
+  // Returns std::nullopt if `id` is not a registered rigid geometry. FCL needs
+  // mutable objects even for queries, so this const lookup hands back mutable
+  // pointers.
+  std::optional<ObjectLocation> FindLocationOf(GeometryId id) const {
+    Impl* self = const_cast<Impl*>(this);
+    if (auto iter = self->dynamic_objects_.find(id);
+        iter != self->dynamic_objects_.end()) {
+      return ObjectLocation{&self->dynamic_objects_,
+                            inactive_dynamic_geometries_.contains(id)
+                                ? &self->inactive_dynamic_tree_
+                                : &self->dynamic_tree_,
+                            iter->second.get()};
+    }
+    if (auto iter = self->anchored_objects_.find(id);
+        iter != self->anchored_objects_.end()) {
+      return ObjectLocation{&self->anchored_objects_, &self->anchored_tree_,
+                            iter->second.get()};
+    }
+    return std::nullopt;
+  }
+
+  // As FindLocationOf(), but for a geometry known to be rigid.
+  // @throws std::exception if `id` is not a registered rigid geometry.
+  ObjectLocation GetLocationOf(GeometryId id) const {
+    std::optional<ObjectLocation> location = FindLocationOf(id);
+    if (!location.has_value()) {
+      throw std::logic_error(
+          fmt::format("Geometry id {} is not a registered rigid geometry in "
+                      "this proximity engine.",
+                      id));
+    }
+    return *location;
+  }
+
+  void AnchorGeometries(const std::vector<GeometryId>& ids) {
+    // Only dynamic geometries get promoted; neither anchored nor deformable
+    // geometries can be found in dynamic_objects_.
+    std::vector<GeometryId> anchored_ids;
+    for (const GeometryId id : ids) {
+      if (dynamic_objects_.contains(id)) anchored_ids.push_back(id);
+    }
+    if (anchored_ids.empty()) return;
+
+    // Report all promoted ids en masse; this will allow the collision filter
+    // to update its internal state in one fell swoop.
+    collision_filter_.SetAnchored(anchored_ids);
+
+    for (const GeometryId id : anchored_ids) {
+      const auto iter = dynamic_objects_.find(id);
+      CollisionObjectd* object = iter->second.get();
+      // Leave whichever dynamic tree currently holds it. An anchored geometry
+      // is never culled, so it also leaves the inactive set; the filter keeps
+      // its own inactive record, which is what actually blocks its pairs.
+      if (inactive_dynamic_geometries_.erase(id) > 0) {
+        inactive_dynamic_tree_.unregisterObject(object);
+      } else {
+        dynamic_tree_.unregisterObject(object);
+      }
+      // The dynamic/anchored bit is also encoded in the fcl object's user
+      // data; update accordingly.
+      EncodedData(id, /* is_dynamic = */ false).write_to(object);
+      // Only register objects with a current AABB, so the tree is consistent
+      // the moment the loop ends (see ApplyActiveStatusChange()).
+      object->computeAABB();
+      DisableTopdownRebalanceIfUnbounded(*object, &anchored_tree_);
+      anchored_tree_.registerObject(object);
+      anchored_objects_[id] = std::move(iter->second);
+      dynamic_objects_.erase(iter);
+    }
+    // Insertion leaves anchored_tree_ valid but unbalanced, and nothing else
+    // rebalances it per step; do so once for the batch. Removal leaves the
+    // dynamic trees valid and tight; the next UpdateWorldPoses() refits and
+    // rebalances dynamic_tree_.
+    anchored_tree_.update();
+  }
+
+  // Pushes the given world poses into the anchored objects and refits
+  // anchored_tree_. Anchored poses are a function of parameters, so this runs
+  // only when GeometryState observes an anchored frame's pose change -- not
+  // every step.
+  void RefreshAnchoredPoses(
+      const std::unordered_map<GeometryId, RigidTransform<T>>& X_WGs) {
+    if (anchored_objects_.empty()) return;
+    for (const auto& [id, object_ptr] : anchored_objects_) {
+      const RigidTransform<double>& X_WG_d = convert_to_double(X_WGs.at(id));
+      object_ptr->setTransform(X_WG_d.GetAsIsometry3());
+      object_ptr->computeAABB();
+      // Easy to miss: UpdateWorldPoses() maintains this map for dynamic
+      // objects only, because declared-anchored geometry could never move.
+      // Geometry anchored after the fact *can* move, so a deformable resting
+      // on it would otherwise contact the stale location.
+      geometries_for_deformable_contact_.UpdateRigidWorldPose(id, X_WG_d);
+    }
+    anchored_tree_.update();
   }
 
   // Removes a non-deformable geometry from this engine.
-  void RemoveGeometry(GeometryId id, bool is_dynamic) {
-    if (is_dynamic) {
-      // An inactive dynamic geometry lives in inactive_dynamic_tree_, not
-      // dynamic_tree_. (Removing a geometry never changes any *other*
-      // geometry's active status, so no further partition bookkeeping is
-      // needed; the filter drops the removed geometry from its inactive set in
-      // collision_filter_.RemoveGeometry().)
-      if (inactive_dynamic_geometries_.erase(id) > 0) {
-        RemoveGeometry(id, &inactive_dynamic_tree_, &dynamic_objects_);
-      } else {
-        RemoveGeometry(id, &dynamic_tree_, &dynamic_objects_);
-      }
-    } else {
-      RemoveGeometry(id, &anchored_tree_, &anchored_objects_);
-    }
+  void RemoveGeometry(GeometryId id) {
+    // (Removing a geometry never changes any *other* geometry's active status,
+    // so no further partition bookkeeping is needed; the filter drops the
+    // removed geometry from its inactive set in
+    // collision_filter_.RemoveGeometry().)
+    const ObjectLocation location = GetLocationOf(id);
+    inactive_dynamic_geometries_.erase(id);
+    RemoveGeometry(id, location.tree, location.objects);
     hydroelastic_geometries_.RemoveGeometry(id);
     geometries_for_deformable_contact_.RemoveGeometry(id);
     mesh_distance_boundary_cache_.Remove(id);
@@ -721,22 +835,19 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   }
 
   /* Searches for an fcl::CollisionObject associated with the given `id`.
-   Note: this strips the const away from the collision object because FCL's
-   API requires non-const inputs.
+   Note: this returns a mutable collision object (see FindLocationOf()) because
+   FCL's API requires non-const inputs.
    @throws if the proximity engine has no geometry for the id. */
   CollisionObjectd* FindCollisionObject(GeometryId id,
                                         std::string_view query_type) const {
-    auto iter = dynamic_objects_.find(id);
-    if (iter == dynamic_objects_.end()) {
-      iter = anchored_objects_.find(id);
-      if (iter == anchored_objects_.end()) {
-        throw std::runtime_error(
-            fmt::format("The geometry given by id {} does not reference a "
-                        "geometry that can be used in a {} query",
-                        id, query_type));
-      }
+    const std::optional<ObjectLocation> location = FindLocationOf(id);
+    if (!location.has_value()) {
+      throw std::runtime_error(
+          fmt::format("The geometry given by id {} does not reference a "
+                      "geometry that can be used in a {} query",
+                      id, query_type));
     }
-    return const_cast<CollisionObjectd*>(iter->second.get());
+    return location->object;
   }
 
   SignedDistancePair<T> ComputeSignedDistancePairClosestPoints(
@@ -1047,11 +1158,8 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     return false;
   }
 
-  const RigidTransformd GetX_WG(GeometryId id, bool is_dynamic) const {
-    const unordered_map<GeometryId, unique_ptr<CollisionObjectd>>& objects =
-        is_dynamic ? dynamic_objects_ : anchored_objects_;
-
-    return RigidTransformd(objects.at(id)->getTransform());
+  const RigidTransformd GetX_WG(GeometryId id) const {
+    return RigidTransformd(GetLocationOf(id).object->getTransform());
   }
 
   bool is_inactive_dynamic_stale() const { return inactive_dynamic_stale_; }
@@ -1428,9 +1536,13 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     DRAKE_UNREACHABLE();
   }
 
-  // A note on the storage of dynamic objects.
-  //  - Every registered dynamic geometry has a corresponding
-  //    fcl::CollisionObjectd stored in dynamic_objects_.
+  // A note on the storage of rigid objects.
+  //  - Every registered rigid geometry has exactly one
+  //    fcl::CollisionObjectd, owned by dynamic_objects_ or anchored_objects_.
+  //    FindLocationOf() is the single place that answers which, and every
+  //    lookup, removal and migration derives from it -- a geometry's collection
+  //    is not fixed for its lifetime (see AnchorGeometries()), so a
+  //    separately-cached dynamic/anchored bit would go stale.
   //  - The full set of dynamic geometries is partitioned into two sets: active
   //    and inactive.
   //    - The inactive partition is *explicitly* enumerated in
@@ -1441,6 +1553,11 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   //    dynamic_tree_.
   //  - All inactive dynamic geometries' collision objects are registered in
   //    inactive_dynamic_tree_.
+  //  - Anchored geometry is not currently partitioned by active status. A
+  //    geometry that is anchored while inactive therefore leaves
+  //    inactive_dynamic_geometries_ for anchored_tree_, and the collision
+  //    filter's inactive set -- not the broadphase -- is what goes on blocking
+  //    its pairs.
 
   // All of the *dynamic* collision elements registered on this engine.
   MapGeometryIdToFclCollisionObject dynamic_objects_;
@@ -1490,9 +1607,14 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   //         deactivated collision object's AABB prior to adding it.
   bool inactive_dynamic_stale_{false};
 
-  // All of the *anchored* collision elements. The anchored geometries are not
-  // partitioned like the dynamic geometries. All anchored geometries are
+  // All of the *anchored* collision elements: geometry registered on the world
+  // frame, and geometry whose frame is anchored. The anchored geometries are
+  // not partitioned like the dynamic geometries. All anchored geometries are
   // solely listed in anchored_objects_ and registered in anchored_tree_.
+  //
+  // Their poses are not refreshed by UpdateWorldPoses(); an anchored pose is a
+  // function of parameters, so it is refreshed on demand by
+  // RefreshAnchoredPoses() when GeometryState sees an anchored frame move.
   MapGeometryIdToFclCollisionObject anchored_objects_;
 
   // The tree containing all of the anchored geometry.
@@ -1617,8 +1739,19 @@ void ProximityEngine<T>::UpdateRepresentationForNewProperties(
 }
 
 template <typename T>
-void ProximityEngine<T>::RemoveGeometry(GeometryId id, bool is_dynamic) {
-  impl_->RemoveGeometry(id, is_dynamic);
+void ProximityEngine<T>::AnchorGeometries(const std::vector<GeometryId>& ids) {
+  impl_->AnchorGeometries(ids);
+}
+
+template <typename T>
+void ProximityEngine<T>::RefreshAnchoredPoses(
+    const std::unordered_map<GeometryId, RigidTransform<T>>& X_WGs) {
+  impl_->RefreshAnchoredPoses(X_WGs);
+}
+
+template <typename T>
+void ProximityEngine<T>::RemoveGeometry(GeometryId id) {
+  impl_->RemoveGeometry(id);
 }
 
 template <typename T>
@@ -1785,9 +1918,8 @@ bool ProximityEngine<T>::IsDeepCopy(const ProximityEngine<T>& other) const {
 }
 
 template <typename T>
-const RigidTransformd ProximityEngine<T>::GetX_WG(GeometryId id,
-                                                  bool is_dynamic) const {
-  return impl_->GetX_WG(id, is_dynamic);
+const RigidTransformd ProximityEngine<T>::GetX_WG(GeometryId id) const {
+  return impl_->GetX_WG(id);
 }
 
 template <typename T>
