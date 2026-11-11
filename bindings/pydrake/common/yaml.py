@@ -36,6 +36,56 @@ class _SchemaLoader(yaml.loader.SafeLoader):
         result.update({"_tag": tag})
         return result
 
+    def compose_node(self, parent, index):
+        """Overrides PyYAML's compose_node so that an alias (``*name``) yields
+        a copy of the anchored node, instead of the very same node.
+
+        By default PyYAML would return a single Python object that appears at
+        multiple places in the loaded document (including via merge keys,
+        ``<<: *name``), so that mutating one place silently mutates the
+        others. Drake's C++ yaml loading yields independent copies, so we do
+        the same here, by copying at the node level (like C++'s
+        ConvertJbederYamlNodeToDrakeYamlNode) before any merge keys are
+        flattened or objects are constructed.
+        """
+        is_alias = self.check_event(yaml.events.AliasEvent)
+        node = super().compose_node(parent, index)
+        if not is_alias:
+            return node
+        if node.end_mark is None:
+            raise yaml.composer.ComposerError(
+                context=None,
+                context_mark=None,
+                problem=(
+                    "found an alias to an anchor that is not yet complete "
+                    "(recursive aliases are not supported by Drake's "
+                    "yaml_load conventions)"
+                ),
+                problem_mark=node.start_mark,
+            )
+        return self._copy_node(node)
+
+    @staticmethod
+    def _copy_node(node):
+        # Scalar nodes (and marks) are never mutated, so they can be shared.
+        if isinstance(node, yaml.ScalarNode):
+            return node
+        if isinstance(node, yaml.SequenceNode):
+            value = [_SchemaLoader._copy_node(x) for x in node.value]
+        else:
+            assert isinstance(node, yaml.MappingNode)
+            value = [
+                (_SchemaLoader._copy_node(k), _SchemaLoader._copy_node(v))
+                for k, v in node.value
+            ]
+        return type(node)(
+            tag=node.tag,
+            value=value,
+            start_mark=node.start_mark,
+            end_mark=node.end_mark,
+            flow_style=node.flow_style,
+        )
+
 
 _SchemaLoader.add_multi_constructor("", _SchemaLoader._handle_multi_variant)
 
@@ -50,6 +100,11 @@ def yaml_load_data(data, *, private=False):
     By default, removes any root-level keys that begin with an underscore, so
     that yaml anchors and templates are invisibly easy to use.  Callers that
     wish to receive the private data may pass `private=True`.
+
+    Every yaml alias (``*name``, including within merge keys ``<<: *name``)
+    is expanded into an independent copy of its anchored node, so the
+    returned objects never share any aliased sub-objects; mutating one place
+    in the result never changes another place.
 
     This function returns the raw, untyped data (dict, list, str, float, etc.)
     without any schema checking nor default values. To load with respect to
@@ -69,7 +124,9 @@ def yaml_load_data(data, *, private=False):
 
 def yaml_load_file(filename, *, private=False):
     """Loads and returns the given `filename` as a yaml object, while also
-    accounting for variant-like type tags.
+    accounting for variant-like type tags.  Every yaml alias is expanded into
+    an independent copy of its anchored node, so the returned objects never
+    share any aliased sub-objects.
 
     See yaml_load_data for full details; this function differs only by reading
     the yaml data from a file instead of memory.

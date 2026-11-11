@@ -2,6 +2,8 @@ import os
 from textwrap import dedent
 import unittest
 
+import yaml
+
 from pydrake.common.schema import UniformVectorX
 from pydrake.common.yaml import (
     yaml_dump,
@@ -245,6 +247,67 @@ class TestYaml(unittest.TestCase):
             }
         }
         self.assertDictEqual(yaml_load_data(data, private=True), expected)
+
+    def test_aliases_are_copied(self):
+        """Anchors and aliases (and merge keys) must not leave the caller with
+        objects that share storage, i.e., each use of an anchored node is an
+        independent copy, as when loading in C++.
+        """
+        data = """
+        _template: &template
+          value:
+            foo: 1.0
+        a: &a
+          list: [1, 2]
+          map: {x: 1}
+        b: *a
+        c:
+          <<: *template
+        d:
+          <<: *template
+        """
+        parsed = yaml_load_data(data)
+        self.assertEqual(parsed["a"], parsed["b"])
+        self.assertIsNot(parsed["a"], parsed["b"])
+        self.assertIsNot(parsed["a"]["list"], parsed["b"]["list"])
+        self.assertIsNot(parsed["a"]["map"], parsed["b"]["map"])
+        self.assertIsNot(parsed["c"]["value"], parsed["d"]["value"])
+
+        # Mutating one copy does not affect the other, and dumping does not
+        # introduce yaml anchors.
+        parsed["a"]["map"]["x"] = 2
+        parsed["a"]["list"].append(3)
+        self.assertEqual(parsed["b"], {"list": [1, 2], "map": {"x": 1}})
+        self.assertEqual(
+            yaml_dump(parsed),
+            dedent(
+                """\
+                a:
+                  list: [1, 2, 3]
+                  map: {x: 2}
+                b:
+                  list: [1, 2]
+                  map: {x: 1}
+                c:
+                  value: {foo: 1.0}
+                d:
+                  value: {foo: 1.0}
+                """
+            ),
+        )
+
+        # A variant-like tag on an aliased node is preserved.
+        parsed = yaml_load_data("a: &a !Foo {x: 1}\nb: *a\n")
+        self.assertEqual(parsed["a"], {"_tag": "!Foo", "x": 1})
+        self.assertEqual(parsed["b"], {"_tag": "!Foo", "x": 1})
+        self.assertIsNot(parsed["a"], parsed["b"])
+
+    def test_recursive_aliases(self):
+        for data in ["a: &a {b: *a}", "a: &a [[*a, 2], 3]"]:
+            with self.assertRaisesRegex(
+                yaml.composer.ComposerError, "recursive aliases"
+            ):
+                yaml_load_data(data)
 
     def test_bad_args(self):
         with self.assertRaisesRegex(Exception, "both were None"):
