@@ -1848,7 +1848,7 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// setting is _not_ to deal with kinematic loops (if one is encountered,
   /// an exception is thrown).
   ///
-  /// @note This feature is in development and is not yet functional.
+  /// @note This feature is in development and is not yet fully functional.
   ///
   /// To deal with loops automatically requires modifying the system's topology
   /// so that it is structured as a tree of links and joints, plus constraints
@@ -1858,6 +1858,18 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// added between the primary and shadow links to enforce loop closure. When
   /// the weld constraint is satisfied, the original physics is restored.
   ///
+  /// A shadow link is a link like any other in most respects (it has a pose and
+  /// a velocity, for example), but its mass properties are derived from its
+  /// primary link, and will change if the primary's do. Any attempt to ask a
+  /// shadow link about its mass properties will throw; ask its
+  /// RigidBody::primary_link() instead. The primary link reports the link's
+  /// full, user-defined mass properties. Physically, however, a primary and
+  /// its shadows each carry an even share of the mass and inertia. Calculations
+  /// that sum over several bodies (e.g., total mass, center of mass, spatial
+  /// inertia and momentum, energy) obey the physics; for example, they take
+  /// account of the individual poses of the primary and shadow links which can
+  /// differ when a system is not fully assembled.
+  ///
   /// @param[in] enable Whether Finalize() should automatically model closed
   ///   kinematic loops rather than throwing.
   /// @throws std::exception if called after Finalize().
@@ -1866,12 +1878,12 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
 
   /// Returns the currently-set choice for base body joint type, either for
   /// the global setting or for a specific model instance if provided.
-  /// If a model instance is provided for which no explicit choice has been
-  /// made, the global setting is returned. Any model instance index is
-  /// acceptable here; if not recognized then the global setting is returned.
-  /// This can be called any time -- pre-finalize it returns the joint type
-  /// that will be used by Finalize(); post-finalize it returns the joint type
-  /// that _was_ used if there were any base bodies in need of a joint.
+  ///
+  /// @note This function can be called pre-Finalize() or post-Finalize().
+  ///
+  /// @param[in] model_instance (optional). If this argument is missing or
+  ///   not recognized, returns the global setting. Otherwise returns the
+  ///   setting for this specific model_instance.
   /// @see SetBaseBodyJointType(), GetFuseWeldedLinks(), Finalize()
   BaseBodyJointType GetBaseBodyJointType(
       std::optional<ModelInstanceIndex> model_instance = {}) const;
@@ -1968,10 +1980,9 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
 
   /// Returns the number of ephemeral weld constraints that Finalize() added in
   /// order to close topological loops. Each of these welds a shadow link to the
-  /// link it is split from; see SetEnableLoopTopology(). These are included in
-  /// num_constraints() and num_weld_constraints(), and are indistinguishable
-  /// from user-added welds to the constraint solvers. Returns zero prior to
-  /// Finalize().
+  /// link it is split from. These are included in num_constraints() and
+  /// num_weld_constraints(), and are indistinguishable from user-added welds to
+  /// the constraint solvers. Returns zero prior to Finalize().
   int num_loop_constraints() const {
     return internal_tree().graph().num_loop_constraints();
   }
@@ -4172,16 +4183,37 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// (the origin of a frame F), expressed in frame F. You may regard M_SFo_F as
   /// measuring spatial inertia as if the set S of bodies were welded into a
   /// single composite body at the configuration specified in the `context`.
+  ///
   /// @param[in] context Contains the configuration of the set S of bodies.
-  /// @param[in] frame_F specifies the about-point Fo (frame_F's origin) and
+  /// @param[in] frame_F Specifies the about-point Fo (frame_F's origin) and
   ///  the expressed-in frame for the returned spatial inertia.
-  /// @param[in] body_indexes Array of selected bodies.  This method does not
-  ///  distinguish between welded bodies, joint-connected bodies, etc.
+  /// @param[in] body_indexes Array of selected bodies. This method does not
+  ///  distinguish among welded bodies, joint-connected bodies, etc. Bodies
+  ///  that are split to break a kinematic loop are handled specially: when
+  ///  a split body's primary link or any of its shadow links is first
+  ///  encountered in body_indexes, the contributions from all of its links
+  ///  (primary and shadows in their current configurations) are calculated.
+  ///  If one of those links is encountered later, it is skipped. Thus a list
+  ///  from GetBodyIndices(), which may include shadow links, works as is.
+  ///
+  /// @note The mass and inertia of the world_body() does not contribute to the
+  ///  returned spatial inertia, even if World is listed.
+  /// @note The primary link and its shadow links contribute independently to
+  ///  the _system_ spatial inertia calculated here. When unassembled, their
+  ///  poses will differ. As noted above, _any one_ of those links represents
+  ///  the full collection of primary and shadows. Thus, when the system is
+  ///  unassembled, asking for the _system_ spatial inertia of a primary link
+  ///  may give a different result than asking the primary link for its own
+  ///  spatial inertia. That is, for primary link P, the system spatial inertia
+  ///  returned by `CalcSpatialInertia(context, P.body_frame(), {P.index()})`
+  ///  may differ from `P.CalcSpatialInertiaInBodyFrame(context)`, which
+  ///  reports P's full, user-defined mass properties. Listing `{primary}`,
+  ///  `{shadow}` or `{primary, shadow}` all give the same _system_ spatial
+  ///  inertia.
+  ///
   /// @throws std::exception if `frame_F` does not belong to `this` plant.
   /// @throws std::exception if body_indexes contains an invalid BodyIndex or
   ///  if there is a repeated BodyIndex.
-  /// @note The mass and inertia of the world_body() does not contribute to the
-  ///  the returned spatial inertia.
   SpatialInertia<T> CalcSpatialInertia(
       const systems::Context<T>& context, const Frame<T>& frame_F,
       const std::vector<BodyIndex>& body_indexes) const {
@@ -5483,10 +5515,20 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
     return internal_tree().world_frame();
   }
 
-  /// Returns the number of RigidBody elements in the model, including the
-  /// "world" RigidBody, which is always part of the model.
+  /// Returns the number of RigidBody (Link) elements in the model, including
+  /// the "world" RigidBody, which is always part of the model. After Finalize()
+  /// this includes any shadow bodies that Finalize() added to break kinematic
+  /// loops; see num_user_bodies().
   /// @see AddRigidBody().
   int num_bodies() const { return internal_tree().num_links(); }
+
+  /// Returns the number of RigidBody (Link) elements in the model that are not
+  /// shadow bodies: i.e., the "world" RigidBody plus every body added with
+  /// AddRigidBody(). Finalize() adds a shadow body for each kinematic loop it
+  /// breaks. num_user_bodies() == num_bodies() unless Finalize() broke a loop.
+  int num_user_bodies() const {
+    return internal_tree().graph().num_user_links();
+  }
 
   /// Returns `true` if plant has a rigid body with unique index `body_index`.
   bool has_body(BodyIndex body_index) const {
@@ -5554,7 +5596,9 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
     return internal_tree().GetLinkByName(name, model_instance);
   }
 
-  /// Returns a list of body indices associated with `model_instance`.
+  /// Returns a list of body indices associated with `model_instance`. After
+  /// Finalize(), the list includes any shadow bodies that Finalize() split from
+  /// this model instance's bodies to break kinematic loops.
   std::vector<BodyIndex> GetBodyIndices(
       ModelInstanceIndex model_instance) const {
     return internal_tree().GetLinkIndices(model_instance);

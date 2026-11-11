@@ -4576,23 +4576,45 @@ Parameter ``context``:
     Contains the configuration of the set S of bodies.
 
 Parameter ``frame_F``:
-    specifies the about-point Fo (frame_F's origin) and the
+    Specifies the about-point Fo (frame_F's origin) and the
     expressed-in frame for the returned spatial inertia.
 
 Parameter ``body_indexes``:
-    Array of selected bodies. This method does not distinguish between
-    welded bodies, joint-connected bodies, etc.
+    Array of selected bodies. This method does not distinguish among
+    welded bodies, joint-connected bodies, etc. Bodies that are split
+    to break a kinematic loop are handled specially: when a split
+    body's primary link or any of its shadow links is first
+    encountered in body_indexes, the contributions from all of its
+    links (primary and shadows in their current configurations) are
+    calculated. If one of those links is encountered later, it is
+    skipped. Thus a list from GetBodyIndices(), which may include
+    shadow links, works as is.
+
+Note:
+    The mass and inertia of the world_body() does not contribute to
+    the returned spatial inertia, even if World is listed.
+
+Note:
+    The primary link and its shadow links contribute independently to
+    the *system* spatial inertia calculated here. When unassembled,
+    their poses will differ. As noted above, *any one* of those links
+    represents the full collection of primary and shadows. Thus, when
+    the system is unassembled, asking for the *system* spatial inertia
+    of a primary link may give a different result than asking the
+    primary link for its own spatial inertia. That is, for primary
+    link P, the system spatial inertia returned by
+    ``CalcSpatialInertia(context, P.body_frame(), {P.index()})`` may
+    differ from ``P.CalcSpatialInertiaInBodyFrame(context)``, which
+    reports P's full, user-defined mass properties. Listing
+    ``{primary}``, `{shadow}` or ``{primary, shadow}`` all give the
+    same *system* spatial inertia.
 
 Raises:
     RuntimeError if ``frame_F`` does not belong to ``this`` plant.
 
 Raises:
     RuntimeError if body_indexes contains an invalid BodyIndex or if
-    there is a repeated BodyIndex.
-
-Note:
-    The mass and inertia of the world_body() does not contribute to
-    the the returned spatial inertia.)""";
+    there is a repeated BodyIndex.)""";
         } CalcSpatialInertia;
         // Symbol: drake::multibody::MultibodyPlant::CalcSpatialMomentumInWorldAboutPoint
         struct /* CalcSpatialMomentumInWorldAboutPoint */ {
@@ -5062,13 +5084,15 @@ Raises:
           // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Returns the currently-set choice for base body joint type, either for
-the global setting or for a specific model instance if provided. If a
-model instance is provided for which no explicit choice has been made,
-the global setting is returned. Any model instance index is acceptable
-here; if not recognized then the global setting is returned. This can
-be called any time -- pre-finalize it returns the joint type that will
-be used by Finalize(); post-finalize it returns the joint type that
-*was* used if there were any base bodies in need of a joint.
+the global setting or for a specific model instance if provided.
+
+Note:
+    This function can be called pre-Finalize() or post-Finalize().
+
+Parameter ``model_instance``:
+    (optional). If this argument is missing or not recognized, returns
+    the global setting. Otherwise returns the setting for this
+    specific model_instance.
 
 See also:
     SetBaseBodyJointType(), GetFuseWeldedLinks(), Finalize())""";
@@ -5211,7 +5235,9 @@ associated with that id (nullptr if there is no such body).)""";
         struct /* GetBodyIndices */ {
           // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
-R"""(Returns a list of body indices associated with ``model_instance``.)""";
+R"""(Returns a list of body indices associated with ``model_instance``.
+After Finalize(), the list includes any shadow bodies that Finalize()
+split from this model instance's bodies to break kinematic loops.)""";
         } GetBodyIndices;
         // Symbol: drake::multibody::MultibodyPlant::GetCollisionGeometriesForBody
         struct /* GetCollisionGeometriesForBody */ {
@@ -6905,7 +6931,7 @@ is *not* to deal with kinematic loops (if one is encountered, an
 exception is thrown).
 
 Note:
-    This feature is in development and is not yet functional.
+    This feature is in development and is not yet fully functional.
 
 To deal with loops automatically requires modifying the system's
 topology so that it is structured as a tree of links and joints, plus
@@ -6915,6 +6941,18 @@ the original ("primary") link and the new ("shadow") link. Then a weld
 constraint is added between the primary and shadow links to enforce
 loop closure. When the weld constraint is satisfied, the original
 physics is restored.
+
+A shadow link is a link like any other in most respects (it has a pose
+and a velocity, for example), but its mass properties are derived from
+its primary link, and will change if the primary's do. Any attempt to
+ask a shadow link about its mass properties will throw; ask its
+RigidBody∷primary_link() instead. The primary link reports the link's
+full, user-defined mass properties. Physically, however, a primary and
+its shadows each carry an even share of the mass and inertia.
+Calculations that sum over several bodies (e.g., total mass, center of
+mass, spatial inertia and momentum, energy) obey the physics; for
+example, they take account of the individual poses of the primary and
+shadow links which can differ when a system is not fully assembled.
 
 Parameter ``enable``:
     Whether Finalize() should automatically model closed kinematic
@@ -8281,8 +8319,10 @@ R"""(Returns the total number of ball constraints specified by the user.)""";
         struct /* num_bodies */ {
           // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
-R"""(Returns the number of RigidBody elements in the model, including the
-"world" RigidBody, which is always part of the model.
+R"""(Returns the number of RigidBody (Link) elements in the model,
+including the "world" RigidBody, which is always part of the model.
+After Finalize() this includes any shadow bodies that Finalize() added
+to break kinematic loops; see num_user_bodies().
 
 See also:
     AddRigidBody().)""";
@@ -8350,10 +8390,9 @@ See also:
           const char* doc =
 R"""(Returns the number of ephemeral weld constraints that Finalize() added
 in order to close topological loops. Each of these welds a shadow link
-to the link it is split from; see SetEnableLoopTopology(). These are
-included in num_constraints() and num_weld_constraints(), and are
-indistinguishable from user-added welds to the constraint solvers.
-Returns zero prior to Finalize().)""";
+to the link it is split from. These are included in num_constraints()
+and num_weld_constraints(), and are indistinguishable from user-added
+welds to the constraint solvers. Returns zero prior to Finalize().)""";
         } num_loop_constraints;
         // Symbol: drake::multibody::MultibodyPlant::num_misc_continuous_states
         struct /* num_misc_continuous_states */ {
@@ -8415,6 +8454,16 @@ Raises:
           const char* doc =
 R"""(Returns the total number of tendon constraints specified by the user.)""";
         } num_tendon_constraints;
+        // Symbol: drake::multibody::MultibodyPlant::num_user_bodies
+        struct /* num_user_bodies */ {
+          // Source: drake/multibody/plant/multibody_plant.h
+          const char* doc =
+R"""(Returns the number of RigidBody (Link) elements in the model that are
+not shadow bodies: i.e., the "world" RigidBody plus every body added
+with AddRigidBody(). Finalize() adds a shadow body for each kinematic
+loop it breaks. num_user_bodies() == num_bodies() unless Finalize()
+broke a loop.)""";
+        } num_user_bodies;
         // Symbol: drake::multibody::MultibodyPlant::num_velocities
         struct /* num_velocities */ {
           // Source: drake/multibody/plant/multibody_plant.h

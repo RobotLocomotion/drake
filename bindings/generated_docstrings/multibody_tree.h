@@ -5281,7 +5281,8 @@ of the user-specified model. These are called "ephemeral" elements and
 can be identified using the ``is_ephemeral()`` function here. Examples
 include - free joints added to connect lone bodies or free-floating
 trees to World - fixed offset frames added when joints are modeled by
-mobilizers - all mobilizers.)""";
+mobilizers - shadow bodies, and their body frames, added to break
+kinematic loops - all mobilizers.)""";
         // Symbol: drake::multibody::MultibodyElement::DeclareAbstractParameter
         struct /* DeclareAbstractParameter */ {
           // Source: drake/multibody/tree/multibody_element.h
@@ -7176,7 +7177,11 @@ Returns:
     (B's center of mass), expressed in B.
 
 Precondition:
-    the context makes sense for use by this RigidBody.)""";
+    the context makes sense for use by this RigidBody.
+
+Raises:
+    RuntimeError if this is a shadow link, which has no mass
+    properties of its own; ask its primary_link() instead.)""";
         } CalcCenterOfMassInBodyFrame;
         // Symbol: drake::multibody::RigidBody::CalcCenterOfMassTranslationalAccelerationInWorld
         struct /* CalcCenterOfMassTranslationalAccelerationInWorld */ {
@@ -7196,7 +7201,11 @@ Note:
     When cached values are out of sync with the state stored in
     context, this method performs an expensive forward dynamics
     computation, whereas once evaluated, successive calls to this
-    method are inexpensive.)""";
+    method are inexpensive.
+
+Raises:
+    RuntimeError if this is a shadow link, which has no mass
+    properties of its own; ask its primary_link() instead.)""";
         } CalcCenterOfMassTranslationalAccelerationInWorld;
         // Symbol: drake::multibody::RigidBody::CalcCenterOfMassTranslationalVelocityInWorld
         struct /* CalcCenterOfMassTranslationalVelocityInWorld */ {
@@ -7210,7 +7219,11 @@ Parameter ``context``:
 
 Returns ``v_WBcm_W``:
     The translational velocity of Bcm (this body's center of mass) in
-    the world frame W, expressed in W.)""";
+    the world frame W, expressed in W.
+
+Raises:
+    RuntimeError if this is a shadow link, which has no mass
+    properties of its own; ask its primary_link() instead.)""";
         } CalcCenterOfMassTranslationalVelocityInWorld;
         // Symbol: drake::multibody::RigidBody::CalcSpatialInertiaInBodyFrame
         struct /* CalcSpatialInertiaInBodyFrame */ {
@@ -7229,13 +7242,12 @@ Returns:
     and G_BBo_B (B's unit inertia about Bo expressed in B).
 
 Precondition:
-    the context makes sense for use by this RigidBody.)""";
+    the context makes sense for use by this RigidBody.
+
+Raises:
+    RuntimeError if this is a shadow link, which has no mass
+    properties of its own; ask its primary_link() instead.)""";
         } CalcSpatialInertiaInBodyFrame;
-        // Symbol: drake::multibody::RigidBody::CalcSpatialInertiaInBodyFrameFromParameters
-        struct /* CalcSpatialInertiaInBodyFrameFromParameters */ {
-          // Source: drake/multibody/tree/rigid_body.h
-          const char* doc = R"""()""";
-        } CalcSpatialInertiaInBodyFrameFromParameters;
         // Symbol: drake::multibody::RigidBody::CloneToScalar
         struct /* CloneToScalar */ {
           // Source: drake/multibody/tree/rigid_body.h
@@ -7495,7 +7507,11 @@ supplied at construction when specifying this body's SpatialInertia.
 
 Returns ``p_BoBcm_B``:
     The position of this body B's center of mass ``Bcm`` measured from
-    Bo (B's frame origin) and expressed in B (body B's frame).)""";
+    Bo (B's frame origin) and expressed in B (body B's frame).
+
+Raises:
+    RuntimeError if this is a shadow link, which has no mass
+    properties of its own; ask its primary_link() instead.)""";
         } default_com;
         // Symbol: drake::multibody::RigidBody::default_mass
         struct /* default_mass */ {
@@ -7508,7 +7524,11 @@ Note:
     In general, a body's mass can be a constant property stored in
     this body's SpatialInertia or a parameter that is stored in a
     Context. The default constant mass value is used to initialize the
-    mass parameter in the Context.)""";
+    mass parameter in the Context.
+
+Raises:
+    RuntimeError if this is a shadow link, which has no mass
+    properties of its own; ask its primary_link() instead.)""";
         } default_mass;
         // Symbol: drake::multibody::RigidBody::default_rotational_inertia
         struct /* default_rotational_inertia */ {
@@ -7520,7 +7540,11 @@ frame). This value is calculated from the SpatialInertia supplied at
 construction of this body.
 
 Returns ``I_BBo_B``:
-    body B's rotational inertia about Bo, expressed in B.)""";
+    body B's rotational inertia about Bo, expressed in B.
+
+Raises:
+    RuntimeError if this is a shadow link, which has no mass
+    properties of its own; ask its primary_link() instead.)""";
         } default_rotational_inertia;
         // Symbol: drake::multibody::RigidBody::default_spatial_inertia
         struct /* default_spatial_inertia */ {
@@ -7530,7 +7554,11 @@ R"""(Gets the default value of this RigidBody (%Link) B's SpatialInertia
 about Bo (B's origin) and expressed in B (this body's frame).
 
 Returns ``M_BBo_B``:
-    body B's spatial inertia about Bo, expressed in B.)""";
+    body B's spatial inertia about Bo, expressed in B.
+
+Raises:
+    RuntimeError if this is a shadow link, which has no mass
+    properties of its own; ask its primary_link() instead.)""";
         } default_spatial_inertia;
         // Symbol: drake::multibody::RigidBody::default_unit_inertia
         struct /* default_unit_inertia */ {
@@ -7542,7 +7570,11 @@ This value is initially supplied at construction when specifying this
 body's SpatialInertia.
 
 Returns ``G_BBo_B``:
-    rigid body B's unit inertia about Bo, expressed in B.)""";
+    rigid body B's unit inertia about Bo, expressed in B.
+
+Raises:
+    RuntimeError if this is a shadow link, which has no mass
+    properties of its own; ask its primary_link() instead.)""";
         } default_unit_inertia;
         // Symbol: drake::multibody::RigidBody::floating_position_suffix
         struct /* floating_position_suffix */ {
@@ -7627,6 +7659,24 @@ Precondition:
 See also:
     is_floating_base_body(), MultibodyPlant∷Finalize())""";
         } floating_velocity_suffix;
+        // Symbol: drake::multibody::RigidBody::get_M_LLo_L
+        struct /* get_M_LLo_L */ {
+          // Source: drake/multibody/tree/rigid_body.h
+          const char* doc =
+R"""((Internal use only) Returns M_LLo_L, this link L's spatial inertia
+about its origin Lo, expressed in L, as the dynamics use it. That is
+L's full mass properties unless Finalize() split L to break a
+kinematic loop. Then the primary link and each of its shadow links
+carry an even share of the primary's mass properties, and this returns
+L's share. Unlike the mass-property getters above, this doesn't throw
+for a shadow link.
+
+Parameter ``frame_body_pose_cache``:
+    The FrameBodyPoseCache, evaluated from the Context of interest.
+
+Precondition:
+    ``frame_body_pose_cache`` is up to date (this is not checked).)""";
+        } get_M_LLo_L;
         // Symbol: drake::multibody::RigidBody::get_angular_acceleration_in_world
         struct /* get_angular_acceleration_in_world */ {
           // Source: drake/multibody/tree/rigid_body.h
@@ -7663,7 +7713,11 @@ Parameter ``context``:
     contains the state of the multibody system.
 
 Precondition:
-    the context makes sense for use by this RigidBody.)""";
+    the context makes sense for use by this RigidBody.
+
+Raises:
+    RuntimeError if this is a shadow link, which has no mass
+    properties of its own; ask its primary_link() instead.)""";
         } get_mass;
         // Symbol: drake::multibody::RigidBody::get_origin_acceleration_in_world
         struct /* get_origin_acceleration_in_world */ {
@@ -7854,6 +7908,21 @@ R"""((Internal use only) Returns this Link's unique ordinal. Currently
 identical to the index but will differ when we permit removal of Links
 as we do for Joints.)""";
         } ordinal;
+        // Symbol: drake::multibody::RigidBody::primary_link
+        struct /* primary_link */ {
+          // Source: drake/multibody/tree/rigid_body.h
+          const char* doc =
+R"""(Returns the "primary" link of this RigidBody (%Link). To break a
+kinematic loop, Finalize() can split a link into a primary link and
+one or more "shadow" links. For a shadow link, this returns the link
+it was split from; otherwise returns ``*this``. (Although mass
+properties are shared between a primary and its shadows, mass
+properties are only accessible through the primary.)
+
+Raises:
+    RuntimeError if this element is not associated with a
+    MultibodyPlant.)""";
+        } primary_link;
         // Symbol: drake::multibody::RigidBody::scoped_name
         struct /* scoped_name */ {
           // Source: drake/multibody/tree/rigid_body.h

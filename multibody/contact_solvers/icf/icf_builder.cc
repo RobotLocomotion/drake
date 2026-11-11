@@ -19,6 +19,7 @@ using drake::multibody::CalcContactFrictionFromSurfaceProperties;
 using drake::multibody::DistanceConstraintParams;
 using drake::multibody::internal::BallConstraintSpec;
 using drake::multibody::internal::CouplerConstraintSpec;
+using drake::multibody::internal::FrameBodyPoseCache;
 using drake::multibody::internal::GetCombinedHuntCrossleyDissipation;
 using drake::multibody::internal::GetCombinedPointContactStiffness;
 using drake::multibody::internal::GetCoulombFriction;
@@ -28,6 +29,7 @@ using drake::multibody::internal::JointLockingCacheData;
 using drake::multibody::internal::LinkJointGraph;
 using drake::multibody::internal::MobodIndex;
 using drake::multibody::internal::MultibodyPlantIcfAttorney;
+using drake::multibody::internal::MultibodyTree;
 using drake::multibody::internal::SpanningForest;
 using drake::multibody::internal::WeldConstraintSpec;
 
@@ -213,21 +215,24 @@ void IcfBuilder<T>::UpdateModel(
   }
 
   // Body mass is affected by context parameters, so needs to be refreshed
-  // every step. TODO(rpoyner-tri): consider using a MultibodyPlant cache entry
-  // (maybe like frame_body_pose_cache?) to track masses.
+  // every step. We use each body's mass as it will be simulated, meaning
+  // that primary links and their shadows share the primary's mass evenly.
+  const MultibodyTree<T>& tree = GetInternalTree(plant_);
+  const FrameBodyPoseCache<T>& frame_cache = tree.EvalFrameBodyPoses(context);
   for (int b = 0; b < plant_.num_bodies(); ++b) {
     const auto& body = plant_.get_body(BodyIndex(b));
     // If the body has zero mass, we assign it the mass of its composite.
     // TODO(amcastro-tri): consider using forest.link_composites() in
     // combination with LinkJointGraph::Link::composite() to precompute
     // composite's masses.
-    params->body_mass[b] = body.get_mass(context);
+    params->body_mass[b] = body.get_M_LLo_L(frame_cache).get_mass();
     if (params->body_mass[b] == 0.0) {
-      const LinkJointGraph& graph = GetInternalTree(plant_).graph();
+      const LinkJointGraph& graph = tree.graph();
       const auto composite = graph.GetLinksWeldedTo(body.index());
       T composite_mass = 0.0;
       for (BodyIndex c : composite) {
-        composite_mass += plant_.get_body(c).get_mass(context);
+        composite_mass +=
+            plant_.get_body(c).get_M_LLo_L(frame_cache).get_mass();
       }
       if (composite_mass == 0.0) {
         throw std::logic_error(
