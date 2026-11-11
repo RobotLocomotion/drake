@@ -78,9 +78,13 @@ drake_cc_googlebench_binary(
     name = "hydroelastic_clutter",
     srcs = ["hydroelastic_clutter.cc"],
     deps = [
+        "//common:essential",
         "//common:memory_file",
         "//geometry:in_memory_mesh",
+        "//geometry:meshcat",
+        "//geometry:meshcat_visualizer",
         "//geometry:proximity_properties",
+        "//geometry:rgba",
         "//geometry:scene_graph",
         "//geometry:shape_specification",
         "//geometry/query_results:contact_surface",
@@ -94,6 +98,7 @@ drake_cc_googlebench_binary(
         "//systems/framework:diagram_builder",
         "//tools/performance:fixture_common",
         "@eigen",
+        "@gflags",
     ],
     add_test_rule = True,
     test_rule_args = [
@@ -101,6 +106,8 @@ drake_cc_googlebench_binary(
         # case settles its scene before timing anything, which is slow in debug
         # builds, and the other scenes cost seconds apiece even when optimized.
         "--benchmark_filter=ContactSurfaces/3/60",
+        # Lands in the test's undeclared outputs directory.
+        "--scene_html_dir=scenes",
     ],
     test_rule_timeout = "moderate",
 )
