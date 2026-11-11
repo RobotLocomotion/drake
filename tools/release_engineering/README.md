@@ -115,6 +115,15 @@ repository if this is the first release with support for a new distribution.
 Verify that you can install drake via apt; see https://drake.mit.edu/apt.html
 for instructions.
 
+## Troubleshooting
+
+If the script fails complaining that a .deb file, e.g.
+https://drake-packages.csail.mit.edu/drake/release/drake-dev_1.58.0-1_amd64-noble.deb
+doesn't exist, review the latest
+[Mirror to S3](https://drake-jenkins.csail.mit.edu/view/Continuous%20Production/job/linux-noble-unprovisioned-gcc-bazel-continuous-mirror-to-s3)
+job. The `MIRRORING RELEASE ARTIFACTS TO S3` section should list files for the
+current release. If not, run the job.
+
 ## Adding a new distribution
 
 The `push_apt` script should be configured to perform most of the necessary

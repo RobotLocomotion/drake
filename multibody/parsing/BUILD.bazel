@@ -628,6 +628,7 @@ drake_cc_googletest(
         ":detail_mujoco_parser",
         ":detail_sdf_parser",
         "//common:find_resource",
+        "//common:temp_directory",
         "//common/test_utilities",
         "//geometry:make_mesh_for_deformable",
     ],

@@ -85,6 +85,7 @@ drake_cc_library(
         ":mesh_deformation_interpolator",
         ":shape_specification",
         "//common:default_scalars",
+        "//common:drake_export",
         "//common:sorted_pair",
         "//geometry/proximity:collision_filter",
         "//geometry/proximity:deformable_contact_internal",
@@ -1174,6 +1175,13 @@ drake_cc_googletest(
         ":geometry_roles",
         ":proximity_properties",
         "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "internal_frame_test",
+    deps = [
+        ":internal_frame",
     ],
 )
 

@@ -1040,6 +1040,25 @@ class TestMathematicalProgram(unittest.TestCase):
             prog.generic_costs()[0].evaluator(), cost_binding.evaluator()
         )
 
+    def test_pycost_and_pyconstraint_int_return(self):
+        # When called with an array of floats, the user function is allowed to
+        # return ints instead of floats.
+        prog = mp.MathematicalProgram()
+        x = prog.NewContinuousVariables(1, "x")
+
+        def cost(x):
+            return 1
+
+        def constraint(x):
+            return [2]
+
+        cost_binding = prog.AddCost(cost, vars=x)
+        constraint_binding = prog.AddConstraint(
+            constraint, lb=[0.0], ub=[3.0], vars=x
+        )
+        self.assertEqual(cost_binding.evaluator().Eval([0.0]), 1.0)
+        self.assertEqual(constraint_binding.evaluator().Eval([0.0]), 2.0)
+
     def test_cost_and_constraint_python_wrapper_lost(self):
         # Ensure cost and constraints python wrappers are kept alive when added
         # to a mathematical program. See issue #20131 for original problem

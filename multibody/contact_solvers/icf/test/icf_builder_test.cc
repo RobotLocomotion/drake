@@ -254,6 +254,55 @@ GTEST_TEST(IcfBuilder, WeldConstraint) {
   EXPECT_EQ(pool.body_pairs()[0].second, 2);
 }
 
+// To model a kinematic loop, Finalize() splits one of the loop's links into a
+// primary link and a shadow link, welded together. When simulating, the
+// primary and shadow share the mass properties evenly, and those are the
+// properties ICF must use.
+GTEST_TEST(IcfBuilder, LoopTopologyBodyMasses) {
+  systems::DiagramBuilder<double> diagram_builder;
+  multibody::MultibodyPlantConfig plant_config{.time_step = 0.0};
+  MultibodyPlant<double>& plant =
+      multibody::AddMultibodyPlant(plant_config, &diagram_builder);
+  plant.SetEnableLoopTopology(true);
+
+  // A triangle of revolute joints: World to A, World to B, and A to B.
+  const RigidBody<double>& body_A = plant.AddRigidBody(
+      "A", SpatialInertia<double>::SolidCubeWithMass(2.0, 0.1));
+  const RigidBody<double>& body_B = plant.AddRigidBody(
+      "B", SpatialInertia<double>::SolidCubeWithMass(4.0, 0.1));
+  const RigidTransformd X_offset(Vector3d(1.0, 0.0, 0.0));
+  plant.AddJoint<RevoluteJoint>("world_A", plant.world_body(), {}, body_A, {},
+                                Vector3d::UnitZ());
+  plant.AddJoint<RevoluteJoint>("world_B", plant.world_body(), X_offset, body_B,
+                                {}, Vector3d::UnitZ());
+  plant.AddJoint<RevoluteJoint>("A_B", body_A, X_offset, body_B, {},
+                                Vector3d::UnitZ());
+  plant.Finalize();
+  ASSERT_EQ(plant.num_loop_constraints(), 1);
+  ASSERT_EQ(plant.num_bodies(), 4);  // World, A, B, and a shadow.
+  const RigidBody<double>& shadow = plant.get_body(BodyIndex(3));
+  ASSERT_TRUE(shadow.is_ephemeral());
+  const RigidBody<double>& primary =
+      plant.get_body(GetInternalTree(plant)
+                         .graph()
+                         .link_by_index(shadow.index())
+                         .primary_link());
+  const RigidBody<double>& unsplit = (&primary == &body_A) ? body_B : body_A;
+
+  auto diagram = diagram_builder.Build();
+  auto diagram_context = diagram->CreateDefaultContext();
+  const auto& plant_context = plant.GetMyContextFromRoot(*diagram_context);
+  IcfBuilder<double> builder(&plant);
+  IcfModel<double> model;
+  builder.UpdateModel(plant_context, 0.01, nullptr, nullptr, &model);
+  EXPECT_EQ(model.num_weld_constraints(), 1);  // The loop's weld.
+
+  const double split_mass = primary.get_mass(plant_context);
+  EXPECT_EQ(model.body_mass(primary.index()), split_mass / 2);
+  EXPECT_EQ(model.body_mass(shadow.index()), split_mass / 2);
+  EXPECT_EQ(model.body_mass(unsplit.index()), unsplit.get_mass(plant_context));
+}
+
 // A single SpanningForest tree can hold several dynamically independent
 // sub-mechanisms when they branch off bodies that are welded to the world: with
 // weld joints modeled explicitly (the default), a body welded to World seeds a

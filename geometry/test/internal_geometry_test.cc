@@ -126,8 +126,9 @@ GTEST_TEST(InternalGeometryTest, SetPose) {
   const RigidTransformd X_FGNew(RotationMatrixd::MakeYRotation(M_PI / 7),
                                 Vector3d(4, 5, 6));
 
-  InternalGeometry geometry(source_id, sphere.Clone(), frame_id, geometry_id,
-                            name, X_FGold);
+  InternalGeometry geometry(source_id, sphere.Clone(), frame_id,
+                            /* frame_is_anchored = */ false, geometry_id, name,
+                            X_FGold);
   EXPECT_TRUE(CompareMatrices(geometry.X_FG().GetAsMatrix34(),
                               X_FGold.GetAsMatrix34()));
   geometry.set_pose(X_FGNew);
@@ -209,6 +210,7 @@ GTEST_TEST(InternalGeometryTest, DeformableGeometry) {
 
   // Confirms that a deformable geometry can be constructed.
   InternalGeometry geometry(source_id, make_unique<Sphere>(sphere), frame_id,
+                            /* frame_is_anchored = */ false,
                             deformable_geometry_id, name, X_FG, kRezHint);
   const VolumeMesh<double>* reference_mesh_G = geometry.reference_mesh();
   ASSERT_NE(reference_mesh_G, nullptr);
@@ -224,10 +226,44 @@ GTEST_TEST(InternalGeometryTest, DeformableGeometry) {
   // deformable geometry and doesn't have a reference mesh.
   GeometryId rigid_geometry_id = GeometryId::get_new_id();
   InternalGeometry rigid_geometry(source_id, make_unique<Sphere>(sphere),
-                                  frame_id, rigid_geometry_id, name,
-                                  RigidTransformd());
+                                  frame_id, /* frame_is_anchored = */ false,
+                                  rigid_geometry_id, name, RigidTransformd());
   EXPECT_EQ(rigid_geometry.reference_mesh(), nullptr);
   EXPECT_FALSE(rigid_geometry.is_deformable());
+}
+
+// A geometry's dynamic/anchored classification follows its frame's anchored
+// status: either as declared at construction or when later told its frame is
+// anchored. Deformable geometry remains dynamic regardless.
+GTEST_TEST(InternalGeometryTest, FrameIsAnchored) {
+  const SourceId source_id = SourceId::get_new_id();
+  const Sphere sphere(1.0);
+  const FrameId frame_id = FrameId::get_new_id();
+
+  // The frame's id plays no role; anchoring is solely what the constructor is
+  // told.
+  InternalGeometry anchored_rigid(source_id, make_unique<Sphere>(sphere),
+                                  frame_id, /* frame_is_anchored = */ true,
+                                  GeometryId::get_new_id(), "anchored_rigid",
+                                  RigidTransformd());
+  EXPECT_FALSE(anchored_rigid.is_dynamic());
+
+  InternalGeometry rigid(source_id, make_unique<Sphere>(sphere), frame_id,
+                         /* frame_is_anchored = */ false,
+                         GeometryId::get_new_id(), "rigid", RigidTransformd());
+  EXPECT_TRUE(rigid.is_dynamic());
+  rigid.set_frame_is_anchored();
+  EXPECT_FALSE(rigid.is_dynamic());
+
+  constexpr double kRezHint = 0.5;
+  for (const bool frame_is_anchored : {false, true}) {
+    InternalGeometry deformable(
+        source_id, make_unique<Sphere>(sphere), frame_id, frame_is_anchored,
+        GeometryId::get_new_id(), "deformable", RigidTransformd(), kRezHint);
+    EXPECT_TRUE(deformable.is_dynamic());
+    deformable.set_frame_is_anchored();
+    EXPECT_TRUE(deformable.is_dynamic());
+  }
 }
 
 GTEST_TEST(InternalGeometryTest, Rename) {
