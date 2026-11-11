@@ -142,9 +142,9 @@ class DrakeGymTest(unittest.TestCase):
 
     def _make_pass_through_env(self, **kwargs):
         builder = DiagramBuilder()
-        plant = builder.AddSystem(PassThrough(vector_size=1))
-        builder.ExportInput(plant.get_input_port(), "actions")
-        builder.ExportOutput(plant.get_output_port(), "observations")
+        pass_through = builder.AddSystem(PassThrough(vector_size=1))
+        builder.ExportInput(pass_through.get_input_port(), "actions")
+        builder.ExportOutput(pass_through.get_output_port(), "observations")
         simulator = Simulator(builder.Build())
         return DrakeGymEnv(
             simulator=simulator,

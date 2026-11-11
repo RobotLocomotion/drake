@@ -100,6 +100,8 @@ class DrakeGymEnv(gym.Env):
                 terminates with a ``RuntimeError``, then, to avoid
                 unexpected behavior, ``info_handler()`` will not be called
                 and an empty info will be returned instead.
+                If None, the info is always an empty ``dict``. Any other
+                value must be callable, otherwise a ``ValueError`` is raised.
             hardware: If True, it prevents from setting random context at
                 ``reset()`` when using ``random_generator``, but it does
                 execute ``reset_handler()`` if given.
