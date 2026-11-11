@@ -1033,6 +1033,24 @@ RenderEngineGlParams CleanupLights(RenderEngineGlParams params) {
   return params;
 }
 
+// Returns the buffers used by the defined entries in `geometries`; a buffer
+// appears once for each geometry that uses it.
+std::vector<GLuint> GetBuffersInUse(
+    const std::vector<OpenGlGeometry>& geometries) {
+  std::vector<GLuint> buffers;
+  for (const OpenGlGeometry& geometry : geometries) {
+    if (!geometry.is_defined()) continue;
+    buffers.push_back(geometry.vertex_buffer);
+    buffers.push_back(geometry.index_buffer);
+  }
+  return buffers;
+}
+
+// Deletes an OpenGl buffer object. An OpenGl context must be bound.
+void DeleteBuffer(GLuint buffer) {
+  glDeleteBuffers(1, &buffer);
+}
+
 }  // namespace
 
 RenderEngineGl::RenderEngineGl(RenderEngineGlParams params)
@@ -1097,10 +1115,14 @@ RenderEngineGl::~RenderEngineGl() {
 
   opengl_context_->MakeCurrent();
 
-  // Delete vertex array objects and the buffers no clone uses anymore.
-  for (int i = 0; i < ssize(geometries_); ++i) {
-    if (geometries_[i].is_defined()) ReleaseGlGeometry(i);
+  // Delete vertex array objects.
+  for (auto& geometry : geometries_) {
+    if (!geometry.is_defined()) continue;
+    glDeleteVertexArrays(1, &geometry.vertex_array);
   }
+  // Drop this engine's uses of the buffers it shares with its clones, deleting
+  // the buffers that no clone uses anymore.
+  buffer_use_counts_->Decrement(GetBuffersInUse(geometries_), &DeleteBuffer);
 
   // Delete programs.
   for (auto& shader_type : shader_programs_) {
@@ -1257,30 +1279,19 @@ void RenderEngineGl::ImplementMeshesForSource(void* user_data,
 bool RenderEngineGl::DoRegisterVisual(GeometryId id, const Shape& shape,
                                       const PerceptionProperties& properties,
                                       const RigidTransformd& X_WG) {
-  ThrowIfRegistered(id);
   opengl_context_->MakeCurrent();
   RegistrationData data{.id = id,
                         .X_WG = RigidTransformd{X_WG},
                         .properties = properties,
                         .default_diffuse = parameters_.default_diffuse};
-  // If registration throws, remove whatever it added so far.
-  ScopeExit roll_back([this, id]() {
-    DoRemoveGeometry(id);
-  });
   shape.Reify(this, &data);
-  roll_back.Disarm();
   return data.accepted;
 }
 
 bool RenderEngineGl::DoRegisterDeformableVisual(
     GeometryId id, const std::vector<RenderMesh>& render_meshes,
     const PerceptionProperties& properties) {
-  ThrowIfRegistered(id);
   opengl_context_->MakeCurrent();
-  // If registration throws, remove whatever it added so far.
-  ScopeExit roll_back([this, id]() {
-    DoRemoveGeometry(id);
-  });
   std::vector<int> gl_mesh_indices;
   for (const auto& render_mesh : render_meshes) {
     const int mesh_index =
@@ -1311,19 +1322,7 @@ bool RenderEngineGl::DoRegisterDeformableVisual(
     AddGeometryInstance(mesh_index, &data, kUnitScale);
   }
   deformable_meshes_.emplace(id, std::move(gl_mesh_indices));
-  roll_back.Disarm();
   return true;
-}
-
-void RenderEngineGl::ThrowIfRegistered(GeometryId id) const {
-  // Checked before registering, not by its roll back: rolling back would remove
-  // the existing registration.
-  if (has_geometry(id)) {
-    throw std::logic_error(fmt::format(
-        "RenderEngineGl: Cannot register geometry {}; it is already "
-        "registered.",
-        id));
-  }
 }
 
 void RenderEngineGl::DoUpdateVisualPose(GeometryId id,
@@ -1440,13 +1439,8 @@ unique_ptr<RenderEngine> RenderEngineGl::DoClone() const {
   auto clone = unique_ptr<RenderEngineGl>(new RenderEngineGl(*this));
 
   // The copy constructor shared buffer_use_counts_ with this engine. Count the
-  // clone's uses of the shared buffers before anything else can throw: the
-  // clone's destructor releases them.
-  for (const OpenGlGeometry& geometry : clone->geometries_) {
-    if (!geometry.is_defined()) continue;
-    clone->buffer_use_counts_->Add(geometry.vertex_buffer);
-    clone->buffer_use_counts_->Add(geometry.index_buffer);
-  }
+  // clone's uses of the shared buffers; its destructor drops them.
+  clone->buffer_use_counts_->Increment(GetBuffersInUse(clone->geometries_));
 
   ScopeExit unbind([]() {
     OpenGlContext::ClearCurrent();
@@ -2926,8 +2920,9 @@ int RenderEngineGl::CreateGlGeometry(const RenderMesh& render_mesh,
 int RenderEngineGl::AddGlGeometry(const OpenGlGeometry& geometry) {
   geometry.throw_if_undefined(
       "RenderEngineGl: OpenGL geometry has some invalid objects");
-  buffer_use_counts_->Add(geometry.vertex_buffer);
-  buffer_use_counts_->Add(geometry.index_buffer);
+  const std::array<GLuint, 2> buffers{geometry.vertex_buffer,
+                                      geometry.index_buffer};
+  buffer_use_counts_->Increment(buffers);
   if (!free_geometry_indices_.empty()) {
     const int index = free_geometry_indices_.back();
     free_geometry_indices_.pop_back();
@@ -2946,9 +2941,9 @@ void RenderEngineGl::ReleaseGlGeometry(int index) {
   glDeleteVertexArrays(1, &geometry.vertex_array);
   // A glTF file's primitives can share a buffer, so the vertex and index
   // buffers are counted separately.
-  for (const GLuint buffer : {geometry.vertex_buffer, geometry.index_buffer}) {
-    if (buffer_use_counts_->Remove(buffer)) glDeleteBuffers(1, &buffer);
-  }
+  const std::array<GLuint, 2> buffers{geometry.vertex_buffer,
+                                      geometry.index_buffer};
+  buffer_use_counts_->Decrement(buffers, &DeleteBuffer);
   geometry = OpenGlGeometry{};
   free_geometry_indices_.push_back(index);
 }

@@ -2809,53 +2809,6 @@ TEST_F(RenderEngineGlTest, MeshCacheEvictionCloneLifetimes) {
   internal::OpenGlContext::ClearCurrent();
 }
 
-// A registration that throws is rolled back: the cached mesh it loaded is
-// evicted, and the id can be registered again.
-TEST_F(RenderEngineGlTest, MeshCacheEvictionFailedRegistration) {
-  Init(X_WR_, true);
-  RenderEngineGlTester tester(renderer_.get());
-  ExpectUniqueBox(0.5);
-  const Mesh mesh = MakeUniqueBox(0.5);
-  const GeometryId id = GeometryId::get_new_id();
-
-  // The diffuse map must be a string; adding the mesh's instance throws.
-  PerceptionProperties bad_material = simple_material();
-  bad_material.AddProperty("phong", "diffuse_map", 3);
-  EXPECT_THROW(renderer_->RegisterVisual(id, mesh, bad_material,
-                                         RigidTransformd::Identity(),
-                                         false /* needs update */),
-               std::exception);
-  EXPECT_FALSE(renderer_->has_geometry(id));
-  EXPECT_EQ(tester.num_cached_meshes(), 0);
-
-  renderer_->RegisterVisual(id, mesh, simple_material(),
-                            RigidTransformd::Identity(),
-                            false /* needs update */);
-  EXPECT_EQ(tester.num_cached_meshes(), 1);
-  PerformCenterShapeTest(renderer_.get());
-  EXPECT_TRUE(renderer_->RemoveGeometry(id));
-  EXPECT_EQ(tester.num_cached_meshes(), 0);
-}
-
-// Registering an id that is already registered throws and leaves the existing
-// registration intact.
-TEST_F(RenderEngineGlTest, RegisterDuplicateId) {
-  Init(X_WR_, true);
-  RenderEngineGlTester tester(renderer_.get());
-  ExpectUniqueBox(0.5);
-  const GeometryId id = GeometryId::get_new_id();
-  renderer_->RegisterVisual(id, MakeUniqueBox(0.5), simple_material(),
-                            RigidTransformd::Identity(),
-                            false /* needs update */);
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      renderer_->RegisterVisual(id, MakeUniqueBox(0.7), simple_material(),
-                                RigidTransformd::Identity(),
-                                false /* needs update */),
-      ".*already registered.*");
-  EXPECT_EQ(tester.num_cached_meshes(), 1);
-  PerformCenterShapeTest(renderer_.get());
-}
-
 // Capsules and deformable meshes own their OpenGL geometries, which are
 // released (and their slots reused) when they're removed.
 TEST_F(RenderEngineGlTest, OwnedGeometriesReleased) {

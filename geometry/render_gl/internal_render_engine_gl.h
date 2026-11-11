@@ -1,11 +1,13 @@
 #pragma once
 
 #include <array>
+#include <functional>
 #include <map>
 #include <memory>
 #include <mutex>
 #include <optional>
 #include <set>
+#include <span>
 #include <string>
 #include <tuple>
 #include <unordered_map>
@@ -303,9 +305,6 @@ class RenderEngineGl final : public render::RenderEngine, private ShapeReifier {
   // @pre opengl_context_ has been bound.
   void ReleaseGlGeometry(int index);
 
-  // Throws if `id` is already registered.
-  void ThrowIfRegistered(GeometryId id) const;
-
   // Removes the mesh cache entry `key` and releases its geometries.
   // @pre opengl_context_ has been bound.
   void EvictCachedMeshes(const std::string& key);
@@ -475,22 +474,37 @@ class RenderEngineGl final : public render::RenderEngine, private ShapeReifier {
   // N.B. Owning the buffers through shared_ptrs with a deleting deleter would
   // also count, but the last reference must then be dropped with an OpenGL
   // context bound, which isn't guaranteed for the copies of OpenGlGeometry
-  // handed around (e.g., in tests). Counting explicitly keeps the deletion in
-  // ReleaseGlGeometry(), where the context is known to be bound.
+  // handed around (e.g., in tests). Counting explicitly keeps the deletion
+  // where the context is known to be bound.
   class BufferUseCounts {
    public:
-    void Add(GLuint buffer) {
+    // Increments the use count of each of the given `buffers`. A buffer that
+    // appears more than once is counted once per appearance.
+    void Increment(std::span<const GLuint> buffers) {
       std::lock_guard<std::mutex> lock(mutex_);
-      ++counts_[buffer];
+      for (const GLuint buffer : buffers) {
+        ++counts_[buffer];
+      }
     }
-    // Returns true if `buffer` is no longer used (the caller deletes it).
-    bool Remove(GLuint buffer) {
+
+    // Decrements the use count of each of the given `buffers`. When a buffer's
+    // count reaches zero, the buffer is no longer tracked and `on_unused` is
+    // invoked with it (while the counts are still locked).
+    // @pre Each entry in `buffers` matches a use counted by Increment().
+    void Decrement(std::span<const GLuint> buffers,
+                   const std::function<void(GLuint)>& on_unused) {
       std::lock_guard<std::mutex> lock(mutex_);
-      auto iter = counts_.find(buffer);
-      DRAKE_DEMAND(iter != counts_.end() && iter->second > 0);
-      if (--iter->second > 0) return false;
-      counts_.erase(iter);
-      return true;
+      for (const GLuint buffer : buffers) {
+        auto iter = counts_.find(buffer);
+        // The caller may only name buffers that are being tracked.
+        DRAKE_DEMAND(iter != counts_.end());
+        // Tracked buffers always have a positive count.
+        DRAKE_ASSERT(iter->second > 0);
+        if (--iter->second == 0) {
+          counts_.erase(iter);
+          on_unused(buffer);
+        }
+      }
     }
 
    private:
