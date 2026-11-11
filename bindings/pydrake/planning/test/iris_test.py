@@ -1,6 +1,8 @@
 import pydrake.planning as mut  # ruff: isort: skip
 
+import gc
 import unittest
+import weakref
 
 import numpy as np
 
@@ -14,7 +16,7 @@ from pydrake.planning import (
     RobotDiagramBuilder,
     SceneGraphCollisionChecker,
 )
-from pydrake.solvers import IpoptSolver, SolverOptions
+from pydrake.solvers import IpoptSolver, MathematicalProgram, SolverOptions
 from pydrake.symbolic import Variable
 
 # Taken from iris_from_clique_cover_test.py
@@ -316,3 +318,43 @@ class TestOptionsPrinting(unittest.TestCase):
         self.check_fields(options.ray_sampler_options, fields, printed)
 
         self.check_sampled_iris_options(options.sampled_iris_options, printed)
+
+
+class TestSampledIrisOptionsKeepAlive(unittest.TestCase):
+    """Regression test for the IrisNp2Options / IrisZoOptions nested options
+    dangling pointer (an inline MathematicalProgram being freed)."""
+
+    def _check_getter(self, options):
+        prog = MathematicalProgram()
+        prog_ref = weakref.ref(prog)
+        options.sampled_iris_options.prog_with_additional_constraints = prog
+        del prog
+        gc.collect()
+        self.assertIsNotNone(prog_ref())
+        self.assertIs(
+            options.sampled_iris_options.prog_with_additional_constraints,
+            prog_ref(),
+        )
+
+    def _check_setter(self, options):
+        common = mut.CommonSampledIrisOptions()
+        prog = MathematicalProgram()
+        prog_ref = weakref.ref(prog)
+        common.prog_with_additional_constraints = prog
+        del prog
+        options.sampled_iris_options = common
+        del common
+        gc.collect()
+        self.assertIsNotNone(prog_ref())
+
+    def test_iris_np2_getter(self):
+        self._check_getter(mut.IrisNp2Options())
+
+    def test_iris_zo_getter(self):
+        self._check_getter(mut.IrisZoOptions())
+
+    def test_iris_np2_setter(self):
+        self._check_setter(mut.IrisNp2Options())
+
+    def test_iris_zo_setter(self):
+        self._check_setter(mut.IrisZoOptions())
