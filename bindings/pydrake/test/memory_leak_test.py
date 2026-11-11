@@ -682,6 +682,10 @@ class TestPythonMemoryLeaks(unittest.TestCase):
             _dut_minimum_value_penalty_function,
             _dut_gurobi_mip_node_callback,
             _dut_gurobi_mip_sol_callback,
+            _dut_lcm_subscribe,
+            _dut_lcm_subscribe_multichannel,
+            _dut_lcm_subscribe_all_channels,
+            _dut_diff_ik_select_data,
         ]
         for dut in fixed_duts:
             for cyclic in [False, True]:
@@ -694,16 +698,12 @@ class TestPythonMemoryLeaks(unittest.TestCase):
                     )
 
         duts = [
-            _dut_lcm_subscribe,
-            _dut_lcm_subscribe_multichannel,
-            _dut_lcm_subscribe_all_channels,
             _dut_collision_checker_distance_function,
             _dut_collision_checker_interpolation_function,
             _dut_collision_checker_params_distance_function,
             _dut_dircol_input_callback,
             _dut_dircol_state_callback,
             _dut_dircol_complete_callback,
-            _dut_diff_ik_select_data,
         ]
         for dut in duts:
             with self.subTest(dut=dut.__name__, cyclic=False):
