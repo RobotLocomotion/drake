@@ -98,8 +98,10 @@ class DrakeGymEnv(gym.Env):
                 containing auxiliary diagnostic information (helpful for
                 debugging, learning, and logging). Note: if ``step()``
                 terminates with a ``RuntimeError``, then, to avoid
-                unexpected behavior, `info_handler()`` will not be called
+                unexpected behavior, ``info_handler()`` will not be called
                 and an empty info will be returned instead.
+                If None, the info is always an empty ``dict``. Any other
+                value must be callable, otherwise a ``ValueError`` is raised.
             hardware: If True, it prevents from setting random context at
                 ``reset()`` when using ``random_generator``, but it does
                 execute ``reset_handler()`` if given.
@@ -174,10 +176,12 @@ class DrakeGymEnv(gym.Env):
             raise ValueError("reset_handler is not callable.")
 
         # Default return value of `info_handler()` is an empty `dict`.
-        if info_handler is callable(info_handler):
+        if info_handler is None:
+            self.info_handler = lambda _: dict()
+        elif callable(info_handler):
             self.info_handler = info_handler
         else:
-            self.info_handler = lambda _: dict()
+            raise ValueError("info_handler is not callable.")
 
         self.hardware = hardware
 
