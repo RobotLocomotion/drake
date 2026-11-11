@@ -2019,12 +2019,15 @@ void MultibodyTree<T>::CalcDynamicBiasForces(
 
   const VelocityKinematicsCache<T>& vc = this->EvalVelocityKinematics(context);
 
-  // Skip the world.
-  for (BodyIndex body_index(1); body_index < num_links(); ++body_index) {
-    const RigidBody<T>& body = get_link(body_index);
+  // World has no bias force. As for the other bias terms, we set its entry to
+  // NaN so that any accidental use leaves a trail of NaNs back to the source.
+  (*Fb_Bo_W_all)[world_mobod_index()].SetNaN();
 
+  // Compute Fb_Bo_W for each mobilized body B (except World). Note that M_B_W
+  // includes the mass properties of every link that follows B.
+  for (MobodIndex mobod_index(1); mobod_index < num_mobods(); ++mobod_index) {
     const SpatialInertia<T>& M_B_W =
-        spatial_inertia_in_world_cache[body.mobod_index()];
+        spatial_inertia_in_world_cache[mobod_index];
 
     const T& mass = M_B_W.get_mass();
     // B's center of mass measured in B and expressed in W.
@@ -2034,9 +2037,9 @@ void MultibodyTree<T>::CalcDynamicBiasForces(
 
     // Gyroscopic spatial force Fb_Bo_W(q, v) on body B about Bo, expressed in
     // W.
-    const SpatialVelocity<T>& V_WB = vc.get_V_WB(body.mobod_index());
+    const SpatialVelocity<T>& V_WB = vc.get_V_WB(mobod_index);
     const Vector3<T>& w_WB = V_WB.rotational();
-    SpatialForce<T>& Fb_Bo_W = (*Fb_Bo_W_all)[body.mobod_index()];
+    SpatialForce<T>& Fb_Bo_W = (*Fb_Bo_W_all)[mobod_index];
     Fb_Bo_W = mass * SpatialForce<T>(
                          w_WB.cross(G_B_W * w_WB), /* rotational */
                          w_WB.cross(w_WB.cross(p_BoBcm_W)) /* translational */);
@@ -4316,9 +4319,10 @@ T MultibodyTree<T>::CalcKineticEnergy(
   const VelocityKinematicsCache<T>& vc = EvalVelocityKinematics(context);
   const VectorX<T>& reflected_inertia = EvalReflectedInertiaCache(context);
   T twice_kinetic_energy_W = 0.0;
-  // Add contributions from each body (except World).
-  for (BodyIndex body_index(1); body_index < num_links(); ++body_index) {
-    const MobodIndex mobod_index = get_link(body_index).mobod_index();
+  // Add contributions from each mobilized body B (except World). Note that
+  // M_B_W includes the mass properties of every link that follows (is welded
+  // to) B.
+  for (MobodIndex mobod_index(1); mobod_index < num_mobods(); ++mobod_index) {
     const SpatialInertia<T>& M_B_W = M_Bi_W[mobod_index];
     const SpatialVelocity<T>& V_WB = vc.get_V_WB(mobod_index);
     const SpatialMomentum<T> L_WB = M_B_W * V_WB;

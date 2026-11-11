@@ -390,4 +390,19 @@ type in the variant. For primitive types like `std::filesystem::path` that don't
 have a corresponding `!!tag` defined in the YAML specification, there is no way
 to load them into a variant unless they are the first type in the variant.
 
+A std::variant<> may also list `std::monostate` as one of its types, to allow
+for a null value. It behaves like a nullable type (see above):
+- when saving, if the variant holds std::monostate, then no mapping entry will
+  be emitted.
+- when loading, if the YAML entry is null, then the variant is set to
+  std::monostate. If there is no mapping entry at all, then it is not an error;
+  the field is set to std::monostate (or retains its default value, when
+  loading with defaults).
+
+A null should have exactly one spelling in a schema: use `std::optional<T>` when
+there is a single allowed type, or `std::variant<std::monostate, ...>` when
+there are several. Do not combine them (for example, with
+`std::optional<std::variant<std::monostate, ...>>`). Both forms are saved as an
+omitted entry, so the combination is ambiguous and does not round trip.
+
 */
