@@ -5,6 +5,7 @@
 #include <map>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include <fmt/format.h>
@@ -224,90 +225,62 @@ void Geometries::AddGeometry(GeometryId id, RigidGeometry geometry) {
 
 namespace {
 
-// Validator interface for use with extracting valid properties. It is
-// instantiated with shape (e.g., "Sphere", "Box", etc.) and compliance (i.e.,
-// "rigid" or "compliant") strings (to help give intelligible error messages)
-// and then attempts to extract a typed value from a set of proximity properties
-// -- spewing meaningful error messages based on absence, type mismatch, and
-// invalid values.
-template <typename ValueType>
-class Validator {
+std::optional<std::string> ReportIfInvalidProperty(const char* property_name,
+                                                   double value) {
+  const std::string_view name(property_name);
+  if (name == kElastic) {
+    return ReportIfInvalidHydroelasticModulus(value);
+  }
+  if (name == kRezHint) {
+    return ReportIfInvalidResolutionHint(value);
+  }
+  if (name == kSlabThickness) {
+    return ReportIfInvalidSlabThickness(value);
+  }
+  if (name == kMargin) {
+    return ReportIfInvalidMargin(value);
+  }
+  DRAKE_UNREACHABLE();
+}
+
+// Extracts numeric properties while providing shape-specific messages for
+// missing properties and property-specific messages for invalid values.
+class PropertyExtractor {
  public:
   // Parameters `shape_name` and `compliance` are only for error messages.
-  Validator(const char* shape_name, const char* compliance)
+  PropertyExtractor(const char* shape_name, const char* compliance)
       : shape_name_(shape_name), compliance_(compliance) {}
 
-  virtual ~Validator() = default;
-
-  // Extract an arbitrary property from the proximity properties. If no default
-  // value is given (`default_value == std::nullopt)`, throws a
-  // consistent error message in the case of missing or mis-typed properties.
-  // Otherwise, the default value is used in place of the missing property.
-  // Relies on the ValidateValue() method to validate the value.
-  ValueType Extract(const ProximityProperties& props, const char* group_name,
-                    const char* property_name,
-                    std::optional<ValueType> default_value = std::nullopt) {
-    const std::string full_property_name =
-        fmt::format("('{}', '{}')", group_name, property_name);
+  // Extracts an arbitrary property. If no default value is given, throws a
+  // consistent error message for a missing property. GeometryProperties
+  // supplies the error for a mis-typed property. Otherwise, the default value
+  // replaces a missing property. The property's name determines its numeric
+  // validation rule.
+  double Extract(const ProximityProperties& props, const char* group_name,
+                 const char* property_name,
+                 std::optional<double> default_value = std::nullopt) const {
     const bool has_default = default_value.has_value();
     if (!has_default && !props.HasProperty(group_name, property_name)) {
+      const std::string full_property_name =
+          fmt::format("('{}', '{}')", group_name, property_name);
       throw std::logic_error(
           fmt::format("Cannot create {} {}; missing the {} property",
-                      compliance(), shape_name(), full_property_name));
+                      compliance_, shape_name_, full_property_name));
     }
-    const ValueType value =
+    const double value =
         has_default ? props.GetPropertyOrDefault(group_name, property_name,
                                                  *default_value)
-                    : props.GetProperty<ValueType>(group_name, property_name);
-    ValidateValue(value, full_property_name);
+                    : props.GetProperty<double>(group_name, property_name);
+    if (std::optional<std::string> error =
+            ReportIfInvalidProperty(property_name, value)) {
+      throw std::logic_error(*error);
+    }
     return value;
   }
 
- protected:
-  const char* shape_name() const { return shape_name_; }
-  const char* compliance() const { return compliance_; }
-
-  // Does the work of validating the given value. Sub-classes should throw if
-  // the provided value is not valid. The first parameter is the value to
-  // validate; the second is the full name of the property.
-  virtual void ValidateValue(const ValueType&, const std::string&) const {}
-
  private:
-  const char* shape_name_{};
-  const char* compliance_{};
-};
-
-// Validator that extracts *strictly positive doubles*.
-class PositiveDouble : public Validator<double> {
- public:
-  using Validator<double>::Validator;
-
- protected:
-  void ValidateValue(const double& value,
-                     const std::string& property) const override {
-    if (!(value > 0)) {
-      throw std::logic_error(
-          fmt::format("Cannot create {} {}; the {} property must be positive",
-                      compliance(), shape_name(), property));
-    }
-  }
-};
-
-// Validator that extracts *non-negative doubles*, where a zero value is valid.
-// In case of missing property, a value of zero is returned.
-class NonNegativeDouble : public Validator<double> {
- public:
-  using Validator<double>::Validator;
-
- protected:
-  void ValidateValue(const double& value,
-                     const std::string& property) const override {
-    if (!(value >= 0)) {
-      throw std::logic_error(fmt::format(
-          "Cannot create {} {}; the {} property must be non-negative",
-          compliance(), shape_name(), property));
-    }
-  }
+  const char* const shape_name_;
+  const char* const compliance_;
 };
 
 }  // namespace
@@ -327,8 +300,8 @@ std::optional<RigidGeometry> MakeRigidRepresentation(
 
 std::optional<RigidGeometry> MakeRigidRepresentation(
     const Sphere& sphere, const ProximityProperties& props) {
-  PositiveDouble validator("Sphere", "rigid");
-  const double edge_length = validator.Extract(props, kHydroGroup, kRezHint);
+  PropertyExtractor extractor("Sphere", "rigid");
+  const double edge_length = extractor.Extract(props, kHydroGroup, kRezHint);
   auto mesh = make_unique<TriangleSurfaceMesh<double>>(
       MakeSphereSurfaceMesh<double>(sphere, edge_length));
 
@@ -344,8 +317,8 @@ std::optional<RigidGeometry> MakeRigidRepresentation(
 
 std::optional<RigidGeometry> MakeRigidRepresentation(
     const Cylinder& cylinder, const ProximityProperties& props) {
-  PositiveDouble validator("Cylinder", "rigid");
-  const double edge_length = validator.Extract(props, kHydroGroup, kRezHint);
+  PropertyExtractor extractor("Cylinder", "rigid");
+  const double edge_length = extractor.Extract(props, kHydroGroup, kRezHint);
   auto mesh = make_unique<TriangleSurfaceMesh<double>>(
       MakeCylinderSurfaceMesh<double>(cylinder, edge_length));
 
@@ -354,8 +327,8 @@ std::optional<RigidGeometry> MakeRigidRepresentation(
 
 std::optional<RigidGeometry> MakeRigidRepresentation(
     const Capsule& capsule, const ProximityProperties& props) {
-  PositiveDouble validator("Capsule", "rigid");
-  const double edge_length = validator.Extract(props, kHydroGroup, kRezHint);
+  PropertyExtractor extractor("Capsule", "rigid");
+  const double edge_length = extractor.Extract(props, kHydroGroup, kRezHint);
   auto mesh = make_unique<TriangleSurfaceMesh<double>>(
       MakeCapsuleSurfaceMesh<double>(capsule, edge_length));
 
@@ -364,8 +337,8 @@ std::optional<RigidGeometry> MakeRigidRepresentation(
 
 std::optional<RigidGeometry> MakeRigidRepresentation(
     const Ellipsoid& ellipsoid, const ProximityProperties& props) {
-  PositiveDouble validator("Ellipsoid", "rigid");
-  const double edge_length = validator.Extract(props, kHydroGroup, kRezHint);
+  PropertyExtractor extractor("Ellipsoid", "rigid");
+  const double edge_length = extractor.Extract(props, kHydroGroup, kRezHint);
   auto mesh = make_unique<TriangleSurfaceMesh<double>>(
       MakeEllipsoidSurfaceMesh<double>(ellipsoid, edge_length));
 
@@ -411,14 +384,12 @@ void WarnNoCompliantRepresentation(std::string_view shape_type_name) {
 
 std::optional<CompliantGeometry> MakeCompliantRepresentation(
     const Sphere& sphere, const ProximityProperties& props) {
-  const double margin = NonNegativeDouble("Sphere", "compliant")
-                            .Extract(props, kHydroGroup, kMargin, 0.0);
+  PropertyExtractor extractor("Sphere", "compliant");
+  const double margin = extractor.Extract(props, kHydroGroup, kMargin, 0.0);
   const Sphere inflated_sphere(sphere.radius() + margin);
 
-  PositiveDouble positive_validator("Sphere", "compliant");
   // First, create the mesh.
-  const double edge_length =
-      positive_validator.Extract(props, kHydroGroup, kRezHint);
+  const double edge_length = extractor.Extract(props, kHydroGroup, kRezHint);
   // If nothing is said, let's go for the *cheap* tessellation strategy.
   const TessellationStrategy strategy =
       props.GetPropertyOrDefault(kHydroGroup, "tessellation_strategy",
@@ -427,7 +398,7 @@ std::optional<CompliantGeometry> MakeCompliantRepresentation(
       MakeSphereVolumeMesh<double>(inflated_sphere, edge_length, strategy));
 
   const double hydroelastic_modulus =
-      positive_validator.Extract(props, kHydroGroup, kElastic);
+      extractor.Extract(props, kHydroGroup, kElastic);
 
   auto pressure = make_unique<VolumeMeshFieldLinear<double, double>>(
       MakeSpherePressureField(inflated_sphere, inflated_mesh.get(),
@@ -439,8 +410,8 @@ std::optional<CompliantGeometry> MakeCompliantRepresentation(
 
 std::optional<CompliantGeometry> MakeCompliantRepresentation(
     const Box& box, const ProximityProperties& props) {
-  const double margin = NonNegativeDouble("Box", "compliant")
-                            .Extract(props, kHydroGroup, kMargin, 0.0);
+  PropertyExtractor extractor("Box", "compliant");
+  const double margin = extractor.Extract(props, kHydroGroup, kMargin, 0.0);
 
   // Define the shape of the "inflated" hydroelastic geometry to include the
   // margin. We inflate all faces of the box a distance "margin" along the
@@ -452,7 +423,7 @@ std::optional<CompliantGeometry> MakeCompliantRepresentation(
       MakeBoxVolumeMeshWithMaAndSymmetricTriangles<double>(inflated_box));
 
   const double hydroelastic_modulus =
-      PositiveDouble("Box", "compliant").Extract(props, kHydroGroup, kElastic);
+      extractor.Extract(props, kHydroGroup, kElastic);
 
   auto pressure =
       make_unique<VolumeMeshFieldLinear<double, double>>(MakeBoxPressureField(
@@ -464,19 +435,17 @@ std::optional<CompliantGeometry> MakeCompliantRepresentation(
 
 std::optional<CompliantGeometry> MakeCompliantRepresentation(
     const Cylinder& cylinder, const ProximityProperties& props) {
-  const double margin = NonNegativeDouble("Cylinder", "compliant")
-                            .Extract(props, kHydroGroup, kMargin, 0.0);
+  PropertyExtractor extractor("Cylinder", "compliant");
+  const double margin = extractor.Extract(props, kHydroGroup, kMargin, 0.0);
   const Cylinder inflated_cylinder(cylinder.radius() + margin,
                                    cylinder.length() + 2.0 * margin);
 
-  PositiveDouble positive_validator("Cylinder", "compliant");
-  const double edge_length =
-      positive_validator.Extract(props, kHydroGroup, kRezHint);
+  const double edge_length = extractor.Extract(props, kHydroGroup, kRezHint);
   auto inflated_mesh = make_unique<VolumeMesh<double>>(
       MakeCylinderVolumeMeshWithMa<double>(inflated_cylinder, edge_length));
 
   const double hydroelastic_modulus =
-      positive_validator.Extract(props, kHydroGroup, kElastic);
+      extractor.Extract(props, kHydroGroup, kElastic);
   auto pressure = make_unique<VolumeMeshFieldLinear<double, double>>(
       MakeCylinderPressureField(inflated_cylinder, inflated_mesh.get(),
                                 hydroelastic_modulus, margin));
@@ -487,18 +456,16 @@ std::optional<CompliantGeometry> MakeCompliantRepresentation(
 
 std::optional<CompliantGeometry> MakeCompliantRepresentation(
     const Capsule& capsule, const ProximityProperties& props) {
-  const double margin = NonNegativeDouble("Capsule", "compliant")
-                            .Extract(props, kHydroGroup, kMargin, 0.0);
+  PropertyExtractor extractor("Capsule", "compliant");
+  const double margin = extractor.Extract(props, kHydroGroup, kMargin, 0.0);
   const Capsule inflated_capsule(capsule.radius() + margin, capsule.length());
 
-  PositiveDouble positive_validator("Capsule", "compliant");
-  const double edge_length =
-      positive_validator.Extract(props, kHydroGroup, kRezHint);
+  const double edge_length = extractor.Extract(props, kHydroGroup, kRezHint);
   auto inflated_mesh = make_unique<VolumeMesh<double>>(
       MakeCapsuleVolumeMesh<double>(inflated_capsule, edge_length));
 
   const double hydroelastic_modulus =
-      positive_validator.Extract(props, kHydroGroup, kElastic);
+      extractor.Extract(props, kHydroGroup, kElastic);
   auto pressure = make_unique<VolumeMeshFieldLinear<double, double>>(
       MakeCapsulePressureField(inflated_capsule, inflated_mesh.get(),
                                hydroelastic_modulus, margin));
@@ -509,16 +476,14 @@ std::optional<CompliantGeometry> MakeCompliantRepresentation(
 
 std::optional<CompliantGeometry> MakeCompliantRepresentation(
     const Ellipsoid& ellipsoid, const ProximityProperties& props) {
+  PropertyExtractor extractor("Ellipsoid", "compliant");
   // If nothing is said, let's go for the *cheap* tessellation strategy.
   const TessellationStrategy strategy =
       props.GetPropertyOrDefault(kHydroGroup, "tessellation_strategy",
                                  TessellationStrategy::kSingleInteriorVertex);
 
-  const double margin = NonNegativeDouble("Ellipsoid", "compliant")
-                            .Extract(props, kHydroGroup, kMargin, 0.0);
-  PositiveDouble positive_validator("Ellipsoid", "compliant");
-  const double edge_length =
-      positive_validator.Extract(props, kHydroGroup, kRezHint);
+  const double margin = extractor.Extract(props, kHydroGroup, kMargin, 0.0);
+  const double edge_length = extractor.Extract(props, kHydroGroup, kRezHint);
   const Ellipsoid inflated_ellipsoid(
       ellipsoid.a() + margin, ellipsoid.b() + margin, ellipsoid.c() + margin);
   auto inflated_mesh =
@@ -526,7 +491,7 @@ std::optional<CompliantGeometry> MakeCompliantRepresentation(
           inflated_ellipsoid, edge_length, strategy));
 
   const double hydroelastic_modulus =
-      positive_validator.Extract(props, kHydroGroup, kElastic);
+      extractor.Extract(props, kHydroGroup, kElastic);
   auto pressure = make_unique<VolumeMeshFieldLinear<double, double>>(
       MakeEllipsoidPressureField(inflated_ellipsoid, inflated_mesh.get(),
                                  hydroelastic_modulus, margin));
@@ -537,16 +502,15 @@ std::optional<CompliantGeometry> MakeCompliantRepresentation(
 
 std::optional<CompliantGeometry> MakeCompliantRepresentation(
     const HalfSpace&, const ProximityProperties& props) {
-  PositiveDouble positive_validator("HalfSpace", "compliant");
+  PropertyExtractor extractor("HalfSpace", "compliant");
 
   const double thickness =
-      positive_validator.Extract(props, kHydroGroup, kSlabThickness);
+      extractor.Extract(props, kHydroGroup, kSlabThickness);
 
   const double hydroelastic_modulus =
-      positive_validator.Extract(props, kHydroGroup, kElastic);
+      extractor.Extract(props, kHydroGroup, kElastic);
 
-  const double margin = NonNegativeDouble("HalfSpace", "compliant")
-                            .Extract(props, kHydroGroup, kMargin, 0.0);
+  const double margin = extractor.Extract(props, kHydroGroup, kMargin, 0.0);
 
   return CompliantGeometry(
       CompliantHalfSpace{hydroelastic_modulus / thickness, margin});
@@ -554,8 +518,8 @@ std::optional<CompliantGeometry> MakeCompliantRepresentation(
 
 std::optional<CompliantGeometry> MakeCompliantRepresentation(
     const Convex& convex_spec, const ProximityProperties& props) {
-  const double margin = NonNegativeDouble("Convex", "compliant")
-                            .Extract(props, kHydroGroup, kMargin, 0.0);
+  PropertyExtractor extractor("Convex", "compliant");
+  const double margin = extractor.Extract(props, kHydroGroup, kMargin, 0.0);
   // For zero margin, use the pre-computed convex hull for the shape.
   const TriangleSurfaceMesh<double> inflated_surface_mesh =
       MakeTriangleFromPolygonMesh(
@@ -566,8 +530,7 @@ std::optional<CompliantGeometry> MakeCompliantRepresentation(
       MakeConvexVolumeMesh<double>(inflated_surface_mesh));
 
   const double hydroelastic_modulus =
-      PositiveDouble("Convex", "compliant")
-          .Extract(props, kHydroGroup, kElastic);
+      extractor.Extract(props, kHydroGroup, kElastic);
 
   auto pressure = make_unique<VolumeMeshFieldLinear<double, double>>(
       MakeVolumeMeshPressureField(inflated_mesh.get(), hydroelastic_modulus,
@@ -579,16 +542,16 @@ std::optional<CompliantGeometry> MakeCompliantRepresentation(
 
 std::optional<CompliantGeometry> MakeCompliantRepresentation(
     const Mesh& mesh_spec, const ProximityProperties& props) {
+  PropertyExtractor extractor("Mesh", "compliant");
   const double hydroelastic_modulus =
-      PositiveDouble("Mesh", "compliant").Extract(props, kHydroGroup, kElastic);
+      extractor.Extract(props, kHydroGroup, kElastic);
 
   std::unique_ptr<VolumeMesh<double>> mesh;
   std::unique_ptr<VolumeMesh<double>> inflated_mesh;
   std::unique_ptr<VolumeMeshFieldLinear<double, double>> inflated_field;
   std::map<int, int> split_vertices_map;
 
-  const double margin = NonNegativeDouble("Mesh", "compliant")
-                            .Extract(props, kHydroGroup, kMargin, 0.0);
+  const double margin = extractor.Extract(props, kHydroGroup, kMargin, 0.0);
 
   if (mesh_spec.extension() == ".vtk") {
     // If they've explicitly provided a .vtk file, we'll treat it as it is a
