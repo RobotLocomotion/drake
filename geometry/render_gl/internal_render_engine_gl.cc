@@ -1153,12 +1153,12 @@ void RenderEngineGl::ImplementGeometry(const Capsule& capsule,
   RenderMesh render_mesh =
       MakeCapsule(resolution, capsule.radius(), capsule.length());
 
-  // Each capsule has its own OpenGL geometry, released with the capsule.
   const int geometry = CreateGlGeometry(render_mesh);
+  AddGeometryInstance(geometry, user_data, Vector3d::Ones());
+
+  // Each capsule has its own OpenGL geometry, released with the capsule.
   const auto& data = *static_cast<RegistrationData*>(user_data);
   owned_geometries_[data.id].push_back(geometry);
-
-  AddGeometryInstance(geometry, user_data, Vector3d::Ones());
 }
 
 void RenderEngineGl::ImplementGeometry(const Convex& convex, void* user_data) {
@@ -1231,11 +1231,6 @@ void RenderEngineGl::ImplementMeshesForSource(void* user_data,
       mesh_source.is_path() ? mesh_source.path() : fs::path();
   const RegistrationData& data = *static_cast<RegistrationData*>(user_data);
 
-  // Register use of the cached meshes to support cache eviction.
-  DRAKE_DEMAND(!geometry_mesh_keys_.contains(data.id));
-  ++mesh_key_uses_[file_key];
-  geometry_mesh_keys_.emplace(data.id, file_key);
-
   for (const auto& gl_mesh : meshes_.at(file_key)) {
     PerceptionProperties temp_props(data.properties);
 
@@ -1274,6 +1269,11 @@ void RenderEngineGl::ImplementMeshesForSource(void* user_data,
                                data.default_diffuse};
     AddGeometryInstance(gl_mesh.mesh_index, &temp_data, scale);
   }
+
+  // Register use of the cached meshes to support cache eviction.
+  DRAKE_DEMAND(!geometry_mesh_keys_.contains(data.id));
+  ++mesh_key_uses_[file_key];
+  geometry_mesh_keys_.emplace(data.id, file_key);
 }
 
 bool RenderEngineGl::DoRegisterVisual(GeometryId id, const Shape& shape,
@@ -1298,8 +1298,6 @@ bool RenderEngineGl::DoRegisterDeformableVisual(
         CreateGlGeometry(render_mesh, /* is_deformable */ true);
     DRAKE_DEMAND(mesh_index >= 0);
     gl_mesh_indices.emplace_back(mesh_index);
-    // Each deformable mesh has its own OpenGL geometry, released with it.
-    owned_geometries_[id].push_back(mesh_index);
     const RenderMaterial& material =
         render_mesh.material.has_value()
             ? *render_mesh.material
@@ -1321,6 +1319,8 @@ bool RenderEngineGl::DoRegisterDeformableVisual(
                           parameters_.default_diffuse};
     AddGeometryInstance(mesh_index, &data, kUnitScale);
   }
+  // Each deformable mesh has its own OpenGL geometry, released with it.
+  owned_geometries_.emplace(id, gl_mesh_indices);
   deformable_meshes_.emplace(id, std::move(gl_mesh_indices));
   return true;
 }
@@ -1417,9 +1417,10 @@ bool RenderEngineGl::DoRemoveGeometry(GeometryId id) {
     removed = true;
   }
 
-  // Evict the cached meshes this geometry instantiated if it was their last
-  // user. (A geometry can use cached meshes without having any instances, e.g.,
-  // a glTF file without meshes.)
+  // Drop this geometry's use of its mesh cache entry, evicting the entry if
+  // this was its last user. N.B. A cache entry can be empty (e.g., a glTF file
+  // that defines no meshes); a geometry registered with such a file has no
+  // instances in visuals_ but is still a user of the entry.
   if (key_iter != geometry_mesh_keys_.end()) {
     const std::string key = std::move(key_iter->second);
     geometry_mesh_keys_.erase(key_iter);
@@ -1439,7 +1440,8 @@ unique_ptr<RenderEngine> RenderEngineGl::DoClone() const {
   auto clone = unique_ptr<RenderEngineGl>(new RenderEngineGl(*this));
 
   // The copy constructor shared buffer_use_counts_ with this engine. Count the
-  // clone's uses of the shared buffers; its destructor drops them.
+  // clone's uses of the shared buffers before doing anything else; the clone's
+  // destructor drops them and requires that they have been counted.
   clone->buffer_use_counts_->Increment(GetBuffersInUse(clone->geometries_));
 
   ScopeExit unbind([]() {
@@ -2460,7 +2462,7 @@ class RenderEngineGl::GltfMeshExtractor {
 
    Note: the buffer is created in the current active context and deleted when
    no geometry of the engine or its clones uses it anymore (see
-   RenderEngineGl::ReleaseGlGeometry()). */
+   RenderEngineGl::BufferUseCounts). */
   GLuint GetOpenGlBuffer(int buffer_index, const tinygltf::Model& model) {
     if (buffers_.contains(buffer_index)) {
       return buffers_.at(buffer_index);
@@ -2484,7 +2486,7 @@ class RenderEngineGl::GltfMeshExtractor {
 
    Note: the buffer is created in the current active context and deleted when
    no geometry of the engine or its clones uses it anymore (see
-   RenderEngineGl::ReleaseGlGeometry()). */
+   RenderEngineGl::BufferUseCounts). */
   void ConfigureIndexBuffer(const tinygltf::Primitive& prim,
                             const tinygltf::Model& model, int mesh_index,
                             OpenGlGeometry* geometry) {
@@ -2954,6 +2956,7 @@ void RenderEngineGl::EvictCachedMeshes(const std::string& key) {
   // are not released.
   auto iter = meshes_.find(key);
   DRAKE_DEMAND(iter != meshes_.end());
+  DRAKE_DEMAND(mesh_key_uses_.at(key) == 0);
   for (const RenderGlMesh& mesh : iter->second) {
     ReleaseGlGeometry(mesh.mesh_index);
   }

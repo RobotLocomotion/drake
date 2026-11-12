@@ -2809,6 +2809,53 @@ TEST_F(RenderEngineGlTest, MeshCacheEvictionCloneLifetimes) {
   internal::OpenGlContext::ClearCurrent();
 }
 
+// An engine's destructor drops its uses of the buffers it shares with its
+// clones; a buffer is deleted with the last engine that uses it.
+TEST_F(RenderEngineGlTest, BuffersDeletedWithLastEngine) {
+  Init(X_WR_, true);
+  expected_label_ = RenderLabel(3);
+
+  // This clone doesn't use the mesh. It provides a context that outlives the
+  // engines that do.
+  unique_ptr<RenderEngine> observer = renderer_->Clone();
+  auto* gl_observer = dynamic_cast<RenderEngineGl*>(observer.get());
+  ASSERT_NE(gl_observer, nullptr);
+  RenderEngineGlTester observer_tester(gl_observer);
+
+  const GeometryId id = GeometryId::get_new_id();
+  renderer_->RegisterVisual(
+      id,
+      Mesh(FindResourceOrThrow(
+          "drake/geometry/render/test/meshes/rainbow_box.gltf")),
+      simple_material(), RigidTransformd::Identity(), false /* needs update */);
+  std::set<GLuint> buffers;
+  {
+    RenderEngineGlTester tester(renderer_.get());
+    for (const auto& instance : tester.GetVisual(id).instances) {
+      const internal::OpenGlGeometry& geometry =
+          tester.opengl_geometries().at(instance.geometry);
+      buffers.insert(geometry.vertex_buffer);
+      buffers.insert(geometry.index_buffer);
+    }
+  }
+  ASSERT_FALSE(buffers.empty());
+  unique_ptr<RenderEngine> clone = renderer_->Clone();
+
+  // The clone still uses the buffers.
+  renderer_.reset();
+  observer_tester.opengl_context().MakeCurrent();
+  for (const GLuint buffer : buffers) {
+    EXPECT_TRUE(glIsBuffer(buffer)) << buffer;
+  }
+  // The clone was the last user.
+  clone.reset();
+  observer_tester.opengl_context().MakeCurrent();
+  for (const GLuint buffer : buffers) {
+    EXPECT_FALSE(glIsBuffer(buffer)) << buffer;
+  }
+  internal::OpenGlContext::ClearCurrent();
+}
+
 // Capsules and deformable meshes own their OpenGL geometries, which are
 // released (and their slots reused) when they're removed.
 TEST_F(RenderEngineGlTest, OwnedGeometriesReleased) {

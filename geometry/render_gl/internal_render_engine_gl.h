@@ -302,10 +302,16 @@ class RenderEngineGl final : public render::RenderEngine, private ShapeReifier {
   // Deletes this engine's vertex array of geometries_[index] and drops its use
   // of the geometry's buffers, deleting each buffer no other clone uses. The
   // slot is left undefined and reused by AddGlGeometry().
+  // @pre `index` was returned by AddGlGeometry() and hasn't been released
+  //      since. Nothing may refer to `index` afterwards (e.g., instances in
+  //      visuals_ or entries in meshes_).
   // @pre opengl_context_ has been bound.
   void ReleaseGlGeometry(int index);
 
   // Removes the mesh cache entry `key` and releases its geometries.
+  // @pre `key` is in meshes_ and no registered geometry uses it anymore (its
+  //      count in mesh_key_uses_ is zero); the instances of a remaining user
+  //      would refer to released geometries.
   // @pre opengl_context_ has been bound.
   void EvictCachedMeshes(const std::string& key);
 
@@ -457,10 +463,10 @@ class RenderEngineGl final : public render::RenderEngine, private ShapeReifier {
   // Capsules and deformable meshes create OpenGL buffers but they don't live in
   // the mesh cache. Nevertheless, when the geometry using the buffer is
   // removed, the OpenGL memory should likewise be freed up.
-  // The assumption is that, ids in this map refer to Geometry types which
+  // The assumption is that ids in this map refer to Geometry types which
   // get implemented with completely independent geometry buffers (e.g.,
   // Capsules and deformable meshes) so no reference counting is necessary and
-  // removable of the key geometry id implies release of its OpenGL buffers.
+  // removal of the key geometry id implies release of its OpenGL buffers.
   std::unordered_map<GeometryId, std::vector<int>> owned_geometries_;
 
   // Indices of geometries_ freed by ReleaseGlGeometry(), to be reused.
