@@ -959,7 +959,7 @@ neither. When present, the value must satisfy ``dynamic_friction ≥
           // Source: drake/geometry/scene_graph_config.h
           const char* doc =
 R"""(Controls energy dissipation from contact, for contact approximations
-other than* multibody∷DiscreteContactApproximation∷kSap. Units are
+*other than* multibody∷DiscreteContactApproximation∷kSap. Units are
 seconds per meter.
 
 When present, the value must satisfy ``hunt_crossley_dissipation ≥
