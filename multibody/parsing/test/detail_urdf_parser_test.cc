@@ -190,7 +190,7 @@ TEST_F(UrdfParserTest, ObsoleteLoopJoint) {
             std::nullopt);
   EXPECT_THAT(
       TakeError(),
-      MatchesRegex(".*loop joints are not supported in MultibodyPlant"));
+      MatchesRegex(".*The obsolete <loop_joint> element is not supported\\."));
 }
 
 TEST_F(UrdfParserTest, LegacyDrakeIgnoreBody) {

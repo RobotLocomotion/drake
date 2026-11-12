@@ -2216,10 +2216,12 @@ GTEST_TEST(MultibodyPlantTest, WeldOfNonBaseBody) {
   EXPECT_NO_THROW(bad_double_weld.Finalize());
 }
 
-// Currently we don't support automatic modeling of systems where the links
-// and joints form topological loops. Make sure we reject those for now.
+// Automatic modeling of systems where the links and joints form topological
+// loops is enabled by default, but can be disabled. Make sure that once it is
+// disabled we reject such systems.
 GTEST_TEST(MultibodyPlantTest, UnsupportedTopologicalLoop) {
   MultibodyPlant<double> plant(0.0);
+  plant.SetEnableLoopTopology(false);
 
   // Create a loop with two bodies:
   //   World->body1->body2<-World
@@ -2236,7 +2238,8 @@ GTEST_TEST(MultibodyPlantTest, UnsupportedTopologicalLoop) {
 
   DRAKE_EXPECT_THROWS_MESSAGE(
       plant.Finalize(),
-      "The bodies and joints of this system form one or more loops.*");
+      "This model contains kinematic loops, but automatic loop modeling "
+      "is disabled.*");
 }
 
 // Position kinematics attempts to optimize for cases when X_PF or X_MB are
@@ -4893,25 +4896,28 @@ GTEST_TEST(MultibodyPlantTest, BaseBodyJointChoice) {
 }
 
 // Verify that SetEnableLoopTopology() properly sets its setting and that it
-// cannot be used post-Finalize(). Verify that when enabled, there is proper
-// scalar conversion (which clones the underlying MultibodyTree).
+// cannot be used post-Finalize(). Verify that the setting survives scalar
+// conversion (which clones the underlying MultibodyTree).
 GTEST_TEST(MultibodyPlantTest, EnableLoopTopologyOption) {
   MultibodyPlant<double> plant(0.0);
 
-  // Verify the default setting is disabled (for now).
-  EXPECT_FALSE(plant.GetEnableLoopTopology());
-
-  // Verify that pre-Finalize(), the setting can be enabled and/or disabled.
-  plant.SetEnableLoopTopology(true);
+  // Verify the default setting is enabled, matching MultibodyPlantConfig.
+  EXPECT_TRUE(MultibodyPlantConfig{}.enable_loop_topology);
   EXPECT_TRUE(plant.GetEnableLoopTopology());
+
+  // Verify that pre-Finalize(), the setting can be disabled and/or enabled.
   plant.SetEnableLoopTopology(false);
   EXPECT_FALSE(plant.GetEnableLoopTopology());
-
-  // Leave it enabled and finalize a simple (loop-free) model.
   plant.SetEnableLoopTopology(true);
+  EXPECT_TRUE(plant.GetEnableLoopTopology());
+
+  // Leave it disabled and finalize a simple (loop-free) model. Using the
+  // non-default setting lets the scalar conversion check below tell a copied
+  // setting from a defaulted one.
+  plant.SetEnableLoopTopology(false);
   plant.AddRigidBody("body", SpatialInertia<double>::MakeUnitary());
   plant.Finalize();
-  EXPECT_TRUE(plant.GetEnableLoopTopology());
+  EXPECT_FALSE(plant.GetEnableLoopTopology());
 
   // Verify that post-Finalize(), cannot _call_ SetEnableLoopTopology().
   DRAKE_EXPECT_THROWS_MESSAGE(plant.SetEnableLoopTopology(false),
@@ -4922,7 +4928,7 @@ GTEST_TEST(MultibodyPlantTest, EnableLoopTopologyOption) {
   // The setting survives scalar conversion, which clones the tree.
   std::unique_ptr<MultibodyPlant<AutoDiffXd>> ad_plant =
       systems::System<double>::ToAutoDiffXd(plant);
-  EXPECT_TRUE(ad_plant->GetEnableLoopTopology());
+  EXPECT_FALSE(ad_plant->GetEnableLoopTopology());
 }
 
 GTEST_TEST(SetRandomTest, QuaternionFloatingBody) {

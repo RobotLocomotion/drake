@@ -6,13 +6,12 @@ loop that a four-bar forms:
 
 * `four_bar` loads the already-assembled linkage from a standard SDFormat model
   file and lets MultibodyPlant model it automatically, closing it with a
-  constraint that `Finalize()` adds. Note: this uses a Drake feature that is
-  currently experimental and marked "internal use only".
+  constraint that `Finalize()` adds.
 * `four_bar_unassembled` models the linkage the same way, but its model file
   describes it in an *unassembled* configuration (much simpler to specify)
   using a Drake extension that gives each joint two independent frames. It
   visualizes the machinery Drake used to break the loop so that you can watch
-  it work. It uses the same experimental feature as `four_bar`.
+  it work.
 * `four_bar_with_bushing` leaves one of the four joints out and replaces it
   with a compliant bushing, so the remaining joints form a tree.
 
@@ -21,9 +20,8 @@ loop that a four-bar forms:
 This example loads a four-bar linkage from an SDFormat model file that
 describes it the way you would draw it: as a plain loop of four revolute
 joints, with no attempt to specify a spanning tree and no stand-in for the
-"extra" joint. Beyond opting in with
-`MultibodyPlant::SetEnableLoopTopology()` there is nothing to do about the loop,
-and the rest of the program is just an ordinary simulation.
+"extra" joint. There is nothing to do about the loop, and the program is just
+an ordinary simulation.
 
 Under the covers, at `Finalize()` MultibodyPlant breaks the loop by adding a
 "shadow" copy of one link, retargeting one joint onto the shadow, and adding a
@@ -90,11 +88,10 @@ assembled before it can be simulated. The example shows:
 
 * How to describe an unassembled linkage in an SDFormat model file, using the
   `<drake:independent_frames/>` extension; see below.
-* How to opt in to automatic loop modeling with
-  `MultibodyPlant::SetEnableLoopTopology()`, and how to visualize what the
-  resulting model looks like. `Finalize()` breaks the loop by adding a "shadow"
-  split off one of the links, retargeting one joint onto the shadow, and
-  adding a weld constraint that holds the shadow to the link it was split from.
+* How to visualize what the automatically modeled loop looks like.
+  `Finalize()` breaks the loop by adding a "shadow" split off one of the links,
+  retargeting one joint onto the shadow, and adding a weld constraint that
+  holds the shadow to the link it was split from.
 * That the system can be defined in an unassembled configuration. The solver
   assembles it within a few milliseconds, with the input joint locked to
   hold it at the angle it was defined with.
@@ -110,9 +107,8 @@ under CENIC if requested.
 Much of what this example does is pedagogical. It goes to considerable trouble
 to show *how* Drake breaks the loop, drawing the shadow link and the frames the
 loop-closing weld holds together, and stopping to let you look. Ordinary use
-needs none of that. Beyond the one call to `SetEnableLoopTopology()`, the loop
-is modeled with no user intervention at all, and the shadow link normally goes
-unnoticed.
+needs none of that. The loop is modeled with no user intervention at all, and
+the shadow link normally goes unnoticed.
 
 A shadow link's mass properties are fully dependent on its primary link's mass
 properties. Internally, mass properties are split evenly between the primary

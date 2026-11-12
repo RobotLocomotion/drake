@@ -3412,9 +3412,11 @@ void MultibodyPlant<T>::CalcAndAddSpatialContactForcesContinuous(
 template <typename T>
 void MultibodyPlant<T>::ThrowIfUnsupportedContinuousTimeDynamics(
     const systems::Context<T>&) const {
-  // Reject constraints.
-  // TODO(#23759,#23760,#23762,#23763,#23992): revisit this check and error
-  // message as constraints are implemented for CENIC.
+  // Reject constraints in the standard continuous-time dynamics path. CENIC
+  // computes constrained dynamics separately.
+  // TODO(#23763,#23992): Once CENIC supports tendon constraints and couplers
+  // between joints in different trees, simplify the advice below about
+  // "supported constraint types".
   if (num_constraints() > 0) {
     // Loop constraints are not the user's doing -- Finalize() added them to
     // close the kinematic loops in the model -- so say where they came from
@@ -3437,11 +3439,10 @@ void MultibodyPlant<T>::ThrowIfUnsupportedContinuousTimeDynamics(
           num_constraints(), sc, num_loops, sl);
     }
     throw std::logic_error(fmt::format(
-        "Currently this MultibodyPlant is set to use continuous time. "
-        "Continuous time does not support constraints, but this model has {}. "
-        "Use a discrete time model and set_discrete_contact_approximation() to "
-        "set a model approximation that uses the SAP solver instead (kSap, "
-        "kSimilar, or kLagged).",
+        "Standard continuous-time dynamics do not support constraints, but "
+        "this model has {}. Use the CENIC integrator (integration scheme "
+        "'cenic') to simulate supported constraint types, or use a "
+        "discrete-time plant with SAP.",
         constraints));
   }
 

@@ -5393,8 +5393,8 @@ Raises:
         struct /* GetEnableLoopTopology */ {
           // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
-R"""((Internal use only for now) Returns the current setting for whether
-Finalize() automatically deals with closed-topology (looped) systems.
+R"""(Returns whether Finalize() automatically models closed kinematic
+loops.
 
 Note:
     This function can be called pre-Finalize() or post-Finalize().
@@ -6924,14 +6924,10 @@ Raises:
         struct /* SetEnableLoopTopology */ {
           // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
-R"""((Internal use only for now) For systems whose links and joints form
-one or more kinematic loops (a "closed topology"), controls whether
-Finalize() should deal with those automatically. The default setting
-is *not* to deal with kinematic loops (if one is encountered, an
-exception is thrown).
-
-Note:
-    This feature is in development and is not yet fully functional.
+R"""(Controls whether Finalize() automatically models closed kinematic
+loops formed by bodies and joints. Enabled by default; when disabled,
+Finalize() throws if it encounters a loop. Also configurable with
+MultibodyPlantConfig∷enable_loop_topology.
 
 To deal with loops automatically requires modifying the system's
 topology so that it is structured as a tree of links and joints, plus
@@ -6941,6 +6937,10 @@ the original ("primary") link and the new ("shadow") link. Then a weld
 constraint is added between the primary and shadow links to enforce
 loop closure. When the weld constraint is satisfied, the original
 physics is restored.
+
+Loop closure requires a constraint solver. Discrete-time plants use
+SAP; continuous-time simulation requires the CENIC integrator (set
+systems∷SimulatorConfig∷integration_scheme to ``"cenic"``).
 
 A shadow link is a link like any other in most respects (it has a pose
 and a velocity, for example), but its mass properties are derived from
@@ -8739,6 +8739,12 @@ Valid strings are: - "sap" - "similar" - "lagged"
 Refer to MultibodyPlant∷set_discrete_contact_approximation() and the
 references therein for further details.)""";
         } discrete_contact_approximation;
+        // Symbol: drake::multibody::MultibodyPlantConfig::enable_loop_topology
+        struct /* enable_loop_topology */ {
+          // Source: drake/multibody/plant/multibody_plant_config.h
+          const char* doc =
+R"""(Configures the MultibodyPlant∷SetEnableLoopTopology().)""";
+        } enable_loop_topology;
         // Symbol: drake::multibody::MultibodyPlantConfig::penetration_allowance
         struct /* penetration_allowance */ {
           // Source: drake/multibody/plant/multibody_plant_config.h
@@ -8792,6 +8798,7 @@ Unchanged, the MultibodyPlant setting remains unchanged.)""";
             std::make_pair("contact_model", contact_model.doc),
             std::make_pair("contact_surface_representation", contact_surface_representation.doc),
             std::make_pair("discrete_contact_approximation", discrete_contact_approximation.doc),
+            std::make_pair("enable_loop_topology", enable_loop_topology.doc),
             std::make_pair("penetration_allowance", penetration_allowance.doc),
             std::make_pair("sap_near_rigid_threshold", sap_near_rigid_threshold.doc),
             std::make_pair("stiction_tolerance", stiction_tolerance.doc),

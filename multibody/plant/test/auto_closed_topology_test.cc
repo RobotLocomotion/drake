@@ -1,7 +1,7 @@
-/* Tests for automatic handling of closed-topology (looped) systems, enabled via
-MultibodyPlant::SetEnableLoopTopology(). When enabled, Finalize() breaks each
-kinematic loop using the shadow links and loop constraints produced by the
-underlying LinkJointGraph/SpanningForest. This file tests that
+/* Tests for MultibodyPlant's automatic handling of closed-topology (looped)
+systems, which is enabled by default. Finalize() breaks each kinematic loop
+using the shadow links and loop constraints produced by the underlying
+LinkJointGraph/SpanningForest. This file tests that
  - adding shadow links splits mass properties properly among the primary
    link and all of its shadows,
  - a primary link still reports its full mass properties, shadow link mass
@@ -180,7 +180,6 @@ class FourBar {
   explicit FourBar(double time_step = 0.0 /* continuous */) {
     plant_ = &AddMultibodyPlantSceneGraph(&builder_, time_step).plant;
     MultibodyPlant<double>& plant = *plant_;
-    plant.SetEnableLoopTopology(true);
     Parser(&plant).AddModelsFromString(kFourBarLoopSdf, "sdf");
     for (const std::string name : {"driver", "coupler", "rocker"}) {
       const Link<double>& link = plant.GetBodyByName(name);
@@ -715,7 +714,6 @@ NaN mass properties aren't for a link that isn't split. Kinematics works, a sum
 over no bodies is zero, and a sum that includes the split link is NaN. */
 GTEST_TEST(ClosedTopologyTest, KinematicsOnlyLoopCanHaveNaNMassProperties) {
   MultibodyPlant<double> plant(0.0 /* continuous */);
-  plant.SetEnableLoopTopology(true);
   const SpatialInertia<double> M = SpatialInertia<double>::NaN();
   const Link<double>& driver = plant.AddRigidBody("driver", M);
   const Link<double>& coupler = plant.AddRigidBody("coupler", M);
@@ -889,7 +887,6 @@ GTEST_TEST(ClosedTopologyTest, OneLinkCanHaveTwoShadows) {
   constexpr double kTol = 1e-14;
   constexpr double kLink6Mass = 6.0;
   MultibodyPlant<double> plant(0.0 /* continuous */);
-  plant.SetEnableLoopTopology(true);
 
   const SpatialInertia<double> unit_inertia =
       SpatialInertia<double>::MakeUnitary();
@@ -1208,7 +1205,6 @@ in the rocker's model instance while the coupler's shadow is in the coupler's
 model instance. */
 GTEST_TEST(ClosedTopologyTest, ShadowFrameKeepsItsModelInstanceWhenCloned) {
   MultibodyPlant<double> plant(0.0 /* continuous */);
-  plant.SetEnableLoopTopology(true);
   const ModelInstanceIndex linkage_instance = plant.AddModelInstance("linkage");
   const ModelInstanceIndex rocker_instance = plant.AddModelInstance("rocker");
 
@@ -1460,9 +1456,9 @@ GTEST_TEST(ClosedTopologyTest, ContinuousDynamicsSaysWhereLoopConstraintsCame) {
 
   DRAKE_EXPECT_THROWS_MESSAGE(
       plant.EvalTimeDerivatives(*context),
-      ".*does not support constraints, but this model has 1 constraint, which "
+      ".*do not support constraints, but this model has 1 constraint, which "
       "Finalize\\(\\) added in order to close the kinematic loop in this "
-      "model \\(see SetEnableLoopTopology\\(\\)\\).*");
+      "model \\(see SetEnableLoopTopology\\(\\)\\).*CENIC.*SAP.*");
 
   // With constraints from both sources, the message accounts for both.
   FourBar mixed_four_bar;
@@ -1489,7 +1485,6 @@ The model is the simplest possible loop: three links in a cycle, nothing welded
 to World. */
 GTEST_TEST(ClosedTopologyTest, UnanchoredLoopGetsAFloatingBaseBody) {
   MultibodyPlant<double> plant(0.0 /* continuous */);
-  plant.SetEnableLoopTopology(true);
   const Link<double>& link_a = plant.AddRigidBody(
       "a", SpatialInertia<double>::SolidCubeWithMass(1.0, 0.1));
   const Link<double>& link_b = plant.AddRigidBody(

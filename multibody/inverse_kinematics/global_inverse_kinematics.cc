@@ -80,6 +80,10 @@ GlobalInverseKinematics::GlobalInverseKinematics(
           plant_.num_positions(), -std::numeric_limits<double>::infinity())},
       joint_upper_bounds_{Eigen::VectorXd::Constant(
           plant_.num_positions(), std::numeric_limits<double>::infinity())} {
+  if (plant_.num_loop_constraints() > 0) {
+    throw std::runtime_error(
+        "GlobalInverseKinematics does not support kinematic loops.");
+  }
   const int num_bodies = plant_.num_bodies();
   R_WB_.resize(num_bodies);
   p_WBo_.resize(num_bodies);

@@ -294,16 +294,14 @@ TEST_F(MeshcatMouseSpringTest, ConstructorErrors) {
       ".*geometry_source_is_registered.*");
 }
 
-// A shadow body, which Finalize() adds to break a kinematic loop (see
-// MultibodyPlant::SetEnableLoopTopology()), shares mass properties with its
-// primary link. Normally shadows aren't visible in the visualizer so can't
-// be dragged. However, if geometry has been added to a shadow then it can be
-// dragged. In that case it should use the _full_ user-specified mass of the
-// original, unsplit link as its weighting.
+// A shadow body, which Finalize() adds to break a kinematic loop, shares mass
+// properties with its primary link. Normally shadows aren't visible in the
+// visualizer so can't be dragged. However, if geometry has been added to a
+// shadow then it can be dragged. In that case it should use the _full_
+// user-specified mass of the original, unsplit link as its weighting.
 GTEST_TEST(MeshcatMouseSpringLoopTest, DragShadowBody) {
   SceneGraph<double> scene_graph;
   MultibodyPlant<double> plant(0.0);
-  plant.SetEnableLoopTopology(true);
   plant.RegisterAsSourceForSceneGraph(&scene_graph);
   // A triangle of revolute joints: World to A, World to B, and A to B.
   const RigidBody<double>& body_A = plant.AddRigidBody(
