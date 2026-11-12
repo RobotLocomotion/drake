@@ -1907,6 +1907,49 @@ class TestMathematicalProgram(unittest.TestCase):
             del prog
             check(*bindings)
 
+    def test_added_evaluators_outlive_program(self):
+        """A binding from AddCost(obj, vars) or AddConstraint(constraint, vars)
+        keeps the Python callables of its evaluator alive, even after its
+        program and the object that was added are gone.
+        """
+
+        def make_program():
+            prog = mp.MathematicalProgram()
+            x = prog.NewContinuousVariables(2)
+            other = mp.MathematicalProgram()
+            y = other.NewContinuousVariables(2)
+            cost = other.AddCost(
+                lambda v: v[0] ** 2 + prog.num_vars() * 0, y
+            ).evaluator()
+            constraint = other.AddConstraint(
+                lambda v: np.array([v[0] + prog.num_vars() * 0]),
+                [0.0],
+                [1.0],
+                y,
+            ).evaluator()
+            return (
+                prog,
+                prog.AddCost(cost, x),
+                prog.AddConstraint(constraint, x),
+            )
+
+        def make_bindings():
+            _, cost, constraint = make_program()
+            return cost, constraint
+
+        x = np.array([1.0, 2.0])
+        cost, constraint = make_bindings()
+        gc.collect()
+        self.assertEqual(cost.evaluator().Eval(x), 1.0)
+        self.assertEqual(constraint.evaluator().Eval(x), 1.0)
+
+        # The program itself also keeps the evaluators alive, even when no
+        # binding does.
+        prog = make_program()[0]
+        gc.collect()
+        self.assertEqual(prog.generic_costs()[0].evaluator().Eval(x), 1.0)
+        self.assertEqual(prog.generic_constraints()[0].evaluator().Eval(x), 1.0)
+
     def test_clones_are_released(self):
         """A clone keeps its original alive, but not the other way around, so
         discarded clones are freed even while the original lives."""
