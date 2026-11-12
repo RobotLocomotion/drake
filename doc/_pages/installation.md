@@ -17,14 +17,15 @@ officially supports:
 | Operating System ⁽¹⁾                | Architecture ⁽²⁾         | Python ⁽³⁾ | Installation method | End of life ⁽⁴⁾ |
 |-------------------------------------|--------------------------|------------|---------------------|-----------------|
 | Ubuntu 24.04 LTS (Noble Numbat)     | x86-64, arm64            | 3.12       | Pip, Binary, APT    | March 2028      |
-|                                     | x86-64, arm64            | 3.13-3.14  | Pip                 | March 2028      |
+|                                     | x86-64, arm64            | 3.13-3.15  | Pip                 | March 2028      |
 | Ubuntu 26.04 LTS (Resolute Raccoon) | x86-64, x86-64-v3, arm64 | 3.12-3.13  | Pip                 | March 2028      |
 |                                     | x86-64, x86-64-v3, arm64 | 3.14       | Pip, Binary, APT    | March 2030      |
+|                                     | x86-64, x86-64-v3, arm64 | 3.15       | Pip                 | March 2030      |
 | macOS Tahoe (26)                    | arm64                    | 3.12-3.14  | Pip                 | September 2027  |
-|                                     | arm64                    | 3.15       | Binary              | September 2027  |
+|                                     | arm64                    | 3.15       | Binary ⁽⁵⁾          | September 2027  |
 | macOS Golden Gate (27)              | arm64                    | 3.12-3.14  | Pip                 | September 2028  |
-|                                     | arm64                    | 3.15       | Binary              | September 2028  |
-| Amazon Linux 2023                   | x86-64, arm64            | 3.12-3.14  | Pip                 | March 2028      |
+|                                     | arm64                    | 3.15       | Binary ⁽⁵⁾          | September 2028  |
+| Amazon Linux 2023                   | x86-64, arm64            | 3.12-3.15  | Pip                 | March 2028      |
 
 <!-- End of life constraints:
 Ubuntu 24 ends prior to Ubuntu 28, so March 2028.
@@ -56,6 +57,9 @@ that Conda is involved.
 
 ⁽⁴⁾ These end-of-life dates are estimates.
 Refer to [OS Support](/stable.html#os-support) for details.
+
+⁽⁵⁾ Installation via Pip on macOS with Python 3.15 is not supported and known to
+fail.
 
 The following table shows the configurations that *must* be used when
 compiling your own C++ code against Drake's C++ code using one of
