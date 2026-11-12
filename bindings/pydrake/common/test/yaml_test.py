@@ -248,6 +248,21 @@ class TestYaml(unittest.TestCase):
         }
         self.assertDictEqual(yaml_load_data(data, private=True), expected)
 
+    def test_load_non_string_keys(self):
+        """The root-level private key removal must only consider str keys; the
+        raw (untyped) data may have keys of other types.
+        """
+        data = """
+        1: one
+        2.5: two-and-a-half
+        _private: hidden
+        name: value
+        """
+        expected = {1: "one", 2.5: "two-and-a-half", "name": "value"}
+        self.assertDictEqual(yaml_load_data(data), expected)
+        expected["_private"] = "hidden"
+        self.assertDictEqual(yaml_load_data(data, private=True), expected)
+
     def test_aliases_are_copied(self):
         """Anchors and aliases (and merge keys) must not leave the caller with
         objects that share storage, i.e., each use of an anchored node is an
