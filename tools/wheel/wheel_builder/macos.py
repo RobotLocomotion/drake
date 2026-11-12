@@ -47,6 +47,8 @@ TARGETS = (
             PythonTarget(3, 12),
             PythonTarget(3, 13),
             PythonTarget(3, 14),
+            # N.B. We can't test 3.15 on macOS until either lazy loading is
+            # resolved (#23867), or until MOSEK supports 3.15.
         ),
     ),
     Target(
