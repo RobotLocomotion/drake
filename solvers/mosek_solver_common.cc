@@ -2,6 +2,10 @@
 #include "drake/solvers/mosek_solver.h"
 /* clang-format on */
 
+#ifdef DRAKE_MOSEK_LAZY_LOAD_LIBRARY
+#include <dlfcn.h>
+#endif
+
 #include <cstdlib>
 #include <cstring>
 #include <string>
@@ -24,10 +28,32 @@ SolverId MosekSolver::id() {
   return singleton.access();
 }
 
+#ifdef DRAKE_MOSEK_LAZY_LOAD_LIBRARY
+extern "C" void* drake_dlopen_mosek(const char* lib_name, bool quiet);
+#endif
+
 bool MosekSolver::is_enabled() {
-  const char* moseklm_license_file = std::getenv("MOSEKLM_LICENSE_FILE");
-  return ((moseklm_license_file != nullptr) &&
-          (std::strlen(moseklm_license_file) > 0));
+  static const bool latched_result = []() {
+#ifdef DRAKE_MOSEK_LAZY_LOAD_LIBRARY
+    void* dlhandle = drake_dlopen_mosek(DRAKE_MOSEK_LAZY_LOAD_LIBRARY, true);
+    if (dlhandle != nullptr) {
+      // Call a MOSEK API so that dlclose decrements the reference count without
+      // unloading the library.
+      MSKint32t major, minor, revision;
+      MSK_getversion(&major, &minor, &revision);
+      dlclose(dlhandle);
+      const char* moseklm_license_file = std::getenv("MOSEKLM_LICENSE_FILE");
+      return ((moseklm_license_file != nullptr) &&
+              (std::strlen(moseklm_license_file) > 0));
+      return true;
+    } else {
+      return false;
+    }
+#else
+    return true;
+#endif
+  }();
+  return latched_result;
 }
 
 namespace {
