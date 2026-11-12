@@ -76,24 +76,40 @@ The connection can be reported as missing for several reasons:
 
 ## Loops in the body-joint graph {#mbp-loops-in-graph}
 
-Currently Drake does not support automatic modeling of systems for which the
-bodies and joints form one or more loops in the system graph. However, there
-are several ways you can model these systems in Drake:
+By default, `MultibodyPlant` automatically models systems for which the bodies
+and joints form one or more loops in the system graph. At `Finalize()` it
+breaks each loop by splitting one of the loop's bodies: it adds a "shadow" copy
+of that ("primary") body and a weld constraint that holds the shadow to its
+primary. A body split by several loops gets a shadow for each, and its mass
+properties are divided evenly among the primary and all of its shadows. Loop
+closure requires a constraint solver. Discrete-time plants use SAP;
+continuous-time simulation requires the CENIC integrator (integration scheme
+`"cenic"` in a `SimulatorConfig`).
+
+If automatic modeling has been disabled, `Finalize()` throws when it finds a
+loop. To disable it, call `MultibodyPlant::SetEnableLoopTopology(false)` or
+apply a `MultibodyPlantConfig` ([C++][c_MultibodyPlantConfig],
+[Python][p_MultibodyPlantConfig]) with `enable_loop_topology` set to `false`
+before `Finalize()`. Set the option to `true` to re-enable it. Alternatively,
+you can model the loops yourself in one of these ways:
 
   - Break each loop at a joint and replace the joint by an equivalent constraint
     or by using a `LinearBushingRollPitchYaw`
     ([C++][c_LinearBushingRollPitchYaw],
     [Python][p_LinearBushingRollPitchYaw]) force element.
-  - Break each loop by cutting one of the bodies involved in the loop. This
-    introduces a new "shadow" body that will follow the "primary" body. For best
-    numerical behavior, distribute the mass and inertia 1/2 to each of the
-    two bodies. Use a Weld constraint to attach the shadow to its primary. This
-    method has the advantage that joints remain uniformly treated and the
-    joint coordinates are unchanged.
+  - Break each loop by cutting one of the bodies involved in the loop, as the
+    automatic modeling does. This introduces a new "shadow" body that will
+    follow the "primary" body. For best numerical behavior, distribute the mass
+    and inertia 1/2 to each of the two bodies. Use a Weld constraint to attach
+    the shadow to its primary. This method has the advantage that joints remain
+    uniformly treated and the joint coordinates are unchanged.
 
-It is also possible to introduce loops by accident. If you didn't intend to
-do so, check your system description to see whether some joint may have been
-connected to the wrong body.
+It is also possible to introduce loops by accident. Because loops are modeled
+automatically, an accidental loop doesn't make `Finalize()` throw. Instead it
+adds a shadow body and a weld constraint for each loop, and
+`MultibodyPlant::num_loop_constraints()` counts the weld constraints it added
+that way. If you didn't intend a loop, check your system description to see
+whether some joint may have been connected to the wrong body.
 
 # System Framework
 
@@ -332,6 +348,8 @@ sudo route -nv add -net 224.0.0.0/4 -interface lo0
 [p_LinearBushingRollPitchYaw]: https://drake.mit.edu/pydrake/pydrake.multibody.tree.html#pydrake.multibody.tree.LinearBushingRollPitchYaw
 [c_MultibodyPlant]: https://drake.mit.edu/doxygen_cxx/classdrake_1_1multibody_1_1_multibody_plant.html
 [p_MultibodyPlant]: https://drake.mit.edu/pydrake/pydrake.multibody.plant.html#pydrake.multibody.plant.MultibodyPlant
+[c_MultibodyPlantConfig]: https://drake.mit.edu/doxygen_cxx/structdrake_1_1multibody_1_1_multibody_plant_config.html
+[p_MultibodyPlantConfig]: https://drake.mit.edu/pydrake/pydrake.multibody.plant.html#pydrake.multibody.plant.MultibodyPlantConfig
 
 <!-- drake/systems/framework -->
 [c_Context]: https://drake.mit.edu/doxygen_cxx/classdrake_1_1systems_1_1_context.html

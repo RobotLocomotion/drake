@@ -1083,15 +1083,13 @@ void MultibodyTree<T>::Finalize() {
 
   if (!enable_loop_topology_ && !graph.loop_constraints().empty()) {
     link_joint_graph_.InvalidateForest();
-    throw std::runtime_error(fmt::format(
-        "The bodies and joints of this system form one or more loops in the "
-        "system graph. Automatic modeling of such systems is disabled by "
-        "default; you can enable it by calling "
-        "MultibodyPlant::SetEnableLoopTopology(true) before Finalize() "
-        "but: the feature is in development and not yet functional even when "
-        "enabled. For now, loops can be modeled with some input changes. See "
+    throw std::runtime_error(
+        "This model contains kinematic loops, but automatic loop modeling "
+        "is disabled. Before Finalize(), call "
+        "MultibodyPlant::SetEnableLoopTopology(true), or apply "
+        "MultibodyPlantConfig with enable_loop_topology=true. See "
         "https://drake.mit.edu/troubleshooting.html#mbp-loops-in-graph "
-        "for advice on how to model systems with loops."));
+        "for more about modeling systems with loops.");
   }
 
   /* Add the shadow Links. BuildForest() creates a shadow Link for each

@@ -1505,7 +1505,7 @@ std::pair<std::optional<ModelInstanceIndex>, std::string> UrdfParser::Parse() {
   }
 
   if (node->FirstChildElement("loop_joint")) {
-    Error(*node, "loop joints are not supported in MultibodyPlant");
+    Error(*node, "The obsolete <loop_joint> element is not supported.");
     return std::make_pair(model_instance_, model_name);
   }
 

@@ -24,6 +24,7 @@ GTEST_TEST(MultibodyPlantConfigFunctionsTest, AddMultibodyBasicTest) {
   config.contact_model = "hydroelastic";
   config.contact_surface_representation = "polygon";
   config.adjacent_bodies_collision_filters = false;
+  config.enable_loop_topology = false;
 
   drake::systems::DiagramBuilder<double> builder;
   auto result = AddMultibodyPlant(config, &builder);
@@ -34,6 +35,7 @@ GTEST_TEST(MultibodyPlantConfigFunctionsTest, AddMultibodyBasicTest) {
   EXPECT_EQ(result.plant.get_contact_surface_representation(),
             geometry::HydroelasticContactRepresentation::kPolygon);
   EXPECT_EQ(result.plant.get_adjacent_bodies_collision_filters(), false);
+  EXPECT_EQ(result.plant.GetEnableLoopTopology(), false);
   // There is no getter for penetration_allowance nor stiction_tolerance, so we
   // can't test them.
 }
@@ -69,6 +71,7 @@ GTEST_TEST(MultibodyPlantConfigFunctionsTest,
   config.contact_model = "hydroelastic";
   config.contact_surface_representation = "polygon";
   config.adjacent_bodies_collision_filters = false;
+  config.enable_loop_topology = false;
 
   MultibodyPlant<double> plant(config.time_step);
   ApplyMultibodyPlantConfig(config, &plant);
@@ -78,6 +81,7 @@ GTEST_TEST(MultibodyPlantConfigFunctionsTest,
   EXPECT_EQ(plant.get_contact_surface_representation(),
             geometry::HydroelasticContactRepresentation::kPolygon);
   EXPECT_EQ(plant.get_adjacent_bodies_collision_filters(), false);
+  EXPECT_EQ(plant.GetEnableLoopTopology(), false);
   // There is no getter for penetration_allowance nor stiction_tolerance, so we
   // can't test them.
 }
@@ -92,6 +96,7 @@ discrete_contact_approximation: lagged
 sap_near_rigid_threshold: 0.01
 contact_surface_representation: triangle
 adjacent_bodies_collision_filters: false
+enable_loop_topology: false
 )""";
 
 GTEST_TEST(MultibodyPlantConfigFunctionsTest, YamlTest) {
@@ -108,6 +113,7 @@ GTEST_TEST(MultibodyPlantConfigFunctionsTest, YamlTest) {
             DiscreteContactApproximation::kLagged);
   EXPECT_EQ(result.plant.get_sap_near_rigid_threshold(), 0.01);
   EXPECT_EQ(result.plant.get_adjacent_bodies_collision_filters(), false);
+  EXPECT_EQ(result.plant.GetEnableLoopTopology(), false);
   // There is no getter for penetration_allowance nor stiction_tolerance, so we
   // can't test them.
 }

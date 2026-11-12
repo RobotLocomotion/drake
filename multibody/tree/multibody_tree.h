@@ -18,6 +18,7 @@
 #include "drake/common/pointer_cast.h"
 #include "drake/common/random.h"
 #include "drake/math/rigid_transform.h"
+#include "drake/multibody/plant/multibody_plant_config.h"
 #include "drake/multibody/topology/graph.h"
 #include "drake/multibody/tree/acceleration_kinematics_cache.h"
 #include "drake/multibody/tree/articulated_body_force_cache.h"
@@ -2986,7 +2987,8 @@ class MultibodyTree {
       default_body_poses_;
 
   // See MultibodyPlant::SetEnableLoopTopology() for the meaning of this flag.
-  bool enable_loop_topology_{false};
+  // The default comes from MultibodyPlantConfig so that the two always agree.
+  bool enable_loop_topology_{MultibodyPlantConfig{}.enable_loop_topology};
 
   // Back pointer to the owning MultibodyTreeSystem.
   const MultibodyTreeSystem<T>* tree_system_{};

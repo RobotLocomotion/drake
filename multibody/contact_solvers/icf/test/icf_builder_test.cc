@@ -263,7 +263,6 @@ GTEST_TEST(IcfBuilder, LoopTopologyBodyMasses) {
   multibody::MultibodyPlantConfig plant_config{.time_step = 0.0};
   MultibodyPlant<double>& plant =
       multibody::AddMultibodyPlant(plant_config, &diagram_builder);
-  plant.SetEnableLoopTopology(true);
 
   // A triangle of revolute joints: World to A, World to B, and A to B.
   const RigidBody<double>& body_A = plant.AddRigidBody(
