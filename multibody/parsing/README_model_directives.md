@@ -6,13 +6,12 @@ MultibodyPlant-based scene out of numerous `.sdf` and `.urdf` files.  For
 instance in the TRI dish-loading demo we have individual SDFormat files for
 the counter, sink, cameras, pedestal, arm, gripper, and each manipuland.  A
 single SDFormat for this would be unwieldy and difficult to maintain and
-collaborate on, but SDFormat's file inclusion mechanisms have not yet proven
+collaborate on, but SDFormat's file inclusion mechanisms have not proven
 adequate to this task.
 
-We expect that this mechanism will be temporary and will be removed
-[when SDFormat adds similar functionality](#conditions-for-deprecation).
-Users should be aware that this library will be deprecated if/when sdformat
-reaches feature parity with it.
+Model directives are a supported part of Drake's parsing. There are no current
+plans to deprecate them. See [Relationship to SDFormat](#relationship-to-sdformat)
+for the gaps that would have to close first.
 
 
 ## Syntax
@@ -97,22 +96,28 @@ as the prefix for the `name` element.
 
 We use SI units plus radians for all physical quantities.
 
-## Conditions for deprecation
+## Relationship to SDFormat
 
-We expect and hope to deprecate this mechanism when either:
+Replacing model directives with SDFormat was explored (see the Drake issue
+"sdformat: Should attempt migration from model directives" and the closed
+parity-test PR "Feature parity tests between sdformat and model directives")
+and is not currently planned. Deprecation would require, at minimum:
 
-SDFormat properly specifies, and Drake supports, the following:
+ * Merge-including models into a `<world>` without introducing an extra model
+   scope.
+ * A way to weld models together using joints (or an equivalent) external to
+   the models, at world level.
+ * A story for the "leaky" scoping that directives allow but SDFormat's
+   encapsulation forbids.
 
- * What `<include/>` statements should *really* do (e.g. namespacing models,
-   joints, etc.) without kludging Drake's parsing
-   * See <http://sdformat.org/tutorials?tut=composition_proposal&cat=pose_semantics_docs&> for the progress of the proposed formal semantics.
- * How to weld models together with joints external to the models
+See <http://sdformat.org/tutorials?tut=composition_proposal&cat=pose_semantics_docs&>
+for the proposed formal include semantics.
 
+The same would hold for a xacro-based alternative, which would additionally
+need:
 
-OR if we find a mechanism whereby xacro could accomplish the same thing:
-
- * Drake's `package://` / `model://` mechanism were mature and correct, and
-   `sdformat` didn't use singletons for search paths.
- * It was easier for one xacro to locate other xacros (possibly via a
+ * Drake's `package://` / `model://` mechanism to be mature and correct, and
+   `sdformat` to not use singletons for search paths.
+ * It to be easier for one xacro to locate other xacros (possibly via a
    workaround using a wrapper script to inject the appropriate drake source
    or resource path)
