@@ -15,6 +15,7 @@ filegroup(
     srcs = [
         "cache_doxygen.h",
         "system_compatibility_doxygen.h",
+        "system_multithreading_doxygen.h",
         "system_scalar_conversion_doxygen.h",
     ] + glob([
         "images/*.dot",

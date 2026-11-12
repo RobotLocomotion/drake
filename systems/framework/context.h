@@ -30,6 +30,8 @@ Data encapsulated with State and Parameter objects can be copied between
 contexts for compatible systems with some restrictions. For details, see
 @ref system_compatibility.
 
+@see @ref system_multithreading for guidance on using contexts across threads.
+
 @tparam_default_scalar */
 template <typename T>
 class Context : public ContextBase {
