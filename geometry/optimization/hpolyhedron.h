@@ -30,7 +30,8 @@ class HPolyhedron final : public ConvexSet {
   HPolyhedron();
 
   /** Constructs the polyhedron.
-  @pre A.rows() == b.size(). */
+  @pre A.rows() == b.size().
+  @throws std::exception if A or b has any non-finite entries. */
   HPolyhedron(const Eigen::Ref<const Eigen::MatrixXd>& A,
               const Eigen::Ref<const Eigen::VectorXd>& b);
 

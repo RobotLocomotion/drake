@@ -1602,6 +1602,7 @@ void HPolyhedron::CheckInvariants() const {
   // corresponding rows of A (since the constraint is vacuous), or checking
   // this explicitly in all relevant computations (like IsBounded).
   DRAKE_THROW_UNLESS(b_.array().isFinite().all());
+  DRAKE_THROW_UNLESS(A_.allFinite());
 }
 
 }  // namespace optimization

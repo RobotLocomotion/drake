@@ -3779,7 +3779,10 @@ R"""(Constructs a default (zero-dimensional, nonempty) polyhedron.)""";
 R"""(Constructs the polyhedron.
 
 Precondition:
-    A.rows() == b.size().)""";
+    A.rows() == b.size().
+
+Raises:
+    RuntimeError if A or b has any non-finite entries.)""";
             // Source: drake/geometry/optimization/hpolyhedron.h
             const char* doc_3args_query_object_geometry_id_reference_frame =
 R"""(Constructs a new HPolyhedron from a SceneGraph geometry and pose in
