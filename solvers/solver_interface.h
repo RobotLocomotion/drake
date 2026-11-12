@@ -21,8 +21,8 @@ class SolverInterface {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SolverInterface);
   virtual ~SolverInterface();
 
-  /// Returns true iff support for this solver has been compiled into Drake.
-  /// When this method returns false, the Solve method will throw.
+  /// Returns true iff support for this solver is available in Drake. When this
+  /// method returns false, the Solve method will throw.
   ///
   /// Most solver implementations will always return true, but certain solvers
   /// may have been excluded at compile-time due to licensing restrictions, or
@@ -46,9 +46,9 @@ class SolverInterface {
   /// false.
   ///
   /// Contrast this with available(), which reflects whether a solver has been
-  /// incorporated into Drake at compile-time (and has nothing to do with the
-  /// runtime configuration). A solver where available() returns false may still
-  /// return true for enabled() if it is properly configured.
+  /// incorporated into Drake (and has nothing to do with the runtime
+  /// configuration). A solver where available() returns false may still return
+  /// true for enabled() if it is properly configured.
   ///
   /// The mechanism to configure a particular solver implementation is specific
   /// to the solver in question, but typically uses an environment variable.
