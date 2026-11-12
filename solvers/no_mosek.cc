@@ -19,6 +19,26 @@ bool MosekSolver::is_available() {
   return false;
 }
 
+bool MosekSolver::is_enabled() {
+  if (!has_license_file()) {
+    return false;
+  }
+  static const bool latched_result = []() {
+#ifdef DRAKE_MOSEK_LAZY_LOAD_LIBRARY
+    void* dlhandle = drake_dlopen_mosek(DRAKE_MOSEK_LAZY_LOAD_LIBRARY, true);
+    if (dlhandle != nullptr) {
+      dlclose(dlhandle);
+      return true;
+    } else {
+      return false;
+    }
+#else
+    return true;
+#endif
+  }();
+  return latched_result;
+}
+
 void MosekSolver::DoSolve2(const MathematicalProgram&, const Eigen::VectorXd&,
                            internal::SpecificOptions*,
                            MathematicalProgramResult*) const {
