@@ -409,6 +409,38 @@ def _dut_program_constraint(cyclic):
     return _sentinels_for("program_constraint", prog)
 
 
+def _dut_program_constraint_object(cyclic):
+    # The constraint is made by another program, and then added to this one.
+    prog, x = _make_program()
+    other, y = _make_program()
+    constraint = other.AddConstraint(
+        _make_callback(prog, cyclic, result=np.zeros(1)), [0.0], [1.0], y
+    ).evaluator()
+    prog.AddConstraint(constraint, x)
+    del other, constraint
+    gc.collect()
+    # The program borrows the evaluator and its callable, so make sure they are
+    # still alive.
+    prog.generic_constraints()[0].evaluator().Eval(np.zeros(2))
+    return _sentinels_for("program_constraint_object", prog)
+
+
+def _dut_program_cost_object(cyclic):
+    # The cost is made by another program, and then added to this one.
+    prog, x = _make_program()
+    other, y = _make_program()
+    cost = other.AddCost(
+        _make_callback(prog, cyclic, result=0.0), y
+    ).evaluator()
+    prog.AddCost(cost, x)
+    del other, cost
+    gc.collect()
+    # The program borrows the evaluator and its callable, so make sure they are
+    # still alive.
+    prog.generic_costs()[0].evaluator().Eval(np.zeros(2))
+    return _sentinels_for("program_cost_object", prog)
+
+
 def _dut_program_visualization_callback(cyclic):
     prog, x = _make_program()
     prog.AddVisualizationCallback(_make_callback(prog, cyclic), x)
@@ -705,6 +737,8 @@ class TestPythonMemoryLeaks(unittest.TestCase):
             _dut_simulator_monitor_round_trip,
             _dut_program_constraint,
             _dut_program_cost,
+            _dut_program_constraint_object,
+            _dut_program_cost_object,
             _dut_program_visualization_callback,
             _dut_projected_gradient_descent_gradient,
             _dut_projected_gradient_descent_projection,
