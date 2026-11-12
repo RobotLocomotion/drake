@@ -11,7 +11,8 @@ namespace systems {
     @ingroup systems
     @brief Recommended threading patterns and memory allocation considerations.
 
-@section system_multithreading_context_per_thread One Context per thread
+### One Context per thread
+@anchor system_multithreading_context_per_thread
 
 Drake's recommended approach to concurrent computation is to share one fully
 constructed System, such as a
@@ -23,18 +24,21 @@ and use subsystem contexts from that tree. Leave the shared %System unchanged
 during concurrent use, and observe any class-specific thread-safety
 restrictions.
 
-@section system_multithreading_shared_context Sharing a frozen Context
+### Sharing a frozen Context
+@anchor system_multithreading_shared_context
 
 A `const Context&` does not by itself permit concurrent evaluation: evaluating a
 quantity can update the %Context's cache. To share a single %Context for
 read-only computations, first initialize its values and, on one thread, evaluate
-every quantity the readers will need. Then call ContextBase::FreezeCache() on
-the root %Context before starting the readers. An evaluation requiring a cache
+every quantity the readers will need. Then call
+@ref ContextBase::FreezeCache() "context.FreezeCache()" on the root %Context
+before starting the readers. An evaluation requiring a cache
 update will throw. Keep the %Context's values unchanged until all readers
-finish; only then call ContextBase::UnfreezeCache() before making changes.
-Repeat the preparation and freezing before the next reader phase. Freezing
-guards cache updates; it does not lock the %Context or make its state and inputs
-immutable.
+finish; only then call
+@ref ContextBase::UnfreezeCache() "context.UnfreezeCache()" before making
+changes. Repeat the preparation and freezing before the next reader phase.
+Freezing guards cache updates; it does not lock the %Context or make its state
+and inputs immutable.
 
 Shared frozen contexts support computations that only read %Context values and
 already-computed cache entries. Some `const` methods also require writable cache
@@ -42,7 +46,8 @@ storage for temporary computations and therefore cannot run with the cache
 frozen. Each worker also needs private output and scratch objects wherever an
 API writes to caller-provided storage.
 
-@section system_multithreading_allocation Heap allocation and workspace
+### Heap allocation and workspace
+@anchor system_multithreading_allocation
 
 Heap allocation and deallocation are thread-safe, but allocator synchronization
 can cause contention and variable execution time. In performance-critical loops,
