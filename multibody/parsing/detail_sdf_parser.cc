@@ -3222,9 +3222,12 @@ sdf::InterfaceModelPtr ParseNestedInterfaceModel(
 
   DataSource data_source(DataSource::kFilename, &resolved_filename);
   drake::internal::DiagnosticPolicy subdiagnostic;
-  subdiagnostic.SetActionForWarnings([&errors](const DiagnosticDetail& detail) {
-    errors->emplace_back(MakeSdfError(sdf::ErrorCode::NONE, detail));
-  });
+  // Warnings must not go into `errors`; libsdformat treats any entry there as a
+  // failure, which would abort the include. Report them directly instead.
+  subdiagnostic.SetActionForWarnings(
+      [&diagnostic](const DiagnosticDetail& detail) {
+        diagnostic.Warning(detail);
+      });
   subdiagnostic.SetActionForErrors([&errors](const DiagnosticDetail& detail) {
     errors->emplace_back(MakeSdfError(sdf::ErrorCode::ELEMENT_INVALID, detail));
   });

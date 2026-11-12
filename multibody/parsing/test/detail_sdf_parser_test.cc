@@ -6124,6 +6124,37 @@ TEST_F(SdfParserTest, MergeIncludeReposturesOnlyExportedBodies) {
   ClearDiagnostics();
 }
 
+// A warning from a URDF that is included via SDFormat's //include must be
+// reported as a warning. It must not abort the include (which would leave the
+// included model's bodies missing, so that later references to them fail).
+TEST_F(SdfParserTest, IncludeUrdfWarningIsNotAnError) {
+  const std::string urdf = temp_directory() + "/include_warning.urdf";
+  // Drake does not support floating joints in URDF, so this provokes a warning.
+  std::ofstream(urdf) << R"""(<robot name='included_robot'>
+  <link name='base'/>
+  <link name='payload'/>
+  <joint name='floating_joint' type='floating'>
+    <parent link='base'/><child link='payload'/>
+  </joint>
+</robot>)""";
+  AddModelsFromSdfString(fmt::format(R"""(<sdf version='1.12'>
+  <world name='test_world'>
+    <include><uri>file://{}</uri><name>included_robot</name></include>
+    <joint name='weld_to_world' type='fixed'>
+      <parent>world</parent><child>included_robot::base</child>
+    </joint>
+  </world>
+</sdf>)""",
+                                     urdf));
+  ASSERT_TRUE(plant_.HasModelInstanceNamed("included_robot"));
+  EXPECT_TRUE(plant_.HasBodyNamed(
+      "base", plant_.GetModelInstanceByName("included_robot")));
+  EXPECT_THAT(
+      TakeWarning(),
+      MatchesRegex(".*Joint 'floating_joint' specified as type floating.*"));
+  EXPECT_TRUE(error_records_.empty());
+}
+
 // Errors found while reposturing a merge-included model are merged into the
 // load's errors, and so are reported (and abort the load) like any others.
 // Here, the URDF's link named `__model__` collides with the model frame, so
