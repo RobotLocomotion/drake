@@ -27,6 +27,7 @@ struct MultibodyPlantConfig {
     a->Visit(DRAKE_NVP(sap_near_rigid_threshold));
     a->Visit(DRAKE_NVP(contact_surface_representation));
     a->Visit(DRAKE_NVP(adjacent_bodies_collision_filters));
+    a->Visit(DRAKE_NVP(enable_loop_topology));
   }
 
   /// Configures the MultibodyPlant::MultibodyPlant() constructor time_step.
@@ -97,6 +98,9 @@ struct MultibodyPlantConfig {
 
   /// Configures the MultibodyPlant::set_adjacent_bodies_collision_filters().
   bool adjacent_bodies_collision_filters{true};
+
+  /// Configures the MultibodyPlant::SetEnableLoopTopology().
+  bool enable_loop_topology{true};
 };
 
 }  // namespace multibody

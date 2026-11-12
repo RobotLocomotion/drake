@@ -4,11 +4,9 @@ closed kinematic loops, applied to a model parsed from an SDFormat file. It
 shows:
   - How to describe a four bar linkage in SDFormat as a loop of four joints
     with no attempt to break the loop (see four_bar.sdf).
-  - How to opt in to automatic loop modeling with
-    `MultibodyPlant::SetEnableLoopTopology()`.
-  - That there is nothing else to do. Internally, Drake will split one of the
-    links and add a constraint as needed to close the loop. The linkage is
-    already assembled as defined, so the mechanism can simply be simulated.
+  - That there is nothing to do about the loop. Internally, Drake will split one
+    of the links and add a constraint as needed to close the loop. The linkage
+    is already assembled as defined, so the mechanism can simply be simulated.
 
 Closing the loop takes a constraint, so we have to use a solver that supports
 constraints. It runs in discrete mode under SAP by default, and continuous under
@@ -66,10 +64,6 @@ int do_main() {
   DiagramBuilder<double> builder;
   auto [four_bar, scene_graph] =
       AddMultibodyPlantSceneGraph(&builder, FLAGS_time_step);
-
-  // Opt in to automatic modeling of closed topologies. Without this, Finalize()
-  // below would throw because of the loop in the model file.
-  four_bar.SetEnableLoopTopology(true);
 
   Parser(&builder).AddModelsFromUrl(
       "package://drake/examples/multibody/four_bar/four_bar.sdf");

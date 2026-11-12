@@ -1842,13 +1842,10 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   void SetFuseWeldedLinks(
       bool fuse, std::optional<ModelInstanceIndex> model_instance = {});
 
-  /// (Internal use only for now) For systems whose links and joints
-  /// form one or more kinematic loops (a "closed topology"), controls
-  /// whether Finalize() should deal with those automatically. The default
-  /// setting is _not_ to deal with kinematic loops (if one is encountered,
-  /// an exception is thrown).
-  ///
-  /// @note This feature is in development and is not yet fully functional.
+  /// Controls whether Finalize() automatically models closed kinematic loops
+  /// formed by bodies and joints. Enabled by default; when disabled,
+  /// Finalize() throws if it encounters a loop. Also configurable with
+  /// MultibodyPlantConfig::enable_loop_topology.
   ///
   /// To deal with loops automatically requires modifying the system's topology
   /// so that it is structured as a tree of links and joints, plus constraints
@@ -1857,6 +1854,10 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// ("primary") link and the new ("shadow") link. Then a weld constraint is
   /// added between the primary and shadow links to enforce loop closure. When
   /// the weld constraint is satisfied, the original physics is restored.
+  ///
+  /// Loop closure requires a constraint solver. Discrete-time plants use SAP;
+  /// continuous-time simulation requires the CENIC integrator (set
+  /// systems::SimulatorConfig::integration_scheme to `"cenic"`).
   ///
   /// A shadow link is a link like any other in most respects (it has a pose and
   /// a velocity, for example), but its mass properties are derived from its
@@ -1900,8 +1901,7 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   bool GetFuseWeldedLinks(
       std::optional<ModelInstanceIndex> model_instance = {}) const;
 
-  /// (Internal use only for now) Returns the current setting for whether
-  /// Finalize() automatically deals with closed-topology (looped) systems.
+  /// Returns whether Finalize() automatically models closed kinematic loops.
   ///
   /// @note This function can be called pre-Finalize() or post-Finalize().
   /// @see SetEnableLoopTopology(), Finalize()
@@ -1938,15 +1938,13 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// constraints can be used to couple the motion of joints, to create
   /// kinematic loops, or to weld bodies together.
   ///
-  /// Currently constraints are only supported for discrete %MultibodyPlant
-  /// models and not for all discrete solvers, see
-  /// get_discrete_contact_solver(). If the model contains constraints not
-  /// supported by the discrete solver, the plant will throw an exception at
-  /// Finalize() time. At this point the user has the option to select a contact
-  /// model approximation that uses a solver that supports constraints, or to
-  /// re-define the model so that such a constraint is not needed. A contact
-  /// model approximation can be set with set_discrete_contact_approximation()
-  /// or in the MultibodyPlantConfig.
+  /// Discrete-time %MultibodyPlant models support constraints using SAP.
+  /// Continuous-time models can simulate coupler, distance, ball, and weld
+  /// constraints using the CENIC integrator (set
+  /// systems::SimulatorConfig::integration_scheme to `"cenic"`), but CENIC
+  /// requires a coupler's two joints to be in the same kinematic tree.
+  /// Tendon constraints currently require a discrete-time model.
+  /// <!-- TODO(#23763): Revise when CENIC supports tendon constraints. -->
   ///
   /// Each constraint is identified with a MultibodyConstraintId returned
   /// by the function used to add it (e.g. AddCouplerConstraint()). It is
@@ -1957,11 +1955,9 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// GetConstraintActiveStatus() and set its active status with
   /// SetConstraintActiveStatus().
   ///
-  /// @warning Adding constraints to a continuous time plant is allowed at
-  /// configuration time, but will raise exceptions at run time for results
-  /// that should have been affected by the constraints.
-  /// <!-- TODO(#23759,#23760,#23762,#23763,#23992): revisit this documentation
-  /// as constraints are implemented for CENIC. -->
+  /// @warning Evaluating time derivatives or outputs that depend on forward
+  /// dynamics throws when a continuous-time plant has constraints, even if
+  /// CENIC is used for simulation.
   /// <!-- TODO(joemasterjohn): As different constraint types are added in a
   /// piecemeal fashion, the burden of managing and maintaining these different
   /// constraints becomes cumbersome for the plant. Consider a new

@@ -199,6 +199,7 @@ drake_cc_library(
         "//math:geometric_transform",
         "//multibody/fem",
         "//multibody/plant:constraint_specs",
+        "//multibody/plant:multibody_plant_config",
         "//multibody/topology",
         "//systems/framework:leaf_system",
     ],

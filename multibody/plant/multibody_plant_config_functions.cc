@@ -56,6 +56,7 @@ void ApplyMultibodyPlantConfig(const MultibodyPlantConfig& config,
           config.contact_surface_representation));
   plant->set_adjacent_bodies_collision_filters(
       config.adjacent_bodies_collision_filters);
+  plant->SetEnableLoopTopology(config.enable_loop_topology);
 }
 
 namespace internal {

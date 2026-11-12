@@ -143,9 +143,12 @@ GTEST_TEST(MultibodyTree, BasicAPIToAddBodiesAndJoints) {
 }
 
 // Tests the basic MultibodyTree API to add bodies and joints.
-// Tests we cannot currently create graph loops. See previous test for notes.
+// Tests we cannot create graph loops when loop topology is disabled (it is
+// enabled by default). See previous test for notes.
 GTEST_TEST(MultibodyTree, TopologicalLoopDisallowed) {
   auto model = std::make_unique<MultibodyTree<double>>();
+  EXPECT_TRUE(model->GetEnableLoopTopology());
+  model->SetEnableLoopTopology(false);
   const RigidBody<double>& world_body = model->world_link();
   const auto M_Bo_B = SpatialInertia<double>::NaN();
   const RigidBody<double>& pendulum = model->AddLink("pendulum", M_Bo_B);
@@ -171,7 +174,8 @@ GTEST_TEST(MultibodyTree, TopologicalLoopDisallowed) {
   EXPECT_FALSE(model->graph().forest_is_valid());
   DRAKE_EXPECT_THROWS_MESSAGE(
       model->Finalize(),
-      "The bodies and joints of this system form one or more loops.*");
+      "This model contains kinematic loops, but automatic loop modeling "
+      "is disabled.*");
   EXPECT_FALSE(model->graph().forest_is_valid());
   EXPECT_FALSE(model->is_finalized());
 }

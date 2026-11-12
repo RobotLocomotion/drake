@@ -468,6 +468,15 @@ drake_cc_library(
 )
 
 drake_cc_googletest(
+    name = "global_inverse_kinematics_loop_test",
+    deps = [
+        ":global_inverse_kinematics",
+        "//common/test_utilities:expect_throws_message",
+        "//multibody/tree",
+    ],
+)
+
+drake_cc_googletest(
     name = "global_inverse_kinematics_test",
     opt_in_condition = "//tools/workspace/gurobi:enabled",
     timeout = "moderate",
