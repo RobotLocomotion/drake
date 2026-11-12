@@ -3703,10 +3703,12 @@ Returns:
         struct /* CalcHessianSpatialVelocity */ {
           // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
-R"""(For one point Bp fixed/welded to a frame B, calculates H𝑠_V_ABp, the
-derivatives along each of the "speeds" 𝑠 of J𝑠_V_ABp, Bp's spatial
-velocity Jacobian in frame A with respect to 𝑠 (see
-CalcJacobianSpatialVelocity()).
+R"""(For one point Bp fixed/welded to a frame B, calculates HJ𝑠_V_ABp_E,
+where HJ is a "Hessian-like" quantity associated with J𝑠_V_ABp_E, Bp's
+spatial velocity Jacobian in frame A with respect to 𝑠, expressed in
+frame E (see CalcJacobianSpatialVelocity()). "Speeds" 𝑠 is either q̇ ≜
+[q̇₁ ... q̇ₙ]ᵀ (n = nq = number of generalized positions) or v ≜ [v₁
+... vₙ]ᵀ (n = nv = number of generalized velocities).
 
 
 .. raw:: html
@@ -3715,25 +3717,60 @@ CalcJacobianSpatialVelocity()).
 
 .. code-block:: c++
 
-    H𝑠_V_ABp ≜ [ D₁(J𝑠_V_ABp), ... Dₙ(J𝑠_V_ABp) ]    (n is nq or nv)
+    HJ𝑠_V_ABp_E ≜ [ D₁(J𝑠_V_ABp_E), ... Dₙ(J𝑠_V_ABp_E) ]   (n is nq or nv)
+      Dᵢ(J𝑠_V_ABp_E) ≜ ∂(ᴱd/dt J𝑠_V_ABp_E)/∂𝑠ᵢ         (i = 1 … n)
+                     = ᴱ∂(J𝑠_V_ABp_E)/∂qᵢ              when 𝑠 = q̇
+                     = Σₖ ᴱ∂(J𝑠_V_ABp_E)/∂qₖ ⋅ Nₖᵢ(q)  when 𝑠 = v (k = 1 … nq)
 
 .. raw:: html
 
     </details>
 
-Speeds 𝑠 are q̇ ≜ [q̇₁ ... q̇ₙ]ᵀ (n = nq = number of generalized
-positions) or v ≜ [v₁ ... vₙ]ᵀ (n = nv = number of generalized
-velocities). Since J𝑠_V_ABp_E depends only on the generalized
-positions q, Dᵢ(J𝑠_V_ABp_E) denotes the time derivative in frame E of
-J𝑠_V_ABp_E (i.e., of its elements) when 𝑠 = eᵢ (𝑠ᵢ = 1 and all other
-speeds are zero). For 𝑠 = q̇ this is the partial derivative
-∂(J𝑠_V_ABp_E)/∂qᵢ. For 𝑠 = v it is the directional derivative Σₖ
-∂(J𝑠_V_ABp_E)/∂qₖ ⋅ Nₖᵢ(q), where q̇ = N(q)⋅v (if N(q) exists); the
-two coincide for joints with q̇ = v (e.g., revolute, prismatic, and
-planar joints). Because the derivative is taken in frame E, the choice
-of frame_E changes the result by more than a re-expression. At a break
-in a CurvilinearJoint's path, where the curvature can jump, the
-derivative is one-sided (from the right).
+where q̇ = N(q)⋅v and Nₖᵢ(q) is element (k, i) of N(q) (if N(q)
+exists). Dᵢ(J𝑠_V_ABp_E) is a "directional derivative" equivalent to
+evaluating ᴱd/dt(J𝑠_V_ABp_E) at 𝑠ᵢ = 1 with all other speeds zero, so
+it exists even where N(q) does not (e.g., at a roll-pitch-yaw gimbal
+lock). The first two expressions above define HJ𝑠_V_ABp_E and
+Dᵢ(J𝑠_V_ABp_E). The two that follow them relate Dᵢ(J𝑠_V_ABp_E) to the
+partial derivatives ᴱ∂(J𝑠_V_ABp_E)/∂qₖ, which is why HJ𝑠_V_ABp_E is
+called "Hessian-like".
+
+HJ𝑠_V_ABp_E is related to Bp's spatial acceleration in A. When E = A,
+
+
+.. raw:: html
+
+    <details><summary>Click to expand C++ code...</summary>
+
+.. code-block:: c++
+
+    V_ABp = J𝑠_V_ABp 𝑠
+    ᴬd/dt(V_ABp) = J𝑠_V_ABp 𝑠̇ + (ᴬd/dt J𝑠_V_ABp) 𝑠
+                 = J𝑠_V_ABp 𝑠̇ + (Σᵢ 𝑠ᵢ Dᵢ(J𝑠_V_ABp)) 𝑠
+                 = J𝑠_V_ABp 𝑠̇ + 𝑠ᵀ D 𝑠  where Dᵢⱼ ≜ column j of Dᵢ(J𝑠_V_ABp)
+                 = J𝑠_V_ABp 𝑠̇ + 𝑠ᵀ S 𝑠  where Sᵢⱼ ≜ ½(Dᵢⱼ + Dⱼᵢ), so Sᵢⱼ = Sⱼᵢ
+
+.. raw:: html
+
+    </details>
+
+D and S are n × n arrays whose entries are spatial vectors. D is
+HJ𝑠_V_ABp arranged as an n × n array, whose iᵗʰ matrix Dᵢ(J𝑠_V_ABp) is
+returned by this function. 𝑠ᵀ D 𝑠 ≜ Σᵢ Σⱼ 𝑠ᵢ Dᵢⱼ 𝑠ⱼ (similarly for S).
+Bp's bias acceleration in A, i.e., the terms in ᴬd/dt(V_ABp) that are
+quadratic in 𝑠 (e.g., centripetal and Coriolis accelerations), is
+A𝑠Bias_ABp = (ᴬd/dt J𝑠_V_ABp) 𝑠 = 𝑠ᵀ D 𝑠 = 𝑠ᵀ S 𝑠. For 𝑠 = v,
+CalcBiasSpatialAcceleration() computes it more efficiently. Reminder:
+S is symmetric whereas D is generally not symmetric.
+
+Note:
+    The special prefix HJ signifies derivatives of a Jacobian. Unlike
+    a conventional Hessian, HJ𝑠_V_ABp_E is generally not symmetric.
+    Asymmetry arises in its angular rows because angular velocity is
+    generally not the time derivative of any quantity. When 𝑠 = q̇,
+    its translational rows are the conventional Hessian
+    ∂²(p_AoBp_A)/∂qᵢ∂qⱼ when E = A, but are generally asymmetric
+    otherwise.
 
 Parameter ``context``:
     The state of the multibody system.
@@ -3783,7 +3820,11 @@ Raises:
 Raises:
     RuntimeError if ``with_respect_to`` is JacobianWrtVariable∷kQDot
     and a joint with q̇ ≠ v (e.g., a floating or ball joint) is on the
-    kinematic path between frame_A and frame_B (not yet supported).)""";
+    kinematic path between frame_A and frame_B (not yet supported).
+
+Note:
+    At a break in a CurvilinearJoint's path, where the curvature can
+    jump, the derivative is one-sided (from the right).)""";
         } CalcHessianSpatialVelocity;
         // Symbol: drake::multibody::MultibodyPlant::CalcInverseDynamics
         struct /* CalcInverseDynamics */ {
