@@ -1944,7 +1944,8 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// systems::SimulatorConfig::integration_scheme to `"cenic"`), but CENIC
   /// requires a coupler's two joints to be in the same kinematic tree.
   /// Tendon constraints currently require a discrete-time model.
-  /// <!-- TODO(#23763): Revise when CENIC supports tendon constraints. -->
+  /// <!-- TODO(#23763,#23992): Revise when CENIC supports tendon constraints
+  /// and couplers between joints in different trees. -->
   ///
   /// Each constraint is identified with a MultibodyConstraintId returned
   /// by the function used to add it (e.g. AddCouplerConstraint()). It is

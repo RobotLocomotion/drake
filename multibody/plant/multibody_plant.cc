@@ -3414,8 +3414,9 @@ void MultibodyPlant<T>::ThrowIfUnsupportedContinuousTimeDynamics(
     const systems::Context<T>&) const {
   // Reject constraints in the standard continuous-time dynamics path. CENIC
   // computes constrained dynamics separately.
-  // TODO(#23763): Once CENIC supports tendon constraints, simplify the advice
-  // below about "supported constraint types".
+  // TODO(#23763,#23992): Once CENIC supports tendon constraints and couplers
+  // between joints in different trees, simplify the advice below about
+  // "supported constraint types".
   if (num_constraints() > 0) {
     // Loop constraints are not the user's doing -- Finalize() added them to
     // close the kinematic loops in the model -- so say where they came from
