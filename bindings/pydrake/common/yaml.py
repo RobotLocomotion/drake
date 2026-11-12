@@ -117,7 +117,7 @@ def yaml_load_data(data, *, private=False):
         except AttributeError:
             all_keys = []
         for key in all_keys:
-            if key.startswith("_"):
+            if isinstance(key, str) and key.startswith("_"):
                 del result[key]
     return result
 
