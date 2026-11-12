@@ -490,7 +490,9 @@ def _dut_projected_gradient_descent_gradient(cyclic):
     return _sentinels_for("projected_gradient_descent_gradient", solver)
 
 
-def _make_collision_checker(distance_function=lambda q1, q2: 0.0):
+def _make_collision_checker(
+    distance_function=lambda q1, q2: 0.0, use_kwargs=False
+):
     builder = RobotDiagramBuilder()
     (model_instance,) = builder.parser().AddModelsFromString(
         textwrap.dedent("""
@@ -511,6 +513,13 @@ def _make_collision_checker(distance_function=lambda q1, q2: 0.0):
     )
     plant = builder.plant()
     plant.WeldFrames(plant.world_frame(), plant.GetFrameByName("base"))
+    if use_kwargs:
+        return SceneGraphCollisionChecker(
+            model=builder.Build(),
+            robot_model_instances=[model_instance],
+            edge_step_size=0.1,
+            configuration_distance_function=distance_function,
+        )
     params = CollisionCheckerParams()
     params.model = builder.Build()
     params.robot_model_instances = [model_instance]
@@ -543,7 +552,21 @@ def _dut_collision_checker_params_distance_function(cyclic):
         _make_callback(owner_box, cyclic, result=0.0)
     )
     owner_box.append(checker)
+    # The checker only borrows the callback, so make sure it is still alive.
+    assert checker.ComputeConfigurationDistance(np.zeros(1), np.zeros(1)) == 0
     return _sentinels_for("collision_checker_params_distance_function", checker)
+
+
+def _dut_collision_checker_kwargs_distance_function(cyclic):
+    # Here the callback is passed to the checker's constructor as a kwarg.
+    owner_box = []
+    checker = _make_collision_checker(
+        _make_callback(owner_box, cyclic, result=0.0), use_kwargs=True
+    )
+    owner_box.append(checker)
+    # The checker only borrows the callback, so make sure it is still alive.
+    assert checker.ComputeConfigurationDistance(np.zeros(1), np.zeros(1)) == 0
+    return _sentinels_for("collision_checker_kwargs_distance_function", checker)
 
 
 def _make_direct_collocation():
@@ -688,6 +711,8 @@ class TestPythonMemoryLeaks(unittest.TestCase):
             _dut_diff_ik_select_data,
             _dut_collision_checker_distance_function,
             _dut_collision_checker_interpolation_function,
+            _dut_collision_checker_params_distance_function,
+            _dut_collision_checker_kwargs_distance_function,
             _dut_dircol_input_callback,
             _dut_dircol_state_callback,
             _dut_dircol_complete_callback,
@@ -701,21 +726,6 @@ class TestPythonMemoryLeaks(unittest.TestCase):
                         leaks_allowed=0,
                         leaks_required=0,
                     )
-
-        duts = [
-            _dut_collision_checker_params_distance_function,
-        ]
-        for dut in duts:
-            with self.subTest(dut=dut.__name__, cyclic=False):
-                self.do_test(dut=functools.partial(dut, cyclic=False), count=1)
-            with self.subTest(dut=dut.__name__, cyclic=True):
-                # TODO(#24162) These should not leak.
-                self.do_test(
-                    dut=functools.partial(dut, cyclic=True),
-                    count=1,
-                    leaks_allowed=1,
-                    leaks_required=1,
-                )
 
         # FunctionHandleTrajectory is a copyable value type, and many C++
         # classes (TrajectorySource, CompositeTrajectory, etc.) copy it. We

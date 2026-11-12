@@ -44,6 +44,7 @@ drake_pybind_library(
         "planning_py.cc",
         "planning_py_collision_checker.cc",
         "planning_py_collision_checker_interface_types.cc",
+        "planning_py_collision_checker_params.h",
         "planning_py_dof_mask.cc",
         "planning_py_experimental_placeholder.cc",
         "planning_py_graph_algorithms.cc",

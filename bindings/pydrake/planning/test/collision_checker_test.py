@@ -530,6 +530,35 @@ class TestCollisionChecker(unittest.TestCase):
         self.assertGreaterEqual(sys.getrefcount(robot), 3)
         return checker
 
+    def test_params_distance_function_lifetime(self):
+        """Checkers borrow the params' distance function, so each must keep
+        it alive even after the params (or another checker) are gone.
+        """
+        robot, index = self._make_robot_diagram()
+        calls = []
+
+        def distance(q1, q2):
+            calls.append(1)
+            return 0.0
+
+        params = mut.CollisionCheckerParams(
+            model=robot, robot_model_instances=[index], edge_step_size=0.125
+        )
+        params.configuration_distance_function = distance
+        self.assertIs(params.configuration_distance_function, distance)
+        # Using the same params for several checkers works.
+        checker1 = mut.SceneGraphCollisionChecker(params)
+        checker2 = mut.SceneGraphCollisionChecker(params)
+        self.assertIs(params.configuration_distance_function, distance)
+        del params, distance
+        gc.collect()
+        q = np.zeros(1)
+        del checker1
+        gc.collect()
+        calls.clear()
+        self.assertEqual(checker2.ComputeConfigurationDistance(q, q), 0.0)
+        self.assertGreater(len(calls), 0)
+
     def test_scene_graph_collision_checker(self):
         """Tests the full CollisionChecker API."""
         # With no provider or function specified, the default SGCC has a

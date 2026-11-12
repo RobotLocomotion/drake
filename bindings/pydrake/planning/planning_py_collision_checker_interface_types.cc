@@ -4,6 +4,7 @@
 
 #include "drake/bindings/generated_docstrings/planning.h"
 #include "drake/bindings/pydrake/planning/planning_py.h"
+#include "drake/bindings/pydrake/planning/planning_py_collision_checker_params.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/planning/body_shape_description.h"
 #include "drake/planning/collision_checker_context.h"
@@ -110,7 +111,8 @@ void DefinePlanningCollisionCheckerInterfaceTypes(py::module_ m) {
   {
     using Class = CollisionCheckerParams;
     constexpr auto& cls_doc = doc.CollisionCheckerParams;
-    class_<Class> cls(m, "CollisionCheckerParams", cls_doc.doc);
+    class_<Class> cls(
+        m, "CollisionCheckerParams", cls_doc.doc, py::dynamic_attr());
     cls  // BR
         .def(py::init<>())
         .def(ParamInit<Class>())
@@ -131,8 +133,31 @@ void DefinePlanningCollisionCheckerInterfaceTypes(py::module_ m) {
             cls_doc.distance_and_interpolation_provider.doc)
         .def_rw("robot_model_instances", &Class::robot_model_instances,
             cls_doc.robot_model_instances.doc)
-        .def_rw("configuration_distance_function",
-            &Class::configuration_distance_function,
+        .def_prop_rw(
+            "configuration_distance_function",
+            [](const Class& self) -> py::object {
+              // Return the callable that was set (not a wrapper around it).
+              const auto* function = self.configuration_distance_function
+                                         .target<PyDistanceFunction>();
+              if (function != nullptr) {
+                return py::borrow<py::object>(function->callable());
+              }
+              return py::cast(self.configuration_distance_function);
+            },
+            [](Class& self, py::object function) {
+              if (function.is_none()) {
+                self.configuration_distance_function = nullptr;
+              } else if (!PyCallable_Check(function.ptr())) {
+                throw py::type_error(
+                    "configuration_distance_function must be callable or "
+                    "None");
+              } else {
+                // The params own the callable until they are given to a
+                // checker; see PrepareParamsForChecker().
+                self.configuration_distance_function =
+                    PyDistanceFunction::Owning(function);
+              }
+            },
             cls_doc.configuration_distance_function.doc)
         .def_rw("edge_step_size", &Class::edge_step_size,
             cls_doc.edge_step_size.doc)

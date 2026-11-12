@@ -9,6 +9,7 @@
 #include "drake/bindings/pydrake/common/ref_cycle_pybind.h"
 #include "drake/bindings/pydrake/common/wrap_pybind.h"
 #include "drake/bindings/pydrake/planning/planning_py.h"
+#include "drake/bindings/pydrake/planning/planning_py_collision_checker_params.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/planning/collision_checker.h"
 #include "drake/planning/distance_and_interpolation_provider.h"
@@ -377,18 +378,31 @@ void DefinePlanningCollisionChecker(py::module_ m) {
               // pointer), and transfer that to the c++ checker.
               params->model =
                   make_shared_ptr_from_py_object<RobotDiagram<double>>(model);
-              new (self) Class(std::move(*params));
+              // The checker borrows any distance function. The kwargs dict
+              // (which holds it) is kept alive by the call policy below.
+              new (self) Class(PrepareParamsForChecker(
+                  params_py, params, "SceneGraphCollisionChecker.__init__"));
             },
             py::kw_only(), py::arg("model"),
 #ifdef PYDRAKE_USE_NANOBIND
             py::arg("kwargs"),
 #endif
+            internal::ensure_callback_lifetime<1, 3>(),
             (std::string(cls_doc.ctor.doc) +
                 "\n\n"
                 "See :class:`pydrake.planning.CollisionCheckerParams` for the "
                 "list of properties available here as kwargs.")
                 .c_str())
-        .def(py::init<CollisionCheckerParams>(), py::arg("params"),
+        .def(
+            "__init__",
+            [](Class* self, CollisionCheckerParams& params) {
+              // The checker borrows any distance function; the call policy
+              // keeps the params (which hold it) alive.
+              py::object params_py = py::cast(&params, py_rvp::reference);
+              new (self) Class(PrepareParamsForChecker(
+                  params_py, &params, "SceneGraphCollisionChecker.__init__"));
+            },
+            py::arg("params"), internal::ensure_callback_lifetime<1, 2>(),
             cls_doc.ctor.doc);
   }
 
@@ -413,20 +427,36 @@ void DefinePlanningCollisionChecker(py::module_ m) {
               // pointer), and transfer that to the c++ checker.
               params->model =
                   make_shared_ptr_from_py_object<RobotDiagram<double>>(model);
-              new (self) Class(std::move(*params), supports_parallel_checking);
+              // The checker borrows any distance function. The kwargs dict
+              // (which holds it) is kept alive by the call policy below.
+              new (self) Class(PrepareParamsForChecker(params_py, params,
+                                   "UnimplementedCollisionChecker.__init__"),
+                  supports_parallel_checking);
             },
             py::kw_only(), py::arg("model"),
             py::arg("supports_parallel_checking"),
 #ifdef PYDRAKE_USE_NANOBIND
             py::arg("kwargs"),
 #endif
+            internal::ensure_callback_lifetime<1, 4>(),
             (std::string(cls_doc.ctor.doc) +
                 "\n\n"
                 "See :class:`pydrake.planning.CollisionCheckerParams` for the "
                 "list of properties available here as kwargs.")
                 .c_str())
-        .def(py::init<CollisionCheckerParams, bool>(), py::arg("params"),
-            py::arg("supports_parallel_checking"), cls_doc.ctor.doc);
+        .def(
+            "__init__",
+            [](Class* self, CollisionCheckerParams& params,
+                bool supports_parallel_checking) {
+              // The checker borrows any distance function; the call policy
+              // keeps the params (which hold it) alive.
+              py::object params_py = py::cast(&params, py_rvp::reference);
+              new (self) Class(PrepareParamsForChecker(params_py, &params,
+                                   "UnimplementedCollisionChecker.__init__"),
+                  supports_parallel_checking);
+            },
+            py::arg("params"), py::arg("supports_parallel_checking"),
+            internal::ensure_callback_lifetime<1, 2>(), cls_doc.ctor.doc);
   }
 }
 
