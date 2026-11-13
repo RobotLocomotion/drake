@@ -33,6 +33,8 @@ from pydrake.lcm import DrakeLcm, DrakeLcmParams
 from pydrake.manipulation import ApplyDriverConfigs, IiwaDriver
 from pydrake.multibody.inverse_kinematics import (
     DifferentialInverseKinematicsSystem,
+    MinimumDistanceLowerBoundConstraint,
+    MinimumDistanceUpperBoundConstraint,
 )
 from pydrake.multibody.parsing import (
     LoadModelDirectivesFromString,
@@ -592,6 +594,34 @@ def _dut_gurobi_mip_sol_callback(cyclic):
     return _sentinels_for("gurobi_mip_sol_callback", solver)
 
 
+def _dut_minimum_distance_lower_bound_penalty(cyclic):
+    holder = []
+    checker = _make_collision_checker()
+    constraint = MinimumDistanceLowerBoundConstraint(
+        collision_checker=checker,
+        bound=0.1,
+        collision_checker_context=checker.MakeStandaloneModelContext(),
+        penalty_function=_make_callback(holder, cyclic, result=(0.0, 0.0)),
+        influence_distance_offset=0.1,
+    )
+    holder.append(constraint)
+    return _sentinels_for("minimum_distance_lower_bound_penalty", constraint)
+
+
+def _dut_minimum_distance_upper_bound_penalty(cyclic):
+    holder = []
+    checker = _make_collision_checker()
+    constraint = MinimumDistanceUpperBoundConstraint(
+        collision_checker=checker,
+        bound=0.1,
+        collision_checker_context=checker.MakeStandaloneModelContext(),
+        influence_distance_offset=0.1,
+        penalty_function=_make_callback(holder, cyclic, result=(0.0, 0.0)),
+    )
+    holder.append(constraint)
+    return _sentinels_for("minimum_distance_upper_bound_penalty", constraint)
+
+
 def _dut_diff_ik_select_data(cyclic):
     Ingredient = DifferentialInverseKinematicsSystem.CollisionConstraint
     constraint = Ingredient(Ingredient.Config())
@@ -691,6 +721,8 @@ class TestPythonMemoryLeaks(unittest.TestCase):
             _dut_dircol_input_callback,
             _dut_dircol_state_callback,
             _dut_dircol_complete_callback,
+            _dut_minimum_distance_lower_bound_penalty,
+            _dut_minimum_distance_upper_bound_penalty,
         ]
         for dut in fixed_duts:
             for cyclic in [False, True]:
