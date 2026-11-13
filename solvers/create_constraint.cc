@@ -2,7 +2,9 @@
 
 #include <algorithm>
 #include <cmath>
+#include <optional>
 #include <sstream>
+#include <string>
 
 #include <fmt/format.h>
 
@@ -796,8 +798,16 @@ ParseQuadraticAsRotatedLorentzConeConstraint(
     const Eigen::Ref<const Eigen::MatrixXd>& Q,
     const Eigen::Ref<const Eigen::VectorXd>& b, double c, double zero_tol) {
   // [-bᵀx-c, 1, Fx] is in the rotated Lorentz cone, where FᵀF = 0.5 * Q
-  const Eigen::MatrixXd F = math::DecomposePSDmatrixIntoXtransposeTimesX(
-      (Q + Q.transpose()) / 4, zero_tol);
+  Eigen::MatrixXd F;
+  const std::optional<std::string> psd_error =
+      math::MaybeDecomposePSDmatrixIntoXtransposeTimesX(
+          (Q + Q.transpose()) / 4, zero_tol, &F);
+  if (psd_error.has_value()) {
+    throw std::runtime_error(fmt::format(
+        "ParseQuadraticAsRotatedLorentzConeConstraint: The matrix Q is not "
+        "positive semidefinite. {}",
+        *psd_error));
+  }
   if (F.rows() == 0) {
     throw std::runtime_error(
         "AddQuadraticAsRotatedLorentzConeConstraint: The quadratic terms is "
