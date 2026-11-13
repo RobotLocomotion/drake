@@ -143,7 +143,7 @@ GTEST_TEST(MultibodyTree, BasicAPIToAddBodiesAndJoints) {
 }
 
 // Tests the basic MultibodyTree API to add bodies and joints.
-// Tests we cannot create graph loops when loop topology is disabled (it is
+// Tests we cannot create kinematic loops when loop topology is disabled (it is
 // enabled by default). See previous test for notes.
 GTEST_TEST(MultibodyTree, TopologicalLoopDisallowed) {
   auto model = std::make_unique<MultibodyTree<double>>();

@@ -20,12 +20,11 @@ loop that a four-bar forms:
 This example loads a four-bar linkage from an SDFormat model file that
 describes it the way you would draw it: as a plain loop of four revolute
 joints, with no attempt to specify a spanning tree and no stand-in for the
-"extra" joint. There is nothing to do about the loop, and the program is just
-an ordinary simulation.
+"extra" joint.
 
-Under the covers, at `Finalize()` MultibodyPlant breaks the loop by adding a
-"shadow" copy of one link, retargeting one joint onto the shadow, and adding a
-weld constraint that holds the shadow to the link it was split from.
+Under the covers, at `Finalize()` MultibodyPlant breaks the kinematic loop by
+adding a "shadow" copy of one link, retargeting one joint onto the shadow, and
+adding a weld constraint that holds the shadow to the link it was split from.
 
 Closing the loop takes a constraint, so this model needs a solver that can
 enforce one. It runs in discrete mode under SAP by default, and continuous
