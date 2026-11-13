@@ -180,6 +180,8 @@ class IcfSolver {
   const IcfSolverParameters& get_parameters() const { return parameters_; }
 
  private:
+  friend class IcfSolverTester;
+
   /* All per-island solver state. One instance is held per island in a grow-only
   pool (island_states_), so islands can be solved independently and Hessian
   factorizations can be reused across iterations and time steps on a per-island

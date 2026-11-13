@@ -395,6 +395,7 @@ drake_cc_googletest(
         ":icf_model",
         ":icf_solver",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
         "//multibody/contact_solvers/icf/test_utilities:icf_model_test_helpers",
     ],
 )
