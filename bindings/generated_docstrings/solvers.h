@@ -8740,7 +8740,8 @@ R"""(Type of details stored in MathematicalProgramResult.)""";
           // Source: drake/solvers/mosek_solver.h
           const char* doc =
 R"""(Returns true iff the environment variable MOSEKLM_LICENSE_FILE has
-been set to a non-empty value.)""";
+been set to a non-empty value and (when lazy loading) the MOSEK
+dynamic library can be loaded.)""";
         } is_enabled;
       } MosekSolver;
       // Symbol: drake::solvers::MosekSolverDetails

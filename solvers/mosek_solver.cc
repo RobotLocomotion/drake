@@ -1,5 +1,9 @@
 #include "drake/solvers/mosek_solver.h"
 
+#ifdef DRAKE_MOSEK_LAZY_LOAD_LIBRARY
+#include <dlfcn.h>
+#endif
+
 #include <cmath>
 #include <optional>
 #include <stdexcept>
@@ -26,10 +30,12 @@ namespace solvers {
 class MosekSolver::License {
  public:
   License() {
-    if (!MosekSolver::is_enabled()) {
+    if (!MosekSolver::has_license_file()) {
       throw std::runtime_error(
           "Could not locate MOSEK license file because MOSEKLM_LICENSE_FILE "
           "environment variable was not set.");
+    } else if (!MosekSolver::is_enabled()) {
+      throw std::runtime_error("Failed to load MOSEK dynamic library.");
     }
 
     MSKrescodee rescode = MSK_makeenv(&mosek_env_, nullptr);
@@ -82,6 +88,34 @@ std::shared_ptr<MosekSolver::License> MosekSolver::AcquireLicense() {
 
 bool MosekSolver::is_available() {
   return true;
+}
+
+#ifdef DRAKE_MOSEK_LAZY_LOAD_LIBRARY
+extern "C" void* drake_dlopen_mosek(const char* lib_name, bool quiet);
+#endif
+
+bool MosekSolver::is_enabled() {
+  if (!has_license_file()) {
+    return false;
+  }
+  static const bool latched_result = []() {
+#ifdef DRAKE_MOSEK_LAZY_LOAD_LIBRARY
+    void* dlhandle = drake_dlopen_mosek(DRAKE_MOSEK_LAZY_LOAD_LIBRARY, true);
+    if (dlhandle != nullptr) {
+      // Call a MOSEK API so that dlclose decrements the reference count without
+      // unloading the library.
+      MSKint32t major, minor, revision;
+      MSK_getversion(&major, &minor, &revision);
+      dlclose(dlhandle);
+      return true;
+    } else {
+      return false;
+    }
+#else
+    return true;
+#endif
+  }();
+  return latched_result;
 }
 
 void MosekSolver::DoSolve2(const MathematicalProgram& prog,
