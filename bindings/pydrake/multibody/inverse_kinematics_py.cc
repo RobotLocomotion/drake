@@ -65,6 +65,7 @@ PYDRAKE_MODULE(inverse_kinematics, m) {
 
   m.doc() = "InverseKinematics module";
 
+  py::module_::import_("pydrake.geometry");
   py::module_::import_("pydrake.math");
   py::module_::import_("pydrake.multibody.plant");
   py::module_::import_("pydrake.planning");

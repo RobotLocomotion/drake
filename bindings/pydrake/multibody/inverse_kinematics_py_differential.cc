@@ -452,6 +452,9 @@ void DefineDifferentialIkSystem(py::module_ m) {
         .def("SetJointLimits", &NestedClass::SetJointLimits,
             py::arg("joint_limits"), nested_cls_doc.SetJointLimits.doc);
   }
+
+  BindIngredient<Class::StaticStabilityConstraint>(
+      "StaticStabilityConstraint", cls_doc.StaticStabilityConstraint, &cls);
 }
 
 void DefineDifferentialIkController(py::module_ m) {

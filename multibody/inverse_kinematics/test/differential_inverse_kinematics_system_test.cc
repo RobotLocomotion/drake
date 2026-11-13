@@ -1,6 +1,7 @@
 #include "drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h"
 
 #include <future>
+#include <limits>
 #include <memory>
 #include <optional>
 #include <string>
@@ -11,23 +12,30 @@
 
 #include "drake/common/nice_type_name.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/yaml/yaml_io.h"
+#include "drake/geometry/optimization/hpolyhedron.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/tree/fixed_offset_frame.h"
+#include "drake/multibody/tree/planar_joint.h"
 #include "drake/multibody/tree/prismatic_joint.h"
+#include "drake/multibody/tree/revolute_joint.h"
 #include "drake/planning/dof_mask.h"
 #include "drake/planning/robot_diagram_builder.h"
 #include "drake/planning/scene_graph_collision_checker.h"
+#include "drake/solvers/constraint.h"
 #include "drake/systems/framework/bus_value.h"
 
 namespace drake {
 namespace multibody {
 namespace {
 
+using Eigen::MatrixXd;
 using Eigen::Vector2d;
 using Eigen::Vector3d;
 using Eigen::VectorXd;
 using geometry::Sphere;
+using geometry::optimization::HPolyhedron;
 using math::RigidTransformd;
 using planning::CollisionChecker;
 using planning::CollisionCheckerParams;
@@ -1035,6 +1043,338 @@ TEST_F(DifferentialInverseKinematicsTest, JointVelocityLimitConstraint) {
   EvaluateSamples(dut, samples);
 }
 
+/* Test fixture for StaticStabilityConstraint, using a mobile robot:
+  - A planar base B (4 kg at Bo) is joined to the world by a PlanarJoint.
+  - An arm (1 kg at 2 m from its pivot) rotates about Bz, through Bo, by angle
+    θ. Hence p_BScm = 0.4 (cos θ, sin θ, 0). The arm's "tip" frame is at the
+    arm's mass.
+  - A 5 kg "crate" in a separate model instance is welded to the world at
+    p_WCrate = (5, 0, 0).
+  - A "ghost" model instance holds a single massless body.
+The support frame is B and the support region is the rectangle |x| ≤ 0.3,
+|y| ≤ 0.5 in B, represented in A with rows of various magnitudes, to show
+that the margin is measured in meters regardless. */
+class StaticStabilityTest : public DifferentialInverseKinematicsTest {
+ protected:
+  using Constraint = DiffIk::StaticStabilityConstraint;
+
+  StaticStabilityTest() : checker_(MakeMobileChecker()) {
+    const MultibodyPlant<double>& plant = checker_->plant();
+    base_start_ = plant.GetJointByName("base").position_start();
+    arm_index_ = plant.GetJointByName("arm").position_start();
+    std::vector<bool> arm_only(plant.num_positions(), false);
+    arm_only[arm_index_] = true;
+    arm_dof_ = DofMask(arm_only);
+  }
+
+  static std::shared_ptr<CollisionChecker> MakeMobileChecker() {
+    RobotDiagramBuilder<double> builder;
+    MultibodyPlant<double>& plant = builder.plant();
+    const ModelInstanceIndex robot = plant.AddModelInstance("robot");
+    const RigidBody<double>& base = plant.AddRigidBody(
+        "base", robot, SpatialInertia<double>::SolidSphereWithMass(4, 0.1));
+    plant.AddJoint<PlanarJoint>("base", plant.world_body(), std::nullopt, base,
+                                std::nullopt, Vector3d::Zero());
+    const RigidBody<double>& arm = plant.AddRigidBody(
+        "arm", robot,
+        SpatialInertia<double>::PointMass(1, Vector3d(kArmLength, 0, 0)));
+    plant.AddJoint<RevoluteJoint>("arm", base, std::nullopt, arm, std::nullopt,
+                                  Vector3d::UnitZ());
+    plant.AddFrame(std::make_unique<FixedOffsetFrame<double>>(
+        "tip", arm.body_frame(), RigidTransformd(Vector3d(kArmLength, 0, 0))));
+    const RigidBody<double>& crate =
+        plant.AddRigidBody("crate", plant.AddModelInstance("crate"),
+                           SpatialInertia<double>::SolidSphereWithMass(5, 0.1));
+    plant.WeldFrames(plant.world_frame(), crate.body_frame(),
+                     RigidTransformd(Vector3d(5, 0, 0)));
+    const RigidBody<double>& ghost =
+        plant.AddRigidBody("ghost", plant.AddModelInstance("ghost"),
+                           SpatialInertia<double>::Zero());
+    plant.WeldFrames(plant.world_frame(), ghost.body_frame());
+    plant.Finalize();
+    CollisionCheckerParams params{
+        .model = builder.Build(),
+        .robot_model_instances = {robot},
+        .edge_step_size = 0.1,  // Arbitrary irrelevant value.
+        .env_collision_padding = 0,
+    };
+    return std::make_shared<SceneGraphCollisionChecker>(std::move(params));
+  }
+
+  static Constraint::Config MakeConfig(double margin = 0.05) {
+    // Scale factors to give the box's unit-magnitude rows a variety of
+    // magnitudes in A.
+    const Eigen::Vector4d scale(2, 1, 3, 0.5);
+    const HPolyhedron box =
+        HPolyhedron::MakeBox(Vector2d(-0.3, -0.5), Vector2d(0.3, 0.5));
+    return {.support_frame = "robot::base",
+            .support_region = HPolyhedron(scale.asDiagonal() * box.A(),
+                                          scale.asDiagonal() * box.b()),
+            .margin = margin};
+  }
+
+  /* Returns q for the given base pose (x, y, yaw) and arm angle θ. */
+  VectorXd MakeQ(const Vector3d& base, double theta) const {
+    VectorXd q = VectorXd::Zero(checker_->plant().num_positions());
+    q.segment<3>(base_start_) = base;
+    q[arm_index_] = theta;
+    return q;
+  }
+
+  /* Signed distances to the four edges of the rectangle, given p_BScm. */
+  static Eigen::Vector4d RectangleDistances(const Vector2d& p) {
+    return Eigen::Vector4d(0.3 - p.x(), 0.5 - p.y(), 0.3 + p.x(), 0.5 + p.y());
+  }
+
+  struct Rows {
+    MatrixXd A;  // The constraint matrix on v_next.
+    VectorXd d;  // The signed distances, recovered from the lower bound.
+  };
+
+  /* Calls dut.AddToProgram() at q and returns its single linear constraint. */
+  Rows Eval(const Constraint& dut, const VectorXd& q,
+            const DofMask& active_dof) const {
+    auto plant_context = checker_->plant().CreateDefaultContext();
+    checker_->plant().SetPositions(plant_context.get(), q);
+    auto checker_context = checker_->MakeStandaloneModelContext();
+    solvers::MathematicalProgram prog;
+    const solvers::VectorXDecisionVariable v_next =
+        prog.NewContinuousVariables(active_dof.count(), "v_next");
+    const std::vector<RigidTransformd> X_TGlist;
+    const MatrixXd Jv_TGs(0, active_dof.count());
+    CallbackDetails details{
+        .mathematical_program = prog,
+        .v_next = v_next,
+        .plant_context = *plant_context,
+        .collision_checker = *checker_,
+        .collision_checker_context = *checker_context,
+        .active_dof = active_dof,
+        .time_step = kTimeStep,
+        .nominal_posture = q,
+        .frame_list = {},
+        .X_TGlist = X_TGlist,
+        .Vd_TGlist = {},
+        .Jv_TGs = Jv_TGs,
+    };
+    const std::vector<Binding<EvaluatorBase>> bindings =
+        dut.AddToProgram(&details);
+    DRAKE_DEMAND(bindings.size() == 1);
+    const auto* constraint = dynamic_cast<const solvers::LinearConstraint*>(
+        bindings[0].evaluator().get());
+    DRAKE_DEMAND(constraint != nullptr);
+    EXPECT_TRUE(constraint->upper_bound().array().isInf().all());
+    return {.A = constraint->GetDenseA(),
+            .d = (dut.GetConfig().margin -
+                  constraint->lower_bound().array() * kTimeStep)
+                     .matrix()};
+  }
+
+  static constexpr double kArmLength{2.0};
+
+  std::shared_ptr<CollisionChecker> checker_;
+  int base_start_{};
+  int arm_index_{};
+  DofMask arm_dof_;
+};
+
+/* The rows match hand-computed distances and derivatives, and finite
+differences of the distances. The base pose is generic so that using W in place
+of B would be detected. */
+TEST_F(StaticStabilityTest, Rows) {
+  const Constraint dut(MakeConfig());
+  const DofMask all_dof =
+      DofMask::MakeFromModel(checker_->plant(), std::string(kRobotName));
+  const double theta = 0.9;
+  const VectorXd q = MakeQ(Vector3d(1.5, -0.7, 0.6), theta);
+  const Rows rows = Eval(dut, q, all_dof);
+
+  const Vector2d p_BScm = 0.4 * Vector2d(std::cos(theta), std::sin(theta));
+  EXPECT_TRUE(CompareMatrices(rows.d, RectangleDistances(p_BScm), 1e-12));
+
+  // The base columns are zero; the arm column is ∂d/∂θ.
+  const Vector2d dp_dtheta = 0.4 * Vector2d(-std::sin(theta), std::cos(theta));
+  MatrixXd A_expected = MatrixXd::Zero(4, 4);
+  A_expected.col(arm_index_) = Eigen::Vector4d(-dp_dtheta.x(), -dp_dtheta.y(),
+                                               dp_dtheta.x(), dp_dtheta.y());
+  EXPECT_TRUE(CompareMatrices(rows.A, A_expected, 1e-14));
+
+  // Since v = q̇, the rows are also the finite differences of d.
+  const double h = 1e-6;
+  for (int j = 0; j < q.size(); ++j) {
+    VectorXd q_plus = q;
+    VectorXd q_minus = q;
+    q_plus[j] += h;
+    q_minus[j] -= h;
+    const VectorXd dd_dqj =
+        (Eval(dut, q_plus, all_dof).d - Eval(dut, q_minus, all_dof).d) /
+        (2 * h);
+    EXPECT_TRUE(CompareMatrices(rows.A.col(j), dd_dqj, 1e-8));
+  }
+
+  // Only the active dofs get columns.
+  const Rows arm_rows = Eval(dut, q, arm_dof_);
+  EXPECT_TRUE(CompareMatrices(arm_rows.A, rows.A.col(arm_index_), 0));
+  EXPECT_TRUE(CompareMatrices(arm_rows.d, rows.d, 0));
+}
+
+/* An explicit list of model instances replaces the robot instances. The crate
+is not carried by the base, so the base columns become nonzero. */
+TEST_F(StaticStabilityTest, ModelInstances) {
+  Constraint::Config config = MakeConfig();
+  config.model_instances = {"robot", "crate"};
+  const Constraint dut(config);
+  const DofMask all_dof =
+      DofMask::MakeFromModel(checker_->plant(), std::string(kRobotName));
+  const Vector3d base(1.5, -0.7, 0.6);
+  const double theta = 0.9;
+  const Rows rows = Eval(dut, MakeQ(base, theta), all_dof);
+
+  // Both the robot and the crate weigh 5 kg.
+  const math::RotationMatrixd R_WB =
+      math::RotationMatrixd::MakeZRotation(base.z());
+  const Vector3d p_WRobot =
+      Vector3d(base.x(), base.y(), 0) +
+      R_WB * Vector3d(0.4 * std::cos(theta), 0.4 * std::sin(theta), 0);
+  const Vector3d p_WScm = (p_WRobot + Vector3d(5, 0, 0)) / 2;
+  const Vector3d p_BScm =
+      R_WB.inverse() * (p_WScm - Vector3d(base.x(), base.y(), 0));
+  EXPECT_TRUE(
+      CompareMatrices(rows.d, RectangleDistances(p_BScm.head<2>()), 1e-12));
+  EXPECT_GT(rows.A.col(base_start_).norm(), 0.1);
+}
+
+/* Drives the arm tip towards the +Bx edge; the center of mass stops at the
+margin. The base is posed (but not active) so that B differs from W. */
+TEST_F(StaticStabilityTest, DriveToEdge) {
+  const double margin = 0.05;
+  const double time_step = 0.01;
+  auto recipe = std::make_shared<Recipe>();
+  recipe->AddIngredient(std::make_shared<DiffIk::LeastSquaresCost>(
+      DiffIk::LeastSquaresCost::Config{
+          .cartesian_axis_masks = {
+              {"robot::tip", Vector6d(0, 0, 0, 1, 0, 0)}}}));
+  recipe->AddIngredient(std::make_shared<Constraint>(MakeConfig(margin)));
+  const DiffIk dut(recipe, "robot::base", checker_, arm_dof_, time_step, kK_VX,
+                   MakeSpatialLimits());
+  auto context = dut.CreateDefaultContext();
+
+  // The desired tip velocity is +Bx, which (starting at θ = π/2) decreases θ
+  // and moves the center of mass towards the +Bx edge at x = 0.3.
+  BusValue desired;
+  desired.Set("robot::tip", Value{SpatialVelocity<double>(
+                                Vector3d::Zero(), Vector3d(0.5, 0, 0))});
+  dut.get_input_port_desired_cartesian_velocities().FixValue(context.get(),
+                                                             desired);
+  VectorXd q = MakeQ(Vector3d(1.5, -0.7, 0.6), M_PI / 2);
+  dut.get_input_port_nominal_posture().FixValue(context.get(), q);
+  for (int step = 0; step < 400; ++step) {
+    dut.get_input_port_position().FixValue(context.get(), q);
+    const VectorXd v = dut.get_output_port_commanded_velocity().Eval(*context);
+    q[arm_index_] += v[0] * time_step;
+    // Linearization and solver tolerance allow a small violation.
+    const double x = 0.4 * std::cos(q[arm_index_]);
+    ASSERT_GE(0.3 - x, margin - 1e-4) << "step " << step;
+  }
+  // The arm has moved to the margin (and not merely stopped early).
+  EXPECT_NEAR(0.4 * std::cos(q[arm_index_]), 0.3 - margin, 1e-3);
+}
+
+/* A configuration within the margin must recover in one step. */
+TEST_F(StaticStabilityTest, Violated) {
+  const double margin = 0.05;
+  const double time_step = 0.01;
+  auto recipe = std::make_shared<Recipe>();
+  AddLeastSquaresCost(recipe.get());
+  recipe->AddIngredient(std::make_shared<Constraint>(MakeConfig(margin)));
+  const DiffIk dut(recipe, "robot::base", checker_, arm_dof_, time_step, kK_VX,
+                   MakeSpatialLimits());
+  auto context = dut.CreateDefaultContext();
+  BusValue desired;
+  desired.Set("robot::tip", Value{SpatialVelocity<double>::Zero()});
+  dut.get_input_port_desired_cartesian_velocities().FixValue(context.get(),
+                                                             desired);
+  auto eval = [&](double theta) {
+    const VectorXd q = MakeQ(Vector3d::Zero(), theta);
+    dut.get_input_port_nominal_posture().FixValue(context.get(), q);
+    dut.get_input_port_position().FixValue(context.get(), q);
+    return dut.get_output_port_commanded_velocity().Eval(*context)[0];
+  };
+
+  // At θ = 0.6, the center of mass is beyond the margin (d < m), but the arm
+  // can rotate it back; the commanded θ̇ is the smallest that does so.
+  const double theta = 0.6;
+  const double d = 0.3 - 0.4 * std::cos(theta);
+  ASSERT_LT(d, margin);
+  const double theta_dot_min =
+      (margin - d) / (0.4 * std::sin(theta) * time_step);
+  EXPECT_NEAR(eval(theta), theta_dot_min, 1e-3 * theta_dot_min);
+
+  // At θ = 0, rotating the arm cannot move the center of mass in Bx (to first
+  // order), so the program is infeasible and the command is zero.
+  EXPECT_EQ(eval(0.0), 0.0);
+}
+
+/* A region with no rows (the whole plane) adds an empty constraint. */
+TEST_F(StaticStabilityTest, NoRows) {
+  Constraint::Config config = MakeConfig();
+  config.support_region = HPolyhedron(MatrixXd(0, 2), VectorXd(0));
+  const Rows rows =
+      Eval(Constraint{config}, MakeQ(Vector3d::Zero(), 0), arm_dof_);
+  EXPECT_EQ(rows.A.rows(), 0);
+  EXPECT_EQ(rows.A.cols(), 1);
+}
+
+TEST_F(StaticStabilityTest, BadConfig) {
+  Constraint::Config config = MakeConfig();
+  config.support_region = HPolyhedron::MakeUnitBox(3);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      Constraint{config}, ".*ambient_dimension.*ambient_dimension\\(\\) = 3.*");
+
+  config = MakeConfig();
+  MatrixXd A = config.support_region.A();
+  A.row(1).setZero();
+  config.support_region = HPolyhedron(A, config.support_region.b());
+  // The A matrix is printed over multiple lines.
+  DRAKE_EXPECT_THROWS_MESSAGE(Constraint{config},
+                              ".*rowwise.*norm.*region.A\\(\\) = [\\s\\S]*");
+
+  for (const double bad : {std::numeric_limits<double>::infinity(),
+                           std::numeric_limits<double>::quiet_NaN()}) {
+    config = MakeConfig();
+    A = config.support_region.A();
+    A(1, 0) = bad;
+    config.support_region = HPolyhedron(A, config.support_region.b());
+    DRAKE_EXPECT_THROWS_MESSAGE(Constraint{config},
+                                ".*allFinite.*region.A\\(\\) = [\\s\\S]*");
+  }
+
+  // A failed SetConfig leaves the prior config intact.
+  Constraint dut(MakeConfig(0.125));
+  config = MakeConfig(std::numeric_limits<double>::infinity());
+  DRAKE_EXPECT_THROWS_MESSAGE(dut.SetConfig(config),
+                              ".*isfinite.*margin.*margin = inf.*");
+  EXPECT_EQ(dut.GetConfig().margin, 0.125);
+
+  const DofMask all_dof =
+      DofMask::MakeFromModel(checker_->plant(), std::string(kRobotName));
+  const VectorXd q = MakeQ(Vector3d::Zero(), 0);
+
+  config = MakeConfig();
+  config.support_frame = "robot::no_such_frame";
+  DRAKE_EXPECT_THROWS_MESSAGE(Eval(Constraint{config}, q, all_dof),
+                              ".*no_such_frame.*");
+
+  config = MakeConfig();
+  config.model_instances = {"no_such_instance"};
+  DRAKE_EXPECT_THROWS_MESSAGE(Eval(Constraint{config}, q, all_dof),
+                              ".*no_such_instance.*");
+
+  config = MakeConfig();
+  config.model_instances = {"ghost"};
+  DRAKE_EXPECT_THROWS_MESSAGE(Eval(Constraint{config}, q, all_dof),
+                              ".*total mass.*");
+}
+
 /* This tests all of the config structs getters and serialization
 implementations. */
 TEST_F(DifferentialInverseKinematicsTest, ConfigCommonOperations) {
@@ -1096,6 +1436,28 @@ TEST_F(DifferentialInverseKinematicsTest, ConfigCommonOperations) {
     EXPECT_EQ(SaveYamlString(i.GetConfig()),
               "min_margin: 0.75\n"
               "influence_margin: 1.5\n");
+  }
+
+  {
+    DiffIk::StaticStabilityConstraint i(
+        DiffIk::StaticStabilityConstraint::Config{
+            .support_frame = "robot::base",
+            .support_region =
+                HPolyhedron::MakeBox(Vector2d(-1, -2), Vector2d(3, 4)),
+            .margin = 0.75,
+            .model_instances = {"robot"}});
+    EXPECT_EQ(SaveYamlString(i.GetConfig()),
+              "support_frame: robot::base\n"
+              "support_region:\n"
+              "  ambient_dimension: 2\n"
+              "  A:\n"
+              "    - [1.0, 0.0]\n"
+              "    - [0.0, 1.0]\n"
+              "    - [-1.0, -0.0]\n"
+              "    - [-0.0, -1.0]\n"
+              "  b: [3.0, 4.0, 1.0, 2.0]\n"
+              "margin: 0.75\n"
+              "model_instances: [robot]\n");
   }
 }
 

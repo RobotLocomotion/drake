@@ -237,6 +237,7 @@ drake_pybind_library(
     py_deps = [
         ":module_py",
         ":plant_py",
+        "//bindings/pydrake/geometry",
         "//bindings/pydrake/planning",
         "//bindings/pydrake/solvers",
     ],
