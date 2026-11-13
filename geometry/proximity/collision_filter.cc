@@ -139,16 +139,8 @@ void CollisionFilter::SetAnchored(const std::vector<GeometryId>& ids) {
    transient that was *skipped* because the pair was invariant at the time
    would start biting on the next replay, silently refiltering a pair that
    DropPairsSubsumedByAnchoring() released. Refuse the whole situation
-   -- before touching any state -- as Apply() does for the same reason.
-
-   TODO(SeanCurtis-TRI): This message names no operation the user performed.
-   The user-facing error belongs in the public anchoring API (not yet
-   implemented); once it exists, this can simply become a DRAKE_DEMAND(). */
-  if (has_transient_history()) {
-    throw std::runtime_error(
-        "You cannot attempt to modify the persistent collision filter "
-        "configuration when there are active, transient filter declarations");
-  }
+   -- before touching any state -- as Apply() does for the same reason. */
+  DRAKE_DEMAND(!has_transient_history());
   for (const GeometryId id : ids) {
     if (geometries_.contains(id)) anchored_.insert(id);
   }

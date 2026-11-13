@@ -862,25 +862,6 @@ TEST_F(CollisionFilterTest, DropPairsWithNothingAnchored) {
   EXPECT_TRUE(ExpectCanCollide(filters, id_A, id_B, !kCanCollide));
 }
 
-/* Anchoring while transients are active is refused, exactly as Apply() refuses
- it. */
-TEST_F(CollisionFilterTest, SetAnchoredThrowsForTransients) {
-  CollisionFilter filters;
-  const GeometryId id_A = GeometryId::get_new_id();
-  const GeometryId id_B = GeometryId::get_new_id();
-  filters.AddGeometry(id_A, /* is_anchored = */ true);
-  filters.AddGeometry(id_B, /* is_anchored = */ false);
-  const auto& extract = this->get_extract_ids_functor();
-  using Decl = CollisionFilterDeclaration;
-
-  filters.ApplyTransient(
-      Decl().AllowBetween(GeometrySet(id_A), GeometrySet(id_B)), extract);
-
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      filters.SetAnchored({id_B}),
-      ".*cannot attempt to modify the persistent collision filter.*");
-}
-
 /* Declaring a filter between two anchored geometries must not materialize the
  pair. CanCollideWith() already blocks it, so an entry would change nothing and
  cost memory -- precisely the cost the anchored set exists to avoid. Pairs the
