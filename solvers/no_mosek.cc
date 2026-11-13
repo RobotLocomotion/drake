@@ -19,6 +19,13 @@ bool MosekSolver::is_available() {
   return false;
 }
 
+bool MosekSolver::is_enabled() {
+#ifdef DRAKE_MOSEK_LAZY_LOAD_LIBRARY
+#error Specifying MOSEK lazy loading without enabling MOSEK is not supported.
+#endif
+  return has_license_file();
+}
+
 void MosekSolver::DoSolve2(const MathematicalProgram&, const Eigen::VectorXd&,
                            internal::SpecificOptions*,
                            MathematicalProgramResult*) const {
