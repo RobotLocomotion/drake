@@ -2,6 +2,10 @@
 #include "drake/solvers/mosek_solver.h"
 /* clang-format on */
 
+#ifdef DRAKE_MOSEK_LAZY_LOAD_LIBRARY
+#include <dlfcn.h>
+#endif
+
 #include <memory>
 #include <stdexcept>
 
@@ -19,8 +23,28 @@ bool MosekSolver::is_available() {
   return false;
 }
 
+#ifdef DRAKE_MOSEK_LAZY_LOAD_LIBRARY
+extern "C" void* drake_dlopen_mosek(const char* lib_name, bool quiet);
+#endif
+
 bool MosekSolver::is_enabled() {
-  return has_license_file();
+  if (!has_license_file()) {
+    return false;
+  }
+  static const bool latched_result = []() {
+#ifdef DRAKE_MOSEK_LAZY_LOAD_LIBRARY
+    void* dlhandle = drake_dlopen_mosek(DRAKE_MOSEK_LAZY_LOAD_LIBRARY, true);
+    if (dlhandle != nullptr) {
+      dlclose(dlhandle);
+      return true;
+    } else {
+      return false;
+    }
+#else
+    return true;
+#endif
+  }();
+  return latched_result;
 }
 
 void MosekSolver::DoSolve2(const MathematicalProgram&, const Eigen::VectorXd&,
