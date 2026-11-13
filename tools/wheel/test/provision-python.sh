@@ -37,6 +37,9 @@ case "${ID}" in
         dnf install -y ${PYTHON}
         ${PYTHON} -m venv ${VENV}
         ;;
+      uv)
+        ${HOME}/.local/bin/uv venv ${VENV} --python ${PYTHON_VERSION}
+        ;;
       *)
         echo "Unsupported Python manager '${PYTHON_MANAGER}'" >&2
         exit 1
