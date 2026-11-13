@@ -77,14 +77,17 @@ The connection can be reported as missing for several reasons:
 ## Loops in the body-joint graph {#mbp-loops-in-graph}
 
 By default, `MultibodyPlant` automatically models systems for which the bodies
-and joints form one or more loops in the system graph. At `Finalize()` it
-breaks each loop by splitting one of the loop's bodies: it adds a "shadow" copy
-of that ("primary") body and a weld constraint that holds the shadow to its
-primary. A body split by several loops gets a shadow for each, and its mass
-properties are divided evenly among the primary and all of its shadows. Loop
-closure requires a constraint solver. Discrete-time plants use SAP;
-continuous-time simulation requires the CENIC integrator (integration scheme
-`"cenic"` in a `SimulatorConfig`).
+and joints form one or more kinematic loops in the system graph. At
+`Finalize()` it breaks each loop by splitting one of the loop's bodies: it adds
+a "shadow" copy of that ("primary") body and a weld constraint that holds the
+shadow to its primary. A body split by several loops gets a shadow for each,
+and its mass properties are divided evenly among the primary and all of its
+shadows.
+
+Because of the added weld constraints, loop closure requires a solver that can
+process constraints. Discrete-time plants use SAP; continuous-time simulation
+requires the CENIC integrator (integration scheme `"cenic"` in a
+`SimulatorConfig`).
 
 If automatic modeling has been disabled, `Finalize()` throws when it finds a
 loop. To disable it, call `MultibodyPlant::SetEnableLoopTopology(false)` or

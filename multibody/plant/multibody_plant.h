@@ -1842,9 +1842,9 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   void SetFuseWeldedLinks(
       bool fuse, std::optional<ModelInstanceIndex> model_instance = {});
 
-  /// Controls whether Finalize() automatically models closed kinematic loops
-  /// formed by bodies and joints. Enabled by default; when disabled,
-  /// Finalize() throws if it encounters a loop. Also configurable with
+  /// Controls whether %MultibodyPlant supports closed kinematic loops
+  /// formed by links (bodies) and joints. Enabled by default; when disabled,
+  /// Finalize() throws if it encounters such a loop. Also configurable with
   /// MultibodyPlantConfig::enable_loop_topology.
   ///
   /// To deal with loops automatically requires modifying the system's topology

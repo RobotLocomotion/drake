@@ -4,9 +4,8 @@ closed kinematic loops, applied to a model parsed from an SDFormat file. It
 shows:
   - How to describe a four bar linkage in SDFormat as a loop of four joints
     with no attempt to break the loop (see four_bar.sdf).
-  - That there is nothing to do about the loop. Internally, Drake will split one
-    of the links and add a constraint as needed to close the loop. The linkage
-    is already assembled as defined, so the mechanism can simply be simulated.
+  - That the linkage is already assembled as defined, so the mechanism can
+    simply be simulated.
 
 Closing the loop takes a constraint, so we have to use a solver that supports
 constraints. It runs in discrete mode under SAP by default, and continuous under

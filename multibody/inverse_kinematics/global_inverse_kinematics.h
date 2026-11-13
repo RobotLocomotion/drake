@@ -59,7 +59,7 @@ class GlobalInverseKinematics {
    * @param options The options to relax SO(3) constraint as mixed-integer
    * convex constraints. Refer to MixedIntegerRotationConstraintGenerator for
    * more details on the parameters in options.
-   * @throws std::exception if @p plant contains a kinematic loop.
+   * @throws std::exception if `plant` contains any kinematic loops.
    */
   explicit GlobalInverseKinematics(const MultibodyPlant<double>& plant,
                                    const Options& options = Options());

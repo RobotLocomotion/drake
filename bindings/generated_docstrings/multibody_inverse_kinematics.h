@@ -2535,7 +2535,7 @@ Parameter ``options``:
     more details on the parameters in options.
 
 Raises:
-    RuntimeError if ``plant`` contains a kinematic loop.)""";
+    RuntimeError if ``plant`` contains any kinematic loops.)""";
         } ctor;
         // Symbol: drake::multibody::GlobalInverseKinematics::Options
         struct /* Options */ {

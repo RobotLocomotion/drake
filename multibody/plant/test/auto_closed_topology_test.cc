@@ -1,5 +1,5 @@
-/* Tests for MultibodyPlant's automatic handling of closed-topology (looped)
-systems, which is enabled by default. Finalize() breaks each kinematic loop
+/* Tests for MultibodyPlant's automatic handling of systems with kinematic loops
+(closed topologies), which is enabled by default. Finalize() breaks each loop
 using the shadow links and loop constraints produced by the underlying
 LinkJointGraph/SpanningForest. This file tests that
  - adding shadow links splits mass properties properly among the primary

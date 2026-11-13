@@ -2216,7 +2216,7 @@ GTEST_TEST(MultibodyPlantTest, WeldOfNonBaseBody) {
   EXPECT_NO_THROW(bad_double_weld.Finalize());
 }
 
-// Automatic modeling of systems where the links and joints form topological
+// Automatic modeling of systems where the links and joints form kinematic
 // loops is enabled by default, but can be disabled. Make sure that once it is
 // disabled we reject such systems.
 GTEST_TEST(MultibodyPlantTest, UnsupportedTopologicalLoop) {
@@ -4911,9 +4911,9 @@ GTEST_TEST(MultibodyPlantTest, EnableLoopTopologyOption) {
   plant.SetEnableLoopTopology(true);
   EXPECT_TRUE(plant.GetEnableLoopTopology());
 
-  // Leave it disabled and finalize a simple (loop-free) model. Using the
-  // non-default setting lets the scalar conversion check below tell a copied
-  // setting from a defaulted one.
+  // Leave it disabled and finalize a simple model with no kinematic loops.
+  // Using the non-default setting lets the scalar conversion check below tell a
+  // copied setting from a defaulted one.
   plant.SetEnableLoopTopology(false);
   plant.AddRigidBody("body", SpatialInertia<double>::MakeUnitary());
   plant.Finalize();
