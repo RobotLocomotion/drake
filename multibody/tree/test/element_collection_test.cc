@@ -55,9 +55,9 @@ GTEST_TEST(ElementCollectionTest, AddDense) {
   EXPECT_EQ(dut.get_element_unchecked(Index{1}).name(), "one");
   EXPECT_EQ(dut.get_element_unchecked(Index{1}).name(), "one");
   DRAKE_EXPECT_THROWS_MESSAGE(dut.get_element(Index{}),
-                              ".*default-constructed ModelInstanceIndex.*");
+                              ".*default-constructed <invalid ModelInstanceIndex>.*");
   DRAKE_EXPECT_THROWS_MESSAGE(dut.get_mutable_element(Index{}),
-                              ".*default-constructed ModelInstanceIndex.*");
+                              ".*default-constructed <invalid ModelInstanceIndex>.*");
   DRAKE_EXPECT_THROWS_MESSAGE(dut.get_element(Index{22}),
                               ".*ModelInstanceIndex.*22.*bounds.*");
   DRAKE_EXPECT_THROWS_MESSAGE(dut.get_mutable_element(Index{22}),
