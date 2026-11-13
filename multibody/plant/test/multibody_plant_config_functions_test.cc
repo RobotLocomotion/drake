@@ -122,17 +122,17 @@ GTEST_TEST(MultibodyPlantConfigFunctionsTest, YamlSampledOutputPortsTest) {
     return plant.has_sampled_output_ports();
   };
 
-  // True means true, no matter the time_step.
-  // However, at the moment a continuous plant doesn't support sampling.
+  // True means true, no matter the time_step. (A continuous plant with sampled
+  // output ports is only useful with an integrator that records samples, e.g.,
+  // CenicIntegrator.)
   EXPECT_TRUE(is_sampled(R"""(
 time_step: 0.1
 use_sampled_output_ports: true
 )"""));
-  EXPECT_THROW(is_sampled(R"""(
+  EXPECT_TRUE(is_sampled(R"""(
 time_step: 0.0
 use_sampled_output_ports: true
-)"""),
-               std::exception);
+)"""));
 
   // False means false, no matter the time_step.
   EXPECT_FALSE(is_sampled(R"""(

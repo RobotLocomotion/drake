@@ -25,6 +25,7 @@ drake_cc_library(
         "//multibody/contact_solvers/icf:icf_builder",
         "//multibody/contact_solvers/icf:icf_external_systems_linearizer",
         "//multibody/contact_solvers/icf:icf_solver",
+        "//multibody/plant",
         "//systems/analysis:integrator_base",
     ],
 )
@@ -51,10 +52,14 @@ drake_cc_googletest(
         ":cenic_integrator",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
+        "//common/yaml",
         "//multibody/parsing",
+        "//multibody/plant:multibody_plant_config_functions",
+        "//systems/analysis:runge_kutta3_integrator",
         "//systems/analysis:simulator",
         "//systems/analysis:simulator_config_functions",
         "//systems/analysis/test_utilities",
+        "//systems/primitives:gain",
     ],
 )
 

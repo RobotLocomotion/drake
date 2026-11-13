@@ -1355,8 +1355,8 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
       unordered_map<GeometryId, unique_ptr<CollisionObjectd>>* objects) {
     const double margin =
         props.GetPropertyOrDefault<double>(kHydroGroup, kMargin, 0.0);
-    if (!(margin >= 0 && std::isfinite(margin))) {
-      throw std::logic_error("Margin must be non-negative and finite.");
+    if (std::optional<std::string> error = ReportIfInvalidMargin(margin)) {
+      throw std::logic_error(*error);
     }
     ReifyData data{nullptr, id, props, X_WG, margin};
     shape.Reify(this, &data);
