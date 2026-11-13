@@ -399,6 +399,13 @@ class TestModelMaker(unittest.TestCase):
             _file_contents(generated_xml), "<name>package_auto</name>"
         )
 
+        # "auto" can be run again, now using the package.xml it generated.
+        dut.make_model()
+        self.assertRegex(
+            _file_contents(sdf_result),
+            "<uri>package://package_auto/box.obj</uri>",
+        )
+
         # "auto" with pre-existing package.xml in obj file will use it.
         # We'll change the name in the generated xml to confirm it gets used.
         with open(generated_xml, "w") as f:

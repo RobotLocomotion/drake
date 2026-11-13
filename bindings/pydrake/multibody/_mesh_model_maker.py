@@ -14,8 +14,7 @@ from pydrake.multibody.tree import (
 
 _logger = logging.getLogger("drake")
 
-_PACKAGE_TEMPLATE = """
-<?xml version="1.0"?>
+_PACKAGE_TEMPLATE = """<?xml version="1.0"?>
 <package format="2">
   <name>{name}</name>
   <version>0.0.0</version>
