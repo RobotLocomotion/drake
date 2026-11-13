@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>scenesmith_models</name>
+  <version>0.0.0</version>
+  <description>Extracted scenesmith_models subset for the home_office_desk_tidy profiling harness.</description>
+  <maintainer email="xuchen@lbm.global">Xuchen Han</maintainer>
+  <license>none</license>
+</package>

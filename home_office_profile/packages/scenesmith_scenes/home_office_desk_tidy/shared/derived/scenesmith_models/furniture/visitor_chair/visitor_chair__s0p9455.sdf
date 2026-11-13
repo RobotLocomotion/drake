@@ -1,0 +1,1347 @@
+<?xml version='1.0' encoding='utf-8'?>
+<sdf xmlns:drake="drake.mit.edu" version="1.7">
+  <model name="visitor_chair">
+    <link name="base_link">
+      <inertial>
+        <mass>8.000000</mass>
+        <pose>-0.00160735 -0.058760934 0.58274569 0 0 0</pose>
+        <inertia>
+          <ixx>3.565683e-01</ixx>
+          <iyy>3.268538e-01</iyy>
+          <izz>3.052272e-01</izz>
+          <ixy>1.168779e-03</ixy>
+          <ixz>-1.072657e-03</ixz>
+          <iyz>1.028111e-01</iyz>
+        </inertia>
+      </inertial>
+      <collision name="auto_0">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/furniture/visitor_chair/assets/visitor_chair_cf_0.obj</uri>
+            <drake:declare_convex />
+            <scale>0.94550000 0.94550000 0.94550000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.4</drake:mu_dynamic>
+          <drake:mu_static>0.4</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="auto_1">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/furniture/visitor_chair/assets/visitor_chair_cf_1.obj</uri>
+            <drake:declare_convex />
+            <scale>0.94550000 0.94550000 0.94550000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.4</drake:mu_dynamic>
+          <drake:mu_static>0.4</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="auto_2">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/furniture/visitor_chair/assets/visitor_chair_cf_2.obj</uri>
+            <drake:declare_convex />
+            <scale>0.94550000 0.94550000 0.94550000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.4</drake:mu_dynamic>
+          <drake:mu_static>0.4</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="auto_3">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/furniture/visitor_chair/assets/visitor_chair_cf_3.obj</uri>
+            <drake:declare_convex />
+            <scale>0.94550000 0.94550000 0.94550000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.4</drake:mu_dynamic>
+          <drake:mu_static>0.4</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="auto_4">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/furniture/visitor_chair/assets/visitor_chair_cf_4.obj</uri>
+            <drake:declare_convex />
+            <scale>0.94550000 0.94550000 0.94550000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.4</drake:mu_dynamic>
+          <drake:mu_static>0.4</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="auto_5">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/furniture/visitor_chair/assets/visitor_chair_cf_5.obj</uri>
+            <drake:declare_convex />
+            <scale>0.94550000 0.94550000 0.94550000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.4</drake:mu_dynamic>
+          <drake:mu_static>0.4</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="auto_6">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/furniture/visitor_chair/assets/visitor_chair_cf_6.obj</uri>
+            <drake:declare_convex />
+            <scale>0.94550000 0.94550000 0.94550000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.4</drake:mu_dynamic>
+          <drake:mu_static>0.4</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="auto_7">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/furniture/visitor_chair/assets/visitor_chair_cf_7.obj</uri>
+            <drake:declare_convex />
+            <scale>0.94550000 0.94550000 0.94550000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.4</drake:mu_dynamic>
+          <drake:mu_static>0.4</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="auto_8">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/furniture/visitor_chair/assets/visitor_chair_cf_8.obj</uri>
+            <drake:declare_convex />
+            <scale>0.94550000 0.94550000 0.94550000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.4</drake:mu_dynamic>
+          <drake:mu_static>0.4</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="auto_9">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/furniture/visitor_chair/assets/visitor_chair_cf_9.obj</uri>
+            <drake:declare_convex />
+            <scale>0.94550000 0.94550000 0.94550000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.4</drake:mu_dynamic>
+          <drake:mu_static>0.4</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="auto_10">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/furniture/visitor_chair/assets/visitor_chair_cf_10.obj</uri>
+            <drake:declare_convex />
+            <scale>0.94550000 0.94550000 0.94550000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.4</drake:mu_dynamic>
+          <drake:mu_static>0.4</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="auto_11">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/furniture/visitor_chair/assets/visitor_chair_cf_11.obj</uri>
+            <drake:declare_convex />
+            <scale>0.94550000 0.94550000 0.94550000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.4</drake:mu_dynamic>
+          <drake:mu_static>0.4</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="auto_12">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/furniture/visitor_chair/assets/visitor_chair_cf_12.obj</uri>
+            <drake:declare_convex />
+            <scale>0.94550000 0.94550000 0.94550000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.4</drake:mu_dynamic>
+          <drake:mu_static>0.4</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="auto_13">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/furniture/visitor_chair/assets/visitor_chair_cf_13.obj</uri>
+            <drake:declare_convex />
+            <scale>0.94550000 0.94550000 0.94550000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.4</drake:mu_dynamic>
+          <drake:mu_static>0.4</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="auto_14">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/furniture/visitor_chair/assets/visitor_chair_cf_14.obj</uri>
+            <drake:declare_convex />
+            <scale>0.94550000 0.94550000 0.94550000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.4</drake:mu_dynamic>
+          <drake:mu_static>0.4</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="auto_15">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/furniture/visitor_chair/assets/visitor_chair_cf_15.obj</uri>
+            <drake:declare_convex />
+            <scale>0.94550000 0.94550000 0.94550000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.4</drake:mu_dynamic>
+          <drake:mu_static>0.4</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="auto_16">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/furniture/visitor_chair/assets/visitor_chair_cf_16.obj</uri>
+            <drake:declare_convex />
+            <scale>0.94550000 0.94550000 0.94550000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.4</drake:mu_dynamic>
+          <drake:mu_static>0.4</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="auto_17">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/furniture/visitor_chair/assets/visitor_chair_cf_17.obj</uri>
+            <drake:declare_convex />
+            <scale>0.94550000 0.94550000 0.94550000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.4</drake:mu_dynamic>
+          <drake:mu_static>0.4</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="auto_18">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/furniture/visitor_chair/assets/visitor_chair_cf_18.obj</uri>
+            <drake:declare_convex />
+            <scale>0.94550000 0.94550000 0.94550000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.4</drake:mu_dynamic>
+          <drake:mu_static>0.4</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="auto_19">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/furniture/visitor_chair/assets/visitor_chair_cf_19.obj</uri>
+            <drake:declare_convex />
+            <scale>0.94550000 0.94550000 0.94550000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.4</drake:mu_dynamic>
+          <drake:mu_static>0.4</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="auto_20">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/furniture/visitor_chair/assets/visitor_chair_cf_20.obj</uri>
+            <drake:declare_convex />
+            <scale>0.94550000 0.94550000 0.94550000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.4</drake:mu_dynamic>
+          <drake:mu_static>0.4</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="auto_21">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/furniture/visitor_chair/assets/visitor_chair_cf_21.obj</uri>
+            <drake:declare_convex />
+            <scale>0.94550000 0.94550000 0.94550000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.4</drake:mu_dynamic>
+          <drake:mu_static>0.4</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="auto_22">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/furniture/visitor_chair/assets/visitor_chair_cf_22.obj</uri>
+            <drake:declare_convex />
+            <scale>0.94550000 0.94550000 0.94550000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.4</drake:mu_dynamic>
+          <drake:mu_static>0.4</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="auto_23">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/furniture/visitor_chair/assets/visitor_chair_cf_23.obj</uri>
+            <drake:declare_convex />
+            <scale>0.94550000 0.94550000 0.94550000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.4</drake:mu_dynamic>
+          <drake:mu_static>0.4</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="auto_24">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/furniture/visitor_chair/assets/visitor_chair_cf_24.obj</uri>
+            <drake:declare_convex />
+            <scale>0.94550000 0.94550000 0.94550000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.4</drake:mu_dynamic>
+          <drake:mu_static>0.4</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="auto_25">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/furniture/visitor_chair/assets/visitor_chair_cf_25.obj</uri>
+            <drake:declare_convex />
+            <scale>0.94550000 0.94550000 0.94550000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.4</drake:mu_dynamic>
+          <drake:mu_static>0.4</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="auto_26">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/furniture/visitor_chair/assets/visitor_chair_cf_26.obj</uri>
+            <drake:declare_convex />
+            <scale>0.94550000 0.94550000 0.94550000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.4</drake:mu_dynamic>
+          <drake:mu_static>0.4</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="auto_27">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/furniture/visitor_chair/assets/visitor_chair_cf_27.obj</uri>
+            <drake:declare_convex />
+            <scale>0.94550000 0.94550000 0.94550000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.4</drake:mu_dynamic>
+          <drake:mu_static>0.4</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="auto_28">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/furniture/visitor_chair/assets/visitor_chair_cf_28.obj</uri>
+            <drake:declare_convex />
+            <scale>0.94550000 0.94550000 0.94550000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.4</drake:mu_dynamic>
+          <drake:mu_static>0.4</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="auto_29">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/furniture/visitor_chair/assets/visitor_chair_cf_29.obj</uri>
+            <drake:declare_convex />
+            <scale>0.94550000 0.94550000 0.94550000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.4</drake:mu_dynamic>
+          <drake:mu_static>0.4</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="auto_30">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/furniture/visitor_chair/assets/visitor_chair_cf_30.obj</uri>
+            <drake:declare_convex />
+            <scale>0.94550000 0.94550000 0.94550000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.4</drake:mu_dynamic>
+          <drake:mu_static>0.4</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="auto_31">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/furniture/visitor_chair/assets/visitor_chair_cf_31.obj</uri>
+            <drake:declare_convex />
+            <scale>0.94550000 0.94550000 0.94550000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.4</drake:mu_dynamic>
+          <drake:mu_static>0.4</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="auto_32">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/furniture/visitor_chair/assets/visitor_chair_cf_32.obj</uri>
+            <drake:declare_convex />
+            <scale>0.94550000 0.94550000 0.94550000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.4</drake:mu_dynamic>
+          <drake:mu_static>0.4</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="auto_33">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/furniture/visitor_chair/assets/visitor_chair_cf_33.obj</uri>
+            <drake:declare_convex />
+            <scale>0.94550000 0.94550000 0.94550000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.4</drake:mu_dynamic>
+          <drake:mu_static>0.4</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="auto_34">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/furniture/visitor_chair/assets/visitor_chair_cf_34.obj</uri>
+            <drake:declare_convex />
+            <scale>0.94550000 0.94550000 0.94550000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.4</drake:mu_dynamic>
+          <drake:mu_static>0.4</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="auto_35">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/furniture/visitor_chair/assets/visitor_chair_cf_35.obj</uri>
+            <drake:declare_convex />
+            <scale>0.94550000 0.94550000 0.94550000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.4</drake:mu_dynamic>
+          <drake:mu_static>0.4</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="auto_36">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/furniture/visitor_chair/assets/visitor_chair_cf_36.obj</uri>
+            <drake:declare_convex />
+            <scale>0.94550000 0.94550000 0.94550000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.4</drake:mu_dynamic>
+          <drake:mu_static>0.4</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="auto_37">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/furniture/visitor_chair/assets/visitor_chair_cf_37.obj</uri>
+            <drake:declare_convex />
+            <scale>0.94550000 0.94550000 0.94550000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.4</drake:mu_dynamic>
+          <drake:mu_static>0.4</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="auto_38">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/furniture/visitor_chair/assets/visitor_chair_cf_38.obj</uri>
+            <drake:declare_convex />
+            <scale>0.94550000 0.94550000 0.94550000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.4</drake:mu_dynamic>
+          <drake:mu_static>0.4</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="auto_39">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/furniture/visitor_chair/assets/visitor_chair_cf_39.obj</uri>
+            <drake:declare_convex />
+            <scale>0.94550000 0.94550000 0.94550000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.4</drake:mu_dynamic>
+          <drake:mu_static>0.4</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="auto_40">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/furniture/visitor_chair/assets/visitor_chair_cf_40.obj</uri>
+            <drake:declare_convex />
+            <scale>0.94550000 0.94550000 0.94550000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.4</drake:mu_dynamic>
+          <drake:mu_static>0.4</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="auto_41">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/furniture/visitor_chair/assets/visitor_chair_cf_41.obj</uri>
+            <drake:declare_convex />
+            <scale>0.94550000 0.94550000 0.94550000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.4</drake:mu_dynamic>
+          <drake:mu_static>0.4</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="auto_42">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/furniture/visitor_chair/assets/visitor_chair_cf_42.obj</uri>
+            <drake:declare_convex />
+            <scale>0.94550000 0.94550000 0.94550000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.4</drake:mu_dynamic>
+          <drake:mu_static>0.4</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="auto_43">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/furniture/visitor_chair/assets/visitor_chair_cf_43.obj</uri>
+            <drake:declare_convex />
+            <scale>0.94550000 0.94550000 0.94550000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.4</drake:mu_dynamic>
+          <drake:mu_static>0.4</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="auto_44">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/furniture/visitor_chair/assets/visitor_chair_cf_44.obj</uri>
+            <drake:declare_convex />
+            <scale>0.94550000 0.94550000 0.94550000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.4</drake:mu_dynamic>
+          <drake:mu_static>0.4</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="auto_45">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/furniture/visitor_chair/assets/visitor_chair_cf_45.obj</uri>
+            <drake:declare_convex />
+            <scale>0.94550000 0.94550000 0.94550000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.4</drake:mu_dynamic>
+          <drake:mu_static>0.4</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="auto_46">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/furniture/visitor_chair/assets/visitor_chair_cf_46.obj</uri>
+            <drake:declare_convex />
+            <scale>0.94550000 0.94550000 0.94550000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.4</drake:mu_dynamic>
+          <drake:mu_static>0.4</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="auto_47">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/furniture/visitor_chair/assets/visitor_chair_cf_47.obj</uri>
+            <drake:declare_convex />
+            <scale>0.94550000 0.94550000 0.94550000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.4</drake:mu_dynamic>
+          <drake:mu_static>0.4</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="auto_48">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/furniture/visitor_chair/assets/visitor_chair_cf_48.obj</uri>
+            <drake:declare_convex />
+            <scale>0.94550000 0.94550000 0.94550000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.4</drake:mu_dynamic>
+          <drake:mu_static>0.4</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="auto_49">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/furniture/visitor_chair/assets/visitor_chair_cf_49.obj</uri>
+            <drake:declare_convex />
+            <scale>0.94550000 0.94550000 0.94550000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.4</drake:mu_dynamic>
+          <drake:mu_static>0.4</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="auto_50">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/furniture/visitor_chair/assets/visitor_chair_cf_50.obj</uri>
+            <drake:declare_convex />
+            <scale>0.94550000 0.94550000 0.94550000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.4</drake:mu_dynamic>
+          <drake:mu_static>0.4</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="auto_51">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/furniture/visitor_chair/assets/visitor_chair_cf_51.obj</uri>
+            <drake:declare_convex />
+            <scale>0.94550000 0.94550000 0.94550000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.4</drake:mu_dynamic>
+          <drake:mu_static>0.4</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="auto_52">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/furniture/visitor_chair/assets/visitor_chair_cf_52.obj</uri>
+            <drake:declare_convex />
+            <scale>0.94550000 0.94550000 0.94550000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.4</drake:mu_dynamic>
+          <drake:mu_static>0.4</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="auto_53">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/furniture/visitor_chair/assets/visitor_chair_cf_53.obj</uri>
+            <drake:declare_convex />
+            <scale>0.94550000 0.94550000 0.94550000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.4</drake:mu_dynamic>
+          <drake:mu_static>0.4</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="auto_54">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/furniture/visitor_chair/assets/visitor_chair_cf_54.obj</uri>
+            <drake:declare_convex />
+            <scale>0.94550000 0.94550000 0.94550000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.4</drake:mu_dynamic>
+          <drake:mu_static>0.4</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="auto_55">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/furniture/visitor_chair/assets/visitor_chair_cf_55.obj</uri>
+            <drake:declare_convex />
+            <scale>0.94550000 0.94550000 0.94550000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.4</drake:mu_dynamic>
+          <drake:mu_static>0.4</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="auto_56">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/furniture/visitor_chair/assets/visitor_chair_cf_56.obj</uri>
+            <drake:declare_convex />
+            <scale>0.94550000 0.94550000 0.94550000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.4</drake:mu_dynamic>
+          <drake:mu_static>0.4</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="auto_57">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/furniture/visitor_chair/assets/visitor_chair_cf_57.obj</uri>
+            <drake:declare_convex />
+            <scale>0.94550000 0.94550000 0.94550000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.4</drake:mu_dynamic>
+          <drake:mu_static>0.4</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="auto_58">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/furniture/visitor_chair/assets/visitor_chair_cf_58.obj</uri>
+            <drake:declare_convex />
+            <scale>0.94550000 0.94550000 0.94550000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.4</drake:mu_dynamic>
+          <drake:mu_static>0.4</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="auto_59">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/furniture/visitor_chair/assets/visitor_chair_cf_59.obj</uri>
+            <drake:declare_convex />
+            <scale>0.94550000 0.94550000 0.94550000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.4</drake:mu_dynamic>
+          <drake:mu_static>0.4</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="auto_60">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/furniture/visitor_chair/assets/visitor_chair_cf_60.obj</uri>
+            <drake:declare_convex />
+            <scale>0.94550000 0.94550000 0.94550000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.4</drake:mu_dynamic>
+          <drake:mu_static>0.4</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="auto_61">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/furniture/visitor_chair/assets/visitor_chair_cf_61.obj</uri>
+            <drake:declare_convex />
+            <scale>0.94550000 0.94550000 0.94550000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.4</drake:mu_dynamic>
+          <drake:mu_static>0.4</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="auto_62">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/furniture/visitor_chair/assets/visitor_chair_cf_62.obj</uri>
+            <drake:declare_convex />
+            <scale>0.94550000 0.94550000 0.94550000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.4</drake:mu_dynamic>
+          <drake:mu_static>0.4</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="auto_63">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/furniture/visitor_chair/assets/visitor_chair_cf_63.obj</uri>
+            <drake:declare_convex />
+            <scale>0.94550000 0.94550000 0.94550000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.4</drake:mu_dynamic>
+          <drake:mu_static>0.4</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="auto_64">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/furniture/visitor_chair/assets/visitor_chair_cf_64.obj</uri>
+            <drake:declare_convex />
+            <scale>0.94550000 0.94550000 0.94550000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.4</drake:mu_dynamic>
+          <drake:mu_static>0.4</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="auto_65">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/furniture/visitor_chair/assets/visitor_chair_cf_65.obj</uri>
+            <drake:declare_convex />
+            <scale>0.94550000 0.94550000 0.94550000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.4</drake:mu_dynamic>
+          <drake:mu_static>0.4</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="auto_66">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/furniture/visitor_chair/assets/visitor_chair_cf_66.obj</uri>
+            <drake:declare_convex />
+            <scale>0.94550000 0.94550000 0.94550000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.4</drake:mu_dynamic>
+          <drake:mu_static>0.4</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="auto_67">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/furniture/visitor_chair/assets/visitor_chair_cf_67.obj</uri>
+            <drake:declare_convex />
+            <scale>0.94550000 0.94550000 0.94550000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.4</drake:mu_dynamic>
+          <drake:mu_static>0.4</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="auto_68">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/furniture/visitor_chair/assets/visitor_chair_cf_68.obj</uri>
+            <drake:declare_convex />
+            <scale>0.94550000 0.94550000 0.94550000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.4</drake:mu_dynamic>
+          <drake:mu_static>0.4</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="auto_69">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/furniture/visitor_chair/assets/visitor_chair_cf_69.obj</uri>
+            <drake:declare_convex />
+            <scale>0.94550000 0.94550000 0.94550000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.4</drake:mu_dynamic>
+          <drake:mu_static>0.4</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="auto_70">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/furniture/visitor_chair/assets/visitor_chair_cf_70.obj</uri>
+            <drake:declare_convex />
+            <scale>0.94550000 0.94550000 0.94550000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.4</drake:mu_dynamic>
+          <drake:mu_static>0.4</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="auto_71">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/furniture/visitor_chair/assets/visitor_chair_cf_71.obj</uri>
+            <drake:declare_convex />
+            <scale>0.94550000 0.94550000 0.94550000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.4</drake:mu_dynamic>
+          <drake:mu_static>0.4</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="auto_72">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/furniture/visitor_chair/assets/visitor_chair_cf_72.obj</uri>
+            <drake:declare_convex />
+            <scale>0.94550000 0.94550000 0.94550000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.4</drake:mu_dynamic>
+          <drake:mu_static>0.4</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="auto_73">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/furniture/visitor_chair/assets/visitor_chair_cf_73.obj</uri>
+            <drake:declare_convex />
+            <scale>0.94550000 0.94550000 0.94550000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.4</drake:mu_dynamic>
+          <drake:mu_static>0.4</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="auto_74">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/furniture/visitor_chair/assets/visitor_chair_cf_74.obj</uri>
+            <drake:declare_convex />
+            <scale>0.94550000 0.94550000 0.94550000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.4</drake:mu_dynamic>
+          <drake:mu_static>0.4</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="auto_75">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/furniture/visitor_chair/assets/visitor_chair_cf_75.obj</uri>
+            <drake:declare_convex />
+            <scale>0.94550000 0.94550000 0.94550000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.4</drake:mu_dynamic>
+          <drake:mu_static>0.4</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="auto_76">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/furniture/visitor_chair/assets/visitor_chair_cf_76.obj</uri>
+            <drake:declare_convex />
+            <scale>0.94550000 0.94550000 0.94550000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.4</drake:mu_dynamic>
+          <drake:mu_static>0.4</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="auto_77">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/furniture/visitor_chair/assets/visitor_chair_cf_77.obj</uri>
+            <drake:declare_convex />
+            <scale>0.94550000 0.94550000 0.94550000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.4</drake:mu_dynamic>
+          <drake:mu_static>0.4</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="auto_78">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/furniture/visitor_chair/assets/visitor_chair_cf_78.obj</uri>
+            <drake:declare_convex />
+            <scale>0.94550000 0.94550000 0.94550000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.4</drake:mu_dynamic>
+          <drake:mu_static>0.4</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="auto_79">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/furniture/visitor_chair/assets/visitor_chair_cf_79.obj</uri>
+            <drake:declare_convex />
+            <scale>0.94550000 0.94550000 0.94550000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.4</drake:mu_dynamic>
+          <drake:mu_static>0.4</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="auto_80">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/furniture/visitor_chair/assets/visitor_chair_cf_80.obj</uri>
+            <drake:declare_convex />
+            <scale>0.94550000 0.94550000 0.94550000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.4</drake:mu_dynamic>
+          <drake:mu_static>0.4</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="auto_81">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/furniture/visitor_chair/assets/visitor_chair_cf_81.obj</uri>
+            <drake:declare_convex />
+            <scale>0.94550000 0.94550000 0.94550000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.4</drake:mu_dynamic>
+          <drake:mu_static>0.4</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="auto_82">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/furniture/visitor_chair/assets/visitor_chair_cf_82.obj</uri>
+            <drake:declare_convex />
+            <scale>0.94550000 0.94550000 0.94550000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.4</drake:mu_dynamic>
+          <drake:mu_static>0.4</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+    </link>
+  </model>
+</sdf>
