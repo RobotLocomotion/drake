@@ -233,7 +233,9 @@ drake_cc_googletest(
     deps = [
         ":mbp_environment_collision_checker",
         ":sphere_robot_model_collision_checker_abstract_test_suite",
+        "//common/test_utilities:eigen_matrix_compare",
         "//planning:planning_test_helpers",
+        "//planning:robot_diagram_builder",
         "//planning/test_utilities:collision_checker_abstract_test_suite",
     ],
 )
