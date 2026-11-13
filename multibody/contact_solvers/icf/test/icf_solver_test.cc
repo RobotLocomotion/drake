@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <functional>
+#include <limits>
 #include <memory>
 #include <utility>
 #include <vector>
@@ -11,6 +12,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/multibody/contact_solvers/icf/icf_data.h"
 #include "drake/multibody/contact_solvers/icf/icf_model.h"
 #include "drake/multibody/contact_solvers/icf/test_utilities/icf_model_test_helpers.h"
@@ -20,6 +22,17 @@ namespace multibody {
 namespace contact_solvers {
 namespace icf {
 namespace internal {
+
+// Grants the tests below access to IcfSolver's private line search.
+class IcfSolverTester {
+ public:
+  static std::pair<double, int> PerformExactLineSearchIsland(
+      IcfSolver* solver, const IcfModel<double>& model, int island,
+      const IcfData<double>& data, const Eigen::VectorXd& w) {
+    return solver->PerformExactLineSearchIsland(model, island, data, w);
+  }
+};
+
 namespace {
 
 using Eigen::MatrixXd;
@@ -249,6 +262,37 @@ TEST_P(IcfSolverParamTest, LinesearchStepSizeLimits) {
     data_.set_v(v_guess);
     EXPECT_TRUE(solver_.SolveWithGuess(model_, kConvergenceTolerance, &data_));
   }
+}
+
+/* The line search must tolerate a search direction whose directional
+derivative is zero (or within roundoff of zero) on an island that is already
+converged to roundoff, by taking no step. A direction that is clearly not a
+descent direction, or a non-finite one, is still an error. */
+TEST_P(IcfSolverParamTest, LinesearchWithoutDescent) {
+  const int island = 0;
+  model_.CalcData(island, &data_);
+  ASSERT_GT(data_.gradient().norm(), 0.0);  // Otherwise, the test is vacuous.
+  const int nv = model_.num_velocities();
+
+  // A zero direction has exactly zero directional derivative: no step.
+  const auto [alpha, ls_iterations] =
+      IcfSolverTester::PerformExactLineSearchIsland(&solver_, model_, island,
+                                                    data_, VectorXd::Zero(nv));
+  EXPECT_EQ(alpha, 0.0);
+  EXPECT_EQ(ls_iterations, 0);
+
+  // A direction that increases the cost is a bug, and the message says why.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      IcfSolverTester::PerformExactLineSearchIsland(&solver_, model_, island,
+                                                    data_, data_.gradient()),
+      ".*not a descent direction.*dell0 = .*‖g‖ = .*‖w‖ = .*");
+
+  // A non-finite direction is also a bug.
+  VectorXd w_nan = VectorXd::Zero(nv);
+  w_nan[0] = std::numeric_limits<double>::quiet_NaN();
+  DRAKE_EXPECT_THROWS_MESSAGE(IcfSolverTester::PerformExactLineSearchIsland(
+                                  &solver_, model_, island, data_, w_nan),
+                              ".*not a descent direction.*");
 }
 
 /* Checks that we can converge to different tolerances. */

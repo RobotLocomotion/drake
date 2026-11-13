@@ -1,9 +1,14 @@
 #include "drake/multibody/contact_solvers/icf/icf_solver.h"
 
 #include <algorithm>
+#include <cmath>
 #include <exception>
 #include <limits>
 #include <span>
+#include <stdexcept>
+#include <string>
+
+#include <fmt/format.h>
 
 #include "drake/common/text_logging.h"
 #include "drake/multibody/contact_solvers/newton_with_bisection.h"
@@ -361,7 +366,41 @@ std::pair<double, int> IcfSolver::PerformExactLineSearchIsland(
       IslandDot(model, island, data.gradient(), w);  // ∂ℓ̃ᵢ/∂α at 0.
   // The derivative along the linesearch direction, ∂ℓ̃ᵢ/∂α, should be negative
   // at α = 0 since the Hessian is positive definite.
-  DRAKE_THROW_UNLESS(dell0 < 0, dell0);
+  if (!(dell0 < 0)) {
+    // In exact arithmetic ∂ℓ̃ᵢ/∂α = −gᵀH⁻¹g < 0 whenever g ≠ 0. In floating
+    // point, an island that is already converged to roundoff can produce a
+    // directional derivative that is zero or (slightly) positive. That is not
+    // a failure: there is nothing left to gain, so we take no step. The
+    // zero-length step makes the step-size convergence check in SolveIsland()
+    // succeed on the next iteration. We only accept this when the value is
+    // consistent with roundoff in the dot product; anything larger is a true
+    // non-descent direction, which indicates a bug.
+    using std::isfinite;
+    const double g_norm =
+        std::sqrt(IslandDot(model, island, data.gradient(), data.gradient()));
+    const double w_norm = std::sqrt(IslandDot(model, island, w, w));
+    int island_dofs = 0;
+    for (int c : model.partition().island_cliques(island)) {
+      island_dofs += model.clique_size(c);
+    }
+    const double slop =
+        island_dofs * std::numeric_limits<double>::epsilon() * g_norm * w_norm;
+    const std::string details = fmt::format(
+        "island {}: dell0 = {:e}, ‖g‖ = {:e}, ‖w‖ = {:e}, cost = {:e}, "
+        "roundoff bound = {:e}",
+        island, dell0, g_norm, w_norm, ell0, slop);
+    if (!isfinite(dell0) || dell0 > slop) {
+      throw std::logic_error(fmt::format(
+          "IcfSolver: the Newton search direction is not a descent direction "
+          "({}).",
+          details));
+    }
+    drake::log()->warn(
+        "IcfSolver: the Newton search direction has no measurable descent; "
+        "treating the island as converged to roundoff ({}).",
+        details);
+    return std::make_pair(0.0, 0);
+  }
 
   // First and second derivatives of ℓ̃ᵢ(α).
   double dell{NAN};   // First derivative ∂ℓ̃ᵢ/∂α.
