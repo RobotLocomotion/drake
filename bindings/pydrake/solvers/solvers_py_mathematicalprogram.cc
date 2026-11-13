@@ -273,6 +273,35 @@ void KeepPyFunctionEvaluatorAlive(MathematicalProgram* prog,
       py::cast(prog, py_rvp::reference), evaluator_py, location_hint);
 }
 
+// Returns the shared_ptr that `prog` should hold for `evaluator_py`, a Python
+// object that is some kind of evaluator that was passed in from Python.
+//
+// A plain evaluator is held through its Python object, to avoid hazards like
+// #20131. An evaluator that borrows Python callables from its Python object
+// (one that is a ref link source; see internal::is_ref_link_source()) must not
+// be held that way: its callables may refer back to `prog`, and a strong
+// reference from C++ to the Python object would hide that cycle from Python's
+// garbage collector. (Casting the Python object to a std::shared_ptr is no
+// help, since nanobind does the same thing.)
+// So instead, the result does not own anything, and `prog` is linked to the
+// Python object, which owns the C++ object, in a way that garbage collection
+// can see. As with every borrowing evaluator, anything else that holds on to
+// the result must also keep the Python object alive.
+template <typename C>
+std::shared_ptr<C> ShareEvaluatorWithProgram(MathematicalProgram* prog,
+    py::object evaluator_py, const std::string& location_hint) {
+  // Being a link source is how we recognize a borrower; see the declaration of
+  // KeepPyFunctionEvaluatorAlive.
+  if (!internal::is_ref_link_source(evaluator_py)) {
+    return make_shared_ptr_from_py_object<C>(std::move(evaluator_py));
+  }
+  std::shared_ptr<C> evaluator =
+      make_unowned_shared_ptr_from_raw(py::cast<C*>(evaluator_py));
+  internal::make_arbitrary_ref_link(
+      py::cast(prog, py_rvp::reference), evaluator_py, location_hint);
+  return evaluator;
+}
+
 // Returns a Python clone of `self`, which keeps `self` alive. See the comment
 // at the definition of the Clone() binding.
 py::object CloneKeepingOriginalAlive(
@@ -790,10 +819,12 @@ void BindMathematicalProgram(py::module_ m) {
           "AddCost",
           [](MathematicalProgram* self, Cost* obj,
               const Eigen::Ref<const VectorXDecisionVariable>& vars) {
-            // Maintain python wrapper to avoid hazards like #20131.
-            py::object obj_py = py::cast(obj);
-            return self->AddCost(
-                make_shared_ptr_from_py_object<Cost>(obj_py), vars);
+            const char* hint = "MathematicalProgram.AddCost";
+            return CastBindingKeepingEvaluatorAlive(
+                self->AddCost(
+                    ShareEvaluatorWithProgram<Cost>(self, py::cast(obj), hint),
+                    vars),
+                hint);
           },
           py::arg("obj"), py::arg("vars"),
           doc.MathematicalProgram.AddCost.doc_2args_obj_vars)
@@ -943,11 +974,12 @@ void BindMathematicalProgram(py::module_ m) {
           "AddConstraint",
           [](MathematicalProgram* self, Constraint* constraint,
               const Eigen::Ref<const VectorXDecisionVariable>& vars) {
-            // Maintain python wrapper to avoid hazards like #20131.
-            py::object constraint_py = py::cast(constraint);
-            return self->AddConstraint(
-                make_shared_ptr_from_py_object<Constraint>(constraint_py),
-                vars);
+            const char* hint = "MathematicalProgram.AddConstraint";
+            return CastBindingKeepingEvaluatorAlive(
+                self->AddConstraint(ShareEvaluatorWithProgram<Constraint>(
+                                        self, py::cast(constraint), hint),
+                    vars),
+                hint);
           },
           py::arg("constraint"), py::arg("vars"),
           doc.MathematicalProgram.AddConstraint.doc_2args_con_vars)
