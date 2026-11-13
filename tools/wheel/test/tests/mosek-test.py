@@ -9,7 +9,6 @@ from pydrake.all import MosekSolver
 # Configure MOSEK to be enabled at runtime (but with broken license).
 os.environ["MOSEKLM_LICENSE_FILE"] = "/does/not/exist.lic"
 solver = MosekSolver()
-assert solver.enabled()
 
 # MOSEK's published wheels declare an upper bound on their supported Python
 # version, which is currently Python < 3.15. When that changes to a larger
@@ -18,9 +17,9 @@ assert solver.enabled()
 # Additionally, MOSEK is not currently supported for Linux aarch64 wheels.
 # (Apple Silicon is spelled 'arm64', so this doesn't apply there.)
 if sys.version_info[:2] < (3, 15) and platform.machine() != "aarch64":
-    assert solver.available()
+    assert solver.available() and solver.enabled()
 else:
-    assert not solver.available()
+    assert solver.available() and not solver.enabled()
     sys.exit(0)
 
 # Check that MOSEK lazy loading works. Trying to get a license should trigger

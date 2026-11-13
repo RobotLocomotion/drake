@@ -22,9 +22,10 @@ case "${ID}" in
     ;;
   amzn)
     dnf update -y
-    # N.B. AL2023 provides all the Python versions we need via dnf, so we
-    # don't need, nor support, uv here, and we install a specific version of
-    # Python in provision-python.sh.
+    # Install uv and its prerequisites (even under test configurations in which
+    # it's not strictly needed, for image caching).
+    dnf install -y wget tar gzip
+    wget -qO- https://astral.sh/uv/install.sh | sh
     ;;
   *)
     echo "Unsupported distro '${ID}'" >&2

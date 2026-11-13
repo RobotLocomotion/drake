@@ -24,7 +24,7 @@ SolverId MosekSolver::id() {
   return singleton.access();
 }
 
-bool MosekSolver::is_enabled() {
+bool MosekSolver::has_license_file() {
   const char* moseklm_license_file = std::getenv("MOSEKLM_LICENSE_FILE");
   return ((moseklm_license_file != nullptr) &&
           (std::strlen(moseklm_license_file) > 0));
