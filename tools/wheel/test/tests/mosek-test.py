@@ -9,7 +9,10 @@ from pydrake.all import MosekSolver
 # Configure MOSEK to be enabled at runtime (but with broken license).
 os.environ["MOSEKLM_LICENSE_FILE"] = "/does/not/exist.lic"
 solver = MosekSolver()
-assert solver.enabled()
+if sys.version_info[:2] < (3, 15):
+    assert solver.enabled()
+else:
+    assert not solver.enabled()
 
 # MOSEK's published wheels declare an upper bound on their supported Python
 # version, which is currently Python < 3.15. When that changes to a larger

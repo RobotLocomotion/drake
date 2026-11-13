@@ -93,7 +93,7 @@ genrule(
     name = "_gen_implib",
     srcs = [_MOSEK_MAJMIN_GLOB[0]],
     outs = _IMPLIB_SRCS,
-    cmd = "$(execpath @implib_so_internal//:gen) --dlopen-callback=drake_dlopen_mosek --outdir=$(RULEDIR) $<",
+    cmd = "$(execpath @implib_so_internal//:gen) --dlopen-callback=drake_dlopen_mosek_loud --outdir=$(RULEDIR) $<",
     tools = ["@implib_so_internal//:gen"],
 )
 
@@ -122,6 +122,17 @@ cc_library(
         ":lazy_load": [":implib_mosek"],
         "//conditions:default": [":import_mosek"],
     }),
+)
+
+cc_library(
+    name = "_mosek_libname",
+    defines = select({
+        ":lazy_load": [
+            'DRAKE_MOSEK_LAZY_LOAD_LIBRARY=\\"' + _MOSEK_SO_NAME + '\\"',
+        ],
+        "//conditions:default": [],
+    }),
+    visibility = ["@drake//solvers:__pkg__"],
 )
 
 install_files(
