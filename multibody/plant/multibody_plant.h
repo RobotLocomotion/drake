@@ -4984,21 +4984,50 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   ///              = J𝑠_V_ABp 𝑠̇ + (Σᵢ 𝑠ᵢ Dᵢ(J𝑠_V_ABp)) 𝑠
   ///              = J𝑠_V_ABp 𝑠̇ + 𝑠ᵀ D 𝑠  where Dᵢⱼ ≜ column j of Dᵢ(J𝑠_V_ABp)
   ///              = J𝑠_V_ABp 𝑠̇ + 𝑠ᵀ S 𝑠  where Sᵢⱼ ≜ ½(Dᵢⱼ + Dⱼᵢ), so Sᵢⱼ = Sⱼᵢ
+  ///              = J𝑠_V_ABp 𝑠̇ + A𝑠Bias_ABp
   /// </pre>
-  /// D and S are n × n arrays whose entries are spatial vectors. D is HJ𝑠_V_ABp
-  /// arranged as an n × n array, whose iᵗʰ matrix Dᵢ(J𝑠_V_ABp) is returned by
-  /// this function. 𝑠ᵀ D 𝑠 ≜ Σᵢ Σⱼ 𝑠ᵢ Dᵢⱼ 𝑠ⱼ (similarly for S).
-  /// Bp's bias acceleration in A, i.e., the terms in ᴬd/dt(V_ABp) that are
-  /// quadratic in 𝑠 (e.g., centripetal and Coriolis accelerations), is
-  /// A𝑠Bias_ABp = (ᴬd/dt J𝑠_V_ABp) 𝑠 = 𝑠ᵀ D 𝑠 = 𝑠ᵀ S 𝑠. For 𝑠 = v,
-  /// CalcBiasSpatialAcceleration() computes it more efficiently.
-  /// Reminder: S is symmetric whereas D is generally not symmetric.
+  /// A𝑠Bias_ABp (Bp's bias acceleration in A) is the part of ᴬd/dt(V_ABp)
+  /// that is quadratic in 𝑠 (e.g., centripetal and Coriolis accelerations).
+  /// For 𝑠 = v, CalcBiasSpatialAcceleration() computes it more efficiently.
+  /// Sizes and definitions of the symbols used above:
+  /// <pre>
+  ///   Quantity        Size       Definition
+  ///   𝑠               n × 1      q̇ (n = nq) or v (n = nv)
+  ///   V_ABp_E         6 × 1      Bp's spatial velocity in A, expressed in E
+  ///   J𝑠_V_ABp_E      6 × n      ∂(V_ABp_E)/∂𝑠, so V_ABp_E = J𝑠_V_ABp_E ⋅ 𝑠
+  ///   Dᵢ(J𝑠_V_ABp_E)  6 × n      ∂(ᴱd/dt J𝑠_V_ABp_E)/∂𝑠ᵢ   (i = 1 … n)
+  ///   HJ𝑠_V_ABp_E     n × 6 × n  [ D₁(J𝑠_V_ABp_E), ... Dₙ(J𝑠_V_ABp_E) ]
+  ///   Dᵢⱼ             6 × 1      column j of Dᵢ(J𝑠_V_ABp_E)
+  ///   D               n × n × 6  n × n array whose (i, j) entry is Dᵢⱼ
+  ///   When E = A (expressed-in frame omitted, so it is A):
+  ///   ᴬd/dt J𝑠_V_ABp  6 × n      Σᵢ 𝑠ᵢ Dᵢ(J𝑠_V_ABp)
+  ///   S (symmetric)   n × n × 6  Sᵢⱼ ≜ ½(Dᵢⱼ + Dⱼᵢ) = ½∂²(ᴬd/dt V_ABp)/∂𝑠ᵢ∂𝑠ⱼ
+  ///   𝑠ᵀ D 𝑠          6 × 1      Σᵢ Σⱼ 𝑠ᵢ Dᵢⱼ 𝑠ⱼ  (= 𝑠ᵀ S 𝑠)
+  ///   A𝑠Bias_ABp      6 × 1      (ᴬd/dt J𝑠_V_ABp) 𝑠 = 𝑠ᵀ D 𝑠 = 𝑠ᵀ S 𝑠
+  /// </pre>
+  /// HJ𝑠_V_ABp_E (n × 6 × n) and D (n × n × 6) hold the same 6n² numbers in
+  /// different orders.
   /// @note The special prefix HJ signifies derivatives of a Jacobian. Unlike a
-  /// conventional Hessian, HJ𝑠_V_ABp_E is generally not symmetric. Asymmetry
-  /// arises in its angular rows because angular velocity is generally not the
-  /// time derivative of any quantity. When 𝑠 = q̇, its translational rows are
-  /// the conventional Hessian ∂²(p_AoBp_A)/∂qᵢ∂qⱼ when E = A, but are generally
-  /// asymmetric otherwise.
+  /// conventional Hessian, HJ𝑠_V_ABp_E is generally not symmetric (Dᵢⱼ ≠ Dⱼᵢ).
+  /// Asymmetry arises in its angular rows because angular velocity is generally
+  /// not the time derivative of any quantity. Its translational rows are a
+  /// conventional Hessian ∂²(p_AoBp_A)/∂qᵢ∂qⱼ when E = A and 𝑠 = q̇, but are
+  /// generally asymmetric otherwise.
+  /// @note Some uses for the result returned by this function include:
+  /// - Calculations using partial derivatives of J𝑠_V_ABp_E with respect to q,
+  ///   e.g., Newton steps in inverse kinematics, gradients of manipulability,
+  ///   trajectory-optimization constraints, and mass matrix partial
+  ///   derivatives. For 𝑠 = q̇, ᴱ∂(Jq̇_V_ABp_E)/∂qᵢ = Dᵢ(Jq̇_V_ABp_E).
+  ///   For 𝑠 = v, ᴱ∂(Jv_V_ABp_E)/∂qₖ = Σᵢ Dᵢ(Jv_V_ABp_E) ⋅ N⁺ᵢₖ(q),
+  ///   where N⁺(q) is returned by MakeQDotToVelocityMap() (valid for unit
+  ///   quaternions and for roll-pitch-yaw angles away from gimbal lock).
+  /// - Calculations needing partial derivatives of a Jacobian in a frame other
+  ///   than A, e.g., the end-effector or body frame B used by many controllers.
+  /// - Task-space controllers use the matrix ᴬd/dt(J𝑠_V_ABp), e.g., for the
+  ///   time derivative of a null-space projector. To compute it, use E = A in
+  ///   ᴱd/dt(J𝑠_V_ABp_E) = Σᵢ Dᵢ(J𝑠_V_ABp_E) ⋅ 𝑠ᵢ.
+  /// - Linearizing ᴬd/dt(V_ABp) with respect to 𝑠 (e.g., for model-predictive
+  ///   control) uses ∂(ᴬd/dt V_ABp)/∂𝑠ⱼ = 2 Σᵢ 𝑠ᵢ Sᵢⱼ (E = A, j = 1 … n).
   /// @param[in] context The state of the multibody system.
   /// @param[in] with_respect_to Enum equal to JacobianWrtVariable::kQDot or
   /// JacobianWrtVariable::kV, indicating whether 𝑠 = q̇ (time-derivatives of
@@ -5007,20 +5036,15 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// @param[in] frame_B The frame on which point Bp is fixed/welded.
   /// @param[in] p_BoBp_B A position vector from Bo (frame_B's origin) to point
   /// Bp (regarded as fixed/welded to B), expressed in frame_B.
-  /// @param[in] frame_A The frame that measures `v_ABp` (Bp's velocity in A);
-  /// see CalcJacobianSpatialVelocity() for why there is no p_AoAp_A.
+  /// @param[in] frame_A The frame that measures V_ABp (Bp's spatial velocity).
   /// @param[in] frame_E The frame in which the derivatives are taken and in
-  /// which `J𝑠_V_ABp` and its derivatives are expressed.
+  /// which `J𝑠_V_ABp` and its derivatives are expressed. Changing frame_E
+  /// changes the result by more than a re-expression.
   /// @param[out] Hs_V_ABp_E On output, a list of n matrices (resized as
   /// needed), where n is the number of elements in 𝑠, whose iᵗʰ element is
   /// `Dᵢ(J𝑠_V_ABp_E)`, a `6 x n` matrix with the same rows and columns as
   /// `J𝑠_V_ABp_E`. The result is a function of only generalized positions q
   /// (which are pulled from the context).
-  /// @note For joints with q̇ ≠ v (e.g., floating and ball joints), the partial
-  /// derivatives of `Jv_V_ABp_E` with respect to q can be recovered from the
-  /// 𝑠 = v result as `∂(Jv_V_ABp_E)/∂qₖ = Σᵢ Dᵢ(Jv_V_ABp_E) ⋅ N⁺ᵢₖ(q)`,
-  /// where `N⁺(q)` is returned by MakeQDotToVelocityMap() (valid for unit
-  /// quaternions and for roll-pitch-yaw angles away from gimbal lock).
   /// @see See @ref Jacobian_functions "Jacobian functions" for related
   /// functions.
   /// @throws std::exception if `Hs_V_ABp_E` is nullptr.
