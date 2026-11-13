@@ -375,7 +375,10 @@ def _convert_yaml_primitive_to_schema_type(*, yaml_value, value_schema):
             return int(yaml_value)
     # Allow parsing strings to numbers using Python's number parsers.
     if yaml_value_type is str and value_schema in (float, int):
-        return value_schema(yaml_value)
+        try:
+            return value_schema(yaml_value)
+        except ValueError:
+            return None
     # Allow parsing strings to bools iff they are in YAML 1.2 canonical form.
     if yaml_value_type is str and value_schema is bool:
         if yaml_value == "true":
@@ -452,6 +455,11 @@ def _merge_yaml_dict_item_into_target(
     # what was there.
     if generic_base in (list, typing.List):
         (value_type,) = generic_args
+        if not isinstance(yaml_value, list):
+            raise RuntimeError(
+                f"Expected a sequence for '{name}' but instead got yaml data"
+                f" of type {type(yaml_value)} ({yaml_value!r})"
+            )
         new_value = []
         for sub_yaml_value in yaml_value:
             sub_target = {
@@ -480,6 +488,11 @@ def _merge_yaml_dict_item_into_target(
         # This requirement matches what we have in C++. Allowing sequences
         # or maps as keys would mean we're no longer JSON-compatible.
         assert key_type is str
+        if not isinstance(yaml_value, collections.abc.Mapping):
+            raise RuntimeError(
+                f"Expected a mapping for '{name}' but instead got yaml data"
+                f" of type {type(yaml_value)} ({yaml_value!r})"
+            )
         if options.retain_map_defaults:
             old_value = getter()
             new_value = copy.deepcopy(old_value)
@@ -523,7 +536,9 @@ def _merge_yaml_dict_item_into_target(
                     yaml_value=yaml_value,
                     value_schema=default_type,
                 )
-            else:
+            elif typing.get_origin(default_type) is None:
+                # (A generic like list[str] must not be built from a scalar;
+                # list[str]("abc") would be ['a', 'b', 'c'].)
                 try:
                     default_typed_value = default_type(yaml_value)
                 except Exception:
@@ -594,6 +609,11 @@ def _merge_yaml_dict_item_into_target(
 
     # If the value_schema is neither primitive nor generic, then we'll assume
     # it's a directly-nested subclass.
+    if not isinstance(yaml_value, collections.abc.Mapping):
+        raise RuntimeError(
+            f"Expected a mapping for '{name}' but instead got yaml data"
+            f" of type {type(yaml_value)} ({yaml_value!r})"
+        )
     old_value = getter()
     new_value = copy.deepcopy(old_value)
     _merge_yaml_dict_into_target(
