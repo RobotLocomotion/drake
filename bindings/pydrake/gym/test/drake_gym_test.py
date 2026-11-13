@@ -1,3 +1,4 @@
+import copy
 import unittest
 
 import gymnasium as gym
@@ -9,6 +10,7 @@ from pydrake.gym import DrakeGymEnv
 from pydrake.systems.analysis import Simulator
 from pydrake.systems.framework import DiagramBuilder
 from pydrake.systems.primitives import PassThrough
+from pydrake.systems.sensors import ImageRgba8U
 
 
 class DrakeGymTest(unittest.TestCase):
@@ -178,3 +180,40 @@ class DrakeGymTest(unittest.TestCase):
     def test_info_handler_not_callable(self):
         with self.assertRaisesRegex(ValueError, "info_handler is not callable"):
             self._make_pass_through_env(info_handler="not callable")
+
+    def test_metadata_is_per_instance(self):
+        """Constructing an env must not edit gym.Env.metadata (a class
+        attribute shared by every Env), nor the metadata of any other env.
+        """
+        shared_before = copy.deepcopy(gym.Env.metadata)
+
+        builder = DiagramBuilder()
+        pass_through = builder.AddSystem(PassThrough(vector_size=1))
+        builder.ExportInput(pass_through.get_input_port(), "actions")
+        builder.ExportOutput(pass_through.get_output_port(), "observations")
+        image = builder.AddSystem(
+            PassThrough(abstract_model_value=Value(ImageRgba8U(4, 3)))
+        )
+        builder.ExportInput(image.get_input_port(), "image_in")
+        builder.ExportOutput(image.get_output_port(), "color_image")
+        with_rgb = DrakeGymEnv(
+            simulator=Simulator(builder.Build()),
+            time_step=0.1,
+            action_space=None,
+            observation_space=None,
+            reward=lambda system, context: 0.0,
+            render_rgb_port_id="color_image",
+        )
+        self.assertEqual(
+            with_rgb.metadata["render_modes"], ["human", "ansi", "rgb_array"]
+        )
+
+        # Building another env leaves the first env's metadata alone.
+        without_rgb = self._make_pass_through_env()
+        self.assertEqual(
+            without_rgb.metadata["render_modes"], ["human", "ansi"]
+        )
+        self.assertIn("rgb_array", with_rgb.metadata["render_modes"])
+
+        # The metadata shared by all gymnasium envs is unchanged.
+        self.assertEqual(gym.Env.metadata, shared_before)
