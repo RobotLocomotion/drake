@@ -404,26 +404,23 @@ void SapDriver<T>::AddJointFrictionConstraints(
   const SpanningForest& forest = get_forest();
   for (JointIndex joint_index : plant().GetJointIndices()) {
     const Joint<T>& joint = plant().get_joint(joint_index);
-    if (joint.num_velocities() == 0) continue;
-    const VectorX<T>& dry_friction = joint.GetDryFrictionVector(context);
-    if ((dry_friction.array() == 0.0).all()) continue;
+    // Only joints with a single degree of freedom model dry friction.
+    if (joint.num_velocities() != 1) continue;
+    const T& dry_friction = joint.GetDryFriction(context);
+    if (dry_friction == 0.0) continue;
 
-    // Joint::SetDryFrictionVector() rejects these values, but a parameter
-    // written by other means can still hold them. SapJointFrictionConstraint
-    // would abort on them.
-    if (joint.num_velocities() != 1 || !(dry_friction(0) > 0.0)) {
+    // Joint::SetDryFriction() rejects negative and NaN values. Reading one here
+    // means the parameter was corrupted by bypassing the Joint API altogether.
+    // We throw instead of letting SapJointFrictionConstraint abort on it.
+    if (!(dry_friction > 0.0)) {
       throw std::logic_error(fmt::format(
           "Joint '{}' has an invalid dry friction. Dry friction must be "
-          "non-negative, and non-zero only for joints with one degree of "
-          "freedom. See Joint::SetDryFrictionVector().",
+          "non-negative. See Joint::SetDryFriction().",
           joint.name()));
     }
 
-    // A locked joint has zero velocity by definition; friction cannot do any
-    // work on it. Moreover, the reduced problem built by
-    // CalcContactProblemCache() removes locked DOFs from constraint Jacobians,
-    // which would leave this constraint with a zero Jacobian and therefore a
-    // singular regularization.
+    // Constraints do not act on locked joints since their velocity is
+    // prescribed.
     if (joint.is_locked(context)) continue;
 
     const int velocity_start = joint.velocity_start();
@@ -432,8 +429,8 @@ void SapDriver<T>::AddJointFrictionConstraints(
     const int tree_nv = tree.nv();
     const int tree_dof = velocity_start - tree.v_start();
 
-    typename SapJointFrictionConstraint<T>::Parameters parameters{
-        dry_friction(0), kSigma};
+    typename SapJointFrictionConstraint<T>::Parameters parameters{dry_friction,
+                                                                  kSigma};
     problem->AddConstraint(std::make_unique<SapJointFrictionConstraint<T>>(
         tree_index, tree_dof, tree_nv, std::move(parameters)));
   }

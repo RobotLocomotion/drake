@@ -141,7 +141,6 @@ class Joint : public MultibodyElement<T> {
         frame_on_parent_(frame_on_parent),
         frame_on_child_(frame_on_child),
         damping_(std::move(damping)),
-        dry_friction_(VectorX<double>::Zero(vel_lower_limits.size())),
         pos_lower_limits_(pos_lower_limits),
         pos_upper_limits_(pos_upper_limits),
         vel_lower_limits_(vel_lower_limits),
@@ -775,67 +774,64 @@ class Joint : public MultibodyElement<T> {
         .set_value(damping);
   }
 
-  /// Returns all default dry friction bounds of this joint, of size
-  /// num_velocities(). The default is zero. If vⱼ is the vector of generalized
-  /// velocities of this joint, dry (Coulomb) friction models a generalized
-  /// force τ at the joint with |τ| ≤ fⱼ componentwise, where fⱼ is the vector
-  /// returned by this function. When the joint moves, τ opposes the motion
-  /// with τ = −diag(fⱼ)⋅sign(vⱼ). The bound does not depend on the load on the
-  /// joint. The units of the bounds depend on the joint type. For instance, the
-  /// bound is in N⋅m for a revolute joint and in N for a prismatic joint.
+  /// Returns the default dry friction bound of this joint. The default is zero.
+  /// Only joints with a single degree of freedom model dry friction. If v is
+  /// the generalized velocity of this joint, dry (Coulomb) friction models a
+  /// generalized force τ at the joint with |τ| ≤ f, where f is the bound
+  /// returned by this function. When the joint moves, τ opposes the motion with
+  /// τ = −f⋅sign(v). The bound does not depend on the load on the joint. The
+  /// units of the bound depend on the joint type. For instance, the bound is in
+  /// N⋅m for a revolute joint and in N for a prismatic joint.
   ///
-  /// @note Only discrete MultibodyPlant models support dry friction, and only
-  /// joints with one degree of freedom accept a non-zero bound.
-  const VectorX<double>& default_dry_friction_vector() const {
+  /// @note Only discrete MultibodyPlant models support dry friction.
+  /// @throws std::exception if the joint does not have a single degree of
+  ///   freedom.
+  double default_dry_friction() const {
+    DRAKE_THROW_UNLESS(num_velocities() == 1);
     return dry_friction_;
   }
 
-  /// Returns the Context dependent dry friction bounds stored as parameters in
-  /// `context`. Refer to default_dry_friction_vector() for details.
+  /// Returns the Context dependent dry friction bound stored as a parameter in
+  /// `context`. Refer to default_dry_friction() for details.
   /// @param[in] context The context storing the state and parameters for the
   /// model to which `this` joint belongs.
-  const VectorX<T>& GetDryFrictionVector(
-      const systems::Context<T>& context) const {
-    return context.get_numeric_parameter(dry_friction_parameter_index_).value();
+  /// @throws std::exception if the joint does not have a single degree of
+  ///   freedom.
+  const T& GetDryFriction(const systems::Context<T>& context) const {
+    DRAKE_THROW_UNLESS(num_velocities() == 1);
+    return context.get_numeric_parameter(dry_friction_parameter_index_)[0];
   }
 
-  /// Sets the default value of the dry friction bounds for this joint. Refer
-  /// to default_dry_friction_vector() for details.
-  /// @throws std::exception if dry_friction.size() != num_velocities().
-  /// @throws std::exception if any of the dry friction bounds is negative.
-  /// @throws std::exception if num_velocities() > 1 and any of the dry friction
-  ///   bounds is not zero.
+  /// Sets the default value of the dry friction bound for this joint. Refer to
+  /// default_dry_friction() for details.
+  /// @throws std::exception if the joint does not have a single degree of
+  ///   freedom.
+  /// @throws std::exception if dry_friction is negative.
   /// @throws std::exception if this element is not associated with a
   ///   MultibodyPlant.
   /// @pre the MultibodyPlant must not be finalized.
-  void set_default_dry_friction_vector(const VectorX<double>& dry_friction) {
-    DRAKE_THROW_UNLESS(dry_friction.size() == num_velocities());
-    DRAKE_THROW_UNLESS((dry_friction.array() >= 0).all());
-    DRAKE_THROW_UNLESS(num_velocities() <= 1 ||
-                       (dry_friction.array() == 0).all());
+  void set_default_dry_friction(double dry_friction) {
+    DRAKE_THROW_UNLESS(num_velocities() == 1);
+    DRAKE_THROW_UNLESS(dry_friction >= 0);
     DRAKE_THROW_UNLESS(this->has_parent_tree());
     DRAKE_DEMAND(!this->get_parent_tree().is_finalized());
     dry_friction_ = dry_friction;
   }
 
-  /// Sets the value of the dry friction bounds for this joint, stored as
-  /// parameters in `context`. Refer to default_dry_friction_vector() for
-  /// details.
+  /// Sets the value of the dry friction bound for this joint, stored as a
+  /// parameter in `context`. Refer to default_dry_friction() for details.
   /// @param[out] context The context storing the state and parameters for the
   /// model to which `this` joint belongs.
-  /// @param[in] dry_friction The vector of dry friction bounds.
-  /// @throws std::exception if dry_friction.size() != num_velocities().
-  /// @throws std::exception if any of the dry friction bounds is negative.
-  /// @throws std::exception if num_velocities() > 1 and any of the dry friction
-  ///   bounds is not zero.
-  void SetDryFrictionVector(systems::Context<T>* context,
-                            const VectorX<T>& dry_friction) const {
-    DRAKE_THROW_UNLESS(dry_friction.size() == num_velocities());
-    DRAKE_THROW_UNLESS((dry_friction.array() >= 0).template cast<bool>().all());
-    DRAKE_THROW_UNLESS(num_velocities() <= 1 ||
-                       (dry_friction.array() == 0).template cast<bool>().all());
+  /// @param[in] dry_friction The dry friction bound.
+  /// @throws std::exception if the joint does not have a single degree of
+  ///   freedom.
+  /// @throws std::exception if dry_friction is negative.
+  void SetDryFriction(systems::Context<T>* context,
+                      const T& dry_friction) const {
+    DRAKE_THROW_UNLESS(num_velocities() == 1);
+    DRAKE_THROW_UNLESS(dry_friction >= 0);
     context->get_mutable_numeric_parameter(dry_friction_parameter_index_)
-        .set_value(dry_friction);
+        .SetAtIndex(0, dry_friction);
   }
 
   // Hide the following section from Doxygen.
@@ -1139,9 +1135,12 @@ class Joint : public MultibodyElement<T> {
     // Declare a parameter for damping.
     damping_parameter_index_ = this->DeclareNumericParameter(
         tree_system, systems::BasicVector<T>(damping_.size()));
-    // Declare a parameter for dry friction.
-    dry_friction_parameter_index_ = this->DeclareNumericParameter(
-        tree_system, systems::BasicVector<T>(dry_friction_.size()));
+    // Declare a parameter for dry friction, only modeled by joints with a
+    // single degree of freedom.
+    if (num_velocities() == 1) {
+      dry_friction_parameter_index_ = this->DeclareNumericParameter(
+          tree_system, systems::BasicVector<T>(1));
+    }
   }
 
   // Implementation for MultibodyElement::DoSetDefaultParameters().
@@ -1151,10 +1150,10 @@ class Joint : public MultibodyElement<T> {
         parameters->get_mutable_numeric_parameter(damping_parameter_index_);
     damping_parameter.set_value(VectorX<T>(damping_));
     // Set default dry friction.
-    systems::BasicVector<T>& dry_friction_parameter =
-        parameters->get_mutable_numeric_parameter(
-            dry_friction_parameter_index_);
-    dry_friction_parameter.set_value(VectorX<T>(dry_friction_));
+    if (num_velocities() == 1) {
+      parameters->get_mutable_numeric_parameter(dry_friction_parameter_index_)
+          .SetAtIndex(0, dry_friction_);
+    }
   }
 
   void SetPosePairImpl(systems::Context<T>* context, const Quaternion<T>& q_FM,
@@ -1176,9 +1175,8 @@ class Joint : public MultibodyElement<T> {
 
   VectorX<double> damping_;
 
-  // Dry friction bounds, of size num_velocities(). Zero for joints that do not
-  // model dry friction.
-  VectorX<double> dry_friction_;
+  // Dry friction bound. Only used by joints with a single degree of freedom.
+  double dry_friction_{0.0};
 
   // Joint position limits. These vectors have zero size for joints with no
   // such limits.

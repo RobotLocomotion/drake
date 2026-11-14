@@ -174,13 +174,14 @@ class SapDriver {
       contact_solvers::internal::SapContactProblem<T>* problem) const;
 
   // Adds dry friction constraints for every single degree of freedom joint
-  // with a non-zero dry friction bound (see Joint::GetDryFrictionVector()) in
-  // the parameters stored in `context`. Locked joints are skipped since their
-  // velocity is known to be zero.
-  // @throws std::exception if a joint has a negative or NaN dry friction bound,
-  // or a non-zero bound on more than one degree of freedom. The Joint setters
-  // reject these values, so this is only possible for a parameter written by
-  // other means.
+  // with a non-zero dry friction bound (see Joint::GetDryFriction()) in the
+  // parameters stored in `context`. Locked joints are skipped since their
+  // velocity is prescribed.
+  // @throws std::exception if a joint has a negative or NaN dry friction bound.
+  // Joint::SetDryFriction() rejects these values. Therefore reading one here
+  // means the parameter in `context` was corrupted by bypassing the Joint API
+  // altogether, e.g. by writing to the Context's numeric parameters directly,
+  // which is not supported.
   // @pre problem must not be nullptr.
   void AddJointFrictionConstraints(
       const systems::Context<T>& context,

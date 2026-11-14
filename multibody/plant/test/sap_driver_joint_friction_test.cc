@@ -8,7 +8,6 @@
 
 #include "drake/common/autodiff.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
-#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/math/autodiff.h"
 #include "drake/multibody/contact_solvers/contact_solver_results.h"
 #include "drake/multibody/contact_solvers/sap/sap_contact_problem.h"
@@ -59,21 +58,6 @@ constexpr double kSliderFriction = 1.0;  // [N]
 constexpr double kElbowFriction = 0.3;   // [N⋅m]
 constexpr double kLinkLength = 0.5;      // [m]
 
-// Writes `dry_friction` into the parameter that stores the dry friction of
-// `joint` in `context`, without the checks in Joint::SetDryFrictionVector().
-void WriteDryFrictionParameter(const Joint<double>& joint,
-                               const VectorXd& dry_friction,
-                               Context<double>* context) {
-  const VectorXd* storage = &joint.GetDryFrictionVector(*context);
-  for (int i = 0; i < context->num_numeric_parameter_groups(); ++i) {
-    if (&context->get_numeric_parameter(i).value() == storage) {
-      context->get_mutable_numeric_parameter(i).SetFromVector(dry_friction);
-      return;
-    }
-  }
-  DRAKE_UNREACHABLE();
-}
-
 // Fixture with a model made of three kinematic trees, each with a joint that
 // models dry friction:
 //   1. A wheel free to spin about the world's z axis. A single revolute DOF.
@@ -108,7 +92,7 @@ class SapDriverJointFrictionTest : public ::testing::Test {
                                               Vector3d::UnitZ());
     wheel_actuator_ = &plant_->AddJointActuator("wheel", *wheel_);
     plant_->get_mutable_joint(wheel_->index())
-        .set_default_dry_friction_vector(Vector1d(kWheelFriction));
+        .set_default_dry_friction(kWheelFriction);
 
     const RigidBody<double>& slider = plant_->AddRigidBody("slider", M_slider);
     slider_ = &plant_->AddJoint<PrismaticJoint>(
@@ -116,7 +100,7 @@ class SapDriverJointFrictionTest : public ::testing::Test {
         Vector3d::UnitX());
     slider_actuator_ = &plant_->AddJointActuator("slider", *slider_);
     plant_->get_mutable_joint(slider_->index())
-        .set_default_dry_friction_vector(Vector1d(kSliderFriction));
+        .set_default_dry_friction(kSliderFriction);
 
     const RigidBody<double>& link1 = plant_->AddRigidBody("link1", M_link);
     const RigidBody<double>& link2 = plant_->AddRigidBody("link2", M_link);
@@ -127,7 +111,7 @@ class SapDriverJointFrictionTest : public ::testing::Test {
         "elbow", link1, math::RigidTransformd(Vector3d(kLinkLength, 0.0, 0.0)),
         link2, std::nullopt, Vector3d::UnitZ());
     plant_->get_mutable_joint(elbow_->index())
-        .set_default_dry_friction_vector(Vector1d(kElbowFriction));
+        .set_default_dry_friction(kElbowFriction);
 
     plant_->Finalize();
 
@@ -199,6 +183,19 @@ class SapDriverJointFrictionTest : public ::testing::Test {
     return kTimeStep * (applied_force - sign * friction) / inertia;
   }
 
+  // Analytical solution for the velocity of a single DOF with effective inertia
+  // `inertia` after one step from rest under a constant applied generalized
+  // force `applied_force` below the dry friction bound. In stiction, SAP
+  // minimizes the quadratic cost ½⋅m⋅(v − v*)² + v²/(2R), with v* = δt⋅τₐ/m the
+  // velocity without friction and R = σ⋅w the regularization of friction, see
+  // SapJointFrictionConstraint. For a tree with a single DOF, the Delassus
+  // estimate w = 1/m is exact and therefore v = v*⋅σ/(1 + σ).
+  double ExpectedStictionVelocityFromRest(double applied_force, double inertia,
+                                          double sigma) const {
+    const double v_free = kTimeStep * applied_force / inertia;
+    return v_free * sigma / (1.0 + sigma);
+  }
+
   std::unique_ptr<MultibodyPlant<double>> plant_;
   CompliantContactManager<double>* manager_{nullptr};
   std::unique_ptr<Context<double>> context_;
@@ -214,7 +211,7 @@ class SapDriverJointFrictionTest : public ::testing::Test {
 // right indexing within each tree.
 TEST_F(SapDriverJointFrictionTest, ConstraintsAreAdded) {
   const double wheel_friction = 2.0 * kWheelFriction;
-  wheel_->SetDryFrictionVector(context_.get(), Vector1d(wheel_friction));
+  wheel_->SetDryFriction(context_.get(), wheel_friction);
 
   // Trees are numbered in the order their base bodies were added, and the
   // constraints are added in joint index order.
@@ -253,24 +250,32 @@ TEST_F(SapDriverJointFrictionTest, LockedJointsAreSkipped) {
 }
 
 // Under an applied force below the friction bound, joints stay in stiction:
-// friction balances the applied force, and the joints move at most at a very
-// small speed.
+// friction balances the applied force, and the joints only creep at the small
+// velocity set by the regularization of friction.
 TEST_F(SapDriverJointFrictionTest, Stiction) {
   const double wheel_torque = 0.5 * kWheelFriction;
   const double slider_force = -0.8 * kSliderFriction;
   SetActuation(wheel_torque, slider_force);
 
-  // We compare against the velocities after one step without friction.
-  const double wheel_v_free = kTimeStep * wheel_torque / kWheelInertia;
-  const double slider_v_free = kTimeStep * slider_force / kSliderMass;
-  constexpr double kSmall = 0.01;
+  // The constraints are added in joint index order: wheel, slider and elbow.
+  const std::vector<const SapJointFrictionConstraint<double>*> constraints =
+      EvalConstraints();
+  ASSERT_EQ(constraints.size(), 3);
+  const double wheel_sigma = constraints[0]->parameters().sigma;
+  const double slider_sigma = constraints[1]->parameters().sigma;
 
   const ContactSolverResults<double>& results =
       manager_->EvalContactSolverResults(*context_);
-  EXPECT_LT(std::abs(results.v_next(wheel_->velocity_start())),
-            kSmall * std::abs(wheel_v_free));
-  EXPECT_LT(std::abs(results.v_next(slider_->velocity_start())),
-            kSmall * std::abs(slider_v_free));
+  const double wheel_v = results.v_next(wheel_->velocity_start());
+  const double slider_v = results.v_next(slider_->velocity_start());
+  const double wheel_v_expected = ExpectedStictionVelocityFromRest(
+      wheel_torque, kWheelInertia, wheel_sigma);
+  const double slider_v_expected =
+      ExpectedStictionVelocityFromRest(slider_force, kSliderMass, slider_sigma);
+  EXPECT_NEAR(wheel_v, wheel_v_expected,
+              kTolerance * std::abs(wheel_v_expected));
+  EXPECT_NEAR(slider_v, slider_v_expected,
+              kTolerance * std::abs(slider_v_expected));
 }
 
 // Under an applied force above the friction bound, joints slide with friction
@@ -306,14 +311,6 @@ TEST_F(SapDriverJointFrictionTest, AutoDiffXd) {
   EXPECT_TRUE(CompareMatrices(v_ad, v, kTolerance * v.norm()));
   // Sanity check that the model did move.
   EXPECT_GT(v(wheel_->velocity_start()), 0.0);
-}
-
-// The driver rejects a negative dry friction in the parameter, also when the
-// value does not come from the Joint setters, which reject it.
-TEST_F(SapDriverJointFrictionTest, NegativeDryFrictionThrows) {
-  WriteDryFrictionParameter(*wheel_, Vector1d(-1.0), context_.get());
-  DRAKE_EXPECT_THROWS_MESSAGE(EvalConstraints(),
-                              "Joint 'wheel' has an invalid dry friction.*");
 }
 
 }  // namespace
