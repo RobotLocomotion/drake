@@ -96,7 +96,9 @@ void IcfBuilder<T>::UpdateModel(
   std::vector<std::string> joints_with_dry_friction;
   for (JointIndex joint_index : plant_.GetJointIndices()) {
     const Joint<T>& joint = plant_.get_joint(joint_index);
-    if ((joint.GetDryFrictionVector(context).array() != 0.0).any()) {
+    // Only joints with a single degree of freedom model dry friction.
+    if (joint.num_velocities() != 1) continue;
+    if (joint.GetDryFriction(context) != 0.0) {
       joints_with_dry_friction.push_back(fmt::format("'{}'", joint.name()));
     }
   }

@@ -1388,7 +1388,7 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// simulation requires joint limits currently you must use a discrete
   /// %MultibodyPlant model. Joint dry friction is not supported either;
   /// evaluating the dynamics throws if any joint has a non-zero dry friction
-  /// bound, see Joint::default_dry_friction_vector().
+  /// bound, see Joint::default_dry_friction().
   ///
   /// @throws std::exception if `time_step` is negative.
   explicit MultibodyPlant(double time_step);

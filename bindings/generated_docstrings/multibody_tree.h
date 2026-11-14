@@ -3249,17 +3249,21 @@ Raises:
 See also:
     GetDefaultPose())""";
         } GetDefaultPosePair;
-        // Symbol: drake::multibody::Joint::GetDryFrictionVector
-        struct /* GetDryFrictionVector */ {
+        // Symbol: drake::multibody::Joint::GetDryFriction
+        struct /* GetDryFriction */ {
           // Source: drake/multibody/tree/joint.h
           const char* doc =
-R"""(Returns the Context dependent dry friction bounds stored as parameters
-in ``context``. Refer to default_dry_friction_vector() for details.
+R"""(Returns the Context dependent dry friction bound stored as a parameter
+in ``context``. Refer to default_dry_friction() for details.
 
 Parameter ``context``:
     The context storing the state and parameters for the model to
-    which ``this`` joint belongs.)""";
-        } GetDryFrictionVector;
+    which ``this`` joint belongs.
+
+Raises:
+    RuntimeError if the joint does not have a single degree of
+    freedom.)""";
+        } GetDryFriction;
         // Symbol: drake::multibody::Joint::GetMobilizerInUse
         struct /* GetMobilizerInUse */ {
           // Source: drake/multibody/tree/joint.h
@@ -3535,31 +3539,27 @@ Raises:
 See also:
     SetDefaultPose())""";
         } SetDefaultPosePair;
-        // Symbol: drake::multibody::Joint::SetDryFrictionVector
-        struct /* SetDryFrictionVector */ {
+        // Symbol: drake::multibody::Joint::SetDryFriction
+        struct /* SetDryFriction */ {
           // Source: drake/multibody/tree/joint.h
           const char* doc =
-R"""(Sets the value of the dry friction bounds for this joint, stored as
-parameters in ``context``. Refer to default_dry_friction_vector() for
-details.
+R"""(Sets the value of the dry friction bound for this joint, stored as a
+parameter in ``context``. Refer to default_dry_friction() for details.
 
 Parameter ``context``:
     The context storing the state and parameters for the model to
     which ``this`` joint belongs.
 
 Parameter ``dry_friction``:
-    The vector of dry friction bounds.
+    The dry friction bound.
 
 Raises:
-    RuntimeError if dry_friction.size() != num_velocities().
+    RuntimeError if the joint does not have a single degree of
+    freedom.
 
 Raises:
-    RuntimeError if any of the dry friction bounds is negative.
-
-Raises:
-    RuntimeError if num_velocities() > 1 and any of the dry friction
-    bounds is not zero.)""";
-        } SetDryFrictionVector;
+    RuntimeError if dry_friction is negative.)""";
+        } SetDryFriction;
         // Symbol: drake::multibody::Joint::SetPose
         struct /* SetPose */ {
           // Source: drake/multibody/tree/joint.h
@@ -3763,24 +3763,27 @@ units of rad/s and tau having units of N⋅m, the coefficient of viscous
 damping has units of N⋅m⋅s. Refer to each joint's documentation for
 further details.)""";
         } default_damping_vector;
-        // Symbol: drake::multibody::Joint::default_dry_friction_vector
-        struct /* default_dry_friction_vector */ {
+        // Symbol: drake::multibody::Joint::default_dry_friction
+        struct /* default_dry_friction */ {
           // Source: drake/multibody/tree/joint.h
           const char* doc =
-R"""(Returns all default dry friction bounds of this joint, of size
-num_velocities(). The default is zero. If vⱼ is the vector of
-generalized velocities of this joint, dry (Coulomb) friction models a
-generalized force τ at the joint with |τ| ≤ fⱼ componentwise, where fⱼ
-is the vector returned by this function. When the joint moves, τ
-opposes the motion with τ = −diag(fⱼ)⋅sign(vⱼ). The bound does not
-depend on the load on the joint. The units of the bounds depend on the
-joint type. For instance, the bound is in N⋅m for a revolute joint and
-in N for a prismatic joint.
+R"""(Returns the default dry friction bound of this joint. The default is
+zero. Only joints with a single degree of freedom model dry friction.
+If v is the generalized velocity of this joint, dry (Coulomb) friction
+models a generalized force τ at the joint with |τ| ≤ f, where f is the
+bound returned by this function. When the joint moves, τ opposes the
+motion with τ = −f⋅sign(v). The bound does not depend on the load on
+the joint. The units of the bound depend on the joint type. For
+instance, the bound is in N⋅m for a revolute joint and in N for a
+prismatic joint.
 
 Note:
-    Only discrete MultibodyPlant models support dry friction, and only
-    joints with one degree of freedom accept a non-zero bound.)""";
-        } default_dry_friction_vector;
+    Only discrete MultibodyPlant models support dry friction.
+
+Raises:
+    RuntimeError if the joint does not have a single degree of
+    freedom.)""";
+        } default_dry_friction;
         // Symbol: drake::multibody::Joint::default_positions
         struct /* default_positions */ {
           // Source: drake/multibody/tree/joint.h
@@ -3995,22 +3998,19 @@ Raises:
 Precondition:
     the MultibodyPlant must not be finalized.)""";
         } set_default_damping_vector;
-        // Symbol: drake::multibody::Joint::set_default_dry_friction_vector
-        struct /* set_default_dry_friction_vector */ {
+        // Symbol: drake::multibody::Joint::set_default_dry_friction
+        struct /* set_default_dry_friction */ {
           // Source: drake/multibody/tree/joint.h
           const char* doc =
-R"""(Sets the default value of the dry friction bounds for this joint.
-Refer to default_dry_friction_vector() for details.
+R"""(Sets the default value of the dry friction bound for this joint. Refer
+to default_dry_friction() for details.
 
 Raises:
-    RuntimeError if dry_friction.size() != num_velocities().
+    RuntimeError if the joint does not have a single degree of
+    freedom.
 
 Raises:
-    RuntimeError if any of the dry friction bounds is negative.
-
-Raises:
-    RuntimeError if num_velocities() > 1 and any of the dry friction
-    bounds is not zero.
+    RuntimeError if dry_friction is negative.
 
 Raises:
     RuntimeError if this element is not associated with a
@@ -4018,7 +4018,7 @@ Raises:
 
 Precondition:
     the MultibodyPlant must not be finalized.)""";
-        } set_default_dry_friction_vector;
+        } set_default_dry_friction;
         // Symbol: drake::multibody::Joint::set_default_positions
         struct /* set_default_positions */ {
           // Source: drake/multibody/tree/joint.h

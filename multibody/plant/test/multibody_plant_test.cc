@@ -6412,8 +6412,7 @@ GTEST_TEST(MultibodyPlantTest, ContinuousDynamicsRejectJointDryFriction) {
   const RevoluteJoint<double>& joint =
       plant.AddJoint<RevoluteJoint>("joint", plant.world_body(), std::nullopt,
                                     body, std::nullopt, Vector3d::UnitZ());
-  plant.get_mutable_joint(joint.index())
-      .set_default_dry_friction_vector(Vector1d(0.5));
+  plant.get_mutable_joint(joint.index()).set_default_dry_friction(0.5);
   EXPECT_NO_THROW(plant.Finalize());
   auto context = plant.CreateDefaultContext();
   const std::string expected_message =
@@ -6421,10 +6420,10 @@ GTEST_TEST(MultibodyPlantTest, ContinuousDynamicsRejectJointDryFriction) {
   DRAKE_EXPECT_THROWS_MESSAGE(plant.EvalTimeDerivatives(*context),
                               expected_message);
 
-  joint.SetDryFrictionVector(context.get(), Vector1d(0.0));
+  joint.SetDryFriction(context.get(), 0.0);
   EXPECT_NO_THROW(plant.EvalTimeDerivatives(*context));
 
-  joint.SetDryFrictionVector(context.get(), Vector1d(0.5));
+  joint.SetDryFriction(context.get(), 0.5);
   DRAKE_EXPECT_THROWS_MESSAGE(plant.EvalTimeDerivatives(*context),
                               expected_message);
 }

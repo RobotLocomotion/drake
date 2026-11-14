@@ -3447,9 +3447,9 @@ void MultibodyPlant<T>::ThrowIfUnsupportedContinuousTimeDynamics(
   std::vector<std::string> joints_with_dry_friction;
   for (JointIndex joint_index : GetJointIndices()) {
     const Joint<T>& joint = get_joint(joint_index);
-    if ((joint.GetDryFrictionVector(context).array() != 0.0)
-            .template cast<bool>()
-            .any()) {
+    // Only joints with a single degree of freedom model dry friction.
+    if (joint.num_velocities() != 1) continue;
+    if (joint.GetDryFriction(context) != 0.0) {
       joints_with_dry_friction.push_back(fmt::format("'{}'", joint.name()));
     }
   }
@@ -3458,7 +3458,7 @@ void MultibodyPlant<T>::ThrowIfUnsupportedContinuousTimeDynamics(
         "Currently this MultibodyPlant is set to use continuous time. "
         "Continuous time does not support joint dry friction, but it is "
         "specified for joints {}. Use a discrete time model, or set the dry "
-        "friction of these joints to zero, see Joint::SetDryFrictionVector().",
+        "friction of these joints to zero, see Joint::SetDryFriction().",
         fmt::join(joints_with_dry_friction, ", ")));
   }
 

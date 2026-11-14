@@ -6384,7 +6384,7 @@ Warning:
     must use a discrete MultibodyPlant model. Joint dry friction is
     not supported either; evaluating the dynamics throws if any joint
     has a non-zero dry friction bound, see
-    Joint∷default_dry_friction_vector().
+    Joint∷default_dry_friction().
 
 Raises:
     RuntimeError if ``time_step`` is negative.)""";

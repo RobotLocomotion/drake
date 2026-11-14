@@ -1064,8 +1064,7 @@ GTEST_TEST(IcfBuilder, JointDryFrictionUnsupported) {
   auto diagram_context = diagram->CreateDefaultContext();
   systems::Context<double>& plant_context =
       plant.GetMyMutableContextFromRoot(diagram_context.get());
-  plant.GetJointByName("joint2").SetDryFrictionVector(&plant_context,
-                                                      Vector1d(0.5));
+  plant.GetJointByName("joint2").SetDryFriction(&plant_context, 0.5);
 
   IcfBuilder<double> builder(&plant);
   IcfModel<double> model;
