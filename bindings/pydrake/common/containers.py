@@ -53,6 +53,36 @@ class _DictKeyWrap(dict):
     def __contains__(self, key):
         return dict.__contains__(self, self._key_wrap(key))
 
+    def __iter__(self):
+        return self.keys()
+
+    def get(self, key, default=None):
+        return dict.get(self, self._key_wrap(key), default)
+
+    def pop(self, key, *args):
+        return dict.pop(self, self._key_wrap(key), *args)
+
+    def popitem(self):
+        key, value = dict.popitem(self)
+        return self._key_unwrap(key), value
+
+    def setdefault(self, key, default=None):
+        return dict.setdefault(self, self._key_wrap(key), default)
+
+    def update(self, other=(), /, **kwargs):
+        # N.B. Don't copy into a plain `dict` first; that would compare the
+        # keys using their own `__eq__`.
+        if hasattr(other, "keys"):
+            other = [(key, other[key]) for key in other.keys()]
+        for key, value in other:
+            self[key] = value
+        for key, value in kwargs.items():
+            self[key] = value
+
+    def __ior__(self, other):
+        self.update(other)
+        return self
+
     def items(self):
         return zip(self.keys(), self.values())
 
@@ -60,11 +90,7 @@ class _DictKeyWrap(dict):
         return (self._key_unwrap(key) for key in dict.keys(self))
 
     def raw(self):
-        """Returns a dict with the original keys.
-
-        Note:
-            Copying to a `dict` will maintain the proxy keys.
-        """
+        """Returns a dict with the original keys (the same as ``dict(self)``)."""
         return dict(self.items())
 
 
@@ -84,8 +110,8 @@ class EqualToDict(_DictKeyWrap):
             # https://stackoverflow.com/a/1608907/7829525
             __hash__ = _EqualityProxyBase.__hash__
 
-        dict_in = dict(*args, **kwargs)
-        _DictKeyWrap.__init__(self, dict_in, Proxy, Proxy._get_value)
+        _DictKeyWrap.__init__(self, {}, Proxy, Proxy._get_value)
+        self.update(*args, **kwargs)
 
 
 class NamedViewBase:

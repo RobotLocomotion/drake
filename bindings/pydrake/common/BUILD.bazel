@@ -354,6 +354,7 @@ drake_py_unittest(
     name = "containers_test",
     deps = [
         ":common",
+        "//bindings/pydrake/solvers",
     ],
 )
 
