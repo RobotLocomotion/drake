@@ -3,6 +3,7 @@ import unittest
 import numpy as np
 
 from pydrake.common.containers import EqualToDict, NamedViewBase, namedview
+from pydrake.solvers import MathematicalProgram
 
 
 class Comparison:
@@ -64,19 +65,79 @@ class TestEqualToDict(unittest.TestCase):
         self.assertFalse(a.value in d)
 
         # Obtaining the original representation (e.g. for `pybind11`):
-        # - Constructing using `dict` will not be what is desired; the keys at
-        # present are not directly convertible, thus would create an error.
-        # N.B. At present, this behavior may not be overridable via Python, as
-        # copying is done via `dict.update`, which has a special case for
-        # `dict`-inheriting types which does not have any hooks for key
-        # transformations.
+        # - Copying using `dict` goes through our iteration, so it also
+        # provides the original keys.
         raw_attempt = dict(d)
         keys = list(raw_attempt.keys())
-        self.assertFalse(isinstance(keys[0], Item))
+        self.assertTrue(isinstance(keys[0], Item))
         # - Calling `raw()` should provide the desired behavior.
         raw = d.raw()
         keys = list(raw.keys())
         self.assertTrue(isinstance(keys[0], Item))
+
+    def test_equal_to_dict_methods(self):
+        # The methods of `dict` that take or return keys must use the same
+        # `EqualTo` semantics (and the original key objects) as indexing.
+        c = Item(3)
+        d = EqualToDict({a: "a"})
+        self.assertEqual(d.get(a), "a")
+        self.assertIsNone(d.get(b))
+        self.assertEqual(d.get(b, "default"), "default")
+
+        # Iteration yields the original keys, like `keys()`.
+        self.assertIs(next(iter(d)), a)
+        self.assertTrue(all(isinstance(x, Item) for x in d))
+
+        self.assertEqual(d.setdefault(a, "x"), "a")
+        self.assertEqual(d.setdefault(b, "b"), "b")
+        self.assertEqual(len(d), 2)
+
+        d.update({a: "A"})
+        d.update([(c, "c")])
+        self.assertEqual(len(d), 3)
+        self.assertEqual(d[a], "A")
+        self.assertEqual(d[c], "c")
+
+        self.assertEqual(d.pop(c), "c")
+        self.assertEqual(d.pop(c, "gone"), "gone")
+        with self.assertRaises(KeyError):
+            d.pop(c)
+        self.assertFalse(c in d)
+
+        key, value = d.popitem()
+        # N.B. popitem() is LIFO.
+        self.assertIs(key, b)
+        self.assertEqual(value, "b")
+        self.assertEqual(len(d), 1)
+
+        d |= {b: "B"}
+        self.assertEqual(d[b], "B")
+
+    def test_equal_to_dict_equal_but_distinct_keys(self):
+        # Keys that are equal but not identical must not be compared with
+        # `__eq__` (which does not return a bool) by update() or the
+        # constructor.
+        a_copy = Item(1)
+        d = EqualToDict()
+        d.update([(a, "a"), (a_copy, "a_copy")])
+        self.assertEqual(len(d), 1)
+        self.assertEqual(d[a], "a_copy")
+        d = EqualToDict([(a, "a"), (a_copy, "a_copy")])
+        self.assertEqual(len(d), 1)
+
+    def test_equal_to_dict_symmetric_matrix(self):
+        # The elements X[0, 1] and X[1, 0] are distinct Python objects for the
+        # same Variable.
+        prog = MathematicalProgram()
+        X = prog.NewSymmetricContinuousVariables(2)
+        values = [1.0, 2.0, 2.0, 3.0]
+        d = EqualToDict(zip(X.flat, values))
+        self.assertEqual(len(d), 3)
+        self.assertEqual(d[X[0, 1]], 2.0)
+        d = EqualToDict()
+        d.update(zip(X.flat, values))
+        self.assertEqual(len(d), 3)
+        self.assertEqual(d[X[1, 0]], 2.0)
 
 
 def is_same_array(a, b):
