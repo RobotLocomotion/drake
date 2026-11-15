@@ -443,6 +443,8 @@ drake_cc_googletest(
         "//geometry:scene_graph",
         "//multibody/parsing",
         "//systems/analysis:simulator",
+        "//systems/analysis:simulator_config",
+        "//systems/analysis:simulator_config_functions",
     ],
 )
 

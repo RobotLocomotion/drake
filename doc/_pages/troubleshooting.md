@@ -89,6 +89,30 @@ process constraints. Discrete-time plants use SAP; continuous-time simulation
 requires the CENIC integrator (integration scheme `"cenic"` in a
 `SimulatorConfig`).
 
+### Assembly
+
+It is possible to build a system that has kinematic loops but which has not yet
+been assembled (that is, the weld constraints that close the loops are not
+satisfied). An unassembled system can be created with the Drake API or using the
+`<drake:independent_frames>` extension to SDFormat's `<joint>` specification.
+
+An unassembled system must be assembled prior to simulating it. That is, a
+configuration must be found in which all constraints are satisfied. Because
+both SAP and CENIC solvers satisfy constraints as part of their normal
+operation, they are usually capable of assembling an unassembled system in a few
+initial steps. Systems that are very far from being assembled may fail to
+assemble. In that case you must modify the starting configuration to be closer
+to an assembled configuration prior to running SAP or CENIC.
+
+If you use SAP or CENIC to assemble your system, we recommend that you run long
+enough to assemble, and then restart your simulation at that configuration and
+with the velocities reset to their initial values. That's because simulating
+while the constraints are not satisfied is nonphysical and likely to involve
+large forces and high velocities. To see one way to organize this, please look
+at the Drake example `examples/multibody/four_bar/four_bar_unassembled`.
+
+### Disabling automatic loop modeling
+
 If automatic modeling has been disabled, `Finalize()` throws when it finds a
 loop. To disable it, call `MultibodyPlant::SetEnableLoopTopology(false)` or
 apply a `MultibodyPlantConfig` ([C++][c_MultibodyPlantConfig],

@@ -12,9 +12,11 @@ LinkJointGraph/SpanningForest. This file tests that
  - loop joints are correctly retargeted from a frame on the primary to
    a corresponding frame on the shadow,
  - the loop weld constraints are added to the plant and correctly joint
-   the primary and shadow links together at their origins, and
+   the primary and shadow links together at their origins,
  - the activate/deactivate parameters are properly allocated for the
-   loop weld constraints and work properly.
+   loop weld constraints and work properly, and
+ - both solvers that support constraints, discrete SAP and the continuous-time
+   CENIC integrator, hold the loop closed during simulation.
 
 Most tests use a planar four-bar linkage (three moving links -- driver, coupler,
 rocker -- plus World, connected by four revolute joints) which forms a single
@@ -50,6 +52,8 @@ primary link two shadows. */
 #include "drake/multibody/tree/rigid_body.h"
 #include "drake/multibody/tree/shadow_frame.h"
 #include "drake/systems/analysis/simulator.h"
+#include "drake/systems/analysis/simulator_config.h"
+#include "drake/systems/analysis/simulator_config_functions.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/diagram_builder.h"
 
@@ -1440,6 +1444,84 @@ GTEST_TEST(ClosedTopologyTest, SapEnforcesTheLoopConstraint) {
   // the coupler's mass and the rocker carries the other half -- and the split
   // link visibly comes apart.
   EXPECT_GT(simulate_and_measure_opening(false), 1e-2);
+}
+
+/* The continuous-time counterpart of SapEnforcesTheLoopConstraint. The CENIC
+integrator is the only continuous-time option that handles constraints, so it
+is what a continuous-time plant with a kinematic loop must use. This test
+selects it the way a user would, with the "cenic" integration scheme in a
+SimulatorConfig, and shows that CENIC
+ - holds the loop closed while the linkage swings,
+ - lets the linkage come apart at the split link when the loop constraint is
+   deactivated (so the first result is not an accident), and
+ - pulls an initially open loop closed.
+
+As in the SAP test, gravity is tipped into +x so that the linkage moves. */
+GTEST_TEST(ClosedTopologyTest, CenicEnforcesTheLoopConstraint) {
+  struct LoopOpening {
+    double start{};  // Meters.
+    double end{};    // Meters.
+  };
+
+  // Starting from rest with the driver crank turned `driver_angle` away from
+  // its assembled angle of zero, simulates `duration` seconds of continuous
+  // dynamics under CENIC. Returns how far the loop was open at the start and
+  // at the end. A nonzero `driver_angle` leaves the loop open at the start,
+  // since the other joints stay at their assembled angles.
+  auto simulate_and_measure_opening = [](bool constraint_active,
+                                         double driver_angle, double duration) {
+    FourBar four_bar;  // Continuous.
+    MultibodyPlant<double>& plant = four_bar.plant();
+    plant.mutable_gravity_field().set_gravity_vector({5.0, 0.0, -9.81});
+    plant.Finalize();
+    std::unique_ptr<systems::Diagram<double>> diagram = four_bar.Build();
+    systems::Simulator<double> simulator(*diagram);
+    systems::ApplySimulatorConfig(
+        systems::SimulatorConfig{.integration_scheme = "cenic"}, &simulator);
+    EXPECT_EQ(systems::ExtractSimulatorConfig(simulator).integration_scheme,
+              "cenic");
+    systems::Context<double>& context =
+        plant.GetMyMutableContextFromRoot(&simulator.get_mutable_context());
+    plant.SetConstraintActiveStatus(
+        &context, GetSoleLoopConstraintSpec(plant).id, constraint_active);
+    const RevoluteJoint<double>& world_driver =
+        plant.GetJointByName<RevoluteJoint>("world_driver");
+    world_driver.set_angle(&context, driver_angle);
+
+    LoopOpening opening;
+    opening.start = CalcLoopClosureError(plant, context).translation().norm();
+
+    simulator.AdvanceTo(duration);
+
+    // Whatever else happened, the linkage really did move; otherwise a closed
+    // loop at the end could be for want of any motion at all.
+    EXPECT_GT(std::abs(world_driver.get_angle(context) - driver_angle), 0.01);
+    opening.end = CalcLoopClosureError(plant, context).translation().norm();
+    return opening;
+  };
+
+  // Starting assembled, CENIC holds the primary and shadow together, so the
+  // linkage still moves as a closed four-bar after 0.1 s of swinging.
+  const LoopOpening held = simulate_and_measure_opening(
+      true /* active */, 0.0 /* assembled */, 0.1 /* seconds */);
+  EXPECT_LT(held.start, 1e-14);
+  EXPECT_LT(held.end, 1e-6);
+
+  // Inactive: as with SAP, the two branches swing independently and the split
+  // link visibly comes apart.
+  const LoopOpening released = simulate_and_measure_opening(
+      false /* inactive */, 0.0 /* assembled */, 0.1 /* seconds */);
+  EXPECT_LT(released.start, 1e-14);
+  EXPECT_GT(released.end, 1e-2);
+
+  // Starting with the loop about 0.2 m open, CENIC closes it. Closing a gap
+  // that large abruptly flings the linkage into a fast spin (around 10 rad/s
+  // at the driver, versus well under 1 rad/s from gravity alone), so this also
+  // shows the loop staying closed under vigorous motion.
+  const LoopOpening assembled = simulate_and_measure_opening(
+      true /* active */, 0.2 /* radians */, 0.5 /* seconds */);
+  EXPECT_GT(assembled.start, 0.1);
+  EXPECT_LT(assembled.end, 1e-6);
 }
 
 /* Continuous time (with anything but the CENIC integrator, which computes its
