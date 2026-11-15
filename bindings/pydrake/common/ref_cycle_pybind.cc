@@ -15,9 +15,16 @@ namespace internal {
 
 namespace {
 
+constexpr char kRefCyclePeers[] = "_pydrake_internal_ref_cycle_peers";
+
 // Creates a one-way reference link from `a` to `b`. Gives `a` a new/updated
 // attribute, containing a dict of handles. Inserts `b` into `a`'s handle dict.
 // Creates the dict first if it does not yet exist.
+//
+// Invariant: if `a` has the attribute, its dict is never empty. A new dict
+// receives `b` before it is attached to `a`, so a failed insertion cannot leave
+// an empty dict behind, and nothing ever removes entries. Consequently, the
+// mere existence of the attribute means that `a` is the source of a link.
 //
 // The dict is keyed by the address of each handle, so peers are tracked by
 // identity. The peers are never hashed or compared, so they need not be
@@ -29,25 +36,30 @@ namespace {
 // reference to each peer that it contains, and never removes any. Hence an
 // address cannot be reused while its entry is in the dict.
 void make_link(handle a, handle b) {
-  static const char refcycle_peers[] = "_pydrake_internal_ref_cycle_peers";
-  if (!hasattr(a, refcycle_peers)) {
+  py::int_ key(reinterpret_cast<uintptr_t>(b.ptr()));
+  auto insert = [&key, &b](handle peers) {
+    if (PyDict_SetItem(peers.ptr(), key.ptr(), b.ptr()) != 0) {
+#ifdef PYDRAKE_USE_PYBIND11
+      throw py::error_already_set();
+#else  // PYDRAKE_USE_NANOBIND
+      throw py::python_error();
+#endif
+    }
+  };
+  if (!hasattr(a, kRefCyclePeers)) {
     py::dict new_dict;
     DRAKE_DEMAND(PyType_IS_GC(Py_TYPE(new_dict.ptr())));
-    a.attr(refcycle_peers) = new_dict;
+    // Fill the dict before attaching it, to preserve the invariant.
+    insert(new_dict);
+    a.attr(kRefCyclePeers) = new_dict;
+  } else {
+    insert(a.attr(kRefCyclePeers));
   }
-  handle peers = a.attr(refcycle_peers);
   // Ensure the proper ref count on the `peers` dict. If it is > 1, the
   // objects will live forever. If it is < 1, the cycle will just be deleted
   // immediately.
+  handle peers = a.attr(kRefCyclePeers);
   DRAKE_DEMAND(Py_REFCNT(peers.ptr()) == 1);
-  py::int_ key(reinterpret_cast<uintptr_t>(b.ptr()));
-  if (PyDict_SetItem(peers.ptr(), key.ptr(), b.ptr()) != 0) {
-#ifdef PYDRAKE_USE_PYBIND11
-    throw py::error_already_set();
-#else  // PYDRAKE_USE_NANOBIND
-    throw py::python_error();
-#endif
-  }
 }
 
 void make_ref_cycle(handle p0, handle p1) {
@@ -144,6 +156,10 @@ void make_arbitrary_ref_link(
         n, location_hint);
   };
   check_and_make_link(p0, p1, not_gc_error);
+}
+
+bool is_ref_link_source(handle p) {
+  return hasattr(p, kRefCyclePeers);
 }
 
 void make_arbitrary_ref_cycle(

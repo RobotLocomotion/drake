@@ -10,6 +10,7 @@
 #include <fmt/ranges.h>
 
 #include "drake/common/eigen_types.h"
+#include "drake/common/fmt_eigen.h"
 #include "drake/common/text_logging.h"
 #include "drake/multibody/inverse_kinematics/differential_inverse_kinematics.h"
 #include "drake/multibody/parsing/scoped_names.h"
@@ -23,6 +24,7 @@ namespace {
 using Eigen::MatrixXd;
 using Eigen::Vector3d;
 using Eigen::VectorXd;
+using geometry::optimization::HPolyhedron;
 using math::RigidTransformd;
 using parsing::GetScopedFrameByName;
 using planning::CollisionChecker;
@@ -455,6 +457,75 @@ DifferentialInverseKinematicsSystem::JointCenteringCost::AddToProgram(
     result.push_back(std::move(binding));
   }
   return result;
+}
+
+DifferentialInverseKinematicsSystem::StaticStabilityConstraint::
+    StaticStabilityConstraint(const Config& config) {
+  SetConfig(config);
+}
+
+DifferentialInverseKinematicsSystem::StaticStabilityConstraint::
+    ~StaticStabilityConstraint() = default;
+
+void DifferentialInverseKinematicsSystem::StaticStabilityConstraint::SetConfig(
+    const Config& config) {
+  const HPolyhedron& region = config.support_region;
+  DRAKE_THROW_UNLESS(region.ambient_dimension() == 2,
+                     region.ambient_dimension());
+  DRAKE_THROW_UNLESS(region.A().allFinite(), fmt_eigen(region.A()));
+  DRAKE_THROW_UNLESS((region.A().rowwise().norm().array() > 0).all(),
+                     fmt_eigen(region.A()));
+  DRAKE_THROW_UNLESS(std::isfinite(config.margin), config.margin);
+  config_ = config;
+}
+
+std::vector<Binding<EvaluatorBase>>
+DifferentialInverseKinematicsSystem::StaticStabilityConstraint::AddToProgram(
+    CallbackDetails* details) const {
+  DRAKE_DEMAND(details != nullptr);
+  MathematicalProgram& prog = details->mathematical_program;
+  const VectorXDecisionVariable& v_next = details->v_next;
+  const MultibodyPlant<double>& plant = details->collision_checker.plant();
+  const Context<double>& plant_context = details->plant_context;
+  const DofMask& active_dof = details->active_dof;
+  const double dt = details->time_step;
+
+  const Frame<double>& frame_F =
+      GetScopedFrameByName(plant, config_.support_frame);
+  std::vector<ModelInstanceIndex> model_instances;
+  if (config_.model_instances.empty()) {
+    model_instances = details->collision_checker.robot_model_instances();
+  } else {
+    for (const std::string& name : config_.model_instances) {
+      model_instances.push_back(plant.GetModelInstanceByName(name));
+    }
+  }
+
+  const Vector3d p_WScm =
+      plant.CalcCenterOfMassPositionInWorld(plant_context, model_instances);
+  const Vector3d p_FScm =
+      frame_F.CalcPoseInWorld(plant_context).inverse() * p_WScm;
+  MatrixXd Jv_FScm(3, plant.num_velocities());
+  plant.CalcJacobianCenterOfMassTranslationalVelocity(
+      plant_context, model_instances, JacobianWrtVariable::kV, frame_F, frame_F,
+      &Jv_FScm);
+  MatrixXd Jv_FScm_active(3, active_dof.count());
+  active_dof.GetColumnsFromMatrix(Jv_FScm, &Jv_FScm_active);
+
+  // With the rows of A normalized, dᵢ = bᵢ - aᵢᵀ p and n̂ᵢ = -aᵢ.
+  const HPolyhedron& region = config_.support_region;
+  const VectorXd inv_row_norms = region.A().rowwise().norm().cwiseInverse();
+  const MatrixXd A_unit = inv_row_norms.asDiagonal() * region.A();
+  const VectorXd b_unit = region.b().cwiseProduct(inv_row_norms);
+  const VectorXd d = b_unit - A_unit * p_FScm.head<2>();
+
+  //   dᵢ + n̂ᵢᵀ J v Δt ≥ m
+  const MatrixXd A = -A_unit * Jv_FScm_active.topRows<2>();
+  const VectorXd lower = (config_.margin - d.array()).matrix() / dt;
+  const VectorXd upper = VectorXd::Constant(d.size(), kInf);
+  auto binding = prog.AddLinearConstraint(A, lower, upper, v_next);
+  binding.evaluator()->set_description("Static stability constraint");
+  return std::vector<Binding<EvaluatorBase>>{std::move(binding)};
 }
 
 namespace {
