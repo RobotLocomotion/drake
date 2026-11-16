@@ -46,6 +46,8 @@ cat > "$build_root/drake.bazelrc" << EOF
 build --disk_cache=$HOME/.cache/drake-wheel-build/bazel/disk_cache
 build --repository_cache=$HOME/.cache/drake-wheel-build/bazel/repository_cache
 build --repo_env=DRAKE_WHEEL=1
+# Enable MOSEK lazy loading.
+build --@drake//solvers:mosek_lazy_load=True
 # See tools/wheel/wheel_builder/macos.py for more on this env variable.
 build --macos_minimum_os="${MACOSX_DEPLOYMENT_TARGET}"
 EOF
@@ -56,9 +58,7 @@ EOF
 # for other mentions of MOSEK version bounds and fix those as well.
 WITH_MOSEK=ON
 PYTHON_MINOR=$($python_executable -c "import sys; print(sys.version_info.minor)")
-if [[ ${PYTHON_MINOR} -ge 15 ]]; then
-  WITH_MOSEK=OFF
-fi
+[ ${PYTHON_MINOR} -ge 15 ] && WITH_MOSEK=OFF
 
 # Install Drake.
 # N.B. When you change anything here, also fix wheel/image/build-drake.sh.
