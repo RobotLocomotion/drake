@@ -17,7 +17,8 @@ solver = MosekSolver()
 # Additionally, MOSEK is not currently supported for Linux aarch64 wheels.
 # (Apple Silicon is spelled 'arm64', so this doesn't apply there.)
 if platform.machine() == "aarch64":
-    assert not solver.available() and solver.enabled()
+    assert not solver.available() # Disabled at build-time.
+    assert solver.enabled() # License environment variable is set.
     sys.exit(0)
 else:
     assert solver.available()
@@ -27,8 +28,9 @@ else:
         assert not solver.enabled()
         sys.exit(0)
 
-# Check that MOSEK lazy loading works. Trying to get a license should trigger
-# the lazy loading. MOSEK will raise an error because the license is not valid.
+# The enabled() check should have triggered MOSEK lazy loading. Trying to get a
+# license should confirm the library is working as expected. MOSEK will raise
+# an error because the license is not valid.
 try:
     solver.AcquireLicense()
     message = None
