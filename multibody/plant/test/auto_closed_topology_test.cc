@@ -1,7 +1,7 @@
-/* Tests for automatic handling of closed-topology (looped) systems, enabled via
-MultibodyPlant::SetEnableLoopTopology(). When enabled, Finalize() breaks each
-kinematic loop using the shadow links and loop constraints produced by the
-underlying LinkJointGraph/SpanningForest. This file tests that
+/* Tests for MultibodyPlant's automatic handling of systems with kinematic loops
+(closed topologies), which is enabled by default. Finalize() breaks each loop
+using the shadow links and loop constraints produced by the underlying
+LinkJointGraph/SpanningForest. This file tests that
  - adding shadow links splits mass properties properly among the primary
    link and all of its shadows,
  - a primary link still reports its full mass properties, shadow link mass
@@ -12,9 +12,11 @@ underlying LinkJointGraph/SpanningForest. This file tests that
  - loop joints are correctly retargeted from a frame on the primary to
    a corresponding frame on the shadow,
  - the loop weld constraints are added to the plant and correctly joint
-   the primary and shadow links together at their origins, and
+   the primary and shadow links together at their origins,
  - the activate/deactivate parameters are properly allocated for the
-   loop weld constraints and work properly.
+   loop weld constraints and work properly, and
+ - both solvers that support constraints, discrete SAP and the continuous-time
+   CENIC integrator, hold the loop closed during simulation.
 
 Most tests use a planar four-bar linkage (three moving links -- driver, coupler,
 rocker -- plus World, connected by four revolute joints) which forms a single
@@ -50,6 +52,8 @@ primary link two shadows. */
 #include "drake/multibody/tree/rigid_body.h"
 #include "drake/multibody/tree/shadow_frame.h"
 #include "drake/systems/analysis/simulator.h"
+#include "drake/systems/analysis/simulator_config.h"
+#include "drake/systems/analysis/simulator_config_functions.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/diagram_builder.h"
 
@@ -180,7 +184,6 @@ class FourBar {
   explicit FourBar(double time_step = 0.0 /* continuous */) {
     plant_ = &AddMultibodyPlantSceneGraph(&builder_, time_step).plant;
     MultibodyPlant<double>& plant = *plant_;
-    plant.SetEnableLoopTopology(true);
     Parser(&plant).AddModelsFromString(kFourBarLoopSdf, "sdf");
     for (const std::string name : {"driver", "coupler", "rocker"}) {
       const Link<double>& link = plant.GetBodyByName(name);
@@ -715,7 +718,6 @@ NaN mass properties aren't for a link that isn't split. Kinematics works, a sum
 over no bodies is zero, and a sum that includes the split link is NaN. */
 GTEST_TEST(ClosedTopologyTest, KinematicsOnlyLoopCanHaveNaNMassProperties) {
   MultibodyPlant<double> plant(0.0 /* continuous */);
-  plant.SetEnableLoopTopology(true);
   const SpatialInertia<double> M = SpatialInertia<double>::NaN();
   const Link<double>& driver = plant.AddRigidBody("driver", M);
   const Link<double>& coupler = plant.AddRigidBody("coupler", M);
@@ -889,7 +891,6 @@ GTEST_TEST(ClosedTopologyTest, OneLinkCanHaveTwoShadows) {
   constexpr double kTol = 1e-14;
   constexpr double kLink6Mass = 6.0;
   MultibodyPlant<double> plant(0.0 /* continuous */);
-  plant.SetEnableLoopTopology(true);
 
   const SpatialInertia<double> unit_inertia =
       SpatialInertia<double>::MakeUnitary();
@@ -1208,7 +1209,6 @@ in the rocker's model instance while the coupler's shadow is in the coupler's
 model instance. */
 GTEST_TEST(ClosedTopologyTest, ShadowFrameKeepsItsModelInstanceWhenCloned) {
   MultibodyPlant<double> plant(0.0 /* continuous */);
-  plant.SetEnableLoopTopology(true);
   const ModelInstanceIndex linkage_instance = plant.AddModelInstance("linkage");
   const ModelInstanceIndex rocker_instance = plant.AddModelInstance("rocker");
 
@@ -1446,6 +1446,84 @@ GTEST_TEST(ClosedTopologyTest, SapEnforcesTheLoopConstraint) {
   EXPECT_GT(simulate_and_measure_opening(false), 1e-2);
 }
 
+/* The continuous-time counterpart of SapEnforcesTheLoopConstraint. The CENIC
+integrator is the only continuous-time option that handles constraints, so it
+is what a continuous-time plant with a kinematic loop must use. This test
+selects it the way a user would, with the "cenic" integration scheme in a
+SimulatorConfig, and shows that CENIC
+ - holds the loop closed while the linkage swings,
+ - lets the linkage come apart at the split link when the loop constraint is
+   deactivated (so the first result is not an accident), and
+ - pulls an initially open loop closed.
+
+As in the SAP test, gravity is tipped into +x so that the linkage moves. */
+GTEST_TEST(ClosedTopologyTest, CenicEnforcesTheLoopConstraint) {
+  struct LoopOpening {
+    double start{};  // Meters.
+    double end{};    // Meters.
+  };
+
+  // Starting from rest with the driver crank turned `driver_angle` away from
+  // its assembled angle of zero, simulates `duration` seconds of continuous
+  // dynamics under CENIC. Returns how far the loop was open at the start and
+  // at the end. A nonzero `driver_angle` leaves the loop open at the start,
+  // since the other joints stay at their assembled angles.
+  auto simulate_and_measure_opening = [](bool constraint_active,
+                                         double driver_angle, double duration) {
+    FourBar four_bar;  // Continuous.
+    MultibodyPlant<double>& plant = four_bar.plant();
+    plant.mutable_gravity_field().set_gravity_vector({5.0, 0.0, -9.81});
+    plant.Finalize();
+    std::unique_ptr<systems::Diagram<double>> diagram = four_bar.Build();
+    systems::Simulator<double> simulator(*diagram);
+    systems::ApplySimulatorConfig(
+        systems::SimulatorConfig{.integration_scheme = "cenic"}, &simulator);
+    EXPECT_EQ(systems::ExtractSimulatorConfig(simulator).integration_scheme,
+              "cenic");
+    systems::Context<double>& context =
+        plant.GetMyMutableContextFromRoot(&simulator.get_mutable_context());
+    plant.SetConstraintActiveStatus(
+        &context, GetSoleLoopConstraintSpec(plant).id, constraint_active);
+    const RevoluteJoint<double>& world_driver =
+        plant.GetJointByName<RevoluteJoint>("world_driver");
+    world_driver.set_angle(&context, driver_angle);
+
+    LoopOpening opening;
+    opening.start = CalcLoopClosureError(plant, context).translation().norm();
+
+    simulator.AdvanceTo(duration);
+
+    // Whatever else happened, the linkage really did move; otherwise a closed
+    // loop at the end could be for want of any motion at all.
+    EXPECT_GT(std::abs(world_driver.get_angle(context) - driver_angle), 0.01);
+    opening.end = CalcLoopClosureError(plant, context).translation().norm();
+    return opening;
+  };
+
+  // Starting assembled, CENIC holds the primary and shadow together, so the
+  // linkage still moves as a closed four-bar after 0.1 s of swinging.
+  const LoopOpening held = simulate_and_measure_opening(
+      true /* active */, 0.0 /* assembled */, 0.1 /* seconds */);
+  EXPECT_LT(held.start, 1e-14);
+  EXPECT_LT(held.end, 1e-6);
+
+  // Inactive: as with SAP, the two branches swing independently and the split
+  // link visibly comes apart.
+  const LoopOpening released = simulate_and_measure_opening(
+      false /* inactive */, 0.0 /* assembled */, 0.1 /* seconds */);
+  EXPECT_LT(released.start, 1e-14);
+  EXPECT_GT(released.end, 1e-2);
+
+  // Starting with the loop about 0.2 m open, CENIC closes it. Closing a gap
+  // that large abruptly flings the linkage into a fast spin (around 10 rad/s
+  // at the driver, versus well under 1 rad/s from gravity alone), so this also
+  // shows the loop staying closed under vigorous motion.
+  const LoopOpening assembled = simulate_and_measure_opening(
+      true /* active */, 0.2 /* radians */, 0.5 /* seconds */);
+  EXPECT_GT(assembled.start, 0.1);
+  EXPECT_LT(assembled.end, 1e-6);
+}
+
 /* Continuous time (with anything but the CENIC integrator, which computes its
 dynamics by a different route) does not support constraints -- and a looped
 model has them whether or not the user asked for any. So the complaint has to
@@ -1460,9 +1538,9 @@ GTEST_TEST(ClosedTopologyTest, ContinuousDynamicsSaysWhereLoopConstraintsCame) {
 
   DRAKE_EXPECT_THROWS_MESSAGE(
       plant.EvalTimeDerivatives(*context),
-      ".*does not support constraints, but this model has 1 constraint, which "
+      ".*do not support constraints, but this model has 1 constraint, which "
       "Finalize\\(\\) added in order to close the kinematic loop in this "
-      "model \\(see SetEnableLoopTopology\\(\\)\\).*");
+      "model \\(see SetEnableLoopTopology\\(\\)\\).*CENIC.*SAP.*");
 
   // With constraints from both sources, the message accounts for both.
   FourBar mixed_four_bar;
@@ -1489,7 +1567,6 @@ The model is the simplest possible loop: three links in a cycle, nothing welded
 to World. */
 GTEST_TEST(ClosedTopologyTest, UnanchoredLoopGetsAFloatingBaseBody) {
   MultibodyPlant<double> plant(0.0 /* continuous */);
-  plant.SetEnableLoopTopology(true);
   const Link<double>& link_a = plant.AddRigidBody(
       "a", SpatialInertia<double>::SolidCubeWithMass(1.0, 0.1));
   const Link<double>& link_b = plant.AddRigidBody(

@@ -2654,7 +2654,10 @@ Parameter ``plant``:
 Parameter ``options``:
     The options to relax SO(3) constraint as mixed-integer convex
     constraints. Refer to MixedIntegerRotationConstraintGenerator for
-    more details on the parameters in options.)""";
+    more details on the parameters in options.
+
+Raises:
+    RuntimeError if ``plant`` contains any kinematic loops.)""";
         } ctor;
         // Symbol: drake::multibody::GlobalInverseKinematics::Options
         struct /* Options */ {

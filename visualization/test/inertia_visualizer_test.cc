@@ -202,7 +202,6 @@ GTEST_TEST(InertiaVisualizerTest, ShadowLinkIsSkipped) {
   )""";
   systems::DiagramBuilder<double> builder;
   auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.01);
-  plant.SetEnableLoopTopology(true);
   Parser(&plant).AddModelsFromString(kLoopSdf, "sdf");
   plant.Finalize();
 

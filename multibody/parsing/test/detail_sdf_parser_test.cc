@@ -2242,7 +2242,6 @@ TEST_F(SdfParserTestContinuous, IndependentFramesUnassembledLoop) {
       fmt::format(kFourBar, "independent", "<drake:independent_frames/>"),
       "1.9");
   ParseTestString(fmt::format(kFourBar, "standard", ""), "1.9");
-  plant_.SetEnableLoopTopology(true);
   plant_.Finalize();
   ASSERT_EQ(plant_.num_loop_constraints(), 2);
 
