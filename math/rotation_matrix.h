@@ -823,7 +823,8 @@ class RotationMatrix {
   /// Computes the infinity norm of `this` - `other` (i.e., the maximum absolute
   /// value of the difference between the elements of `this` and `other`).
   /// @param[in] other %RotationMatrix to subtract from `this`.
-  /// @returns `‖this - other‖∞`
+  /// @returns `‖this - other‖∞`, or NaN if any element of `this - other` is
+  /// NaN.
   T GetMaximumAbsoluteDifference(const RotationMatrix<T>& other) const {
     return GetMaximumAbsoluteDifference(matrix(), other.matrix());
   }
@@ -1009,6 +1010,14 @@ class RotationMatrix {
   static T GetMaximumAbsoluteDifference(const Matrix3<T>& R,
                                         const Matrix3<T>& other) {
     const Matrix3<T> R_difference = R - other;
+    if constexpr (scalar_predicate<T>::is_bool) {
+      // Eigen's lpNorm<Infinity>() may silently skip NaN elements (depending on
+      // where they appear), which would let tolerance checks pass for a matrix
+      // with NaN in it (see #17356). Propagate NaN explicitly instead.
+      if (R_difference.hasNaN()) {
+        return std::numeric_limits<double>::quiet_NaN();
+      }
+    }
     return R_difference.template lpNorm<Eigen::Infinity>();
   }
 

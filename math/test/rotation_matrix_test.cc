@@ -1,5 +1,6 @@
 #include "drake/math/rotation_matrix.h"
 
+#include <cmath>
 #include <limits>
 #include <vector>
 
@@ -497,6 +498,32 @@ GTEST_TEST(RotationMatrix, IsValid) {
   EXPECT_LT(m.determinant(), 0);
   EXPECT_TRUE(RotationMatrix<double>::IsOrthonormal(m, 5 * kEpsilon));
   EXPECT_FALSE(RotationMatrix<double>::IsValid(m, 5 * kEpsilon));
+
+  // A matrix with any non-finite element is neither orthonormal nor valid,
+  // no matter which element it is (see #17356). This uses the static
+  // functions because the constructor rejects such matrices in Debug builds.
+  // (Eigen's infinity norm can skip NaN elements, so without special handling
+  // a NaN in rows 1 or 2 would pass the orthonormality check.)
+  for (const double bad : {std::numeric_limits<double>::infinity(),
+                           -std::numeric_limits<double>::infinity(),
+                           std::numeric_limits<double>::quiet_NaN()}) {
+    for (int i = 0; i < 3; ++i) {
+      for (int j = 0; j < 3; ++j) {
+        SCOPED_TRACE(testing::Message()
+                     << "R(" << i << ", " << j << ") = " << bad);
+        Matrix3d bad_m = Matrix3d::Identity();
+        bad_m(i, j) = bad;
+        EXPECT_FALSE(RotationMatrix<double>::IsOrthonormal(bad_m, kEpsilon));
+        EXPECT_FALSE(RotationMatrix<double>::IsValid(bad_m, kEpsilon));
+        EXPECT_FALSE(RotationMatrix<double>::IsValid(bad_m));
+        if (std::isnan(bad)) {
+          // The measure must propagate NaN, not silently skip it.
+          EXPECT_TRUE(std::isnan(
+              RotationMatrix<double>::GetMeasureOfOrthonormality(bad_m)));
+        }
+      }
+    }
+  }
 }
 
 // Tests whether or not a RotationMatrix is an identity matrix.

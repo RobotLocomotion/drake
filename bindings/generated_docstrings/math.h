@@ -3691,7 +3691,8 @@ Parameter ``other``:
     RotationMatrix to subtract from ``this``.
 
 Returns:
-    ``‖this - other‖∞``)""";
+    ``‖this - other‖∞``, or NaN if any element of ``this - other`` is
+    NaN.)""";
         } GetMaximumAbsoluteDifference;
         // Symbol: drake::math::RotationMatrix::GetMeasureOfOrthonormality
         struct /* GetMeasureOfOrthonormality */ {
