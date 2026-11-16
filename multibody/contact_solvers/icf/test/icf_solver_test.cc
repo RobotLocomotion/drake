@@ -275,6 +275,70 @@ TEST_P(IcfSolverParamTest, ConvergenceFailure) {
   EXPECT_FALSE(solver_.SolveWithGuess(model_, kConvergenceTolerance, &data_));
 }
 
+/* Replaces the given model with an unconstrained one with M0 = I, v0 = 0,
+k0 = 0, time_step = 1, and the given uniform damping D0. The solution is v = 0
+and, with these values, the gradient and Hessian are g = (I + D0)⋅v and
+H = I + D0. */
+void MakeUnconstrainedModel(IcfModel<double>* model, IcfData<double>* data,
+                            double damping) {
+  const std::vector<int> empty;
+  model->patch_constraints_pool().Resize(empty);
+  std::unique_ptr<IcfParameters<double>> params = model->ReleaseParameters();
+  const int nv = params->M0.rows();
+  params->time_step = 1.0;
+  params->v0 = VectorXd::Zero(nv);
+  params->k0 = VectorXd::Zero(nv);
+  params->M0 = MatrixXd::Identity(nv, nv);
+  params->D0 = VectorXd::Constant(nv, damping);
+  model->ResetParameters(std::move(params));
+  model->SetSparsityPattern();
+  model->ResizeData(data);
+}
+
+/* The Newton decrement test can declare convergence when the (normalized)
+gradient test cannot. With very stiff damping, λ = (gᵀH⁻¹g)^½ is much smaller
+than ‖D⋅g‖. Here ‖D⋅g‖ ≈ 1e-3 exceeds the tolerance, but λ ≈ 1e-9 does not. The
+step size test does not apply, since it requires a completed iteration. */
+TEST_P(IcfSolverParamTest, NewtonDecrementConvergence) {
+  MakeUnconstrainedModel(&model_, &data_, 1e12);
+  VectorXd v_guess = VectorXd::Zero(12);
+  v_guess[0] = 1e-15;
+  data_.set_v(v_guess);
+
+  EXPECT_TRUE(solver_.SolveWithGuess(model_, kConvergenceTolerance, &data_));
+  EXPECT_EQ(solver_.stats().num_iterations, 0);
+  EXPECT_EQ(data_.v(), v_guess);
+  // We still needed a factorization in order to compute the decrement.
+  EXPECT_GE(solver_.stats().num_factorizations, 1);
+}
+
+/* With Hessian reuse, the search direction may come from a stale factorization,
+for which −gᵀw is not the decrement of the current Hessian. Here the cached
+Hessian is very stiff, so the cached decrement is ≈ 1e-10, below tolerance,
+while the true decrement and the gradient are ≈ 1e-4. The solver must not
+declare convergence based on the stale factorization. */
+TEST_P(IcfSolverParamTest, NewtonDecrementIgnoresStaleHessian) {
+  IcfSolverParameters solver_params = solver_.get_parameters();
+  solver_params.enable_hessian_reuse = true;
+  solver_.SetParameters(solver_params);
+
+  // Solve a very stiff problem, to cache a stiff factorization.
+  MakeUnconstrainedModel(&model_, &data_, 1e12);
+  VectorXd v_guess = VectorXd::Zero(12);
+  v_guess[0] = 1.0;
+  data_.set_v(v_guess);
+  EXPECT_TRUE(solver_.SolveWithGuess(model_, kConvergenceTolerance, &data_));
+
+  // Soften the problem without changing the sparsity pattern, and start away
+  // from the solution (v = 0).
+  MakeUnconstrainedModel(&model_, &data_, 0.0);
+  v_guess[0] = 1e-4;
+  data_.set_v(v_guess);
+  EXPECT_TRUE(solver_.SolveWithGuess(model_, kConvergenceTolerance, &data_));
+  EXPECT_GE(solver_.stats().num_iterations, 1);
+  EXPECT_LT(data_.v().norm(), kConvergenceTolerance);
+}
+
 /* Checks that the solver matches the analytical solution for a simple
 unconstrained problem. */
 TEST_P(IcfSolverParamTest, AnalyticalSolution) {
