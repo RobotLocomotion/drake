@@ -167,7 +167,7 @@ namespace {
 // object keeps it alive (see ensure_callback_lifetime at the binding sites).
 // Because the constraint may be shared with programs, MathematicalProgram's
 // bindings keep the Python object alive wherever the program goes (see
-// KeepPyFunctionEvaluatorAlive).
+// ShareBindingWithProgram in solvers_py_mathematicalprogram.cc).
 
 std::function<AutoDiffVecXd(const AutoDiffVecXd&, double)> BorrowValueFunction(
     const py::callable& value_function) {
