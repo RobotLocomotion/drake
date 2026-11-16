@@ -188,15 +188,12 @@ bool IcfSolver::SolveIsland(const IcfModel<double>& model, const int island,
   //
   // Convergence is achieved when either the (normalized) gradient is small
   //   ‖D⋅gₖ‖ ≤ ε max(1, ‖D⋅r‖),
-  // or the (normalized) step size is sufficiently small,
-  //   η ‖D⁻¹⋅Δvₖ‖ ≤ ε max(1, ‖D⋅r‖),
   // or the Newton decrement is sufficiently small,
   //   √(−gₖᵀ⋅wₖ) ≤ ε max(1, ‖D⋅r‖),
-  // where wₖ = −Hₖ⁻¹⋅gₖ is the Newton direction. The decrement −gₖᵀ⋅wₖ is the
-  // cost decrease predicted along the full Newton step, regardless of the step
-  // length αₖ that line search later accepts. Since g̃ = D⋅g and w̃ = D⁻¹⋅w,
-  // gᵀw = g̃ᵀw̃, so its square root has the same units as the other two tests.
-  // where η = θ / (1 − θ), θ = ‖D⁻¹⋅Δvₖ‖ / ‖D⁻¹⋅Δvₖ₋₁‖, as per [Hairer and
+  // or the (normalized) step size is sufficiently small,
+  //   η ‖D⁻¹⋅Δvₖ‖ ≤ ε max(1, ‖D⋅r‖),
+  // where wₖ = −Hₖ⁻¹⋅gₖ is the Newton direction, and where
+  // η = θ / (1 − θ), θ = ‖D⁻¹⋅Δvₖ‖ / ‖D⁻¹⋅Δvₖ₋₁‖, as per [Hairer and
   // Wanner, 1996]. All norms are restricted to the island's clique segments;
   // for a single island these reduce to the full-problem quantities.
   const VectorXd& D = model.scale_factor();
@@ -305,16 +302,11 @@ bool IcfSolver::SolveIsland(const IcfModel<double>& model, const int island,
       }
     }
 
-    // Newton-decrement-based convergence check. If the cost is predicted to
-    // decrease by (essentially) nothing along the full Newton step, there is
-    // nothing for line search to do. This includes an exactly zero decrement,
-    // for which line search has no descent to work with. A positive (or NaN)
-    // directional derivative means wₖ is not a descent direction; that is left
-    // for line search to diagnose.
-    const double directional_derivative =
+    // Newton-decrement-based convergence check. Ensures sufficient cost
+    // decrease can be achieved along the search direction.
+    const double dell0 =
         IslandDot(model, island, data->gradient(), dv);  // gₖᵀ⋅wₖ
-    if (directional_derivative <= 0.0 &&
-        std::sqrt(-directional_derivative) < scaled_tolerance) {
+    if (dell0 <= 0.0 && std::sqrt(-dell0) < scaled_tolerance) {
       return true;
     }
 
