@@ -8645,9 +8645,8 @@ documentation at https://drake.mit.edu/bazel.html#mosek.
 
 The MOSEKLM_LICENSE_FILE environment variable controls whether or not
 SolverInterface∷enabled() returns true. Iff it is set to any non-empty
-value and (when is_available() returns true and with lazy loading) the
-MOSEK™ dynamic library can be loaded, then the solver is enabled;
-otherwise, the solver is not enabled.
+value and the MOSEK™ dynamic library can be loaded, then the solver is
+enabled; otherwise, the solver is not enabled.
 
 To use ``MosekSolver`` from ``pydrake`` installed via Drake's wheel
 files (i.e., via ``pip``), you must install ``pydrake`` using the
@@ -8741,8 +8740,8 @@ R"""(Type of details stored in MathematicalProgramResult.)""";
           // Source: drake/solvers/mosek_solver.h
           const char* doc =
 R"""(Returns true iff the environment variable MOSEKLM_LICENSE_FILE has
-been set to a non-empty value and (when is_available() retuns true and
-with lazy loading) the MOSEK™ dynamic library can be loaded.)""";
+been set to a non-empty value and the MOSEK™ dynamic library can be
+loaded.)""";
         } is_enabled;
       } MosekSolver;
       // Symbol: drake::solvers::MosekSolverDetails

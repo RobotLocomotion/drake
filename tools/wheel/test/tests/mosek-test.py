@@ -17,8 +17,8 @@ solver = MosekSolver()
 # Additionally, MOSEK is not currently supported for Linux aarch64 wheels.
 # (Apple Silicon is spelled 'arm64', so this doesn't apply there.)
 if platform.machine() == "aarch64":
-    assert not solver.available() # Disabled at build-time.
-    assert solver.enabled() # License environment variable is set.
+    assert not solver.available()  # Disabled at build-time.
+    assert solver.enabled()  # License environment variable is set.
     sys.exit(0)
 else:
     assert solver.available()
