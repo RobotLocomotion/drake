@@ -34,7 +34,11 @@ void DefineSolversBranchAndBound(py::module_ m) {
                  MixedIntegerBranchAndBound::Options>(),
             py::arg("prog"), py::arg("solver_id"),
             py::arg("options") = MixedIntegerBranchAndBound::Options{},
-            cls_doc.ctor.doc)
+            // The branch and bound object copies the program's costs and
+            // constraints, which share evaluators with `prog`. Keep `prog`
+            // alive so those evaluators (and any Python callables they
+            // borrow) stay alive too.
+            py::keep_alive<1, 2>(), cls_doc.ctor.doc)
         .def("Solve", &Class::Solve, cls_doc.Solve.doc)
         .def("GetOptimalCost", &Class::GetOptimalCost,
             cls_doc.GetOptimalCost.doc)

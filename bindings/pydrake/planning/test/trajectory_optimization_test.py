@@ -733,6 +733,50 @@ class TestTrajectoryOptimization(unittest.TestCase):
         self.assertFalse(len(gcs.GetSubgraphs()))
         self.assertFalse(len(gcs.GetEdgesBetweenSubgraphs()), 0)
 
+    def test_gcs_trajectory_optimization_added_bindings_lifetime(self):
+        """GCS trajectory optimization must keep the evaluator, and any Python
+        callable it borrows, of a binding it is given alive.
+        """
+
+        class Callback:
+            def __call__(self, v):
+                return v[0] ** 2
+
+        gcs = GcsTrajectoryOptimization(2)
+        regions = gcs.AddRegions(
+            regions=[HPolyhedron.MakeBox([-1, -1], [1, 1])], order=1
+        )
+        other_regions = gcs.AddRegions(
+            regions=[HPolyhedron.MakeBox([-1, -1], [1, 1])], order=1
+        )
+        edges = gcs.AddEdges(regions, other_regions)
+        for name, dut in [("subgraph", regions), ("edges", edges)]:
+            with self.subTest(dut=name):
+                callbacks = []
+                edge_vars = dut.edge_constituent_vertex_control_points()[0][
+                    0, :1
+                ]
+
+                def add():
+                    callback = Callback()
+                    other = mp.MathematicalProgram()
+                    y = other.NewContinuousVariables(1)
+                    cost = other.AddCost(callback, y).evaluator()
+                    prog = mp.MathematicalProgram()
+                    if name == "subgraph":
+                        vertex_vars = dut.vertex_control_points()[0, :1]
+                        prog.AddDecisionVariables(vertex_vars.reshape((-1, 1)))
+                        dut.AddVertexCost(
+                            binding=prog.AddCost(cost, vertex_vars)
+                        )
+                    prog.AddDecisionVariables(edge_vars.reshape((-1, 1)))
+                    dut.AddEdgeCost(binding=prog.AddCost(cost, edge_vars))
+                    callbacks.append(weakref.ref(callback))
+
+                add()
+                gc.collect()
+                self.assertIsNotNone(callbacks[0]())
+
     def test_gcs_trajectory_optimization_2d(self):
         """The following 2D environment has been presented in the GCS paper.
 

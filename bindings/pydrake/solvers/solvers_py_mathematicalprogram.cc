@@ -13,6 +13,7 @@
 #include "drake/bindings/pydrake/common/ensure_callback_lifetime_pybind.h"
 #include "drake/bindings/pydrake/common/ref_cycle_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
+#include "drake/bindings/pydrake/solvers/borrowing_evaluator_pybind.h"
 #include "drake/bindings/pydrake/solvers/solvers_py.h"
 #include "drake/bindings/pydrake/symbolic_types_pybind.h"
 #include "drake/solvers/choose_best_solver.h"
@@ -161,13 +162,10 @@ class PyFunctionConstraint;
 // evaluator that was added to some other program, when that object borrows
 // Python callables. Does nothing for any other kind of evaluator.
 //
-// An evaluator borrows callables exactly when its bindings keep them alive
-// with ref links, which makes the evaluator's Python object the source of a
-// ref link; see internal::is_ref_link_source(). This relies on a convention:
-// every evaluator that borrows callables must register a link, and none should
-// register one otherwise. An evaluator that is not a link source holds no
-// Python references of its own, so the C++ shared_ptr ownership held by `prog`
-// is already enough to keep it alive. Evaluators implemented as Python
+// See internal::EvaluatorBorrowsPythonCallables() for what "borrows" means. An
+// evaluator that does not borrow holds no Python references of its own, so the
+// C++ shared_ptr ownership held by `prog` is already enough to keep it alive.
+// Evaluators implemented as Python
 // subclasses also need no link here: AddCost(obj, vars) and
 // AddConstraint(constraint, vars) already keep their Python object alive (see
 // make_shared_ptr_from_py_object), though in a way that garbage collection
@@ -265,8 +263,7 @@ void KeepPyFunctionEvaluatorAlive(MathematicalProgram* prog,
     const std::shared_ptr<EvaluatorBase>& evaluator,
     const std::string& location_hint) {
   py::object evaluator_py = py::cast(evaluator);
-  // Being a link source is how we recognize a borrower; see the declaration.
-  if (!internal::is_ref_link_source(evaluator_py)) {
+  if (!internal::EvaluatorBorrowsPythonCallables(evaluator_py)) {
     return;
   }
   internal::make_arbitrary_ref_link(
@@ -278,21 +275,19 @@ void KeepPyFunctionEvaluatorAlive(MathematicalProgram* prog,
 //
 // A plain evaluator is held through its Python object, to avoid hazards like
 // #20131. An evaluator that borrows Python callables from its Python object
-// (one that is a ref link source; see internal::is_ref_link_source()) must not
+// (see internal::EvaluatorBorrowsPythonCallables()) must not
 // be held that way: its callables may refer back to `prog`, and a strong
 // reference from C++ to the Python object would hide that cycle from Python's
 // garbage collector. (Casting the Python object to a std::shared_ptr is no
 // help, since nanobind does the same thing.)
 // So instead, the result does not own anything, and `prog` is linked to the
 // Python object, which owns the C++ object, in a way that garbage collection
-// can see. As with every borrowing evaluator, anything else that holds on to
-// the result must also keep the Python object alive.
+// can see. Anything else that holds on to a Binding made from the result must
+// keep the Python object alive; see internal::ReownBindingIfBorrowing().
 template <typename C>
 std::shared_ptr<C> ShareEvaluatorWithProgram(MathematicalProgram* prog,
     py::object evaluator_py, const std::string& location_hint) {
-  // Being a link source is how we recognize a borrower; see the declaration of
-  // KeepPyFunctionEvaluatorAlive.
-  if (!internal::is_ref_link_source(evaluator_py)) {
+  if (!internal::EvaluatorBorrowsPythonCallables(evaluator_py)) {
     return make_shared_ptr_from_py_object<C>(std::move(evaluator_py));
   }
   std::shared_ptr<C> evaluator =
@@ -324,7 +319,7 @@ py::object CastBindingKeepingEvaluatorAlive(
     const Binding<C>& binding, const std::string& location_hint) {
   py::object binding_py = py::cast(binding);
   py::object evaluator_py = py::cast(binding.evaluator());
-  if (internal::is_ref_link_source(evaluator_py)) {
+  if (internal::EvaluatorBorrowsPythonCallables(evaluator_py)) {
     internal::make_arbitrary_ref_link(binding_py, evaluator_py, location_hint);
   }
   return binding_py;

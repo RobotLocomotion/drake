@@ -1,8 +1,10 @@
 import pydrake.geometry.optimization as mut  # ruff: isort: skip
 
 import copy
+import gc
 import os.path
 import unittest
+import weakref
 
 import numpy as np
 
@@ -1247,6 +1249,72 @@ class TestGeometryOptimization(unittest.TestCase):
         self.assertEqual(len(spp.Vertices()), 2)
         spp.RemoveVertex(target)
         self.assertEqual(len(spp.Vertices()), 1)
+
+    def test_added_bindings_keep_borrowed_callables_alive(self):
+        """A vertex or edge that holds a binding must keep its evaluator (and
+        any Python callable it borrows) alive, even after the program that made
+        the binding, the evaluator's Python object, and the binding are gone.
+        """
+
+        class CostCallback:
+            def __call__(self, v):
+                return v[0] ** 2
+
+        class ConstraintCallback:
+            def __call__(self, v):
+                return np.array([v[0] ** 2])
+
+        def check(add, evaluate):
+            def populate():
+                callback = (
+                    CostCallback() if kind == "cost" else ConstraintCallback()
+                )
+                other = MathematicalProgram()
+                y = other.NewContinuousVariables(2)
+                prog = MathematicalProgram()
+                prog.AddDecisionVariables(xs.reshape((-1, 1)))
+                add(other, prog, callback, y)
+                return weakref.ref(callback)
+
+            callback_ref = populate()
+            gc.collect()
+            self.assertIsNotNone(callback_ref())
+            evaluate()
+
+        x = np.array([1.0, 2.0])
+        for target_name in ["vertex", "edge"]:
+            for kind in ["cost", "constraint"]:
+                with self.subTest(target=target_name, kind=kind):
+                    spp = mut.GraphOfConvexSets()
+                    v = spp.AddVertex(set=mut.Point(x), name="v")
+                    w = spp.AddVertex(set=mut.Point(x), name="w")
+                    edge = spp.AddEdge(v, w)
+                    target = v if target_name == "vertex" else edge
+                    xs = v.x()
+
+                    def add(other, prog, callback, y):
+                        # Both an evaluator that has been added to another
+                        # program already and a fresh one.
+                        if kind == "cost":
+                            c = other.AddCost(callback, y).evaluator()
+                            target.AddCost(binding=prog.AddCost(c, xs))
+                        else:
+                            c = other.AddConstraint(
+                                callback, [0.0], [1.0], y
+                            ).evaluator()
+                            target.AddConstraint(
+                                binding=prog.AddConstraint(c, xs)
+                            )
+
+                    def evaluate():
+                        if kind == "cost":
+                            dut = target.GetCosts()[0].evaluator()
+                            self.assertEqual(dut.Eval(x), 1.0)
+                        else:
+                            dut = target.GetConstraints()[0].evaluator()
+                            self.assertEqual(dut.Eval(x)[0], 1.0)
+
+                    check(add, evaluate)
 
     def test_implicit_graph_of_convex_sets(self):
         # A simple loop graph, a -> b -> c -> a, where the vertices are
