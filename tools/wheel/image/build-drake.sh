@@ -15,12 +15,11 @@ export BAZELISK_HOME=/var/cache/bazel/bazelisk
 
 # Add wheel-specific settings that are not available via CMake options.
 # N.B. When you change anything here, also fix wheel/macos/build-wheel.sh.
-cat > /tmp/drake-wheel-build/drake-build/drake.bazelrc << EOF
+DRAKE_BAZELRC=/tmp/drake-wheel-build/drake-build/drake.bazelrc
+cat > $DRAKE_BAZELRC << EOF
 build --disk_cache=/var/cache/bazel/disk_cache
 build --repository_cache=/var/cache/bazel/repository_cache
 build --repo_env=DRAKE_WHEEL=1
-# Enable MOSEK lazy loading. Right now this is only done for Linux builds.
-build --@drake//solvers:mosek_lazy_load=True
 EOF
 
 # MOSEK's published wheels declare an upper bound on their supported Python
@@ -33,6 +32,12 @@ WITH_MOSEK=ON
 
 # MOSEK is not currently supported for Linux aarch64 wheels.
 [ "$(arch)" == "aarch64" ] && WITH_MOSEK=OFF
+
+[ WITH_MOSEK = ON ] && cat >>$DRAKE_BAZELRC <<EOF
+# Enable MOSEK lazy loading. Right now this is only done for Linux builds.
+build --@drake//solvers:mosek_lazy_load=True
+EOF
+
 
 # Install Drake using our wheel-build-specific Python interpreter and compilers.
 # N.B. When you change anything here, also fix wheel/macos/build-wheel.sh.
