@@ -1,5 +1,6 @@
 import copy
 import gc
+import os
 import subprocess
 import sys
 import unittest
@@ -515,7 +516,10 @@ integrator_params: !CenicIntegratorParameters
 assert config.integrator_params.explicit_external_inputs
 assert "!CenicIntegratorParameters" in yaml_dump_typed(config)
 """
-        subprocess.run([sys.executable, "-c", program], check=True)
+        # The child interpreter must find pydrake the same way we did. Bazel
+        # sets up sys.path in-process, so pass it along explicitly.
+        env = dict(os.environ, PYTHONPATH=os.pathsep.join(sys.path))
+        subprocess.run([sys.executable, "-c", program], check=True, env=env)
 
     def test_simulator_config_functions(self):
         for T in (float, AutoDiffXd):
