@@ -188,9 +188,12 @@ bool IcfSolver::SolveIsland(const IcfModel<double>& model, const int island,
   //
   // Convergence is achieved when either the (normalized) gradient is small
   //   ‖D⋅gₖ‖ ≤ ε max(1, ‖D⋅r‖),
+  // or the Newton decrement is sufficiently small,
+  //   √(−gₖᵀ⋅wₖ) ≤ ε max(1, ‖D⋅r‖),
   // or the (normalized) step size is sufficiently small,
-  //   η ‖D⁻¹⋅Δvₖ‖ ≤ ε max(1, ‖D⋅r‖).
-  // where η = θ / (1 − θ), θ = ‖D⁻¹⋅Δvₖ‖ / ‖D⁻¹⋅Δvₖ₋₁‖, as per [Hairer and
+  //   η ‖D⁻¹⋅Δvₖ‖ ≤ ε max(1, ‖D⋅r‖),
+  // where wₖ = −Hₖ⁻¹⋅gₖ is the Newton direction, and where
+  // η = θ / (1 − θ), θ = ‖D⁻¹⋅Δvₖ‖ / ‖D⁻¹⋅Δvₖ₋₁‖, as per [Hairer and
   // Wanner, 1996]. All norms are restricted to the island's clique segments;
   // for a single island these reduce to the full-problem quantities.
   const VectorXd& D = model.scale_factor();
@@ -297,6 +300,27 @@ bool IcfSolver::SolveIsland(const IcfModel<double>& model, const int island,
               model.original_velocity(start + j));
         }
       }
+    }
+
+    // Newton-decrement-based convergence check. Ensures sufficient cost
+    // decrease can be achieved along the search direction.
+    double dell0 = IslandDot(model, island, data->gradient(), dv);  // gₖᵀ⋅wₖ
+    auto decrement_is_small = [&]() {
+      return dell0 <= 0.0 && std::sqrt(-dell0) < scaled_tolerance;
+    };
+    if (reuse_hessian && decrement_is_small()) {
+      // A reused factorization may be stale, in which case −gₖᵀ⋅wₖ is not the
+      // decrement of the current Hessian and can under-estimate it, stopping
+      // early. Refresh the factorization and the search direction, so that we
+      // only converge on the true decrement. (The sparsity pattern is known to
+      // be unchanged, since we were reusing the factorization.)
+      ComputeIslandSearchDirection(model, island, *data, &dv, state,
+                                   /* reuse_factorization = */ false,
+                                   /* reuse_sparsity_pattern = */ true);
+      dell0 = IslandDot(model, island, data->gradient(), dv);
+    }
+    if (decrement_is_small()) {
+      return true;
     }
 
     // Compute the optimal step size αₖ = min_α ℓᵢ(vₖ + α⋅wₖ).
