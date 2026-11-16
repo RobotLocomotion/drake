@@ -16,11 +16,16 @@ solver = MosekSolver()
 # for other mentions of MOSEK version bounds and fix those as well.
 # Additionally, MOSEK is not currently supported for Linux aarch64 wheels.
 # (Apple Silicon is spelled 'arm64', so this doesn't apply there.)
-if sys.version_info[:2] < (3, 15) and platform.machine() != "aarch64":
-    assert solver.available() and solver.enabled()
-else:
-    assert solver.available() and not solver.enabled()
+if platform.machine() == "aarch64":
+    assert not solver.available() and solver.enabled()
     sys.exit(0)
+else:
+    assert solver.available()
+    if sys.version_info[:2] < (3, 15):
+        assert solver.enabled()
+    else:
+        assert not solver.enabled()
+        sys.exit(0)
 
 # Check that MOSEK lazy loading works. Trying to get a license should trigger
 # the lazy loading. MOSEK will raise an error because the license is not valid.
