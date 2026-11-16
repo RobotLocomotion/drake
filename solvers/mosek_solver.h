@@ -44,10 +44,9 @@ struct MosekSolverDetails {
  * https://drake.mit.edu/bazel.html#mosek.
  *
  * The MOSEKLM_LICENSE_FILE environment variable controls whether or not
- * SolverInterface::enabled() returns true.  Iff it is set to any non-empty
- * value and (when is_available() returns true and with lazy loading) the MOSEK™
- * dynamic library can be loaded, then the solver is enabled; otherwise, the
- * solver is not enabled.
+ * SolverInterface::enabled() returns true. Iff it is set to any non-empty value
+ * and the MOSEK™ dynamic library can be loaded, then the solver is enabled;
+ * otherwise, the solver is not enabled.
  *
  * To use `MosekSolver` from `pydrake` installed via Drake's wheel files (i.e.,
  * via `pip`), you must install `pydrake` using the `mosek` extra:
@@ -114,8 +113,7 @@ class MosekSolver final : public SolverBase {
   static SolverId id();
   static bool is_available();
   /// Returns true iff the environment variable MOSEKLM_LICENSE_FILE has been
-  /// set to a non-empty value and (when is_available() retuns true and with
-  /// lazy loading) the MOSEK™ dynamic library can be loaded.
+  /// set to a non-empty value and the MOSEK™ dynamic library can be loaded.
   static bool is_enabled();
   static bool ProgramAttributesSatisfied(const MathematicalProgram&);
   static std::string UnsatisfiedProgramAttributes(const MathematicalProgram&);
@@ -129,8 +127,8 @@ class MosekSolver final : public SolverBase {
                 internal::SpecificOptions*,
                 MathematicalProgramResult*) const final;
 
-  /// Returns true iff the environment variable MOSEKLM_LICENSE_FILE has been
-  /// set to a non-empty value.
+  // Returns true iff the environment variable MOSEKLM_LICENSE_FILE has been
+  // set to a non-empty value.
   static bool has_license_file();
 
   // Note that this is mutable to allow latching the allocation of mosek_env_
