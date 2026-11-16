@@ -385,7 +385,7 @@ class TestModelMaker(unittest.TestCase):
             encoded_package="auto",
         )
 
-        # "auto" creates obj_dir/package.xml (named "meshes") and the uri
+        # "auto" creates obj_dir/package.xml (named "package_auto") and the uri
         # is defined w.r.t. that package.
         dut.make_model()
         self.assertTrue(generated_xml.exists())
@@ -399,7 +399,20 @@ class TestModelMaker(unittest.TestCase):
             _file_contents(generated_xml), "<name>package_auto</name>"
         )
 
-        # "auto" can be run again, now using the package.xml it generated.
+        # "auto" can be run again, now using the package.xml it generated. The
+        # test can't tell if it reuses or replaces the package file; its
+        # purpose is to show that no exception is thrown by the invocation.
+        dut.make_model()
+        self.assertRegex(
+            _file_contents(sdf_result),
+            "<uri>package://package_auto/box.obj</uri>",
+        )
+
+        # A package.xml written by an older version starts with whitespace
+        # before the XML declaration; it can still be read.
+        generated_text = _file_contents(generated_xml)
+        with open(generated_xml, "w") as f:
+            f.write("\n  " + generated_text)
         dut.make_model()
         self.assertRegex(
             _file_contents(sdf_result),

@@ -14,7 +14,8 @@ from pydrake.multibody.tree import (
 
 _logger = logging.getLogger("drake")
 
-_PACKAGE_TEMPLATE = """<?xml version="1.0"?>
+_PACKAGE_TEMPLATE = """
+<?xml version="1.0"?>
 <package format="2">
   <name>{name}</name>
   <version>0.0.0</version>
@@ -24,7 +25,7 @@ _PACKAGE_TEMPLATE = """<?xml version="1.0"?>
   <maintainer email="nobody@example.com">Nobody</maintainer>
   <license>unknown</license>
 </package>
-"""
+""".lstrip()
 
 _SDF_TEMPLATE = """<?xml version='1.0'?>
 <sdf xmlns:drake="http://drake.mit.edu" version="1.8">
@@ -333,7 +334,10 @@ class MeshModelMaker:
         Reads the ROS package manifest file at the given path, returning the
         value of the name tag.
         """
-        root = xml.etree.ElementTree.parse(package_path).getroot()
+        # Package files written by older versions of mesh_to_model start with
+        # whitespace before the XML declaration, which the parser rejects.
+        text = Path(package_path).read_text(encoding="utf-8").lstrip()
+        root = xml.etree.ElementTree.fromstring(text)
         name_element = root.find("name")
         if name_element is None:
             raise ValueError(
