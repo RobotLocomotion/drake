@@ -217,3 +217,51 @@ class DrakeGymTest(unittest.TestCase):
 
         # The metadata shared by all gymnasium envs is unchanged.
         self.assertEqual(gym.Env.metadata, shared_before)
+
+        # Nor is the class-level list that gym.make() reads.
+        self.assertEqual(
+            DrakeGymEnv.metadata["render_modes"], ["human", "ansi", "rgb_array"]
+        )
+
+    def test_make_by_class_applies_render_collection(self):
+        """gym.make() reads the class-level metadata before it constructs an
+        env, so a class-registered env with a camera must get RenderCollection
+        for "rgb_array_list" even if no other env was built first.
+        """
+
+        class _CameraEnv(DrakeGymEnv):
+            def __init__(self, **kwargs):
+                builder = DiagramBuilder()
+                actions = builder.AddSystem(PassThrough(vector_size=1))
+                builder.ExportInput(actions.get_input_port(), "actions")
+                builder.ExportOutput(actions.get_output_port(), "observations")
+                image = builder.AddSystem(
+                    PassThrough(abstract_model_value=Value(ImageRgba8U(4, 3)))
+                )
+                builder.ExportInput(image.get_input_port(), "image_in")
+                builder.ExportOutput(image.get_output_port(), "color_image")
+                super().__init__(
+                    simulator=Simulator(builder.Build()),
+                    time_step=0.1,
+                    action_space=None,
+                    observation_space=None,
+                    reward=lambda system, context: 0.0,
+                    render_rgb_port_id="color_image",
+                    **kwargs,
+                )
+
+        env_id = "DrakeCameraByClass-v0"
+        gym.envs.register(id=env_id, entry_point=_CameraEnv)
+        try:
+            dut = gym.make(env_id, render_mode="rgb_array_list")
+        finally:
+            del gym.envs.registry[env_id]
+        self.assertIsInstance(dut, gym.wrappers.RenderCollection)
+        self.assertEqual(dut.render_mode, "rgb_array_list")
+        self.assertIn("rgb_array", dut.unwrapped.metadata["render_modes"])
+
+        # An env without a camera still narrows its own list.
+        self.assertEqual(
+            self._make_pass_through_env().metadata["render_modes"],
+            ["human", "ansi"],
+        )

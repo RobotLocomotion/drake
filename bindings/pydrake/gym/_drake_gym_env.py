@@ -29,6 +29,11 @@ class DrakeGymEnv(gym.Env):
     Diagram) using a Simulator.
     """
 
+    # gym.make() reads this class-level list before it constructs the env, to
+    # decide whether to apply wrappers such as RenderCollection. Each instance
+    # narrows it in __init__ to the modes it actually supports.
+    metadata = {"render_modes": ["human", "ansi", "rgb_array"]}
+
     def __init__(
         self,
         simulator: Simulator | Callable[[RandomGenerator], Simulator],
@@ -158,8 +163,9 @@ class DrakeGymEnv(gym.Env):
         else:
             self.observation_port_id = OutputPortIndex(0)
 
-        # Make a per-instance copy of the metadata; gym.Env.metadata is a
-        # class attribute shared by every Env, so we must not edit it in place.
+        # Make a per-instance copy of the metadata; DrakeGymEnv.metadata is a
+        # class attribute shared by every instance, so we must not edit it in
+        # place.
         self.metadata = {**self.metadata, "render_modes": ["human", "ansi"]}
 
         # Setup rendering.
