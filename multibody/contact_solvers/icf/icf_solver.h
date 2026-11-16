@@ -91,13 +91,26 @@ This process repeats until convergence. Convergence is achieved when either the
 
     ‖D⋅gₖ‖ ≤ ε max(1, ‖D⋅r‖),
 
+or the Newton decrement is sufficiently small,
+
+    √(−gₖᵀ⋅wₖ) ≤ ε max(1, ‖D⋅r‖),
+
 or the (normalized) step size is sufficiently small,
 
     η ‖D⁻¹⋅Δvₖ‖ ≤ ε max(1, ‖D⋅r‖),
 
 with convergence tolerance ε, η = θ / (1 − θ), and θ = ‖D⁻¹⋅Δvₖ‖ / ‖D⁻¹⋅Δvₖ₋₁‖
 as per [Hairer and Wanner, 1996]. Norms are scaled by D = diag(M)⁻⁰ᐧ⁵, so that
-all entries of g̃ = D⋅g and ṽ = D⁻¹⋅v share the same units [Castro et al., 2023].
+all entries of g̃ = D⋅g and ṽ = D⁻¹⋅v share the same units [Castro et al., 2023].
+
+The Newton decrement λ = (gₖᵀ⋅Hₖ⁻¹⋅gₖ)^½ = √(−gₖᵀ⋅wₖ) estimates how far the
+cost is above its minimum; cf. Section 9.5 of [Boyd and Vandenberghe, 2004], in
+which iteration stops on the decrement before the step is taken, as it does
+here. Unlike the gradient test, which measures g with the fixed diag(M)⁻¹, the
+decrement measures g with Hₖ⁻¹, so it can be satisfied first when H is much
+stiffer than diag(M). When Hessian reuse supplies wₖ from a previous
+factorization, the solver first refreshes the Hessian before accepting this
+test, so that the decrement is that of the current Hessian.
 
 When the problem splits into islands, the criteria above are applied to each
 island separately: g, r, D, and Δv are restricted to the island's cliques, so
