@@ -67,6 +67,12 @@ int do_main() {
   auto [four_bar, scene_graph] =
       AddMultibodyPlantSceneGraph(&builder, FLAGS_time_step);
 
+  // CENIC does not integrate the plant's own contact model, so ask for sampled
+  // output ports to make the plant report the forces of CENIC's solve.
+  if (FLAGS_time_step == 0.0 && FLAGS_simulator_integration_scheme == "cenic") {
+    four_bar.SetUseSampledOutputPorts(true);
+  }
+
   // Opt in to automatic modeling of closed topologies. Without this, Finalize()
   // below would throw because of the loop in the model file.
   four_bar.SetEnableLoopTopology(true);

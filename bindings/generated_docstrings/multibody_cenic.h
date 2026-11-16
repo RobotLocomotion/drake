@@ -76,6 +76,53 @@ Running CENIC in fixed-step mode (with error-control disabled)
 recovers the "Lagged" variant of discrete-time ICF simulation from
 [Castro et al., 2023].
 
+*Force reporting.** CENIC does not integrate the plant's own
+continuous contact dynamics, so by default the plant's dynamics output
+ports (e.g., ``reaction_forces``, `contact_results`,
+``generalized_acceleration``) report the plant's compliant contact
+model, which is inconsistent with the simulated trajectory. To report
+the ICF contact and constraint forces instead, set
+``use_sampled_output_ports: true`` in the plant's MultibodyPlantConfig
+(the preferred spelling), or call
+MultibodyPlant∷SetUseSampledOutputPorts(true) on the (continuous-time)
+plant before finalizing it. CENIC then records, at every step, a
+sample of the dynamics of the convex problem that produced the new
+state: the constraint impulses γ divided by that step's time step δt
+(for error-controlled steps, the second half-step), together with the
+resulting accelerations, joint reaction forces, contact results, and
+net actuation. The plant's dynamics output ports report that sample
+until the next step. Before the first step the sample is empty (zero
+forces and accelerations, no contacts). As with discrete-time plants,
+the sample's kinematics (e.g., contact points and the frames of the
+reaction forces) are those at the start of the solved step. For an
+error-controlled step that is the configuration at the midpoint t +
+h/2, not at the end of the step t + h, so it can lag the Context's
+body poses by up to half a step. See output_port_sampling "Output port
+sampling" for details.
+
+Sampling requires steps. If the whole system has no continuous state
+(e.g., every body is welded to the world and nothing else has state),
+the Simulator never asks the integrator to step, so nothing could ever
+be sampled. Initialize() throws in that case when the plant has
+sampled output ports.
+
+Initialize() replaces the plant's sample with an empty one, so the
+sampled ports report zeros until the first step; this includes
+re-initializing a Context that CENIC has already stepped. The sample
+lives in the Context, so it outlives CENIC: if CENIC is replaced by an
+integrator that does not record samples (or its Context is cloned for
+one), the sampled ports keep reporting CENIC's last sample while the
+state moves on. Evaluating a sampled port before any integrator has
+initialized the Context throws.
+
+The reported reaction forces use external spatial forces (the plant's
+``applied_spatial_force`` input port) evaluated at the start of the
+solved step, whereas the solve itself is implicit in their
+linearization. For strongly velocity-dependent external forces the
+reported reaction forces can therefore be inconsistent with the step's
+acceleration, by roughly the force's velocity gradient times the
+step's change in velocity. Actuation and contact are not affected.
+
 Implementation notes:
 
 Warning:

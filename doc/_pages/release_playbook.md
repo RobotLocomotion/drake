@@ -187,13 +187,16 @@ the main body of the document:
    1. Check that the link to drake.mit.edu docs from the GitHub release draft
       page actually works.
    2. Click "Publish release".
-   3. Create a new GitHub issue on the [drake](https://github.com/RobotLocomotion/drake/issues/new/choose)
+   3. Mirror release artifacts to S3 by launching the
+      [Mirror to S3](https://drake-jenkins.csail.mit.edu/view/Continuous%20Production/job/linux-noble-unprovisioned-gcc-bazel-continuous-mirror-to-s3)
+      job from Jenkins.
+   4. Create a new GitHub issue on the [drake](https://github.com/RobotLocomotion/drake/issues/new/choose)
       repository and select the "Post-Release Actions" template.
-   4. Create a GitHub issue on the [drake-ros](https://github.com/RobotLocomotion/drake-ros/issues)
+   5. Create a GitHub issue on the [drake-ros](https://github.com/RobotLocomotion/drake-ros/issues)
       repository, requesting an update of the `DRAKE_SUGGESTED_VERSION`
       constant.
-   5. Announce on Drake Slack, ``#general``.
-   6. Party on, Wayne.
+   6. Announce on Drake Slack, ``#general``.
+   7. Party on, Wayne.
 
 ## Post-release wheel upload
 

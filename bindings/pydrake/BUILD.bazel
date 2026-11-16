@@ -105,6 +105,7 @@ drake_pybind_library(
     name = "lcm_py",
     cc_deps = [
         "//bindings/generated_docstrings:lcm",
+        "//bindings/pydrake/common:ensure_callback_lifetime_pybind",
         "//bindings/pydrake/common:serialize_pybind",
     ],
     cc_srcs = ["lcm_py.cc"],

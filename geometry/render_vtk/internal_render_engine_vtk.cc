@@ -58,6 +58,7 @@
 #include "drake/geometry/vtk_gltf_uri_loader.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/systems/sensors/vtk_diagnostic_event_observer.h"
+#include "drake/tools/workspace/vtk_internal/vtk_opengl_init.h"
 
 namespace drake {
 namespace geometry {
@@ -206,6 +207,9 @@ RenderEngineVtk::RenderingPipeline::~RenderingPipeline() = default;
 
 RenderEngineVtk::RenderEngineVtk(const RenderEngineVtkParams& parameters)
     : RenderEngine(RenderLabel::kDontCare), parameters_(parameters) {
+  // This must happen before we create any VTK rendering objects.
+  drake::internal::VtkOpenGlInit();
+
   const RenderEngineVtkBackend backend =
       ParseRenderEngineVtkBackend(parameters);
   for (auto& pipeline : pipelines_) {

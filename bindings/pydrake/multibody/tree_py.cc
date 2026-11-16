@@ -340,6 +340,8 @@ void DoScalarDependentDefinitions(py::module_ m, T) {
         .def("scoped_name", &Class::scoped_name, cls_doc.scoped_name.doc)
         .def("body_frame", &Class::body_frame, py_rvp::reference_internal,
             cls_doc.body_frame.doc)
+        .def("primary_link", &Class::primary_link, py_rvp::reference_internal,
+            cls_doc.primary_link.doc)
         .def("is_floating_base_body", &Class::is_floating_base_body,
             cls_doc.is_floating_base_body.doc)
         .def("has_quaternion_dofs", &Class::has_quaternion_dofs,

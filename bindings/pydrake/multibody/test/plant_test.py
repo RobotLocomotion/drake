@@ -14,6 +14,7 @@ from pydrake.common import FindResourceOrThrow, Parallelism
 from pydrake.common.cpp_param import List
 from pydrake.common.deprecation import install_numpy_warning_filters
 from pydrake.common.eigen_geometry import Quaternion_
+from pydrake.common.schema import Unchanged
 from pydrake.common.test_utilities import numpy_compare
 from pydrake.common.test_utilities.pickle_compare import assert_pickle
 from pydrake.common.value import AbstractValue, Value
@@ -207,6 +208,7 @@ class TestPlant(unittest.TestCase):
         self.assertEqual(plant.GetEnableLoopTopology(), True)
         plant.SetEnableLoopTopology(enable=False)
         self.assertEqual(plant.num_loop_constraints(), 0)
+        self.assertEqual(plant.num_user_bodies(), plant.num_bodies())
         spatial_inertia = SpatialInertia.NaN()
         body = plant.AddRigidBody(name="new_body", M_BBo_B=spatial_inertia)
         body.default_mass()
@@ -352,6 +354,7 @@ class TestPlant(unittest.TestCase):
     def test_multibody_plant_config(self):
         MultibodyPlantConfig()
         config = MultibodyPlantConfig(time_step=0.01)
+        self.assertIsInstance(config.use_sampled_output_ports, Unchanged)
         self.assertEqual(config.time_step, 0.01)
         self.assertIn("time_step", repr(config))
         copy.copy(config)
@@ -674,6 +677,7 @@ class TestPlant(unittest.TestCase):
         self._test_multibody_tree_element_mixin(T, body)
         self.assertIsInstance(body.name(), str)
         self.assertIsInstance(body.scoped_name(), ScopedName)
+        self.assertIs(body.primary_link(), body)
         self.assertIsInstance(body.is_floating_base_body(), bool)
         self.assertIsInstance(body.has_quaternion_dofs(), bool)
         self.assertIsInstance(body.default_mass(), float)

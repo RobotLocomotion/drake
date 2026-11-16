@@ -95,6 +95,15 @@ class PatchConstraintsPool {
     return num_pairs_[patch_index];
   }
 
+  /* For a pool filled in by ReduceInto(), returns the index in the full pool of
+  each of this pool's patches (in ascending order, since reduction keeps the
+  relative order of the patches it keeps). Patches with no body in a
+  participating clique are dropped, so this is not necessarily the identity.
+  Empty for any other pool. */
+  std::span<const int> original_patches() const {
+    return std::span<const int>(original_patches_);
+  }
+
   /* Returns the number of pairs in each patch. */
   std::span<const int> patch_sizes() const {
     return std::span<const int>(num_pairs_);
@@ -253,6 +262,8 @@ class PatchConstraintsPool {
   std::vector<int> num_pairs_;    // Number of pairs per patch.
   std::vector<int> num_cliques_;  // Number of cliques (one or two).
   std::vector<T> Rt_;             // Friction regularization Rₜ = σ⋅wₜ
+  // For a reduced pool, the index of each patch in the full pool.
+  std::vector<int> original_patches_;
 
   // Bodies involved in each patch. The first is always body B, which always
   // corresponds to a valid (positive) clique. The second is always body A,

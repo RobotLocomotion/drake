@@ -208,6 +208,8 @@ void DoScalarDependentDefinitions(py::module_ m, T) {
         .def(py::init<double>(), py::arg("time_step"), cls_doc.ctor.doc)
         .def("time_step", &Class::time_step, cls_doc.time_step.doc)
         .def("num_bodies", &Class::num_bodies, cls_doc.num_bodies.doc)
+        .def("num_user_bodies", &Class::num_user_bodies,
+            cls_doc.num_user_bodies.doc)
         .def("num_joints", &Class::num_joints, cls_doc.num_joints.doc)
         .def("num_actuators",
             overload_cast_explicit<int>(&Class::num_actuators),
@@ -1651,6 +1653,7 @@ PYDRAKE_MODULE(plant, m) {
 
   m.doc() = "Bindings for MultibodyPlant and related classes.";
 
+  py::module_::import_("pydrake.common.schema");
   py::module_::import_("pydrake.geometry");
   py::module_::import_("pydrake.math");
   py::module_::import_("pydrake.multibody.fem");

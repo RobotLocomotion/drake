@@ -101,7 +101,7 @@ def _is_known_bad_ctor_or_dtor(*, filename, function_name):
     if filename.startswith("vtk") and not is_snake_case:
         # TODO(#24447) Fix VTK to remove globals.
         return True
-    if filename in ["Singletons.cxx", "Token.cxx", "vtk_opengl_init.cc"]:
+    if filename in ["Singletons.cxx", "Token.cxx"]:
         # TODO(#24447) Fix VTK to remove globals.
         return True
     if function_name.startswith("drake_vendor::vtk"):
@@ -120,12 +120,6 @@ def _is_known_bad_ctor_or_dtor(*, filename, function_name):
         # TODO(#24447) Fix VTK to remove globals.
         return True
     if function_name.startswith("vtk::drake_vendor::"):
-        # TODO(#24447) Fix VTK to remove globals.
-        return True
-    if function_name.startswith("vtkpugixml::"):
-        # TODO(#24447) Fix VTK to remove globals.
-        return True
-    if function_name.startswith("vtksys::"):
         # TODO(#24447) Fix VTK to remove globals.
         return True
     if function_name.startswith("vtktoken::"):

@@ -95,10 +95,11 @@ class ContextBase : public internal::ContextMessageInterface {
 
   /** (Advanced) Freezes the cache at its current contents, preventing any
   further cache updates. When frozen, accessing an out-of-date cache entry
-  causes an exception to be throw. This is applied recursively to this
+  causes an exception to be thrown. This is applied recursively to this
   %Context and all its subcontexts, but _not_ to its parent or siblings so
   it is most useful when called on the root %Context. If the cache was already
-  frozen this method does nothing but waste a little time. */
+  frozen this method does nothing but waste a little time.
+  @see @ref system_multithreading for guidance on sharing a frozen %Context. */
   void FreezeCache() const {
     PropagateCachingChange(*this, &Cache::freeze_cache);
   }

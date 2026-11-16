@@ -4,10 +4,10 @@ Static destructors are completely useless, serving only to sometimes
 randomly crash your program. (Dynamically unloading shared libraries
 is an anti-requirement in Drake.)
 
-This should not be upstreamed to VTK, although CMake configuration
-option for "disable all static destructors" would be appreciated.
-
-Reasoning for not upstreaming this patch: Drake-specific build option.
+TODO(#24447) This patch can be updated (or removed entirely) pending
+ongoing work to remove static destructors from VTK. See vtk/vtk!13623.
+In the future, if still necessary, a CMake configuration option for "disable
+all static destructors" would be appreciated.
 
 --- Common/ExecutionModel/vtkFilteringInformationKeyManager.h
 +++ Common/ExecutionModel/vtkFilteringInformationKeyManager.h

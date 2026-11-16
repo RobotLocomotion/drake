@@ -592,21 +592,21 @@ TEST_F(HydroelasticRigidGeometryTest, Sphere) {
 }
 
 // When a property that can be set from a model file is missing, the error
-// message names the model file tag that provides it (see #18118).
+// message points to the model file documentation for it (see #18118).
 TEST_F(HydroelasticRigidGeometryTest, MissingPropertyNamesModelFileTag) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       MakeRigidRepresentation(Sphere(0.5), ProximityProperties()),
       "Cannot create rigid Sphere; missing the \\('hydroelastic', "
-      "'resolution_hint'\\) property. When parsing a model file \\(SDFormat "
-      "or URDF\\), it can be provided via the <drake:mesh_resolution_hint> "
-      "tag inside <drake:proximity_properties>.");
+      "'resolution_hint'\\) property. To specify it in a model file, see "
+      "https://drake.mit.edu/doxygen_cxx/"
+      "group__multibody__parsing.html#tag_drake_mesh_resolution_hint.");
 
   ProximityProperties no_modulus;
   no_modulus.AddProperty(kHydroGroup, kRezHint, 0.5);
   DRAKE_EXPECT_THROWS_MESSAGE(
       MakeCompliantRepresentation(Sphere(0.5), no_modulus),
       "Cannot create compliant Sphere; missing the \\('hydroelastic', "
-      "'hydroelastic_modulus'\\) property. .*<drake:hydroelastic_modulus>.*");
+      "'hydroelastic_modulus'\\) property. .*#tag_drake_hydroelastic_modulus.");
 }
 
 // Confirm support for a rigid Box. Tests that a hydroelastic representation
@@ -909,15 +909,11 @@ Convex make_default_shape<Convex>() {
 //
 //   - Missing property
 //   - Wrong type for property
-//   - Invalid value (maybe)
+//   - Invalid value
 //
 // This is sufficiently generic to test both kinds of geometry (rigid and
 // compliant) based on any shape, for a property of any type. It confirms that
 // properly formatted errors are emitted in all cases.
-//
-// Not all properties validate invalid values. It might simply be treated as a
-// black box. The third error condition is only handled if an example "bad"
-// value is provided (see `bad_value` below).
 //
 // @param shape_spec     The shape from which we attempt to create a hydro-
 //                       elastic representation.
@@ -930,8 +926,9 @@ Convex make_default_shape<Convex>() {
 // @param maker          The function that processes the shape and properties.
 //                       Note: this is declared to return void; the
 //                       Make*Representation() methods will need to be wrapped.
-// @param bad_value      If provided, sets the property to this value to test
-//                       validation against bad values.
+// @param bad_value      Sets the property to this value to test validation.
+// @param expected_error A regular expression matching the validation error for
+//                       `bad_value`.
 // @param props          The baseline properties to start the test from --
 //                       properties are generally tested in some sequence.
 //                       Each test may add a property to a copy of this input
@@ -944,7 +941,8 @@ void TestPropertyErrors(
     const ShapeType& shape_spec, const char* group_name,
     const char* property_name, const char* compliance,
     function<void(const ShapeType&, const ProximityProperties&)> maker,
-    std::optional<ValueType> bad_value, const ProximityProperties& props) {
+    ValueType bad_value, const char* expected_error,
+    const ProximityProperties& props) {
   const std::string_view shape_name = shape_spec.type_name();
 
   // Error case: missing property value.
@@ -967,15 +965,10 @@ void TestPropertyErrors(
                     group_name, property_name));
   }
 
-  // Error case: property value is not positive.
-  if (bad_value.has_value()) {
-    ProximityProperties negative_value(props);
-    negative_value.AddProperty(group_name, property_name, *bad_value);
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        maker(shape_spec, negative_value),
-        fmt::format("Cannot create {} {}.+'{}'.+ positive", compliance,
-                    shape_name, property_name));
-  }
+  // Error case: property value is invalid.
+  ProximityProperties invalid_value(props);
+  invalid_value.AddProperty(group_name, property_name, bad_value);
+  DRAKE_EXPECT_THROWS_MESSAGE(maker(shape_spec, invalid_value), expected_error);
 }
 
 // TODO(SeanCurtis-TRI): Add Cylinder, Mesh, Capsule, Ellipsoid and Convex as
@@ -1002,7 +995,7 @@ TYPED_TEST_P(HydroelasticRigidGeometryErrorTests, BadResolutionHint) {
       [](const ShapeType& s, const ProximityProperties& p) {
         MakeRigidRepresentation(s, p);
       },
-      -0.2, {});
+      -0.2, "The resolution_hint must be positive and finite; given -0.2", {});
 }
 
 REGISTER_TYPED_TEST_SUITE_P(HydroelasticRigidGeometryErrorTests,
@@ -1435,7 +1428,8 @@ TYPED_TEST_P(HydroelasticCompliantGeometryErrorTests, BadResolutionHint) {
         [](const ShapeType& s, const ProximityProperties& p) {
           MakeCompliantRepresentation(s, p);
         },
-        -0.2, {});
+        -0.2, "The resolution_hint must be positive and finite; given -0.2",
+        {});
   }
 }
 
@@ -1453,7 +1447,8 @@ TYPED_TEST_P(HydroelasticCompliantGeometryErrorTests, BadElasticModulus) {
       [](const ShapeType& s, const ProximityProperties& p) {
         MakeCompliantRepresentation(s, p);
       },
-      -0.2, compliant_properties);
+      -0.2, "The hydroelastic_modulus must be positive; given -0.2",
+      compliant_properties);
 }
 
 TYPED_TEST_P(HydroelasticCompliantGeometryErrorTests, BadSlabThickness) {
@@ -1466,7 +1461,7 @@ TYPED_TEST_P(HydroelasticCompliantGeometryErrorTests, BadSlabThickness) {
         [](const ShapeType& s, const ProximityProperties& p) {
           MakeCompliantRepresentation(s, p);
         },
-        -0.2, {});
+        -0.2, "The slab_thickness must be positive and finite; given -0.2", {});
   }
 }
 

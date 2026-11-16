@@ -393,6 +393,19 @@ struct PrimitiveVariantStruct {
   PrimitiveVariant value = kNominalDouble;
 };
 
+// A variant where the first alternative is std::monostate (loaded from null).
+using MonostateVariant =
+    std::variant<std::monostate, DoubleStruct, std::string>;
+
+struct MonostateVariantStruct {
+  template <typename Archive>
+  void Serialize(Archive* a) {
+    a->Visit(DRAKE_NVP(value));
+  }
+
+  MonostateVariant value = "kNominalDouble";
+};
+
 struct PromotionBasicStruct {
   template <typename Archive>
   void Serialize(Archive* a) {

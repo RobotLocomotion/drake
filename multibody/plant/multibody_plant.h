@@ -119,6 +119,8 @@ class DiscreteUpdateManager;
 // Forward declarations for geometry_contact_data.h.
 template <typename>
 class GeometryContactData;
+// Forward declaration for discrete_step_memory.h.
+struct DiscreteStepMemory;
 // Forward declarations for hydroelastic_contact_forces_continuous_cache_data.h.
 template <typename>
 struct HydroelasticContactForcesContinuousCacheData;
@@ -495,9 +497,10 @@ time step, or we could recalculate the acceleration to immediately reflect
 the changing forces. We call the former a "sampled" port and the latter a
 "live" port.
 
-For a continuous-time plant, there is no distinction -- the output port is
-always live -- it immediately reflects the instantaneous input value. It is a
-"direct feedthrough" output port (see SystemBase::GetDirectFeedthroughs()).
+For a continuous-time plant, the output ports are live by default -- they
+immediately reflect the instantaneous input value. They are "direct feedthrough"
+output ports (see SystemBase::GetDirectFeedthroughs()). Optionally, a
+continuous-time plant can be configured for sampled output ports (see below).
 
 For a discrete-time plant, the user can choose whether the output should be
 sampled or live: Use the function SetUseSampledOutputPorts() to change whether
@@ -531,6 +534,34 @@ results will not change. If you need to see changes to outputs without running
 the plant in a Simulator, then you can either use a continuous-time plant, set
 the config option `use_sampled_output_ports=false`, or use ExecuteForcedEvents()
 to force a dynamics step and then the outputs (and positions) will change.
+
+  #### Sampled output ports for a continuous-time plant
+
+A continuous-time plant does not take discrete steps itself, so it has no
+natural sample to record. However, some integrators advance the plant with a
+contact model of their own rather than by integrating the plant's continuous
+dynamics; in particular CenicIntegrator solves a convex contact problem at each
+step. For such an integrator the plant's live dynamics output ports (which
+report the plant's compliant continuous contact model) are inconsistent with
+the trajectory actually being simulated. Calling SetUseSampledOutputPorts(true)
+on a continuous-time plant declares the same sample state variable `s` used by
+discrete-time plants and switches the dynamics output ports to report it. It is
+then the integrator's responsibility to record `s` on every step it takes;
+CenicIntegrator records the contact and constraint forces of the convex problem
+that produced the current state. Before the first step, the dynamics output
+ports report zero forces, zero accelerations, and empty contact results, but
+only once an integrator that records samples has been initialized with the
+Context (CenicIntegrator::Initialize() writes this empty sample). Until then,
+there is nothing to report, so evaluating one of these ports throws. This also
+catches a plant with sampled output ports that is simulated by an integrator
+that records nothing: the first evaluation of a dynamics port (e.g., by a
+visualizer or logger, typically during the Simulator's initialization publish)
+throws, with a message naming both remedies. The sample is part of the
+Context, so it also persists if the integrator is replaced or the Context is
+cloned; a nonrecording integrator then reports the last recorded sample
+forever. As with a discrete-time plant, the presence of `s` means the Context
+is no longer purely continuous, which some Drake features (e.g., linearization)
+do not support.
 
 @anchor mbp_actuation
                 ### Actuation
@@ -1037,10 +1068,9 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// BodyIndex "zero" (0) always corresponds to the world body, with zero
   /// spatial acceleration at all times.
   ///
-  /// In a discrete-time plant, the use_sampled_output_ports setting affects the
-  /// output of this port.  See @ref output_port_sampling "Output port sampling"
-  /// for details. When sampling is enabled and the plant has not yet taken a
-  /// step, the output value will be all zeros.
+  /// The use_sampled_output_ports setting affects the output of this port for
+  /// both continuous and discrete plants; see @ref output_port_sampling "Output
+  /// port sampling" for details.
   ///
   /// @throws std::exception if called pre-finalize.
   const systems::OutputPort<T>& get_body_spatial_accelerations_output_port()
@@ -1079,10 +1109,9 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// include PD controllers will include their contribution in this port, refer
   /// to @ref mbp_actuation "Actuation" for further details.
   ///
-  /// In a discrete-time plant, the use_sampled_output_ports setting affects the
-  /// output of this port.  See @ref output_port_sampling "Output port sampling"
-  /// for details. When sampling is enabled and the plant has not yet taken a
-  /// step, the output value will be all zeros.
+  /// The use_sampled_output_ports setting affects the output of this port for
+  /// both continuous and discrete plants; see @ref output_port_sampling "Output
+  /// port sampling" for details.
   ///
   /// @note PD controllers are not considered for actuators on locked joints,
   /// see Joint::Lock(). Therefore they do not contribute to this port if the
@@ -1104,10 +1133,9 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// Every model instance in `this` plant model has a net actuation output
   /// port, even if zero sized (for model instance with no actuators).
   ///
-  /// In a discrete-time plant, the use_sampled_output_ports setting affects the
-  /// output of this port.  See @ref output_port_sampling "Output port sampling"
-  /// for details. When sampling is enabled and the plant has not yet taken a
-  /// step, the output value will be all zeros.
+  /// The use_sampled_output_ports setting affects the output of this port for
+  /// both continuous and discrete plants; see @ref output_port_sampling "Output
+  /// port sampling" for details.
   ///
   /// @note PD controllers are not considered for actuators on locked joints,
   /// see Joint::Lock(). Therefore they do not contribute to this port if the
@@ -1231,10 +1259,9 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// systems::BasicVector<T> "vector-valued" output port of size
   /// num_velocities().
   ///
-  /// In a discrete-time plant, the use_sampled_output_ports setting affects the
-  /// output of this port.  See @ref output_port_sampling "Output port sampling"
-  /// for details. When sampling is enabled and the plant has not yet taken a
-  /// step, the output value will be all zeros.
+  /// The use_sampled_output_ports setting affects the output of this port for
+  /// both continuous and discrete plants; see @ref output_port_sampling "Output
+  /// port sampling" for details.
   ///
   /// @pre Finalize() was already called on `this` plant.
   /// @throws std::exception if called before Finalize().
@@ -1246,10 +1273,9 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// output port of size @ref num_velocities(ModelInstanceIndex) const
   /// "num_velocities(model_instance)".
   ///
-  /// In a discrete-time plant, the use_sampled_output_ports setting affects the
-  /// output of this port.  See @ref output_port_sampling "Output port sampling"
-  /// for details. When sampling is enabled and the plant has not yet taken a
-  /// step, the output value will be all zeros.
+  /// The use_sampled_output_ports setting affects the output of this port for
+  /// both continuous and discrete plants; see @ref output_port_sampling "Output
+  /// port sampling" for details.
   ///
   /// @pre Finalize() was already called on `this` plant.
   /// @throws std::exception if called before Finalize().
@@ -1262,10 +1288,9 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// @ref num_actuated_dofs(ModelInstanceIndex) const
   /// "num_actuated_dofs(model_instance)".
   ///
-  /// In a discrete-time plant, the use_sampled_output_ports setting affects the
-  /// output of this port.  See @ref output_port_sampling "Output port sampling"
-  /// for details. When sampling is enabled and the plant has not yet taken a
-  /// step, the output value will be all zeros.
+  /// The use_sampled_output_ports setting affects the output of this port for
+  /// both continuous and discrete plants; see @ref output_port_sampling "Output
+  /// port sampling" for details.
   ///
   /// @pre Finalize() was already called on `this` plant.
   /// @throws std::exception if called before Finalize().
@@ -1299,10 +1324,9 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// body C (Joint::child_body()), at the joint's child frame `Jc`
   /// (Joint::frame_on_child()) and expressed in frame `Jc`.
   ///
-  /// In a discrete-time plant, the use_sampled_output_ports setting affects the
-  /// output of this port.  See @ref output_port_sampling "Output port sampling"
-  /// for details. When sampling is enabled and the plant has not yet taken a
-  /// step, the output value will be all zeros.
+  /// The use_sampled_output_ports setting affects the output of this port for
+  /// both continuous and discrete plants; see @ref output_port_sampling "Output
+  /// port sampling" for details.
   ///
   /// @note PD controllers are not considered for actuators on locked joints,
   /// see Joint::Lock(). Therefore they do not contribute to this port if the
@@ -1313,10 +1337,9 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// Returns an @ref AbstractValue "abstract-valued" output port containing a
   /// @ref ContactResults.
   ///
-  /// In a discrete-time plant, the use_sampled_output_ports setting affects the
-  /// output of this port.  See @ref output_port_sampling "Output port sampling"
-  /// for details. When sampling is enabled and the plant has not yet taken a
-  /// step, the output value will be empty (no contacts).
+  /// The use_sampled_output_ports setting affects the output of this port for
+  /// both continuous and discrete plants; see @ref output_port_sampling "Output
+  /// port sampling" for details.
   ///
   /// @throws std::exception if called pre-finalize, see Finalize().
   const systems::OutputPort<T>& get_contact_results_output_port() const;
@@ -1397,12 +1420,14 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
 
   ~MultibodyPlant() override;
 
-  /// (Advanced) For a discrete-time plant, configures whether the output ports
-  /// are sampled (the default) or live (opt-in).
+  /// (Advanced) Configures whether the dynamics output ports are sampled or
+  /// live. For a discrete-time plant, sampled is the default and live is
+  /// opt-in. For a continuous-time plant, live is the default and sampled is
+  /// opt-in; sampled output ports on a continuous-time plant are only useful
+  /// when the plant is advanced by an integrator that records the sample (at
+  /// present, only CenicIntegrator does so).
   /// See @ref output_port_sampling "Output port sampling" for details.
   /// @throws std::exception if the plant is already finalized.
-  /// @throws std::exception if `use_sampled_output_ports` is `true` but `this`
-  /// %MultibodyPlant is not a discrete model (is_discrete() == false).
   void SetUseSampledOutputPorts(bool use_sampled_output_ports);
 
   /// Creates a rigid body with the provided name and spatial inertia.  This
@@ -1848,7 +1873,7 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// setting is _not_ to deal with kinematic loops (if one is encountered,
   /// an exception is thrown).
   ///
-  /// @note This feature is in development and is not yet functional.
+  /// @note This feature is in development and is not yet fully functional.
   ///
   /// To deal with loops automatically requires modifying the system's topology
   /// so that it is structured as a tree of links and joints, plus constraints
@@ -1858,6 +1883,18 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// added between the primary and shadow links to enforce loop closure. When
   /// the weld constraint is satisfied, the original physics is restored.
   ///
+  /// A shadow link is a link like any other in most respects (it has a pose and
+  /// a velocity, for example), but its mass properties are derived from its
+  /// primary link, and will change if the primary's do. Any attempt to ask a
+  /// shadow link about its mass properties will throw; ask its
+  /// RigidBody::primary_link() instead. The primary link reports the link's
+  /// full, user-defined mass properties. Physically, however, a primary and
+  /// its shadows each carry an even share of the mass and inertia. Calculations
+  /// that sum over several bodies (e.g., total mass, center of mass, spatial
+  /// inertia and momentum, energy) obey the physics; for example, they take
+  /// account of the individual poses of the primary and shadow links which can
+  /// differ when a system is not fully assembled.
+  ///
   /// @param[in] enable Whether Finalize() should automatically model closed
   ///   kinematic loops rather than throwing.
   /// @throws std::exception if called after Finalize().
@@ -1866,12 +1903,12 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
 
   /// Returns the currently-set choice for base body joint type, either for
   /// the global setting or for a specific model instance if provided.
-  /// If a model instance is provided for which no explicit choice has been
-  /// made, the global setting is returned. Any model instance index is
-  /// acceptable here; if not recognized then the global setting is returned.
-  /// This can be called any time -- pre-finalize it returns the joint type
-  /// that will be used by Finalize(); post-finalize it returns the joint type
-  /// that _was_ used if there were any base bodies in need of a joint.
+  ///
+  /// @note This function can be called pre-Finalize() or post-Finalize().
+  ///
+  /// @param[in] model_instance (optional). If this argument is missing or
+  ///   not recognized, returns the global setting. Otherwise returns the
+  ///   setting for this specific model_instance.
   /// @see SetBaseBodyJointType(), GetFuseWeldedLinks(), Finalize()
   BaseBodyJointType GetBaseBodyJointType(
       std::optional<ModelInstanceIndex> model_instance = {}) const;
@@ -1968,10 +2005,9 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
 
   /// Returns the number of ephemeral weld constraints that Finalize() added in
   /// order to close topological loops. Each of these welds a shadow link to the
-  /// link it is split from; see SetEnableLoopTopology(). These are included in
-  /// num_constraints() and num_weld_constraints(), and are indistinguishable
-  /// from user-added welds to the constraint solvers. Returns zero prior to
-  /// Finalize().
+  /// link it is split from. These are included in num_constraints() and
+  /// num_weld_constraints(), and are indistinguishable from user-added welds to
+  /// the constraint solvers. Returns zero prior to Finalize().
   int num_loop_constraints() const {
     return internal_tree().graph().num_loop_constraints();
   }
@@ -4172,16 +4208,37 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// (the origin of a frame F), expressed in frame F. You may regard M_SFo_F as
   /// measuring spatial inertia as if the set S of bodies were welded into a
   /// single composite body at the configuration specified in the `context`.
+  ///
   /// @param[in] context Contains the configuration of the set S of bodies.
-  /// @param[in] frame_F specifies the about-point Fo (frame_F's origin) and
+  /// @param[in] frame_F Specifies the about-point Fo (frame_F's origin) and
   ///  the expressed-in frame for the returned spatial inertia.
-  /// @param[in] body_indexes Array of selected bodies.  This method does not
-  ///  distinguish between welded bodies, joint-connected bodies, etc.
+  /// @param[in] body_indexes Array of selected bodies. This method does not
+  ///  distinguish among welded bodies, joint-connected bodies, etc. Bodies
+  ///  that are split to break a kinematic loop are handled specially: when
+  ///  a split body's primary link or any of its shadow links is first
+  ///  encountered in body_indexes, the contributions from all of its links
+  ///  (primary and shadows in their current configurations) are calculated.
+  ///  If one of those links is encountered later, it is skipped. Thus a list
+  ///  from GetBodyIndices(), which may include shadow links, works as is.
+  ///
+  /// @note The mass and inertia of the world_body() does not contribute to the
+  ///  returned spatial inertia, even if World is listed.
+  /// @note The primary link and its shadow links contribute independently to
+  ///  the _system_ spatial inertia calculated here. When unassembled, their
+  ///  poses will differ. As noted above, _any one_ of those links represents
+  ///  the full collection of primary and shadows. Thus, when the system is
+  ///  unassembled, asking for the _system_ spatial inertia of a primary link
+  ///  may give a different result than asking the primary link for its own
+  ///  spatial inertia. That is, for primary link P, the system spatial inertia
+  ///  returned by `CalcSpatialInertia(context, P.body_frame(), {P.index()})`
+  ///  may differ from `P.CalcSpatialInertiaInBodyFrame(context)`, which
+  ///  reports P's full, user-defined mass properties. Listing `{primary}`,
+  ///  `{shadow}` or `{primary, shadow}` all give the same _system_ spatial
+  ///  inertia.
+  ///
   /// @throws std::exception if `frame_F` does not belong to `this` plant.
   /// @throws std::exception if body_indexes contains an invalid BodyIndex or
   ///  if there is a repeated BodyIndex.
-  /// @note The mass and inertia of the world_body() does not contribute to the
-  ///  the returned spatial inertia.
   SpatialInertia<T> CalcSpatialInertia(
       const systems::Context<T>& context, const Frame<T>& frame_F,
       const std::vector<BodyIndex>& body_indexes) const {
@@ -4873,12 +4930,12 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// For one point Bp fixed/welded to a frame B, calculates J𝑠_V_ABp, Bp's
   /// spatial velocity Jacobian in frame A with respect to "speeds" 𝑠.
   /// <pre>
-  ///      J𝑠_V_ABp ≜ [ ∂(V_ABp)/∂𝑠₁,  ...  ∂(V_ABp)/∂𝑠ₙ ]    (n is j or k)
+  ///      J𝑠_V_ABp ≜ [ ∂(V_ABp)/∂𝑠₁,  ...  ∂(V_ABp)/∂𝑠ₙ ]    (n is nq or nv)
   ///      V_ABp = J𝑠_V_ABp ⋅ 𝑠          V_ABp is linear in 𝑠 ≜ [𝑠₁ ... 𝑠ₙ]ᵀ
   /// </pre>
   /// `V_ABp` is Bp's spatial velocity in frame A and "speeds" 𝑠 is either
-  /// q̇ ≜ [q̇₁ ... q̇ⱼ]ᵀ (time-derivatives of j generalized positions) or
-  /// v ≜ [v₁ ... vₖ]ᵀ (k generalized velocities).
+  /// q̇ ≜ [q̇₁ ... q̇ₙ]ᵀ (n = nq = number of generalized positions) or
+  /// v ≜ [v₁ ... vₙ]ᵀ (n = nv = number of generalized velocities).
   ///
   /// @param[in] context The state of the multibody system.
   /// @param[in] with_respect_to Enum equal to JacobianWrtVariable::kQDot or
@@ -4888,13 +4945,12 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// @param[in] frame_B The frame on which point Bp is fixed/welded.
   /// @param[in] p_BoBp_B A position vector from Bo (frame_B's origin) to point
   /// Bp (regarded as fixed/welded to B), expressed in frame_B.
-  /// @param[in] frame_A The frame that measures `v_ABp` (Bp's velocity in A).
+  /// @param[in] frame_A The frame that measures V_ABp (Bp's spatial velocity).
   /// Note: It is natural to wonder why there is no parameter p_AoAp_A (similar
   /// to the parameter p_BoBp_B for frame_B).  There is no need for p_AoAp_A
   /// because Bp's velocity in A is defined as the derivative in frame A of
   /// Bp's position vector from _any_ point fixed to A.
-  /// @param[in] frame_E The frame in which `v_ABp` is expressed on input and
-  /// the frame in which the Jacobian `J𝑠_V_ABp` is expressed on output.
+  /// @param[in] frame_E The frame in which V_ABp and J𝑠_V_ABp are expressed.
   /// @param[out] Js_V_ABp_E Point Bp's spatial velocity Jacobian in frame A
   /// with respect to speeds 𝑠 (which is either q̇ or v), expressed in frame E.
   /// `J𝑠_V_ABp_E` is a `6 x n` matrix, where n is the number of elements in 𝑠.
@@ -4931,10 +4987,10 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// velocity Jacobian in frame A with respect to 𝑠 (see
   /// CalcJacobianSpatialVelocity()).
   /// <pre>
-  ///      H𝑠_V_ABp ≜ [ D₁(J𝑠_V_ABp), ... Dₙ(J𝑠_V_ABp) ]    (n is j or k)
+  ///      H𝑠_V_ABp ≜ [ D₁(J𝑠_V_ABp), ... Dₙ(J𝑠_V_ABp) ]    (n is nq or nv)
   /// </pre>
-  /// "speeds" 𝑠 is either q̇ ≜ [q̇₁ ... q̇ⱼ]ᵀ (time-derivatives of j generalized
-  /// positions) or v ≜ [v₁ ... vₖ]ᵀ (k generalized velocities). Since
+  /// Speeds 𝑠 are q̇ ≜ [q̇₁ ... q̇ₙ]ᵀ (n = nq = number of generalized positions)
+  /// or v ≜ [v₁ ... vₙ]ᵀ (n = nv = number of generalized velocities). Since
   /// J𝑠_V_ABp_E depends only on the generalized positions q, Dᵢ(J𝑠_V_ABp_E)
   /// denotes the time derivative in frame E of J𝑠_V_ABp_E (i.e., of its
   /// elements) when 𝑠 = eᵢ (𝑠ᵢ = 1 and all other speeds are zero). For 𝑠 = q̇
@@ -5033,12 +5089,12 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// Calculates J𝑠_w_AB, a frame B's angular velocity Jacobian in a frame A
   /// with respect to "speeds" 𝑠.
   /// <pre>
-  ///      J𝑠_w_AB ≜ [ ∂(w_AB)/∂𝑠₁,  ...  ∂(w_AB)/∂𝑠ₙ ]    (n is j or k)
+  ///      J𝑠_w_AB ≜ [ ∂(w_AB)/∂𝑠₁,  ...  ∂(w_AB)/∂𝑠ₙ ]    (n is nq or nv)
   ///      w_AB = J𝑠_w_AB ⋅ 𝑠          w_AB is linear in 𝑠 ≜ [𝑠₁ ... 𝑠ₙ]ᵀ
   /// </pre>
   /// `w_AB` is B's angular velocity in frame A and "speeds" 𝑠 is either
-  /// q̇ ≜ [q̇₁ ... q̇ⱼ]ᵀ (time-derivatives of j generalized positions) or
-  /// v ≜ [v₁ ... vₖ]ᵀ (k generalized velocities).
+  /// q̇ ≜ [q̇₁ ... q̇ₙ]ᵀ (n = nq = number of generalized positions) or
+  /// v ≜ [v₁ ... vₙ]ᵀ (n = nv = number of generalized velocities).
   ///
   /// @param[in] context The state of the multibody system.
   /// @param[in] with_respect_to Enum equal to JacobianWrtVariable::kQDot or
@@ -5047,8 +5103,7 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// positions) or with respect to 𝑠 = v (generalized velocities).
   /// @param[in] frame_B The frame B in `w_AB` (B's angular velocity in A).
   /// @param[in] frame_A The frame A in `w_AB` (B's angular velocity in A).
-  /// @param[in] frame_E The frame in which `w_AB` is expressed on input and
-  /// the frame in which the Jacobian `J𝑠_w_AB` is expressed on output.
+  /// @param[in] frame_E The frame in which w_AB and J𝑠_w_AB are expressed.
   /// @param[out] Js_w_AB_E Frame B's angular velocity Jacobian in frame A with
   /// respect to speeds 𝑠 (which is either q̇ or v), expressed in frame E.
   /// The Jacobian is a function of only generalized positions q (which are
@@ -5072,12 +5127,12 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// For each point Bi affixed/welded to a frame B, calculates J𝑠_v_ABi, Bi's
   /// translational velocity Jacobian in frame A with respect to "speeds" 𝑠.
   /// <pre>
-  ///      J𝑠_v_ABi ≜ [ ∂(v_ABi)/∂𝑠₁,  ...  ∂(v_ABi)/∂𝑠ₙ ]    (n is j or k)
+  ///      J𝑠_v_ABi ≜ [ ∂(v_ABi)/∂𝑠₁,  ...  ∂(v_ABi)/∂𝑠ₙ ]    (n is nq or nv)
   ///      v_ABi = J𝑠_v_ABi ⋅ 𝑠          v_ABi is linear in 𝑠 ≜ [𝑠₁ ... 𝑠ₙ]ᵀ
   /// </pre>
   /// `v_ABi` is Bi's translational velocity in frame A and "speeds" 𝑠 is either
-  /// q̇ ≜ [q̇₁ ... q̇ⱼ]ᵀ (time-derivatives of j generalized positions) or
-  /// v ≜ [v₁ ... vₖ]ᵀ (k generalized velocities).
+  /// q̇ ≜ [q̇₁ ... q̇ₙ]ᵀ (n = nq = number of generalized positions) or
+  /// v ≜ [v₁ ... vₙ]ᵀ (n = nv = number of generalized velocities).
   ///
   /// @param[in] context The state of the multibody system.
   /// @param[in] with_respect_to Enum equal to JacobianWrtVariable::kQDot or
@@ -5093,8 +5148,7 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// to the parameter p_BoBi_B for frame_B).  There is no need for p_AoAi_A
   /// because Bi's velocity in A is defined as the derivative in frame A of
   /// Bi's position vector from _any_ point affixed to A.
-  /// @param[in] frame_E The frame in which `v_ABi` is expressed on input and
-  /// the frame in which the Jacobian `J𝑠_v_ABi` is expressed on output.
+  /// @param[in] frame_E The frame in which v_ABi and J𝑠_v_ABi are expressed.
   /// @param[out] Js_v_ABi_E Point Bi's velocity Jacobian in frame A with
   /// respect to speeds 𝑠 (which is either q̇ or v), expressed in frame E.
   /// `J𝑠_v_ABi_E` is a `3*p x n` matrix, where p is the number of points Bi and
@@ -5104,7 +5158,7 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// @note When 𝑠 = q̇, `Jq̇_v_ABi = Jq_p_AoBi`.  In other words, point Bi's
   /// velocity Jacobian in frame A with respect to q̇ is equal to point Bi's
   /// position Jacobian from Ao (A's origin) in frame A with respect to q. <pre>
-  /// [∂(v_ABi)/∂q̇₁,  ...  ∂(v_ABi)/∂q̇ⱼ] = [∂(p_AoBi)/∂q₁,  ...  ∂(p_AoBi)/∂qⱼ]
+  /// [∂(v_ABi)/∂q̇₁,  ...  ∂(v_ABi)/∂q̇ₙ] = [∂(p_AoBi)/∂q₁,  ...  ∂(p_AoBi)/∂qₙ]
   /// </pre>
   /// Note: Each partial derivative of p_AoBi is taken in frame A.
   /// @see CalcJacobianPositionVector() for details on Jq_p_AoBi.
@@ -5126,7 +5180,7 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
 
   /// For each point Bi affixed/welded to a frame B, calculates Jq_p_AoBi, Bi's
   /// position vector Jacobian in frame A with respect to the generalized
-  /// positions q ≜ [q₁ ... qₙ]ᵀ as
+  /// positions q ≜ [q₁ ... qₙ]ᵀ (n = nq = number of generalized positions) as
   /// <pre>
   ///      Jq_p_AoBi ≜ [ ᴬ∂(p_AoBi)/∂q₁,  ...  ᴬ∂(p_AoBi)/∂qₙ ]
   /// </pre>
@@ -5144,8 +5198,8 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// on output.
   /// @param[out] Jq_p_AoBi_E Point Bi's position vector Jacobian in frame A
   /// with generalized positions q, expressed in frame E. Jq_p_AoBi_E is a
-  /// `3*k x n` matrix, where k is the number of points Bi and n is the number
-  /// of elements in q.  The Jacobian is a function of only generalized
+  /// `3*k x n` matrix, where k is the number of points Bi and n = nq is the
+  /// number of elements in q.  The Jacobian is a function of only generalized
   /// positions q (which are pulled from the context).
   /// @throws std::exception if Jq_p_AoBi_E is nullptr or not sized `3*k x n`.
   /// @note Jq̇_v_ABi = Jq_p_AoBi.  In other words, point Bi's velocity Jacobian
@@ -5469,10 +5523,9 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// @see Finalize().
   bool is_finalized() const { return internal_tree().is_finalized(); }
 
-  /// (Advanced) If `this` plant is continuous (i.e., is_discrete() is `false`),
-  /// returns false. If `this` plant is discrete, returns whether or not the
-  /// output ports are sampled (change only at a time step boundary) or
-  /// live (instantaneously reflect changes to the input ports).
+  /// (Advanced) Returns whether or not the dynamics output ports are sampled
+  /// (change only at a time step boundary) or live (instantaneously reflect
+  /// changes to the input ports).
   /// See @ref output_port_sampling "Output port sampling" for details.
   bool has_sampled_output_ports() const { return use_sampled_output_ports_; }
 
@@ -5486,10 +5539,20 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
     return internal_tree().world_frame();
   }
 
-  /// Returns the number of RigidBody elements in the model, including the
-  /// "world" RigidBody, which is always part of the model.
+  /// Returns the number of RigidBody (Link) elements in the model, including
+  /// the "world" RigidBody, which is always part of the model. After Finalize()
+  /// this includes any shadow bodies that Finalize() added to break kinematic
+  /// loops; see num_user_bodies().
   /// @see AddRigidBody().
   int num_bodies() const { return internal_tree().num_links(); }
+
+  /// Returns the number of RigidBody (Link) elements in the model that are not
+  /// shadow bodies: i.e., the "world" RigidBody plus every body added with
+  /// AddRigidBody(). Finalize() adds a shadow body for each kinematic loop it
+  /// breaks. num_user_bodies() == num_bodies() unless Finalize() broke a loop.
+  int num_user_bodies() const {
+    return internal_tree().graph().num_user_links();
+  }
 
   /// Returns `true` if plant has a rigid body with unique index `body_index`.
   bool has_body(BodyIndex body_index) const {
@@ -5557,7 +5620,9 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
     return internal_tree().GetLinkByName(name, model_instance);
   }
 
-  /// Returns a list of body indices associated with `model_instance`.
+  /// Returns a list of body indices associated with `model_instance`. After
+  /// Finalize(), the list includes any shadow bodies that Finalize() split from
+  /// this model instance's bodies to break kinematic loops.
   std::vector<BodyIndex> GetBodyIndices(
       ModelInstanceIndex model_instance) const {
     return internal_tree().GetLinkIndices(model_instance);
@@ -6544,12 +6609,37 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   systems::EventStatus CalcStepUnrestricted(
       const systems::Context<T>& context0, systems::State<T>* next_state) const;
 
+  // For a plant with sampled output ports, returns the sample (see
+  // use_sampled_output_ports()) stored in the given plant `context`. These are
+  // the only places that know where the sample lives in the abstract state.
+  // @pre use_sampled_output_ports() is true.
+  const internal::DiscreteStepMemory& GetStepMemory(
+      const systems::Context<T>& context) const;
+  internal::DiscreteStepMemory& GetMutableStepMemory(
+      systems::Context<T>* context) const;
+
+  // For a continuous-time plant with sampled output ports, replaces the sample
+  // in the given plant `context` with an empty one: all values are correctly
+  // sized and zero, there are no contacts. An integrator that records samples
+  // (e.g., CenicIntegrator) does this when initialized, so that the dynamics
+  // output ports report zeros until its first step, as for a discrete-time
+  // plant that hasn't stepped yet.
+  // @pre use_sampled_output_ports() is true.
+  void SetEmptyStepMemory(systems::Context<T>* context) const;
+
+  // A continuous-time plant has no step of its own, so if no integrator has
+  // recorded a sample for its sampled output ports, there is nothing to report,
+  // and this throws. (A discrete-time plant reports zeros before its first
+  // step.) Call this when an output port finds that the sample is missing.
+  void ThrowIfSampleMissing(bool has_sample) const;
+
   // Accesses the AccelerationKinematicsCache for use by possibly-sampled
   // output port calculations:
   //
-  // - When `sampled` is true, the result will be all-zero when the plant has
-  //   not yet taken a step. Otherwise, it will refer to the sampled
-  //   acceleration kinematics from the most recent step.
+  // - When `sampled` is true, the result will be all-zero when a discrete-time
+  //   plant has not yet taken a step (a continuous-time plant with no sample
+  //   throws instead, see ThrowIfSampleMissing()). Otherwise, it will refer to
+  //   the sampled acceleration kinematics from the most recent step.
   //
   // - When `sampled` is false, the result will be an instantaneously up-to-date
   //   function of the current context.
@@ -6620,6 +6710,29 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   // This is responsible for the actual (unsampled) computation of the dynamics.
   void CalcReactionForces(const systems::Context<T>& context,
                           std::vector<SpatialForce<T>>* output) const;
+
+  // Helper method used by CalcReactionForces() and
+  // CalcAccelerationKinematicsAndReactionForces(). Computes the reaction force
+  // at each joint given the `applied_forces` (body spatial forces and
+  // generalized forces) and generalized accelerations `vdot`, using inverse
+  // dynamics at the kinematic state stored in `context`.
+  // @pre `output` has size num_joints().
+  void CalcReactionForcesGivenAppliedForcesAndVdot(
+      const systems::Context<T>& context,
+      const MultibodyForces<T>& applied_forces, const VectorX<T>& vdot,
+      std::vector<SpatialForce<T>>* output) const;
+
+  // Computes the acceleration kinematics `ac` and joint reaction forces
+  // `reaction_forces` given the `applied_forces` and generalized accelerations
+  // `vdot` of a step that started at the state stored in `context`. This is
+  // used by integrators (e.g., CenicIntegrator) that record output port
+  // samples for a continuous-time plant with use_sampled_output_ports(); see
+  // DiscreteStepMemory.
+  void CalcAccelerationKinematicsAndReactionForces(
+      const systems::Context<T>& context,
+      const MultibodyForces<T>& applied_forces, const VectorX<T>& vdot,
+      internal::AccelerationKinematicsCache<T>* ac,
+      std::vector<SpatialForce<T>>* reaction_forces) const;
 
   // Collects joint actuator and desired state forces and externally provided
   // spatial and generalized forces.

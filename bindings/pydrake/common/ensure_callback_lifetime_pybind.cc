@@ -12,8 +12,13 @@ void ensure_callback_lifetime_impl(size_t Nurse, size_t CallbackPatient,
   const char* const policy = "ensure_callback_lifetime";
   handle nurse = info.GetArg(ret, Nurse, policy);
   handle callback_patient = info.GetArg(ret, CallbackPatient, policy);
-  internal::make_arbitrary_ref_link(
+  make_arbitrary_callback_lifetime(
       nurse, callback_patient, info.FunctionName());
+}
+
+void make_arbitrary_callback_lifetime(
+    py::handle nurse, py::handle callback, const std::string& location_hint) {
+  make_arbitrary_ref_link(nurse, callback, location_hint);
 }
 
 }  // namespace internal

@@ -488,6 +488,29 @@ def value_function(x: np.ndarray, v_influence: float) -> np.ndarray:
 
 
 class TestMinimumValueLowerBoundConstraint(unittest.TestCase):
+    def test_non_callable_arguments(self):
+        # Non-callables are rejected at construction time (not later, when the
+        # constraint is evaluated); None is allowed only for the optional
+        # value_function_double.
+        kwargs = dict(
+            num_vars=1,
+            minimum_value_lower=0.0,
+            influence_value_offset=1.0,
+            max_num_values=3,
+        )
+        Class = mp.MinimumValueLowerBoundConstraint
+        Class(
+            value_function=value_function, value_function_double=None, **kwargs
+        )
+        with self.assertRaises(TypeError):
+            Class(
+                value_function=value_function,
+                value_function_double=42,
+                **kwargs,
+            )
+        with self.assertRaises(TypeError):
+            Class(value_function=None, **kwargs)
+
     def test_constructor(self):
         # Test the constructor with value_function_double explicitly specified.
         dut = mp.MinimumValueLowerBoundConstraint(
@@ -547,6 +570,29 @@ class TestMinimumValueLowerBoundConstraint(unittest.TestCase):
 
 
 class TestMinimumValueUpperBoundConstraint(unittest.TestCase):
+    def test_non_callable_arguments(self):
+        # Non-callables are rejected at construction time (not later, when the
+        # constraint is evaluated); None is allowed only for the optional
+        # value_function_double.
+        kwargs = dict(
+            num_vars=1,
+            minimum_value_upper=0.0,
+            influence_value_offset=1.0,
+            max_num_values=3,
+        )
+        Class = mp.MinimumValueUpperBoundConstraint
+        Class(
+            value_function=value_function, value_function_double=None, **kwargs
+        )
+        with self.assertRaises(TypeError):
+            Class(
+                value_function=value_function,
+                value_function_double=42,
+                **kwargs,
+            )
+        with self.assertRaises(TypeError):
+            Class(value_function=None, **kwargs)
+
     def test_constructor(self):
         # Test the constructor with value_function_double explicitly specified.
         dut = mp.MinimumValueUpperBoundConstraint(

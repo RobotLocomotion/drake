@@ -49,7 +49,7 @@ void* GladLoaderLoadGlx() {
     if (display == nullptr) {
       const char* display_env = std::getenv("DISPLAY");
       throw std::logic_error(
-          fmt::format("Drake's could not open the X display DISPLAY={}; "
+          fmt::format("Drake could not open the X display DISPLAY={}; "
                       "please see {} for help.",
                       display_env ? std::string{display_env} : std::string{},
                       kTroubleshootingUrl));

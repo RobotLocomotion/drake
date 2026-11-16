@@ -139,3 +139,42 @@ class DrakeGymTest(unittest.TestCase):
                 action_port_id="actions",
                 observation_port_id="observations",
             )
+
+    def _make_pass_through_env(self, **kwargs):
+        builder = DiagramBuilder()
+        pass_through = builder.AddSystem(PassThrough(vector_size=1))
+        builder.ExportInput(pass_through.get_input_port(), "actions")
+        builder.ExportOutput(pass_through.get_output_port(), "observations")
+        simulator = Simulator(builder.Build())
+        return DrakeGymEnv(
+            simulator=simulator,
+            time_step=0.1,
+            action_space=None,
+            observation_space=None,
+            reward=lambda system, context: 0.0,
+            **kwargs,
+        )
+
+    def test_info_handler(self):
+        """A user-provided info_handler is used by reset() and step()."""
+
+        def info_handler(simulator):
+            return {"time": simulator.get_context().get_time()}
+
+        dut = self._make_pass_through_env(info_handler=info_handler)
+        _, info = dut.reset(seed=0)
+        self.assertEqual(info, {"time": 0.0})
+        _, _, _, _, info = dut.step(np.array([0.5]))
+        self.assertAlmostEqual(info["time"], 0.1)
+
+    def test_info_handler_default(self):
+        """Without an info_handler, the info is an empty dict."""
+        dut = self._make_pass_through_env()
+        _, info = dut.reset(seed=0)
+        self.assertEqual(info, {})
+        _, _, _, _, info = dut.step(np.array([0.5]))
+        self.assertEqual(info, {})
+
+    def test_info_handler_not_callable(self):
+        with self.assertRaisesRegex(ValueError, "info_handler is not callable"):
+            self._make_pass_through_env(info_handler="not callable")

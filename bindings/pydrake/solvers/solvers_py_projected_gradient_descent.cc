@@ -1,4 +1,5 @@
 #include "drake/bindings/generated_docstrings/solvers.h"
+#include "drake/bindings/pydrake/common/ensure_callback_lifetime_pybind.h"
 #include "drake/bindings/pydrake/common/serialize_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/solvers/solvers_py.h"
@@ -17,12 +18,25 @@ void DefineSolversProjectedGradientDescent(py::module_ m) {
     using Class = ProjectedGradientDescentSolver;
     constexpr auto& cls_doc = doc.ProjectedGradientDescentSolver;
     class_<Class, SolverInterface> pgd_cls(
-        m, "ProjectedGradientDescentSolver", cls_doc.doc);
+        m, "ProjectedGradientDescentSolver", cls_doc.doc, py::dynamic_attr());
 
     pgd_cls  // BR
         .def(py::init<>(), cls_doc.ctor.doc)
-        .def("SetCustomGradientFunction", &Class::SetCustomGradientFunction,
+        .def(
+            "SetCustomGradientFunction",
+            [](Class& self, py::callable custom_gradient_function) {
+              // The solver borrows the callable; ensure_callback_lifetime
+              // keeps it alive in a way that Python's GC can see.
+              PyObject* ptr = custom_gradient_function.ptr();
+              self.SetCustomGradientFunction(
+                  [ptr](const Eigen::VectorXd& in) -> Eigen::VectorXd {
+                    py::gil_scoped_acquire guard;
+                    py::handle callback = ptr;
+                    return py::cast<Eigen::VectorXd>(callback(in));
+                  });
+            },
             py::arg("custom_gradient_function"),
+            internal::ensure_callback_lifetime<1, 2>(),
             cls_doc.SetCustomGradientFunction.doc)
         .def("SetProjectionSolverInterface",
             &Class::SetProjectionSolverInterface,
@@ -53,19 +67,22 @@ void DefineSolversProjectedGradientDescent(py::module_ m) {
 
     pgd_cls.def(
         "SetCustomProjectionFunction",
-        [](Class& self, std::function<std::pair<bool, Eigen::VectorXd>(
-                            const Eigen::VectorXd& in)>
-                            python_projection_function) {
+        [](Class& self, py::callable python_projection_function) {
+          // As above, the solver borrows the callable.
+          PyObject* ptr = python_projection_function.ptr();
           self.SetCustomProjectionFunction(
-              [python_projection_function](
-                  const Eigen::VectorXd& in, Eigen::VectorXd* out) {
+              [ptr](const Eigen::VectorXd& in, Eigen::VectorXd* out) {
                 DRAKE_DEMAND(out != nullptr);
+                py::gil_scoped_acquire guard;
+                py::handle callback = ptr;
                 bool result;
-                std::tie(result, *out) = python_projection_function(in);
+                std::tie(result, *out) =
+                    py::cast<std::pair<bool, Eigen::VectorXd>>(callback(in));
                 return result;
               });
         },
         py::arg("custom_projection_function"),
+        internal::ensure_callback_lifetime<1, 2>(),
         R"""(
 Specify a custom projection function. Otherwise, this solver will
 attempt to solve the L2 projection onto the feasible set of the

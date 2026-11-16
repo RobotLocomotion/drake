@@ -1,5 +1,6 @@
 #include "drake/multibody/contact_solvers/icf/patch_constraints_pool.h"
 
+#include <algorithm>
 #include <memory>
 #include <utility>
 #include <vector>
@@ -167,6 +168,9 @@ TEST_P(PatchConstraintsPoolParamTestD, Reduce) {
 
       EXPECT_EQ(reduced_pool.num_pairs(r_k), full_pool.num_pairs(k));
       EXPECT_EQ(reduced_pool.num_cliques()[r_k], have_a + have_b);
+      // The reduced pool remembers where each of its patches came from.
+      ASSERT_LT(r_k, ssize(reduced_pool.original_patches()));
+      EXPECT_EQ(reduced_pool.original_patches()[r_k], k);
       // TODO(rpoyner-tri): maybe test Rt in more detail.
       const bool Rt_is_smaller = (reduced_pool.Rt()[r_k] < full_pool.Rt()[k]);
       EXPECT_EQ(Rt_is_smaller, cliques_changed);
@@ -212,6 +216,12 @@ TEST_P(PatchConstraintsPoolParamTestD, Reduce) {
       ++r_k;
     }
     EXPECT_EQ(reduced_pool.num_constraints(), r_k);
+    // Dropped patches are skipped in the map, which is otherwise ascending.
+    EXPECT_EQ(ssize(reduced_pool.original_patches()), r_k);
+    EXPECT_TRUE(std::is_sorted(reduced_pool.original_patches().begin(),
+                               reduced_pool.original_patches().end()));
+    // Only a reduced pool has such a map.
+    EXPECT_TRUE(full_pool.original_patches().empty());
   };
 
   // Reduce by none; essentially, just copy.

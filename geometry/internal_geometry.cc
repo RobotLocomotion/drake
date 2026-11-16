@@ -15,20 +15,21 @@ using math::RigidTransform;
 
 InternalGeometry::InternalGeometry(SourceId source_id,
                                    std::unique_ptr<Shape> shape,
-                                   FrameId frame_id, GeometryId geometry_id,
-                                   std::string name,
+                                   FrameId frame_id, bool frame_is_anchored,
+                                   GeometryId geometry_id, std::string name,
                                    RigidTransform<double> X_FG)
     : shape_spec_(std::move(shape)),
       id_(geometry_id),
       name_(std::move(name)),
       source_id_(source_id),
       frame_id_(frame_id),
+      frame_is_anchored_(frame_is_anchored),
       X_FG_(std::move(X_FG)) {}
 
 InternalGeometry::InternalGeometry(SourceId source_id,
                                    std::unique_ptr<Shape> shape,
-                                   FrameId frame_id, GeometryId geometry_id,
-                                   std::string name,
+                                   FrameId frame_id, bool frame_is_anchored,
+                                   GeometryId geometry_id, std::string name,
                                    RigidTransform<double> X_FG,
                                    double resolution_hint)
     : shape_spec_(std::move(shape)),
@@ -36,6 +37,7 @@ InternalGeometry::InternalGeometry(SourceId source_id,
       name_(std::move(name)),
       source_id_(source_id),
       frame_id_(frame_id),
+      frame_is_anchored_(frame_is_anchored),
       X_FG_(std::move(X_FG)) {
   // The function creates the mesh in frame G.
   reference_mesh_ = MakeMeshForDeformable(*shape_spec_, resolution_hint);

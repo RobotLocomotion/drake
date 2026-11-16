@@ -1,3 +1,4 @@
+import gc
 import unittest
 import weakref
 
@@ -185,6 +186,135 @@ class TestTrajectoryOptimization(unittest.TestCase):
         )
         self.assertEqual(dircol.prog(), dircol2.prog())
         self.assertEqual(prog.num_vars(), num_vars + num_initial_vars)
+
+    def test_trajectory_callback_lifetimes(self):
+        """The program borrows the Python callbacks (see #24162), so they must
+        stay alive for as long as anything that might call them, even when
+        they refer back to the multiple shooting object in a cycle.
+        """
+        calls = []
+
+        def make_dircol():
+            plant = PendulumPlant()
+            dircol = DirectCollocation(
+                plant,
+                plant.CreateDefaultContext(),
+                num_time_samples=3,
+                minimum_time_step=0.2,
+                maximum_time_step=0.5,
+                input_port_index=InputPortSelection.kUseFirstInputIfItExists,
+                assume_non_continuous_states_are_fixed=False,
+            )
+            dircol.NewSequentialVariable(rows=1, name="test")
+
+            def input_callback(t, u):
+                calls.append(("input", dircol is not None))
+
+            def state_callback(t, x):
+                calls.append(("state", dircol is not None))
+
+            def complete_callback(t, x, u, v):
+                calls.append(("complete", dircol is not None))
+
+            bindings = [
+                dircol.AddInputTrajectoryCallback(input_callback),
+                dircol.AddStateTrajectoryCallback(state_callback),
+                dircol.AddCompleteTrajectoryCallback(
+                    complete_callback, names=["test"]
+                ),
+            ]
+            # Return the program (which keeps `dircol` alive), the callback
+            # evaluators, and a weak reference to `dircol`. The evaluators keep
+            # their callbacks alive, and the callbacks refer to `dircol`, so
+            # they keep it alive too. The weak reference does not.
+            return (
+                dircol.prog(),
+                [b.evaluator() for b in bindings],
+                weakref.ref(dircol),
+            )
+
+        prog, evaluators, dircol_ref = make_dircol()
+        gc.collect()
+
+        # The program is still usable.
+        mp.Solve(prog)
+        self.assertEqual(
+            {name for name, _ in calls}, {"input", "state", "complete"}
+        )
+
+        # The evaluators alone are still usable.
+        del prog
+        gc.collect()
+        calls.clear()
+        for evaluator in evaluators:
+            evaluator.Eval(np.zeros(evaluator.num_vars()))
+        self.assertEqual(len(calls), 3)
+
+        # The callbacks keep the multiple shooting object alive, ...
+        self.assertIsNotNone(dircol_ref())
+
+        # ... but only as long as the evaluators live; the cycle among them is
+        # collectable.
+        del evaluator, evaluators
+        gc.collect()
+        self.assertIsNone(dircol_ref())
+
+    def test_trajectory_callback_fresh_evaluator_wrappers(self):
+        """The previous test holds evaluator objects that were created before
+        the multiple shooting object went away. Here nothing is held but a
+        Binding (or a clone of the program), and we ask it for a *new* Python
+        object for its evaluator. The Binding, or the clone, must have kept the
+        callback alive without any help from an existing evaluator object.
+        Callbacks can refer back to the multiple shooting object in a cycle. A
+        clone of the program works because MathematicalProgram.Clone() keeps
+        its original alive.
+        """
+        calls = []
+
+        def make_dircol():
+            plant = PendulumPlant()
+            dircol = DirectCollocation(
+                plant,
+                plant.CreateDefaultContext(),
+                num_time_samples=3,
+                minimum_time_step=0.2,
+                maximum_time_step=0.5,
+                input_port_index=InputPortSelection.kUseFirstInputIfItExists,
+                assume_non_continuous_states_are_fixed=False,
+            )
+
+            def state_callback(t, x):
+                calls.append(dircol is not None)
+
+            binding = dircol.AddStateTrajectoryCallback(state_callback)
+            return dircol, binding
+
+        def evaluate(evaluator):
+            # A fresh Python object for an evaluator would not have the
+            # attribute that keeps the callback alive. (Calling a callback that
+            # was freed would crash.)
+            self.assertTrue(
+                hasattr(evaluator, "_pydrake_internal_ref_cycle_peers")
+            )
+            evaluator.Eval(np.zeros(evaluator.num_vars()))
+
+        # Only the Binding survives.
+        dircol, binding = make_dircol()
+        del dircol
+        gc.collect()
+        evaluate(binding.evaluator())
+        self.assertEqual(len(calls), 1)
+
+        # Only a clone of the program survives.
+        calls.clear()
+        dircol, binding = make_dircol()
+        clone = dircol.prog().Clone()
+        del dircol, binding
+        gc.collect()
+        bindings = clone.visualization_callbacks()
+        self.assertEqual(len(bindings), 1)
+        evaluate(bindings[0].evaluator())
+        self.assertEqual(len(calls), 1)
 
     def test_all_knot_points_constraint_python_wrapper_lost(self):
         # Ensure constraints' python wrappers are kept alive when added to a

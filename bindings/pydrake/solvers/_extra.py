@@ -3,7 +3,8 @@ import numpy as _np
 
 def _scalar_types_match(actual_type, expected_type):
     return (actual_type is expected_type) or (
-        (expected_type is float) and (actual_type in (_np.float32, _np.float64))
+        (expected_type is float)
+        and (actual_type in (int, _np.int64, _np.float32, _np.float64))
     )
 
 
@@ -79,10 +80,7 @@ def _wrap_user_evaluator_func(
 
         # Validate the dtype.
         if y.dtype != object:
-            if y.dtype is float or y.dtype is int:
-                actual_type = float
-            else:
-                actual_type = y.dtype.type
+            actual_type = y.dtype.type
         else:
             # Search array for any non-builtin and non-numpy types.
             for yi in y.flat:

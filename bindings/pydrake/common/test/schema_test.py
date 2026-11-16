@@ -225,3 +225,8 @@ class TestSchema(unittest.TestCase):
 
         # Attributes.
         self.assertEqual(mut.Transform(base_frame="base").base_frame, "base")
+
+    def test_unchanged(self):
+        dut = mut.Unchanged()
+        copy.copy(dut)
+        copy.deepcopy(dut)

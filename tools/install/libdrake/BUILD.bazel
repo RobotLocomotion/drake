@@ -65,6 +65,21 @@ genrule(
     }),
 )
 
+# Scrape the nanobind version from MODULE.bazel into a cmake snippet, so that
+# drake-config.cmake can expose it (drake_NANOBIND_VERSION) without a second,
+# separately-maintained copy of the version number. Strip any BCR packaging
+# suffix (e.g. "2.14.0.bcr.1") so the value matches the upstream release.
+genrule(
+    name = "nanobind_version_cmake",
+    srcs = ["//:MODULE.bazel"],
+    outs = ["nanobind_version.cmake"],
+    cmd = """
+    sed -n '/bazel_dep(name = "nanobind"/s/.*version = "\\([^"]*\\)".*/\\1/p' $< |
+    sed 's/\\.bcr\\.[0-9]*//' |
+    sed 's/.*/set(NANOBIND_VERSION "&")/' > $@
+    """,
+)
+
 genrule(
     name = "stamp_version",
     outs = ["stamp_version.txt"],
@@ -207,6 +222,7 @@ cmake_configure_file(
         ":drake_install_java.cmake",
         ":libdrake_was_linked_shared.cmake",
         ":python_version.cmake",
+        ":nanobind_version.cmake",
         ":stamp_version.cmake",
         ":with_lcm_runtime.cmake",
         ":with_openmp.cmake",

@@ -1,13 +1,16 @@
 import pydrake.multibody.inverse_kinematics as mut  # ruff: isort: skip
 
 import copy
+import gc
 import unittest
+import weakref
 
 import numpy as np
 
 from pydrake.common import FindResourceOrThrow
 from pydrake.common.value import Value
 from pydrake.common.yaml import yaml_dump_typed, yaml_load_typed
+from pydrake.geometry.optimization import HPolyhedron, VPolytope
 from pydrake.math import RigidTransform
 from pydrake.multibody.math import SpatialVelocity
 from pydrake.multibody.parsing import Parser
@@ -236,6 +239,9 @@ class TestDiffIkSystems(unittest.TestCase):
                     np.testing.assert_array_equal(
                         dut_value[joint_name], dof_selector_expected
                     )
+            elif isinstance(dut_value, HPolyhedron):
+                np.testing.assert_array_equal(dut_value.A(), expected_value.A())
+                np.testing.assert_array_equal(dut_value.b(), expected_value.b())
             elif isinstance(dut_value, np.ndarray):
                 # params uses lists, but the config will probably contain
                 # ndarray for the equivalent list; so test on dut_value type.
@@ -243,7 +249,7 @@ class TestDiffIkSystems(unittest.TestCase):
             else:
                 self.assertEqual(dut_value, expected_value)
 
-    def _check_ingredient_config(self, dut_type, params):
+    def _check_ingredient_config(self, dut_type, params, check_yaml=True):
         """Tests an ingredient Config struct's common APIs. This returns the
         instance of Config resulting from dut_type(**params).
         """
@@ -260,18 +266,23 @@ class TestDiffIkSystems(unittest.TestCase):
         self.assertIn(list(params.keys())[0], repr(dut))
         copy.copy(dut)
 
-        dumped = yaml_dump_typed(dut)
-        from_yaml = yaml_load_typed(schema=dut_type, data=dumped)
-        self._config_matches_params(from_yaml, params)
+        if check_yaml:
+            dumped = yaml_dump_typed(dut)
+            from_yaml = yaml_load_typed(schema=dut_type, data=dumped)
+            self._config_matches_params(from_yaml, params)
 
         return dut
 
-    def _check_ingredient(self, dut_type, params1, params2, ctor=None):
+    def _check_ingredient(
+        self, dut_type, params1, params2, ctor=None, check_yaml=True
+    ):
         """Check the expected properties of an Ingredient. If the Ingredient
         is not simply constructed from an instance of its Config, then `ctor`
         should be provided to serve as the constructor.
         """
-        config = self._check_ingredient_config(dut_type.Config, params1)
+        config = self._check_ingredient_config(
+            dut_type.Config, params1, check_yaml
+        )
 
         dut = dut_type(config) if ctor is None else ctor(config)
 
@@ -439,6 +450,26 @@ class TestDiffIkSystems(unittest.TestCase):
             Vd_TG_limit=Vd_limit,
         )
 
+    def test_static_stability_constraint(self):
+        DiffIk = mut.DifferentialInverseKinematicsSystem
+        Ingredient = DiffIk.StaticStabilityConstraint
+        vertices = np.array([[1, -1, -1, 1], [1, 1, -1, -1]])
+        params = {
+            "support_frame": "robot::base",
+            "support_region": HPolyhedron(VPolytope(vertices)),
+            "margin": 0.05,
+            "model_instances": ["robot"],
+        }
+
+        # TODO(cohnt) Check the YAML round trip once pydrake's HPolyhedron
+        # supports yaml_dump_typed.
+        self._check_ingredient(
+            Ingredient,
+            params,
+            params | {"model_instances": []},
+            check_yaml=False,
+        )
+
     def test_diff_ik_system(self):
         """Builds a simple Diff IK system and evaluate it."""
         dut = self._make_diff_ik_system()
@@ -496,6 +527,102 @@ class TestDiffIkSystems(unittest.TestCase):
         # velocity is that displacement multiplied by K_VX / time_step = 20.
         expected_vel = [20, 40]
         np.testing.assert_allclose(command, expected_vel, atol=1e-3)
+
+    def test_collision_constraint_selector_replacement(self):
+        """Replacing or resetting the select-data function releases the
+        previous one, even while the ingredient lives. None resets to the
+        default behavior.
+        """
+        DiffIk = mut.DifferentialInverseKinematicsSystem
+
+        class Sentinel:
+            pass
+
+        def make_selector(sentinel):
+            def selector(*args):
+                _ = sentinel  # Captures `sentinel`.
+
+            return selector
+
+        dut = DiffIk.CollisionConstraint(
+            DiffIk.CollisionConstraint.Config(
+                safety_distance=0.1, influence_distance=1.0
+            )
+        )
+
+        first = Sentinel()
+        first_ref = weakref.ref(first)
+        dut.SetSelectDataForCollisionConstraintFunction(make_selector(first))
+        del first
+        gc.collect()
+        self.assertIsNotNone(first_ref())  # Still in use.
+
+        second = Sentinel()
+        second_ref = weakref.ref(second)
+        dut.SetSelectDataForCollisionConstraintFunction(make_selector(second))
+        del second
+        gc.collect()
+        self.assertIsNone(first_ref())  # Replaced, so released.
+        self.assertIsNotNone(second_ref())
+
+        dut.SetSelectDataForCollisionConstraintFunction(None)
+        gc.collect()
+        self.assertIsNone(second_ref())  # Reset, so released.
+
+        # Things that are neither callable nor None are rejected.
+        with self.assertRaises(TypeError):
+            dut.SetSelectDataForCollisionConstraintFunction(42)
+
+    def test_collision_constraint_callback_lifetime(self):
+        """The ingredient borrows its select-data function (see #24162), so
+        the function must stay alive for as long as the system might call it,
+        even when it refers back to the ingredient in a cycle.
+        """
+        DiffIk = mut.DifferentialInverseKinematicsSystem
+        calls = []
+
+        def make_system():
+            ingredient = DiffIk.CollisionConstraint(
+                DiffIk.CollisionConstraint.Config(
+                    safety_distance=0.1, influence_distance=1.0
+                )
+            )
+
+            def selector(active_dof, robot_clearance, dist_out, ddist_dq_out):
+                calls.append(ingredient is not None)  # Captures `ingredient`.
+
+            ingredient.SetSelectDataForCollisionConstraintFunction(selector)
+            recipe = DiffIk.Recipe()
+            recipe.AddIngredient(
+                DiffIk.LeastSquaresCost(DiffIk.LeastSquaresCost.Config())
+            )
+            recipe.AddIngredient(ingredient)
+            return DiffIk(
+                recipe=recipe,
+                task_frame="world",
+                collision_checker=self._make_collision_checker(),
+                active_dof=DofMask(2, True),
+                time_step=0.1,
+                K_VX=2,
+                Vd_TG_limit=SpatialVelocity([0, 0, 0], [np.inf, np.inf, 0]),
+            )
+
+        dut = make_system()
+        gc.collect()
+
+        context = dut.CreateDefaultContext()
+        q = [0, 0]
+        dut.get_input_port_nominal_posture().FixValue(context, q)
+        dut.get_input_port_position().FixValue(context, q)
+        desired_velocities = BusValue()
+        desired_velocities.Set(
+            "robot::ball", Value(SpatialVelocity([0, 0, 0], [1, 2, 0]))
+        )
+        dut.get_input_port_desired_cartesian_velocities().FixValue(
+            context, desired_velocities
+        )
+        dut.get_output_port_commanded_velocity().Eval(context)
+        self.assertEqual(calls, [True])
 
     def test_diff_ik_controller(self):
         Controller = mut.DifferentialInverseKinematicsController

@@ -1486,7 +1486,11 @@ subclassing LeafContext.
 A Context is designed to be used only with the System that created it.
 Data encapsulated with State and Parameter objects can be copied
 between contexts for compatible systems with some restrictions. For
-details, see system_compatibility.)""";
+details, see system_compatibility.
+
+See also:
+    system_multithreading for guidance on using contexts across
+    threads.)""";
         // Symbol: drake::systems::Context::Clone
         struct /* Clone */ {
           // Source: drake/systems/framework/context.h
@@ -2427,11 +2431,14 @@ Precondition:
           const char* doc =
 R"""((Advanced) Freezes the cache at its current contents, preventing any
 further cache updates. When frozen, accessing an out-of-date cache
-entry causes an exception to be throw. This is applied recursively to
+entry causes an exception to be thrown. This is applied recursively to
 this Context and all its subcontexts, but *not* to its parent or
 siblings so it is most useful when called on the root Context. If the
 cache was already frozen this method does nothing but waste a little
-time.)""";
+time.
+
+See also:
+    system_multithreading for guidance on sharing a frozen Context.)""";
         } FreezeCache;
         // Symbol: drake::systems::ContextBase::GetSystemName
         struct /* GetSystemName */ {
@@ -8066,7 +8073,11 @@ which must live at least as long as this supervector.)""";
         // Source: drake/systems/framework/system.h
         const char* doc =
 R"""(Base class for all System functionality that is dependent on the
-templatized scalar type T for input, state, parameters, and outputs.)""";
+templatized scalar type T for input, state, parameters, and outputs.
+
+See also:
+    system_multithreading for guidance on sharing a System across
+    threads.)""";
         // Symbol: drake::systems::System::Accept
         struct /* Accept */ {
           // Source: drake/systems/framework/system.h

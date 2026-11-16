@@ -2378,6 +2378,75 @@ bool VerifyFeedthroughPorts(const MultibodyPlant<double>& plant) {
   return actual_feedthrough == expected_feedthrough;
 }
 
+// A continuous-time plant may opt in to sampled output ports. Until an
+// integrator that understands the step memory (e.g., CenicIntegrator) records a
+// sample, the dynamics output ports throw, while the kinematic ports remain
+// live.
+GTEST_TEST(MultibodyPlantTest, ContinuousSampledOutputPorts) {
+  DiagramBuilder<double> builder;
+  MultibodyPlant<double>& plant = AddMultibodyPlantSceneGraph(&builder, 0.0);
+  Parser(&plant).AddModelsFromUrl(
+      "package://drake/multibody/benchmarks/acrobot/acrobot.sdf");
+  EXPECT_FALSE(plant.has_sampled_output_ports());
+  plant.SetUseSampledOutputPorts(true);
+  EXPECT_TRUE(plant.has_sampled_output_ports());
+  plant.Finalize();
+  EXPECT_THROW(plant.SetUseSampledOutputPorts(false), std::exception);
+
+  // The sampled dynamics ports are not feedthrough.
+  EXPECT_TRUE(VerifyFeedthroughPorts(plant));
+
+  auto diagram = builder.Build();
+  auto diagram_context = diagram->CreateDefaultContext();
+  Context<double>& context =
+      plant.GetMyMutableContextFromRoot(diagram_context.get());
+  plant.get_actuation_input_port().FixValue(&context, 1.0);
+
+  // The Context carries the step memory as abstract state.
+  EXPECT_EQ(context.num_abstract_states(), 1);
+  EXPECT_EQ(context.num_continuous_states(), 4);
+
+  // Set a state with nonzero velocity and configuration. Kinematic ports are
+  // live; dynamics ports have no sample.
+  plant.SetPositionsAndVelocities(&context,
+                                  Eigen::Vector4d(0.3, -0.5, 1.0, 2.0));
+  const auto& poses =
+      plant.get_body_poses_output_port().Eval<std::vector<RigidTransformd>>(
+          context);
+  EXPECT_EQ(std::ssize(poses), plant.num_bodies());
+  EXPECT_FALSE(poses[1].IsExactlyIdentity());
+
+  // Nothing has recorded a sample yet, so there is nothing for the dynamics
+  // ports to report, and they throw. (A discrete-time plant reports zeros
+  // before its first step. CenicIntegrator's tests cover the empty sample that
+  // it writes when initialized.)
+  const char* kNoSample = ".*no integrator has recorded a sample.*";
+  const ModelInstanceIndex acrobot = plant.GetModelInstanceByName("acrobot");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant.get_generalized_acceleration_output_port().Eval(context),
+      kNoSample);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant.get_net_actuation_output_port().Eval(context), kNoSample);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant.get_reaction_forces_output_port()
+          .Eval<std::vector<SpatialForce<double>>>(context),
+      kNoSample);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant.get_body_spatial_accelerations_output_port()
+          .Eval<std::vector<SpatialAcceleration<double>>>(context),
+      kNoSample);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant.get_contact_results_output_port().Eval<ContactResults<double>>(
+          context),
+      kNoSample);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant.get_generalized_contact_forces_output_port(acrobot).Eval(context),
+      kNoSample);
+
+  // Direct API calls are always live, regardless of output port sampling.
+  EXPECT_FALSE(plant.EvalForwardDynamics(context).get_vdot().isZero());
+}
+
 // Verifies the process of collision geometry registration with a
 // SceneGraph.
 // We build a model with two spheres and a ground plane. The ground plane is

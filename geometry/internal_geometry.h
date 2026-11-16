@@ -51,11 +51,14 @@ class InternalGeometry {
    @param source_id     The id for the source that registered this geometry.
    @param shape         The shape specification for this instance.
    @param frame_id      The id of the frame this belongs to.
+   @param frame_is_anchored  Whether the frame indicated by `frame_id` is
+                        anchored (see is_dynamic()).
    @param geometry_id   The identifier for _this_ geometry.
    @param name          The name of the geometry.
    @param X_FG          The pose of the geometry G in the parent frame F.  */
   InternalGeometry(SourceId source_id, std::unique_ptr<Shape> shape,
-                   FrameId frame_id, GeometryId geometry_id, std::string name,
+                   FrameId frame_id, bool frame_is_anchored,
+                   GeometryId geometry_id, std::string name,
                    math::RigidTransform<double> X_FG);
 
   /* Constructs a deformable internal geometry in its reference configuration
@@ -63,13 +66,16 @@ class InternalGeometry {
    @param source_id         The id for the source that registered this geometry.
    @param shape             The shape specification for this instance.
    @param frame_id          The id of the frame this belongs to.
+   @param frame_is_anchored Whether the frame indicated by `frame_id` is
+                            anchored (see is_dynamic()).
    @param geometry_id       The identifier for _this_ geometry.
    @param name              The name of the geometry.
    @param X_FG              The pose of the geometry G in the parent frame F.
    @param resolution_hint   The resolution hint for the mesh representation of
                             the geometry.  */
   InternalGeometry(SourceId source_id, std::unique_ptr<Shape> shape,
-                   FrameId frame_id, GeometryId geometry_id, std::string name,
+                   FrameId frame_id, bool frame_is_anchored,
+                   GeometryId geometry_id, std::string name,
                    math::RigidTransform<double> X_FG, double resolution_hint);
 
   /* Compares two %InternalGeometry instances for "equality". Two internal
@@ -135,14 +141,24 @@ class InternalGeometry {
    deformable. */
   bool is_deformable() const { return reference_mesh_ != nullptr; }
 
-  /* Returns true if the geometry can move with respect to the World frame. That
-   includes any deformable geometry, and any rigid geometry attached to a frame
-   other than World. */
-  bool is_dynamic() const {
-    // NOTE: If I allow non-dynamic frames welded to the world, this will not
-    // be sufficient.
-    return (frame_id_ != InternalFrame::world_frame_id() || is_deformable());
-  }
+  /* Returns true if the geometry can move as a function of state. All
+   deformable geometries and any rigid geometry whose parent frame is not
+   anchored are dynamic.
+
+   The frame's status is cached here rather than looked up through
+   GeometryState on each of the ~10 call sites. Caching is safe because
+   anchoring is irreversible and one frame's anchored status never changes as a
+   side effect of another frame's. */
+  bool is_dynamic() const { return !frame_is_anchored_ || is_deformable(); }
+
+  /* Notes that this geometry's frame has become anchored. Like
+   InternalFrame::set_anchored(), this is a one-way operation; there is no
+   inverse.
+
+   It is the caller's responsibility to make sure that setting this bit is
+   consistent with the parent frame's anchored status (see
+   GeometryState::AnchorFrames()). */
+  void set_frame_is_anchored() { frame_is_anchored_ = true; }
 
   //@}
 
@@ -263,6 +279,9 @@ class InternalGeometry {
 
   // The identifier of the frame to which this geometry belongs.
   FrameId frame_id_;
+
+  // Whether frame_id_ is anchored; see is_dynamic().
+  bool frame_is_anchored_{false};
 
   // The pose of this geometry in the frame to which this geometry is rigidly
   // affixed. For deformable geometries, this is the pose of the reference
