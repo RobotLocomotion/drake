@@ -912,6 +912,7 @@ drake_cc_variant_library(
         "//common:scope_exit",
         "//common:scoped_singleton",
         "@mosek",
+        "@mosek//:_mosek_libname",
     ],
 )
 
