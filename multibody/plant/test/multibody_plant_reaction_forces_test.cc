@@ -249,8 +249,9 @@ class LadderTest : public ::testing::TestWithParam<LadderTestConfig> {
     const double half_ladder_length = kLadderLength / 2.0;
     const double half_ladder_mass = kLadderMass / 2.0;
     const SpatialInertia<double> M_BBo_B =
-        SpatialInertia<double>::ThinRodWithMassAboutEnd(
-            half_ladder_mass, half_ladder_length, Vector3d::UnitZ());
+        SpatialInertia<double>::SolidCylinderWithMassAboutEnd(
+            half_ladder_mass, kLadderWidth / 2.0, half_ladder_length,
+            Vector3d::UnitZ());
 
     // Create a rigid body for the ladder.
     ladder_lower_ = &plant_->AddRigidBody("ladder_lower", M_BBo_B);
@@ -380,6 +381,11 @@ class LadderTest : public ::testing::TestWithParam<LadderTestConfig> {
       ASSERT_EQ(plant_->num_actuated_dofs(), 1);
     };
     sanity_check();
+
+    Eigen::MatrixXd mass_matrix(plant_->num_velocities(),
+                                plant_->num_velocities());
+    plant_->CalcMassMatrix(*plant_context, &mass_matrix);
+    EXPECT_TRUE(mass_matrix.diagonal().cwiseInverse().cwiseSqrt().allFinite());
 
     // We run a simulation to steady state so that contact forces balance
     // gravity and actuation.
