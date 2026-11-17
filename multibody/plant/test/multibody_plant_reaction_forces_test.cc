@@ -11,6 +11,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/find_resource.h"
+#include "drake/common/fmt_eigen.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/drake_visualizer.h"
@@ -249,8 +250,9 @@ class LadderTest : public ::testing::TestWithParam<LadderTestConfig> {
     const double half_ladder_length = kLadderLength / 2.0;
     const double half_ladder_mass = kLadderMass / 2.0;
     const SpatialInertia<double> M_BBo_B =
-        SpatialInertia<double>::ThinRodWithMassAboutEnd(
-            half_ladder_mass, half_ladder_length, Vector3d::UnitZ());
+        SpatialInertia<double>::SolidCylinderWithMassAboutEnd(
+            half_ladder_mass, kLadderWidth / 2.0, half_ladder_length,
+            Vector3d::UnitZ());
 
     // Create a rigid body for the ladder.
     ladder_lower_ = &plant_->AddRigidBody("ladder_lower", M_BBo_B);
@@ -366,7 +368,7 @@ class LadderTest : public ::testing::TestWithParam<LadderTestConfig> {
     plant_->get_actuation_input_port().FixValue(plant_context, tau_actuation);
 
     // Sanity check model size.
-    auto sanity_check = [this]() {
+    auto sanity_check = [this, plant_context]() {
       const LadderTestConfig& config = GetParam();
       ASSERT_EQ(plant_->num_bodies(), 3);
       if (config.weld_method == LadderTestConfig::WeldMethod::kWeldJoint) {
@@ -378,8 +380,15 @@ class LadderTest : public ::testing::TestWithParam<LadderTestConfig> {
         ASSERT_EQ(plant_->num_velocities(), 2);
       }
       ASSERT_EQ(plant_->num_actuated_dofs(), 1);
+      Eigen::MatrixXd mass_matrix(plant_->num_velocities(),
+                                  plant_->num_velocities());
+      plant_->CalcMassMatrix(*plant_context, &mass_matrix);
+      ASSERT_TRUE(mass_matrix.diagonal().cwiseInverse().cwiseSqrt().allFinite())
+          << fmt::format("Mass matrix diagonal: {}",
+                         fmt_eigen(mass_matrix.diagonal().transpose()));
     };
     sanity_check();
+    if (HasFatalFailure()) return nullptr;
 
     // We run a simulation to steady state so that contact forces balance
     // gravity and actuation.
@@ -580,7 +589,9 @@ class LadderTest : public ::testing::TestWithParam<LadderTestConfig> {
     // Create the threads' contexts by cloning a prototype. This will help
     // ensure the context deep copy is properly working.
     auto context_prototype = diagram_->CreateDefaultContext();
-    auto simulator_prototype = Simulate(std::move(context_prototype));
+    std::unique_ptr<Simulator<double>> simulator_prototype;
+    ASSERT_NO_FATAL_FAILURE(simulator_prototype =
+                                Simulate(std::move(context_prototype)));
     VerifyJointReactionForces(&simulator_prototype->get_mutable_context(),
                               config.hydro_geometry);
 
