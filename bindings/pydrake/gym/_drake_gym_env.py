@@ -1,4 +1,5 @@
 from collections.abc import Callable
+from typing import ClassVar
 import warnings
 
 import gymnasium as gym
@@ -32,7 +33,7 @@ class DrakeGymEnv(gym.Env):
     # gym.make() reads this class-level list before it constructs the env, to
     # decide whether to apply wrappers such as RenderCollection. Each instance
     # narrows it in __init__ to the modes it actually supports.
-    metadata = {"render_modes": ["human", "ansi", "rgb_array"]}
+    metadata: ClassVar[dict] = {"render_modes": ["human", "ansi", "rgb_array"]}
 
     def __init__(
         self,
