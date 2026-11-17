@@ -62,6 +62,10 @@ For details, see
 Error-controlled Numerical Integration for Contact.
 https://arxiv.org/abs/2511.08771.
 
+[Boyd and Vandenberghe, 2004] Boyd S. and Vandenberghe L., 2004.
+Convex Optimization. Cambridge University Press.
+https://web.stanford.edu/~boyd/cvxbook/
+
 [Hairer and Wanner, 1996] Hairer E. and Wanner G., 1996. Solving
 Ordinary Differential Equations II: Stiff and Differential-Algebraic
 Problems. Springer Series in Computational Mathematics, Vol. 14.
@@ -118,11 +122,15 @@ R"""(Maximum iterations for exact linesearch.)""";
               const char* doc =
 R"""(Minimum tolerance ε for the convergence conditions
 
-‖D⋅∇ℓ‖ ≤ ε max(1, ‖D⋅r‖), η ‖D⁻¹⋅Δv‖ ≤ ε max(1, ‖D⋅r‖),
+‖D⋅∇ℓ‖ ≤ ε max(1, ‖D⋅r‖), √(−∇ℓᵀ⋅w) ≤ ε max(1, ‖D⋅r‖), η ‖D⁻¹⋅Δv‖ ≤ ε
+max(1, ‖D⋅r‖),
 
-as detailed in Section VI.B of [Kurtz and Castro, 2025]. When the
-problem splits into islands, the conditions (including the norms and
-r) are evaluated for each island separately; see IcfSolver.
+where w = −H⁻¹⋅∇ℓ is the Newton direction, so that √(−∇ℓᵀ⋅w) is the
+Newton decrement (cf. Section 9.5 of [Boyd and Vandenberghe, 2004]).
+The first and last conditions are detailed in Section VI.B of [Kurtz
+and Castro, 2025]. When the problem splits into islands, the
+conditions (including the norms and r) are evaluated for each island
+separately; see IcfSolver.
 
 This provides a lower bound on the actual tolerance used, which is
 specified explicitly when calling the solver. For instance, CENIC
