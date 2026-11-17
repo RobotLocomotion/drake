@@ -1,0 +1,147 @@
+#include "drake/multibody/inverse_kinematics/manipulability_cost.h"
+
+#include <algorithm>
+#include <cmath>
+#include <stdexcept>
+#include <vector>
+
+#include <fmt/format.h>
+
+#include "drake/math/autodiff_gradient.h"
+#include "drake/multibody/inverse_kinematics/kinematic_evaluator_utilities.h"
+
+using drake::multibody::internal::PtrOrThrow;
+using drake::multibody::internal::RefFromPtrOrThrow;
+using drake::multibody::internal::UpdateContextConfiguration;
+
+namespace drake {
+namespace multibody {
+
+ManipulabilityCost::ManipulabilityCost(
+    const MultibodyPlant<double>* const plant, const Frame<double>& frameA,
+    const Frame<double>& frameB, double c,
+    systems::Context<double>* plant_context)
+    : solvers::Cost(RefFromPtrOrThrow(plant).num_positions()),
+      plant_(*plant),
+      frameA_index_(frameA.index()),
+      frameB_index_(frameB.index()),
+      context_(PtrOrThrow(plant_context,
+                          "ManipulabilityCost(): plant_context is nullptr")),
+      c_(c) {
+  DRAKE_THROW_UNLESS(c > 0 && std::isfinite(c), c);
+  // TODO(cohnt) Consolidate with the other path finders: internal::FindPath()
+  // in rational_forward_kinematics_internal.h and
+  // SpanningForest::FindPathsToFirstCommonAncestor().
+  // A joint is on the path iff it moves exactly one of A's and B's bodies.
+  const BodyIndex body_A = frameA.body().index();
+  const BodyIndex body_B = frameB.body().index();
+  for (const JointIndex& joint_index : plant_.GetJointIndices()) {
+    const Joint<double>& joint = plant_.get_joint(joint_index);
+    if (joint.num_velocities() == 0) continue;
+    // GetBodiesKinematicallyAffectedBy() returns sorted indices.
+    const std::vector<BodyIndex> affected =
+        plant_.GetBodiesKinematicallyAffectedBy({joint_index});
+    const bool moves_A =
+        std::binary_search(affected.begin(), affected.end(), body_A);
+    const bool moves_B =
+        std::binary_search(affected.begin(), affected.end(), body_B);
+    if (moves_A != moves_B) {
+      for (int k = 0; k < joint.num_velocities(); ++k) {
+        path_velocities_.push_back(joint.velocity_start() + k);
+      }
+    }
+  }
+  if (ssize(path_velocities_) < 6) {
+    throw std::logic_error(fmt::format(
+        "ManipulabilityCost(): only {} generalized velocities are on the "
+        "kinematic path between frame A ('{}') and frame B ('{}'), but the "
+        "manipulability index needs at least 6.",
+        ssize(path_velocities_), frameA.name(), frameB.name()));
+  }
+  std::sort(path_velocities_.begin(), path_velocities_.end());
+}
+
+ManipulabilityCost::~ManipulabilityCost() = default;
+
+double ManipulabilityCost::CalcManipulabilityIndex(
+    const Eigen::Ref<const Eigen::VectorXd>& q, Eigen::VectorXd* dw_dq) const {
+  UpdateContextConfiguration(context_, plant_, q);
+  const Frame<double>& frameA = plant_.get_frame(frameA_index_);
+  const Frame<double>& frameB = plant_.get_frame(frameB_index_);
+  const int n = ssize(path_velocities_);
+  const int nv = plant_.num_velocities();
+  // Neither the point (Bo here) nor the expressed-in frame affects w:
+  // re-expressing multiplies J by diag(R, R) and moving the point by r
+  // multiplies it by [I 0; -[r]ₓ I], both of determinant 1. (The translational
+  // index alone would depend on the point.) Off-path columns are zero, so
+  // dropping them leaves J Jᵀ unchanged.
+  Eigen::MatrixXd J_full(6, nv);
+  plant_.CalcJacobianSpatialVelocity(*context_, JacobianWrtVariable::kV, frameB,
+                                     Eigen::Vector3d::Zero(), frameA, frameA,
+                                     &J_full);
+  Matrix6X<double> J(6, n);
+  for (int k = 0; k < n; ++k) J.col(k) = J_full.col(path_velocities_[k]);
+
+  // Factor J itself; forming J Jᵀ would square its condition number and lose
+  // accuracy near singularities. With Jᵀ = Q R (thin), J Jᵀ = Rᵀ R.
+  const Eigen::HouseholderQR<Eigen::Matrix<double, Eigen::Dynamic, 6>> qr(
+      J.transpose());
+  const auto R = qr.matrixQR().topRows<6>();
+  const double w = std::abs(R.diagonal().prod());
+  if (!(w > 0)) {
+    if (dw_dq != nullptr) dw_dq->setZero(plant_.num_positions());
+    return 0.0;
+  }
+  if (dw_dq != nullptr) {
+    // ∂w/∂J = w⋅(J Jᵀ)⁻¹J = w⋅R⁻¹Qᵀ (Jacobi's formula). This stays bounded as
+    // J loses a rank, since w carries the vanishing factor of R. Then
+    // ∂w/∂vᵢ = ⟨∂w/∂J, Dᵢ(J)⟩ (Frobenius inner product) and
+    // ∂w/∂q = N⁺(q)ᵀ⋅∂w/∂v. N⁺ handles non-unit quaternions.
+    const Eigen::Matrix<double, Eigen::Dynamic, 6> Q =
+        qr.householderQ() * Eigen::MatrixXd::Identity(n, 6);
+    const Matrix6X<double> dw_dJ =
+        w * R.triangularView<Eigen::Upper>().solve(Q.transpose());
+    // Taking the derivatives in A (frame_E = A) matches J's expressed-in frame.
+    std::vector<Matrix6X<double>> H;
+    plant_.CalcHessianSpatialVelocity(*context_, JacobianWrtVariable::kV,
+                                      frameB, Eigen::Vector3d::Zero(), frameA,
+                                      frameA, &H);
+    // Off-path velocities move neither body or both rigidly, so they leave
+    // J_AB_A unchanged: ∂w/∂vᵢ = 0 and Hᵢ needn't be read.
+    Eigen::VectorXd dw_dv = Eigen::VectorXd::Zero(nv);
+    for (const int i : path_velocities_) {
+      double inner = 0;
+      for (int k = 0; k < n; ++k) {
+        inner += dw_dJ.col(k).dot(H[i].col(path_velocities_[k]));
+      }
+      dw_dv(i) = inner;
+    }
+    *dw_dq = plant_.MakeQDotToVelocityMap(*context_).transpose() * dw_dv;
+  }
+  return w;
+}
+
+void ManipulabilityCost::DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
+                                Eigen::VectorXd* y) const {
+  y->resize(1);
+  (*y)[0] = -c_ * CalcManipulabilityIndex(x, nullptr);
+}
+
+void ManipulabilityCost::DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
+                                AutoDiffVecXd* y) const {
+  y->resize(1);
+  Eigen::VectorXd dw_dq;
+  const double w = CalcManipulabilityIndex(math::ExtractValue(x), &dw_dq);
+  (*y)[0] =
+      AutoDiffXd(-c_ * w, -c_ * math::ExtractGradient(x).transpose() * dw_dq);
+}
+
+void ManipulabilityCost::DoEval(
+    const Eigen::Ref<const VectorX<symbolic::Variable>>&,
+    VectorX<symbolic::Expression>*) const {
+  throw std::logic_error(
+      "ManipulabilityCost::DoEval() does not work for symbolic variables.");
+}
+
+}  // namespace multibody
+}  // namespace drake
