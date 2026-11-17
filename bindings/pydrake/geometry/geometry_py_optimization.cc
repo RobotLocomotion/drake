@@ -21,6 +21,7 @@
 #include "drake/bindings/pydrake/geometry/optimization_pybind.h"
 #include "drake/bindings/pydrake/polynomial_types_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
+#include "drake/bindings/pydrake/solvers/borrowing_evaluator_pybind.h"
 #include "drake/common/yaml/yaml_io.h"
 #include "drake/geometry/optimization/affine_ball.h"
 #include "drake/geometry/optimization/affine_subspace.h"
@@ -863,9 +864,10 @@ void DefineGraphOfConvexSetsAndRelated(py::module_ m) {
             py::arg("e"), py::arg("use_in_transcription") = all_transcriptions,
             vertex_doc.AddCost.doc_expression)
         .def("AddCost",
-            py::overload_cast<const solvers::Binding<solvers::Cost>&,
+            internal::ReownBinding(py::overload_cast<
+                const solvers::Binding<solvers::Cost>&,
                 const std::unordered_set<GraphOfConvexSets::Transcription>&>(
-                &GraphOfConvexSets::Vertex::AddCost),
+                &GraphOfConvexSets::Vertex::AddCost)),
             py::arg("binding"),
             py::arg("use_in_transcription") = all_transcriptions,
             vertex_doc.AddCost.doc_binding)
@@ -877,10 +879,11 @@ void DefineGraphOfConvexSetsAndRelated(py::module_ m) {
             py::arg("f"), py::arg("use_in_transcription") = all_transcriptions,
             vertex_doc.AddConstraint.doc_formula)
         .def("AddConstraint",
-            overload_cast_explicit<solvers::Binding<solvers::Constraint>,
+            internal::ReownBinding(overload_cast_explicit<
+                solvers::Binding<solvers::Constraint>,
                 const solvers::Binding<solvers::Constraint>&,
                 const std::unordered_set<GraphOfConvexSets::Transcription>&>(
-                &GraphOfConvexSets::Vertex::AddConstraint),
+                &GraphOfConvexSets::Vertex::AddConstraint)),
             py::arg("binding"),
             py::arg("use_in_transcription") = all_transcriptions,
             vertex_doc.AddConstraint.doc_binding)
@@ -941,9 +944,10 @@ void DefineGraphOfConvexSetsAndRelated(py::module_ m) {
             py::arg("e"), py::arg("use_in_transcription") = all_transcriptions,
             edge_doc.AddCost.doc_expression)
         .def("AddCost",
-            py::overload_cast<const solvers::Binding<solvers::Cost>&,
+            internal::ReownBinding(py::overload_cast<
+                const solvers::Binding<solvers::Cost>&,
                 const std::unordered_set<GraphOfConvexSets::Transcription>&>(
-                &GraphOfConvexSets::Edge::AddCost),
+                &GraphOfConvexSets::Edge::AddCost)),
             py::arg("binding"),
             py::arg("use_in_transcription") = all_transcriptions,
             edge_doc.AddCost.doc_binding)
@@ -955,10 +959,11 @@ void DefineGraphOfConvexSetsAndRelated(py::module_ m) {
             py::arg("f"), py::arg("use_in_transcription") = all_transcriptions,
             edge_doc.AddConstraint.doc_formula)
         .def("AddConstraint",
-            overload_cast_explicit<solvers::Binding<solvers::Constraint>,
+            internal::ReownBinding(overload_cast_explicit<
+                solvers::Binding<solvers::Constraint>,
                 const solvers::Binding<solvers::Constraint>&,
                 const std::unordered_set<GraphOfConvexSets::Transcription>&>(
-                &GraphOfConvexSets::Edge::AddConstraint),
+                &GraphOfConvexSets::Edge::AddConstraint)),
             py::arg("binding"),
             py::arg("use_in_transcription") = all_transcriptions,
             edge_doc.AddConstraint.doc_binding)

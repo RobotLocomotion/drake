@@ -30,9 +30,21 @@ package(default_visibility = [
 # https://github.com/RobotLocomotion/drake/issues/12055
 PACKAGE_INFO = get_pybind_package_info("//bindings")
 
+drake_cc_library(
+    name = "borrowing_evaluator_pybind",
+    hdrs = ["borrowing_evaluator_pybind.h"],
+    declare_installed_headers = False,
+    deps = [
+        "//:drake_shared_library",
+        "//bindings/pydrake:pydrake_pybind",
+        "//bindings/pydrake/common:ref_cycle_pybind",
+    ],
+)
+
 drake_pybind_library(
     name = "solvers",
     cc_deps = [
+        ":borrowing_evaluator_pybind",
         "//bindings/generated_docstrings:solvers",
         "//bindings/pydrake:autodiff_types_pybind",
         "//bindings/pydrake:symbolic_types_pybind",

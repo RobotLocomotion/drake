@@ -733,6 +733,92 @@ class TestTrajectoryOptimization(unittest.TestCase):
         self.assertFalse(len(gcs.GetSubgraphs()))
         self.assertFalse(len(gcs.GetEdgesBetweenSubgraphs()), 0)
 
+    def test_gcs_trajectory_optimization_added_bindings_lifetime(self):
+        """GCS trajectory optimization must keep the evaluator, and any Python
+        callable it borrows, of a binding it is given alive. Each wrapped
+        method is checked on its own, with a fresh evaluator.
+        """
+
+        class CostCallback:
+            def __call__(self, v):
+                return v[0] ** 2
+
+        class ConstraintCallback:
+            def __call__(self, v):
+                return np.array([v[0] ** 2])
+
+        # (dut kind, method, is a cost, uses vertex variables)
+        cases = [
+            ("subgraph", "AddVertexCost", True, True),
+            ("subgraph", "AddVertexConstraint", False, True),
+            ("subgraph", "AddEdgeCost", True, False),
+            ("subgraph", "AddEdgeConstraint", False, False),
+            ("edges", "AddEdgeCost", True, False),
+            ("edges", "AddEdgeConstraint", False, False),
+        ]
+        for dut_kind, method, is_cost, use_vertex in cases:
+            with self.subTest(dut=dut_kind, method=method):
+                gcs = GcsTrajectoryOptimization(2)
+                # Overlapping regions, so that the subgraph has an edge.
+                regions = gcs.AddRegions(
+                    regions=[
+                        HPolyhedron.MakeBox([-1, -1], [1, 1]),
+                        HPolyhedron.MakeBox([0, -1], [2, 1]),
+                    ],
+                    order=1,
+                )
+                other_regions = gcs.AddRegions(
+                    regions=[HPolyhedron.MakeBox([-1, -1], [1, 1])], order=1
+                )
+                edges = gcs.AddEdges(regions, other_regions)
+                dut = regions if dut_kind == "subgraph" else edges
+                if use_vertex:
+                    xs = dut.vertex_control_points()[0, :1]
+                else:
+                    xs = dut.edge_constituent_vertex_control_points()[0][0, :1]
+
+                def add():
+                    callback = (
+                        CostCallback() if is_cost else ConstraintCallback()
+                    )
+                    other = mp.MathematicalProgram()
+                    y = other.NewContinuousVariables(1)
+                    prog = mp.MathematicalProgram()
+                    prog.AddDecisionVariables(xs.reshape((-1, 1)))
+                    # Make the evaluator in another program first, so that it
+                    # is not owned by this program's Python object.
+                    if is_cost:
+                        evaluator = other.AddCost(callback, y).evaluator()
+                        binding = prog.AddCost(evaluator, xs)
+                    else:
+                        evaluator = other.AddConstraint(
+                            callback, [0.0], [1.0], y
+                        ).evaluator()
+                        binding = prog.AddConstraint(evaluator, xs)
+                    getattr(dut, method)(binding=binding)
+                    return weakref.ref(callback)
+
+                callback_ref = add()
+                gc.collect()
+                # Check that the callable is alive before calling it; calling
+                # a freed callable would crash.
+                self.assertIsNotNone(callback_ref())
+                graph = gcs.graph_of_convex_sets()
+                holders = list(graph.Vertices()) + list(graph.Edges())
+                evaluators = []
+                for holder in holders:
+                    found = (
+                        holder.GetCosts()
+                        if is_cost
+                        else (holder.GetConstraints())
+                    )
+                    evaluators += [b.evaluator() for b in found]
+                self.assertGreater(len(evaluators), 0)
+                for evaluator in evaluators:
+                    self.assertEqual(
+                        np.atleast_1d(evaluator.Eval(np.array([1.0])))[0], 1.0
+                    )
+
     def test_gcs_trajectory_optimization_2d(self):
         """The following 2D environment has been presented in the GCS paper.
 
