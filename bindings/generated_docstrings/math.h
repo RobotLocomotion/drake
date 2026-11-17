@@ -2172,7 +2172,8 @@ Parameter ``other``:
     RigidTransform to subtract from ``this``.
 
 Returns:
-    ‖`this` - `other`‖∞)""";
+    ``‖this - other‖∞``, or NaN if any element of ``this - other`` is
+    NaN.)""";
         } GetMaximumAbsoluteDifference;
         // Symbol: drake::math::RigidTransform::GetMaximumAbsoluteTranslationDifference
         struct /* GetMaximumAbsoluteTranslationDifference */ {
@@ -2184,7 +2185,11 @@ returns the infinity norm of the difference in the position vectors.
 
 Parameter ``other``:
     RigidTransform whose position vector is subtracted from the
-    position vector in ``this``.)""";
+    position vector in ``this``.
+
+Returns:
+    the infinity norm of the difference in the position vectors, or
+    NaN if any element of that difference is NaN.)""";
         } GetMaximumAbsoluteTranslationDifference;
         // Symbol: drake::math::RigidTransform::Identity
         struct /* Identity */ {
@@ -3692,7 +3697,10 @@ Parameter ``other``:
 
 Returns:
     ``‖this - other‖∞``, or NaN if any element of ``this - other`` is
-    NaN.)""";
+    NaN. Note that ``inf - inf`` is NaN, so if ``this`` and ``other``
+    have an infinite element in the same place this returns NaN, and
+    therefore IsNearlyEqualTo() is false (even when comparing a matrix
+    to itself).)""";
         } GetMaximumAbsoluteDifference;
         // Symbol: drake::math::RotationMatrix::GetMeasureOfOrthonormality
         struct /* GetMeasureOfOrthonormality */ {
@@ -3707,7 +3715,8 @@ Parameter ``R``:
     matrix being checked for orthonormality.
 
 Returns:
-    ``‖R ⋅ Rᵀ - I‖∞``)""";
+    ``‖R ⋅ Rᵀ - I‖∞``, or NaN if any element of ``R ⋅ Rᵀ - I`` is NaN
+    (e.g., if R contains a NaN).)""";
         } GetMeasureOfOrthonormality;
         // Symbol: drake::math::RotationMatrix::Identity
         struct /* Identity */ {

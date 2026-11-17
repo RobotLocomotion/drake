@@ -700,7 +700,7 @@ class RigidTransform {
   /// `this` is equal to zero vector within `translation_tolerance`.
   /// @see IsExactlyIdentity().
   boolean<T> IsNearlyIdentity(double translation_tolerance) const {
-    const T max_component = translation().template lpNorm<Eigen::Infinity>();
+    const T max_component = internal::InfinityNormOrNaN(translation());
     return max_component <= translation_tolerance &&
            rotation().IsNearlyIdentity();
   }
@@ -772,10 +772,11 @@ class RigidTransform {
   /// Computes the infinity norm of `this` - `other` (i.e., the maximum absolute
   /// value of the difference between the elements of `this` and `other`).
   /// @param[in] other %RigidTransform to subtract from `this`.
-  /// @returns ‖`this` - `other`‖∞
+  /// @returns `‖this - other‖∞`, or NaN if any element of `this - other` is
+  /// NaN.
   T GetMaximumAbsoluteDifference(const RigidTransform<T>& other) const {
     const Eigen::Matrix<T, 3, 4> diff = GetAsMatrix34() - other.GetAsMatrix34();
-    return diff.template lpNorm<Eigen::Infinity>();
+    return internal::InfinityNormOrNaN(diff);
   }
 
   /// Returns the maximum absolute value of the difference in the position
@@ -783,10 +784,12 @@ class RigidTransform {
   /// the infinity norm of the difference in the position vectors.
   /// @param[in] other %RigidTransform whose position vector is subtracted from
   /// the position vector in `this`.
+  /// @returns the infinity norm of the difference in the position vectors, or
+  /// NaN if any element of that difference is NaN.
   T GetMaximumAbsoluteTranslationDifference(
       const RigidTransform<T>& other) const {
     const Vector3<T> p_difference = translation() - other.translation();
-    return p_difference.template lpNorm<Eigen::Infinity>();
+    return internal::InfinityNormOrNaN(p_difference);
   }
 
   /// In-place multiply of `this` %RigidTransform `X_AB` by `other`

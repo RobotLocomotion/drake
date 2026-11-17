@@ -500,10 +500,11 @@ GTEST_TEST(RotationMatrix, IsValid) {
   EXPECT_FALSE(RotationMatrix<double>::IsValid(m, 5 * kEpsilon));
 
   // A matrix with any non-finite element is neither orthonormal nor valid,
-  // no matter which element it is (see #17356). This uses the static
-  // functions because the constructor rejects such matrices in Debug builds.
-  // (Eigen's infinity norm can skip NaN elements, so without special handling
-  // a NaN in rows 1 or 2 would pass the orthonormality check.)
+  // nor nearly equal to anything, no matter which element it is (see #17356).
+  // We use MakeUnchecked() because the constructor rejects such matrices in
+  // Debug builds. (Eigen's infinity norm can skip NaN elements, so without
+  // special handling a NaN in rows 1 or 2 would pass these checks.)
+  const RotationMatrix<double> identity;
   for (const double bad : {std::numeric_limits<double>::infinity(),
                            -std::numeric_limits<double>::infinity(),
                            std::numeric_limits<double>::quiet_NaN()}) {
@@ -516,10 +517,24 @@ GTEST_TEST(RotationMatrix, IsValid) {
         EXPECT_FALSE(RotationMatrix<double>::IsOrthonormal(bad_m, kEpsilon));
         EXPECT_FALSE(RotationMatrix<double>::IsValid(bad_m, kEpsilon));
         EXPECT_FALSE(RotationMatrix<double>::IsValid(bad_m));
+        const RotationMatrix<double> bad_R =
+            RotationMatrix<double>::MakeUnchecked(bad_m);
+        EXPECT_FALSE(bad_R.IsValid());
+        EXPECT_FALSE(bad_R.IsNearlyIdentity(1.0));
+        EXPECT_FALSE(bad_R.IsNearlyEqualTo(identity, 1.0));
+        EXPECT_FALSE(identity.IsNearlyEqualTo(bad_R, 1.0));
+        // Since inf - inf is NaN, a non-finite matrix is not even nearly equal
+        // to itself (though it is exactly equal to itself).
+        EXPECT_FALSE(bad_R.IsNearlyEqualTo(bad_R, 1.0));
+        EXPECT_TRUE(std::isnan(bad_R.GetMaximumAbsoluteDifference(bad_R)));
         if (std::isnan(bad)) {
-          // The measure must propagate NaN, not silently skip it.
+          EXPECT_FALSE(bad_R.IsExactlyEqualTo(bad_R));
+          // The measures must propagate NaN, not silently skip it.
           EXPECT_TRUE(std::isnan(
               RotationMatrix<double>::GetMeasureOfOrthonormality(bad_m)));
+          EXPECT_TRUE(std::isnan(bad_R.GetMaximumAbsoluteDifference(identity)));
+        } else {
+          EXPECT_TRUE(bad_R.IsExactlyEqualTo(bad_R));
         }
       }
     }
