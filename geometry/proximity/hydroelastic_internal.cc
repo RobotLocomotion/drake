@@ -225,6 +225,25 @@ void Geometries::AddGeometry(GeometryId id, RigidGeometry geometry) {
 
 namespace {
 
+// Returns a sentence (with a leading space) pointing the user to the model
+// file documentation for the given property, or an empty string if no model
+// file tag sets it.
+std::string ModelFileTagHint(std::string_view group_name,
+                             std::string_view property_name) {
+  if (group_name != kHydroGroup) return {};
+  const char* anchor = nullptr;
+  if (property_name == kRezHint) {
+    anchor = "tag_drake_mesh_resolution_hint";
+  } else if (property_name == kElastic) {
+    anchor = "tag_drake_hydroelastic_modulus";
+  }
+  if (anchor == nullptr) return {};
+  return fmt::format(
+      " To specify it in a model file, see "
+      "https://drake.mit.edu/doxygen_cxx/group__multibody__parsing.html#{}.",
+      anchor);
+}
+
 std::optional<std::string> ReportIfInvalidProperty(const char* property_name,
                                                    double value) {
   const std::string_view name(property_name);
@@ -264,8 +283,9 @@ class PropertyExtractor {
       const std::string full_property_name =
           fmt::format("('{}', '{}')", group_name, property_name);
       throw std::logic_error(
-          fmt::format("Cannot create {} {}; missing the {} property",
-                      compliance_, shape_name_, full_property_name));
+          fmt::format("Cannot create {} {}; missing the {} property.{}",
+                      compliance_, shape_name_, full_property_name,
+                      ModelFileTagHint(group_name, property_name)));
     }
     const double value =
         has_default ? props.GetPropertyOrDefault(group_name, property_name,
