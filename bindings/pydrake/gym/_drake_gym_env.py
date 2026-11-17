@@ -381,4 +381,4 @@ class DrakeGymEnv(gym.Env):
                 :, :, :3
             ]
         else:
-            super(DrakeGymEnv).render()
+            raise ValueError(f"Unsupported render_mode {self.render_mode!r}")
