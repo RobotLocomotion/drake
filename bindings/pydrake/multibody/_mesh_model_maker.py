@@ -336,8 +336,10 @@ class MeshModelMaker:
         """
         # Package files written by older versions of mesh_to_model start with
         # whitespace before the XML declaration, which the parser rejects.
-        text = Path(package_path).read_text(encoding="utf-8").lstrip()
-        root = xml.etree.ElementTree.fromstring(text)
+        # Strip the raw bytes, not decoded text, so that the parser still
+        # honors the file's declared encoding.
+        data = Path(package_path).read_bytes().lstrip()
+        root = xml.etree.ElementTree.fromstring(data)
         name_element = root.find("name")
         if name_element is None:
             raise ValueError(

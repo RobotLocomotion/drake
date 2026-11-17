@@ -419,6 +419,21 @@ class TestModelMaker(unittest.TestCase):
             "<uri>package://package_auto/box.obj</uri>",
         )
 
+        # A package.xml that declares a non-UTF-8 encoding can still be read.
+        with open(generated_xml, "wb") as f:
+            f.write(
+                '<?xml version="1.0" encoding="ISO-8859-1"?>\n'
+                '<package format="2">\n'
+                "  <name>package_auto</name>\n"
+                "  <description>caf\xe9</description>\n"
+                "</package>\n".encode("latin-1")
+            )
+        dut.make_model()
+        self.assertRegex(
+            _file_contents(sdf_result),
+            "<uri>package://package_auto/box.obj</uri>",
+        )
+
         # "auto" with pre-existing package.xml in obj file will use it.
         # We'll change the name in the generated xml to confirm it gets used.
         with open(generated_xml, "w") as f:
