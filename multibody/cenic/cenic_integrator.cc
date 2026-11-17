@@ -193,6 +193,13 @@ template <typename T>
 CenicIntegrator<T>::~CenicIntegrator() = default;
 
 template <typename T>
+void CenicIntegrator<T>::SetParameters(
+    const CenicIntegratorParameters& parameters) {
+  explicit_external_inputs_ = parameters.explicit_external_inputs;
+  SetSolverParameters(parameters.icf_solver);
+}
+
+template <typename T>
 void CenicIntegrator<T>::SetSolverParameters(
     const IcfSolverParameters& parameters) {
   solver_.SetParameters(parameters);
@@ -396,7 +403,8 @@ bool CenicIntegrator<T>::DoStep(const T& h) {
   bool has_external_forces;
   std::tie(has_actuation_forces, has_external_forces) =
       external_systems_linearizer_.LinearizeExternalSystem(
-          h, plant().GetMyMutableContextFromRoot(&context),
+          h, explicit_external_inputs_,
+          plant().GetMyMutableContextFromRoot(&context),
           &actuation_feedback_storage, &external_feedback_storage);
   const IcfLinearFeedbackGains<T>* const actuation_feedback =
       has_actuation_forces ? &actuation_feedback_storage : nullptr;

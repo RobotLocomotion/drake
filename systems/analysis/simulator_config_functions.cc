@@ -4,15 +4,18 @@
 #include <initializer_list>
 #include <memory>
 #include <stdexcept>
+#include <type_traits>
 #include <utility>
 #include <variant>
 
 #include <fmt/format.h>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_bool.h"
 #include "drake/common/never_destroyed.h"
 #include "drake/common/nice_type_name.h"
 #include "drake/common/unused.h"
+#include "drake/multibody/cenic/cenic_integrator.h"
 #include "drake/multibody/cenic/make_cenic_integrator.h"
 #include "drake/systems/analysis/bogacki_shampine3_integrator.h"
 #include "drake/systems/analysis/explicit_euler_integrator.h"
@@ -78,6 +81,58 @@ string GetIntegratorName() {
     }
   }
   return result;
+}
+
+// Throws if the integrator-specific config values name a different integration
+// scheme than the one in the config. Cheap enough to call before changing
+// anything, so that a mismatch leaves the simulator untouched.
+void ThrowIfIntegratorParamsMismatchScheme(const SimulatorConfig& config) {
+  if (std::holds_alternative<multibody::CenicIntegratorParameters>(
+          config.integrator_params) &&
+      config.integration_scheme != "cenic") {
+    throw std::logic_error(fmt::format(
+        "SimulatorConfig::integrator_params holds CenicIntegratorParameters, "
+        "but the integration scheme is '{}' (not 'cenic')",
+        config.integration_scheme));
+  }
+}
+
+// Applies the integrator-specific config values (if any) to the integrator.
+// The caller must have already checked them against the scheme.
+template <typename T>
+void ApplyIntegratorParams(const SimulatorConfig& config,
+                           IntegratorBase<T>* integrator) {
+  const auto* cenic_params = std::get_if<multibody::CenicIntegratorParameters>(
+      &config.integrator_params);
+  if (cenic_params == nullptr) {
+    return;  // Nothing to apply.
+  }
+  // CreateIntegratorFromConfig() and ApplySimulatorConfig() have already called
+  // ThrowIfIntegratorParamsMismatchScheme(), and the "cenic" scheme always
+  // makes a CenicIntegrator (or rejects the scalar type earlier).
+  if constexpr (scalar_predicate<T>::is_bool) {
+    auto* cenic = dynamic_cast<multibody::CenicIntegrator<T>*>(integrator);
+    DRAKE_DEMAND(cenic != nullptr);
+    cenic->SetParameters(*cenic_params);
+  } else {
+    unused(integrator);
+    DRAKE_UNREACHABLE();
+  }
+}
+
+// Reports the integrator-specific config values; leaves the default
+// (std::monostate) for integrators that have none.
+template <typename T>
+void ExtractIntegratorParams(const IntegratorBase<T>& integrator,
+                             SimulatorConfig* config) {
+  if constexpr (scalar_predicate<T>::is_bool) {
+    if (const auto* cenic =
+            dynamic_cast<const multibody::CenicIntegrator<T>*>(&integrator)) {
+      config->integrator_params = cenic->GetParameters();
+    }
+  } else {
+    unused(integrator, config);
+  }
 }
 
 // A hollow shell of a System.  TODO(jeremy.nimmer) Move into drake primitives.
@@ -251,6 +306,9 @@ template <typename T>
 void ApplySimulatorConfig(const SimulatorConfig& config,
                           Simulator<T>* simulator) {
   DRAKE_THROW_UNLESS(simulator != nullptr);
+  // Validate before mutating anything, so a mismatch leaves the simulator
+  // untouched.
+  ThrowIfIntegratorParamsMismatchScheme(config);
   IntegratorBase<T>& integrator = ResetIntegratorFromFlags(
       simulator, config.integration_scheme, T(config.max_step_size));
   if (integrator.supports_error_estimation()) {
@@ -259,6 +317,7 @@ void ApplySimulatorConfig(const SimulatorConfig& config,
   if (!integrator.get_fixed_step_mode()) {
     integrator.set_target_accuracy(config.accuracy);
   }
+  ApplyIntegratorParams(config, &integrator);
   simulator->get_mutable_context().SetTime(config.start_time);
   simulator->set_target_realtime_rate(config.target_realtime_rate);
 }
@@ -280,6 +339,7 @@ SimulatorConfig ExtractSimulatorConfig(const Simulator<T>& simulator) {
     result.use_error_control = false;
     result.accuracy = 0.0;
   }
+  ExtractIntegratorParams(integrator, &result);
   result.start_time = ExtractDoubleOrThrow(simulator.get_context().get_time());
   result.target_realtime_rate =
       ExtractDoubleOrThrow(simulator.get_target_realtime_rate());
@@ -290,6 +350,7 @@ template <typename T>
 std::unique_ptr<IntegratorBase<T>> CreateIntegratorFromConfig(
     const System<T>* system, const SimulatorConfig& config) {
   DRAKE_THROW_UNLESS(system != nullptr);
+  ThrowIfIntegratorParamsMismatchScheme(config);
   const auto& name_func_pairs = GetAllNamedConfigureIntegratorFuncs<T>();
   for (const auto& [one_name, one_func] : name_func_pairs) {
     if (config.integration_scheme == one_name) {
@@ -304,6 +365,7 @@ std::unique_ptr<IntegratorBase<T>> CreateIntegratorFromConfig(
         integrator->set_fixed_step_mode(!config.use_error_control);
         integrator->set_target_accuracy(config.accuracy);
       }
+      ApplyIntegratorParams(config, integrator.get());
       return integrator;
     }
   }

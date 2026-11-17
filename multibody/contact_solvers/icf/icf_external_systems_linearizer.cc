@@ -26,7 +26,7 @@ IcfExternalSystemsLinearizer<T>::~IcfExternalSystemsLinearizer() = default;
 
 template <typename T>
 std::tuple<bool, bool> IcfExternalSystemsLinearizer<T>::LinearizeExternalSystem(
-    const T& h, Context<T>& mutable_plant_context,
+    const T& h, bool explicit_inputs, Context<T>& mutable_plant_context,
     IcfLinearFeedbackGains<T>* actuation_feedback,
     IcfLinearFeedbackGains<T>* external_feedback) const {
   using std::abs;
@@ -70,8 +70,21 @@ std::tuple<bool, bool> IcfExternalSystemsLinearizer<T>::LinearizeExternalSystem(
   DRAKE_ASSERT(Ke.size() == plant_.num_velocities());
   DRAKE_ASSERT(be.size() == plant_.num_velocities());
 
-  // We only need to use forward differences for these two terms.
-  if (has_actuation_input || has_external_force_input) {
+  if (explicit_inputs) {
+    // Hold the inputs fixed at τ(x₀): no finite differences, so upstream
+    // systems are evaluated only once at the unperturbed state.
+    if (has_actuation_input) {
+      CalcActuationForces(plant_context, &scratch_.tau_u0);
+      Ku.setZero();
+      bu = scratch_.tau_u0;
+    }
+    if (has_external_force_input) {
+      CalcExternalForces(plant_context, &scratch_.tau_e0);
+      Ke.setZero();
+      be = scratch_.tau_e0;
+    }
+  } else if (has_actuation_input || has_external_force_input) {
+    // We only need to use forward differences for these two terms.
     // Get references to pre-allocated variables.
     VectorX<T>& tau_u0 = scratch_.tau_u0;
     VectorX<T>& tau_e0 = scratch_.tau_e0;
