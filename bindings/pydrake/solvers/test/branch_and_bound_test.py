@@ -1,7 +1,10 @@
 import copy
+import gc
 import unittest
+import weakref
 
 from pydrake.solvers import (
+    IpoptSolver,
     MathematicalProgram,
     MixedIntegerBranchAndBound,
     OsqpSolver,
@@ -10,6 +13,34 @@ from pydrake.solvers import (
 
 
 class TestMixedIntegerBranchAndBound(unittest.TestCase):
+    def test_keeps_program_alive(self):
+        """The branch and bound object copies evaluators from the program, so
+        must keep alive the program and any Python callables they borrow.
+        """
+
+        class Callback:
+            def __call__(self, v):
+                return v[0] ** 2
+
+        def make():
+            callback = Callback()
+            prog = MathematicalProgram()
+            x = prog.NewContinuousVariables(1)
+            prog.NewBinaryVariables(1)
+            prog.AddBoundingBoxConstraint(0, 1, x)
+            prog.AddCost(callback, x)
+            return (
+                MixedIntegerBranchAndBound(prog, IpoptSolver().solver_id()),
+                weakref.ref(callback),
+            )
+
+        dut, callback_ref = make()
+        gc.collect()
+        self.assertIsNotNone(callback_ref())
+        del dut
+        gc.collect()
+        self.assertIsNone(callback_ref())
+
     def test(self):
         prog = MathematicalProgram()
         x = prog.NewContinuousVariables(2)
