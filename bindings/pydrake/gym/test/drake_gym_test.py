@@ -75,6 +75,15 @@ class DrakeGymTest(unittest.TestCase):
         observation, _, _, _, _ = dut.step(dut.action_space.sample())
         self.assertTrue(dut.observation_space.contains(observation))
 
+    def test_render_unsupported_mode(self):
+        """An unsupported render_mode reports a useful error from render()."""
+        dut = self._make_pass_through_env(render_mode="no_such_mode")
+        dut.reset()
+        with self.assertRaisesRegex(
+            ValueError, "Unsupported render_mode 'no_such_mode'"
+        ):
+            dut.render()
+
     def test_none_spaces_default_to_infinite_box(self):
         """Passing None for vector-valued ports builds ±inf Boxes."""
         size = 3
