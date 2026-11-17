@@ -51,6 +51,7 @@ drake_pybind_library(
         "//bindings/pydrake/common:type_pack",
         "//bindings/pydrake/common:type_safe_index_pybind",
         "//bindings/pydrake/common:value_pybind",
+        "//bindings/pydrake/solvers:borrowing_evaluator_pybind",
         "//bindings/pydrake/systems:builder_life_support_pybind",
     ],
     cc_so_name = "__init__",
