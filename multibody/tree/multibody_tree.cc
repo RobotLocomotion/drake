@@ -538,7 +538,7 @@ std::vector<JointIndex> MultibodyTree<T>::GetActuatedJointIndices(
   // Pre-finalize, derive the joints from GetJointActuatorIndices() so there is
   // only one definition of "the actuators in this model instance".
   std::vector<JointIndex> indices;
-  for (const JointActuatorIndex actuator_index :
+  for (JointActuatorIndex actuator_index :
        GetJointActuatorIndices(model_instance)) {
     indices.push_back(get_joint_actuator(actuator_index).joint().index());
   }
