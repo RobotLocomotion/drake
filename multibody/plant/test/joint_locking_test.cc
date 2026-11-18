@@ -339,6 +339,9 @@ class TrajectoryTest : public ::testing::TestWithParam<TrajectoryTestConfig> {
     if (is_discrete) {
       plant->set_discrete_contact_approximation(
           DiscreteContactApproximation::kSap);
+    } else {
+      // These continuous plants are simulated with CENIC.
+      plant->SetUseSampledOutputPorts(true);
     }
 
     const RigidBody<double>& body1 =

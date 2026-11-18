@@ -6996,7 +6996,9 @@ physics is restored.
 
 Loop closure requires a constraint solver. Discrete-time plants use
 SAP; continuous-time simulation requires the CENIC integrator (set
-systems∷SimulatorConfig∷integration_scheme to ``"cenic"``).
+systems∷SimulatorConfig∷integration_scheme to ``"cenic"``, and call
+SetUseSampledOutputPorts(true) before Finalize(); see
+CenicIntegrator).
 
 A shadow link is a link like any other in most respects (it has a pose
 and a velocity, for example), but its mass properties are derived from

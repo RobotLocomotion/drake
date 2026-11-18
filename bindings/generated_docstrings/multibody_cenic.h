@@ -107,6 +107,14 @@ the Simulator never asks the integrator to step, so nothing could ever
 be sampled. Initialize() throws in that case when the plant has
 sampled output ports.
 
+*Deprecation.** Using CenicIntegrator with a plant that does not have
+sampled output ports is deprecated, with removal on or after
+2027-03-01: Initialize() logs a deprecation warning (once per process
+for each scalar type), and a future version of Drake will refuse such
+a plant, as it does a plant with the wrong time step. Set the
+``DRAKE_DEPRECATION_RUNTIME_SEVERITY=error`` environment variable to
+see that behavior now.
+
 Initialize() replaces the plant's sample with an empty one, so the
 sampled ports report zeros until the first step; this includes
 re-initializing a Context that CENIC has already stepped. The sample
