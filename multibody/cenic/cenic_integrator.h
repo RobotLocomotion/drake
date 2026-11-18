@@ -4,6 +4,7 @@
 #include <optional>
 #include <vector>
 
+#include "drake/common/drake_deprecated.h"
 #include "drake/multibody/cenic/cenic_integrator_parameters.h"
 #include "drake/multibody/contact_solvers/icf/icf_builder.h"
 #include "drake/multibody/contact_solvers/icf/icf_external_systems_linearizer.h"
@@ -264,15 +265,14 @@ class CenicIntegrator final : public systems::IntegratorBase<T> {
   CenicIntegratorParameters for the meaning of each setting. */
   void SetParameters(const CenicIntegratorParameters& parameters);
 
-  /** Gets the current convex solver tolerances and iteration limits. This is
-  a shortcut for `GetParameters().icf_solver`. */
+  DRAKE_DEPRECATED("2027-04-01", "Use GetParameters().icf_solver instead.")
   const contact_solvers::icf::IcfSolverParameters& get_solver_parameters()
       const {
     return solver_.get_parameters();
   }
 
-  /** Sets the convex solver tolerances and iteration limits, leaving the other
-  CENIC parameters unchanged. */
+  DRAKE_DEPRECATED("2027-04-01",
+                   "Use GetParameters() and SetParameters() instead.")
   void SetSolverParameters(
       const contact_solvers::icf::IcfSolverParameters& parameters);
 

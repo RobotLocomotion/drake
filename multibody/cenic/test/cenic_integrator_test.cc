@@ -336,15 +336,14 @@ testing of parameter effects can be found in icf_solver_test. */
 TEST_P(DoublePendulum, Parameters) {
   Build();
   EXPECT_NO_THROW(simulator_->AdvanceTo(1e-2));
-  IcfSolverParameters params = integrator_->get_solver_parameters();
-  params.max_iterations = 1;  // Force solver failure.
-  integrator_->SetSolverParameters(params);
+  CenicIntegratorParameters params = integrator_->GetParameters();
+  params.icf_solver.max_iterations = 1;  // Force solver failure.
+  integrator_->SetParameters(params);
   DRAKE_EXPECT_THROWS_MESSAGE(simulator_->AdvanceTo(2e-2),
                               ".*optimization failed.*");
 }
 
-/* Checks that GetParameters() and SetParameters() round trip, and that the
-solver-only accessors are consistent with them. */
+/* Checks that GetParameters() and SetParameters() round trip. */
 TEST_P(DoublePendulum, CenicParameters) {
   Build();
   EXPECT_FALSE(integrator_->GetParameters().explicit_external_inputs);
@@ -355,6 +354,19 @@ TEST_P(DoublePendulum, CenicParameters) {
   integrator_->SetParameters(params);
   EXPECT_TRUE(integrator_->GetParameters().explicit_external_inputs);
   EXPECT_EQ(integrator_->GetParameters().icf_solver.max_iterations, 7);
+}
+
+// Remove on 2027-04-01 per deprecation of the solver-only accessors.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+/* Checks that the deprecated solver-only accessors are consistent with
+GetParameters() and SetParameters(). */
+TEST_P(DoublePendulum, DeprecatedSolverParameters) {
+  Build();
+  CenicIntegratorParameters params;
+  params.explicit_external_inputs = true;
+  params.icf_solver.max_iterations = 7;
+  integrator_->SetParameters(params);
   EXPECT_EQ(integrator_->get_solver_parameters().max_iterations, 7);
 
   // Setting only the solver parameters leaves the CENIC parameters alone.
@@ -364,6 +376,7 @@ TEST_P(DoublePendulum, CenicParameters) {
   EXPECT_TRUE(integrator_->GetParameters().explicit_external_inputs);
   EXPECT_EQ(integrator_->GetParameters().icf_solver.max_iterations, 9);
 }
+#pragma GCC diagnostic pop
 
 /* Checks that a double pendulum simulation in fixed-step mode matches the
 discrete solver. Simulation time and stepping are carefully chosen to
@@ -880,9 +893,9 @@ GTEST_TEST(CenicIntegrator, IslandsWithJointLocking) {
     auto& integrator = simulator.reset_integrator<CenicIntegrator<double>>();
     integrator.set_maximum_step_size(0.01);
     integrator.set_fixed_step_mode(true);
-    IcfSolverParameters params = integrator.get_solver_parameters();
-    params.use_islands = use_islands;
-    integrator.SetSolverParameters(params);
+    CenicIntegratorParameters params = integrator.GetParameters();
+    params.icf_solver.use_islands = use_islands;
+    integrator.SetParameters(params);
     simulator.AdvanceTo(0.5);
 
     Result result{.x = plant.GetPositionsAndVelocities(plant_context)};
@@ -975,9 +988,9 @@ GTEST_TEST(CenicIntegrator, SampledPortsWithIslands) {
     auto& integrator = simulator.reset_integrator<CenicIntegrator<double>>();
     integrator.set_maximum_step_size(0.01);
     integrator.set_fixed_step_mode(true);
-    IcfSolverParameters params = integrator.get_solver_parameters();
-    params.use_islands = use_islands;
-    integrator.SetSolverParameters(params);
+    CenicIntegratorParameters params = integrator.GetParameters();
+    params.icf_solver.use_islands = use_islands;
+    integrator.SetParameters(params);
     simulator.AdvanceTo(0.5);
 
     Result result;
