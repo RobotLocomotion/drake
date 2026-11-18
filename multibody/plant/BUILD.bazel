@@ -561,6 +561,15 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "sap_driver_joint_friction_test",
+    deps = [
+        ":compliant_contact_manager_tester",
+        ":plant",
+        "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
     name = "sap_driver_tendon_constraints_test",
     deps = [
         ":compliant_contact_manager_tester",

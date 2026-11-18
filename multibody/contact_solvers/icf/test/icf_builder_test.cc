@@ -1141,6 +1141,27 @@ GTEST_TEST(IcfBuilder, SharedJointActuatorsAllowedWithoutSampledPorts) {
   EXPECT_NO_THROW(IcfBuilder<double> builder(&plant));
 }
 
+GTEST_TEST(IcfBuilder, JointDryFrictionUnsupported) {
+  systems::DiagramBuilder<double> diagram_builder;
+  multibody::MultibodyPlantConfig plant_config{.time_step = 0.0};
+  MultibodyPlant<double>& plant =
+      multibody::AddMultibodyPlant(plant_config, &diagram_builder);
+  Parser(&plant, "Pendulum").AddModelsFromString(kRobotXml, "xml");
+  plant.Finalize();
+
+  auto diagram = diagram_builder.Build();
+  auto diagram_context = diagram->CreateDefaultContext();
+  systems::Context<double>& plant_context =
+      plant.GetMyMutableContextFromRoot(diagram_context.get());
+  plant.GetJointByName("joint2").SetDryFriction(&plant_context, 0.5);
+
+  IcfBuilder<double> builder(&plant);
+  IcfModel<double> model;
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      builder.UpdateModel(plant_context, 0.01, nullptr, nullptr, &model),
+      ".*not.*support joint dry friction.*for joint 'joint2' in.*");
+}
+
 GTEST_TEST(IcfBuilder, DeformableUnsupported) {
   systems::DiagramBuilder<double> diagram_builder;
   // TODO(#23768): MultibodyPlant (specifically, DeformableModel) does not yet

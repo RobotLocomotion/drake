@@ -7,6 +7,9 @@
 #include <numeric>
 #include <string>
 #include <utility>
+#include <vector>
+
+#include <fmt/ranges.h>
 
 #include "drake/geometry/scene_graph_config.h"
 #include "drake/geometry/scene_graph_inspector.h"
@@ -91,6 +94,29 @@ void IcfBuilder<T>::UpdateModel(
     const IcfLinearFeedbackGains<T>* actuation_feedback,
     const IcfLinearFeedbackGains<T>* external_feedback, IcfModel<T>* model) {
   DRAKE_ASSERT(model != nullptr);
+  // Joint dry friction is a context parameter, so ValidatePlant() cannot check
+  // it.
+  // TODO(xuchen-han): Share this check with
+  // MultibodyPlant::ThrowIfUnsupportedContinuousTimeDynamics(), e.g. through
+  // MultibodyPlantIcfAttorney, or remove it once ICF models joint dry friction.
+  // TODO(xuchen-han): Skip locked joints, as SapDriver does, since dry friction
+  // has no effect on them.
+  std::vector<std::string> joints_with_dry_friction;
+  for (JointIndex joint_index : plant_.GetJointIndices()) {
+    const Joint<T>& joint = plant_.get_joint(joint_index);
+    // Only joints with a single degree of freedom model dry friction.
+    if (joint.num_velocities() != 1) continue;
+    if (joint.GetDryFriction(context) != 0.0) {
+      joints_with_dry_friction.push_back(fmt::format("'{}'", joint.name()));
+    }
+  }
+  if (!joints_with_dry_friction.empty()) {
+    throw std::logic_error(fmt::format(
+        "The CENIC integrator does not yet support joint dry friction, but it "
+        "is specified for joint{} {} in the given MultibodyPlant.",
+        joints_with_dry_friction.size() == 1 ? "" : "s",
+        fmt::join(joints_with_dry_friction, ", ")));
+  }
   const SpanningForest& forest = GetInternalTree(plant_).forest();
   const int nv = forest.num_velocities();
 

@@ -3270,6 +3270,21 @@ Raises:
 See also:
     GetDefaultPose())""";
         } GetDefaultPosePair;
+        // Symbol: drake::multibody::Joint::GetDryFriction
+        struct /* GetDryFriction */ {
+          // Source: drake/multibody/tree/joint.h
+          const char* doc =
+R"""(Returns the Context dependent dry friction bound stored as a parameter
+in ``context``. Refer to default_dry_friction() for details.
+
+Parameter ``context``:
+    The context storing the state and parameters for the model to
+    which ``this`` joint belongs.
+
+Raises:
+    RuntimeError if the joint does not have a single degree of
+    freedom.)""";
+        } GetDryFriction;
         // Symbol: drake::multibody::Joint::GetMobilizerInUse
         struct /* GetMobilizerInUse */ {
           // Source: drake/multibody/tree/joint.h
@@ -3545,6 +3560,31 @@ Raises:
 See also:
     SetDefaultPose())""";
         } SetDefaultPosePair;
+        // Symbol: drake::multibody::Joint::SetDryFriction
+        struct /* SetDryFriction */ {
+          // Source: drake/multibody/tree/joint.h
+          const char* doc =
+R"""(Sets the value of the dry friction bound for this joint, stored as a
+parameter in ``context``. Refer to default_dry_friction() for details.
+
+Parameter ``context``:
+    The context storing the state and parameters for the model to
+    which ``this`` joint belongs.
+
+Parameter ``dry_friction``:
+    The dry friction bound.
+
+Raises:
+    RuntimeError if the joint does not have a single degree of
+    freedom.
+
+Raises:
+    RuntimeError if dry_friction is negative, infinite or NaN.
+
+Raises:
+    RuntimeError if T is symbolic∷Expression, since joint dry friction
+    is not supported for symbolic scalars.)""";
+        } SetDryFriction;
         // Symbol: drake::multibody::Joint::SetPose
         struct /* SetPose */ {
           // Source: drake/multibody/tree/joint.h
@@ -3748,6 +3788,32 @@ units of rad/s and tau having units of N⋅m, the coefficient of viscous
 damping has units of N⋅m⋅s. Refer to each joint's documentation for
 further details.)""";
         } default_damping_vector;
+        // Symbol: drake::multibody::Joint::default_dry_friction
+        struct /* default_dry_friction */ {
+          // Source: drake/multibody/tree/joint.h
+          const char* doc =
+R"""(Returns the default dry friction bound of this joint. The default is
+zero. Only joints with a single degree of freedom model dry friction.
+If v is the generalized velocity of this joint, dry (Coulomb) friction
+models a generalized force τ at the joint with |τ| ≤ f, where f is the
+bound returned by this function. When the joint moves, τ opposes the
+motion with τ = −f⋅sign(v). The bound does not depend on the load on
+the joint. The units of the bound depend on the joint type. For
+instance, the bound is in N⋅m for a revolute joint and in N for a
+prismatic joint.
+
+Note:
+    Only discrete MultibodyPlant models support dry friction.
+
+Note:
+    Dry friction is not supported for T = symbolic∷Expression. A
+    MultibodyPlant with a joint with non-zero default dry friction
+    cannot be converted to symbolic∷Expression.
+
+Raises:
+    RuntimeError if the joint does not have a single degree of
+    freedom.)""";
+        } default_dry_friction;
         // Symbol: drake::multibody::Joint::default_positions
         struct /* default_positions */ {
           // Source: drake/multibody/tree/joint.h
@@ -3962,6 +4028,31 @@ Raises:
 Precondition:
     the MultibodyPlant must not be finalized.)""";
         } set_default_damping_vector;
+        // Symbol: drake::multibody::Joint::set_default_dry_friction
+        struct /* set_default_dry_friction */ {
+          // Source: drake/multibody/tree/joint.h
+          const char* doc =
+R"""(Sets the default value of the dry friction bound for this joint. Refer
+to default_dry_friction() for details.
+
+Raises:
+    RuntimeError if the joint does not have a single degree of
+    freedom.
+
+Raises:
+    RuntimeError if dry_friction is negative, infinite or NaN.
+
+Raises:
+    RuntimeError if this element is not associated with a
+    MultibodyPlant.
+
+Raises:
+    RuntimeError if T is symbolic∷Expression, since joint dry friction
+    is not supported for symbolic scalars.
+
+Precondition:
+    the MultibodyPlant must not be finalized.)""";
+        } set_default_dry_friction;
         // Symbol: drake::multibody::Joint::set_default_positions
         struct /* set_default_positions */ {
           // Source: drake/multibody/tree/joint.h

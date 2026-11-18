@@ -14,7 +14,8 @@
 #include "drake/multibody/tree/rpy_ball_mobilizer.h"
 
 /* @file This file provides testing for the SapDriver's limited support for
-joint limits on joints with multiple degrees of freedom.
+joint limits and joint dry friction on joints with multiple degrees of
+freedom.
 
     Constraints are only supported by the SAP solver. Therefore, to exercise the
   relevant code paths, we arbitrarily choose one contact approximation that uses
@@ -41,12 +42,19 @@ class SapDriverTest {
                                   SapContactProblem<double>* problem) {
     driver.AddLimitConstraints(context, v_star, problem);
   }
+
+  static void AddJointFrictionConstraints(const SapDriver<double>& driver,
+                                          const Context<double>& context,
+                                          SapContactProblem<double>* problem) {
+    driver.AddJointFrictionConstraints(context, problem);
+  }
 };
 
 // This joint is used to verify the support of multi-DOF joints with/without
-// joint limits. In particular, SapDriver does not support limits
-// for constraints with more than 1 DOF and therefore we expect the driver to
-// throw an exception when building the problem.
+// joint limits. In particular, SapDriver does not support limits for joints
+// with more than 1 DOF and therefore we expect the driver to throw an exception
+// when building the problem. Joints with more than 1 DOF do not model dry
+// friction and therefore we expect the driver to skip them.
 // The implementation for this joint is incomplete. Only the strictly necessary
 // overrides for the unit tests in this file are implemented.
 template <typename T>
@@ -210,9 +218,11 @@ GTEST_TEST(MultiDofJointWithLimitsTest,
 
   EXPECT_NO_THROW(
       SapDriverTest::AddLimitConstraints(driver, *context, v_star, &problem));
+  EXPECT_NO_THROW(
+      SapDriverTest::AddJointFrictionConstraints(driver, *context, &problem));
 
-  // No limit constraints are added since the only one joint in the model has
-  // no limits.
+  // No constraints are added since the only one joint in the model has no
+  // limits, and joints with more than one DOF do not model dry friction.
   EXPECT_EQ(problem.num_constraints(), 0);
 }
 

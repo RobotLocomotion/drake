@@ -500,7 +500,15 @@ void DoScalarDependentDefinitions(py::module_ m, T) {
             py::keep_alive<0, 2>(), return_value_policy_for_scalar_type<T>(),
             cls_doc.GetDampingVector.doc)
         .def("SetDampingVector", &Class::SetDampingVector, py::arg("context"),
-            py::arg("damping"), cls_doc.SetDampingVector.doc);
+            py::arg("damping"), cls_doc.SetDampingVector.doc)
+        .def("default_dry_friction", &Class::default_dry_friction,
+            cls_doc.default_dry_friction.doc)
+        .def("set_default_dry_friction", &Class::set_default_dry_friction,
+            py::arg("dry_friction"), cls_doc.set_default_dry_friction.doc)
+        .def("GetDryFriction", &Class::GetDryFriction, py::arg("context"),
+            cls_doc.GetDryFriction.doc)
+        .def("SetDryFriction", &Class::SetDryFriction, py::arg("context"),
+            py::arg("dry_friction"), cls_doc.SetDryFriction.doc);
   }
 
   // BallRpyJoint

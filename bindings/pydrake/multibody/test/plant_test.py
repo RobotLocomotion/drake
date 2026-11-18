@@ -2377,6 +2377,8 @@ class TestPlant(unittest.TestCase):
         array_T = np.vectorize(T)
         damping = 2.0
         different_damping = 3.4
+        dry_friction = 0.25
+        different_dry_friction = 0.5
         x_axis = [1.0, 0.0, 0.0]
         X_PC = RigidTransform_[float](p=[1.0, 2.0, 3.0])
 
@@ -2531,6 +2533,27 @@ class TestPlant(unittest.TestCase):
                 )
                 joint.set_default_damping_vector(damping=damping_vector)
 
+            # Only joints with one degree of freedom model dry friction.
+            if joint.num_velocities() == 1:
+                # Joints model no dry friction by default.
+                self.assertEqual(joint.default_dry_friction(), 0.0)
+                if T == Expression:
+                    # Dry friction is not supported for symbolic scalars.
+                    with self.assertRaisesRegex(
+                        RuntimeError, "not supported for T = symbolic"
+                    ):
+                        joint.set_default_dry_friction(
+                            dry_friction=dry_friction
+                        )
+                else:
+                    joint.set_default_dry_friction(
+                        dry_friction=different_dry_friction
+                    )
+                    self.assertEqual(
+                        joint.default_dry_friction(), different_dry_friction
+                    )
+                    joint.set_default_dry_friction(dry_friction=dry_friction)
+
             if joint.name() in ["prismatic", "revolute"]:
                 # This must be called pre-Finalize().
                 joint.set_default_damping(damping=damping)
@@ -2579,6 +2602,33 @@ class TestPlant(unittest.TestCase):
                     array_T(different_damping_vector),
                 )
                 joint.SetDampingVector(context, array_T(damping_vector))
+
+            if joint.num_velocities() == 1:
+                if T == Expression:
+                    # Dry friction is not supported for symbolic scalars.
+                    numpy_compare.assert_equal(
+                        joint.GetDryFriction(context=context), T(0.0)
+                    )
+                    with self.assertRaisesRegex(
+                        RuntimeError, "not supported for T = symbolic"
+                    ):
+                        joint.SetDryFriction(
+                            context=context, dry_friction=T(dry_friction)
+                        )
+                else:
+                    numpy_compare.assert_equal(
+                        joint.GetDryFriction(context=context), T(dry_friction)
+                    )
+                    joint.SetDryFriction(
+                        context=context, dry_friction=T(different_dry_friction)
+                    )
+                    numpy_compare.assert_equal(
+                        joint.GetDryFriction(context=context),
+                        T(different_dry_friction),
+                    )
+                    joint.SetDryFriction(
+                        context=context, dry_friction=T(dry_friction)
+                    )
 
             if joint.name() == "ball_rpy":
                 self.assertEqual(joint.default_damping(), damping)

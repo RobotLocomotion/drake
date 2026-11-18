@@ -6652,6 +6652,90 @@ INSTANTIATE_TEST_SUITE_P(ContinousAndDiscreteConstraints,
                          MultibodyPlantConstraintTestTimeStepParam,
                          ::testing::Values(0.0, 0.1));
 
+// A continuous plant with joint dry friction can be finalized, so that it can
+// still be used for kinematics or control. Evaluating its dynamics throws,
+// both for a default dry friction and for one set in the context.
+GTEST_TEST(MultibodyPlantTest, ContinuousDynamicsRejectJointDryFriction) {
+  MultibodyPlant<double> plant(0.0);
+  const RigidBody<double>& body =
+      plant.AddRigidBody("body", SpatialInertia<double>::MakeUnitary());
+  const RevoluteJoint<double>& joint =
+      plant.AddJoint<RevoluteJoint>("joint", plant.world_body(), std::nullopt,
+                                    body, std::nullopt, Vector3d::UnitZ());
+  plant.get_mutable_joint(joint.index()).set_default_dry_friction(0.5);
+  EXPECT_NO_THROW(plant.Finalize());
+  auto context = plant.CreateDefaultContext();
+  const std::string expected_message =
+      ".*continuous-time dynamics do not support joint dry friction.*"
+      "non-zero for joint 'joint'\\..*";
+  DRAKE_EXPECT_THROWS_MESSAGE(plant.EvalTimeDerivatives(*context),
+                              expected_message);
+
+  joint.SetDryFriction(context.get(), 0.0);
+  EXPECT_NO_THROW(plant.EvalTimeDerivatives(*context));
+
+  joint.SetDryFriction(context.get(), 0.5);
+  DRAKE_EXPECT_THROWS_MESSAGE(plant.EvalTimeDerivatives(*context),
+                              expected_message);
+}
+
+// Adds a body to `plant` and connects it to the world with a revolute joint
+// named "joint".
+template <typename T>
+const RevoluteJoint<T>& AddRevoluteJoint(MultibodyPlant<T>* plant) {
+  const RigidBody<T>& body =
+      plant->AddRigidBody("body", SpatialInertia<double>::MakeUnitary());
+  return plant->template AddJoint<RevoluteJoint>(
+      "joint", plant->world_body(), std::nullopt, body, std::nullopt,
+      Vector3d::UnitZ());
+}
+
+// Joint dry friction is not supported for T = symbolic::Expression.
+GTEST_TEST(MultibodyPlantTest, JointDryFrictionUnsupportedForSymbolic) {
+  // A plant with non-zero default dry friction cannot be converted to
+  // symbolic::Expression, while the conversion to AutoDiffXd is unaffected.
+  MultibodyPlant<double> plant(0.0);
+  const RevoluteJoint<double>& joint = AddRevoluteJoint(&plant);
+  plant.get_mutable_joint(joint.index()).set_default_dry_friction(0.5);
+  plant.Finalize();
+  const std::string reason =
+      ".*because joint 'joint' has non-zero dry friction.*";
+  DRAKE_EXPECT_THROWS_MESSAGE(plant.ToSymbolic(),
+                              ".*symbolic::Expression" + reason);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      MultibodyPlant<symbolic::Expression>(plant),
+      "Joint 'joint' has non-zero dry friction, which is not supported for "
+      "T = symbolic::Expression\\.");
+  std::unique_ptr<MultibodyPlant<AutoDiffXd>> plant_ad =
+      systems::System<double>::ToAutoDiffXd(plant);
+  DRAKE_EXPECT_THROWS_MESSAGE(plant_ad->ToSymbolic(), reason);
+
+  // Without dry friction, the plant converts to symbolic::Expression, but dry
+  // friction cannot be set in the symbolic plant's context.
+  MultibodyPlant<double> plant_without_friction(0.0);
+  AddRevoluteJoint(&plant_without_friction);
+  plant_without_friction.Finalize();
+  std::unique_ptr<MultibodyPlant<symbolic::Expression>> plant_sym =
+      systems::System<double>::ToSymbolic(plant_without_friction);
+  const RevoluteJoint<symbolic::Expression>& joint_sym =
+      plant_sym->GetJointByName<RevoluteJoint>("joint");
+  auto context = plant_sym->CreateDefaultContext();
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      joint_sym.SetDryFriction(context.get(), 0.5),
+      "SetDryFriction\\(\\): not supported for T = symbolic::Expression\\.");
+  EXPECT_NO_THROW(plant_sym->EvalTimeDerivatives(*context));
+
+  // Nor can the default dry friction be set on a symbolic plant.
+  MultibodyPlant<symbolic::Expression> symbolic_plant(0.0);
+  const RevoluteJoint<symbolic::Expression>& symbolic_joint =
+      AddRevoluteJoint(&symbolic_plant);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      symbolic_plant.get_mutable_joint(symbolic_joint.index())
+          .set_default_dry_friction(0.5),
+      "set_default_dry_friction\\(\\): not supported for "
+      "T = symbolic::Expression\\.");
+}
+
 }  // namespace
 }  // namespace multibody
 }  // namespace drake
