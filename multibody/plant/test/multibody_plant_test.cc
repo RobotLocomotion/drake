@@ -6537,7 +6537,8 @@ GTEST_TEST(MultibodyPlantTest, ContinuousDynamicsRejectJointDryFriction) {
   EXPECT_NO_THROW(plant.Finalize());
   auto context = plant.CreateDefaultContext();
   const std::string expected_message =
-      ".*continuous time.*does not support joint dry friction.*'joint'.*";
+      ".*continuous-time dynamics do not support joint dry friction.*"
+      "non-zero for joint 'joint'\\..*";
   DRAKE_EXPECT_THROWS_MESSAGE(plant.EvalTimeDerivatives(*context),
                               expected_message);
 

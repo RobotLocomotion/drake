@@ -177,11 +177,6 @@ class SapDriver {
   // with a non-zero dry friction bound (see Joint::GetDryFriction()) in the
   // parameters stored in `context`. Locked joints are skipped since their
   // velocity is prescribed.
-  // @throws std::exception if a joint has a negative or NaN dry friction bound.
-  // Joint::SetDryFriction() rejects these values. Therefore reading one here
-  // means the parameter in `context` was corrupted by bypassing the Joint API
-  // altogether, e.g. by writing to the Context's numeric parameters directly,
-  // which is not supported.
   // @pre problem must not be nullptr.
   void AddJointFrictionConstraints(
       const systems::Context<T>& context,

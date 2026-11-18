@@ -3579,7 +3579,7 @@ Raises:
     freedom.
 
 Raises:
-    RuntimeError if dry_friction is negative.)""";
+    RuntimeError if dry_friction is negative, infinite or NaN.)""";
         } SetDryFriction;
         // Symbol: drake::multibody::Joint::SetPose
         struct /* SetPose */ {
@@ -4031,7 +4031,7 @@ Raises:
     freedom.
 
 Raises:
-    RuntimeError if dry_friction is negative.
+    RuntimeError if dry_friction is negative, infinite or NaN.
 
 Raises:
     RuntimeError if this element is not associated with a

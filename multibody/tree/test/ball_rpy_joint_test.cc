@@ -129,7 +129,6 @@ TEST_F(BallRpyJointTest, DryFriction) {
   EXPECT_THROW(joint_->GetDryFriction(*context_), std::exception);
   EXPECT_THROW(joint_->SetDryFriction(context_.get(), 0.0), std::exception);
 
-  // The default can only be set before the model is finalized.
   internal::MultibodyTree<double> model;
   const RigidBody<double>& body =
       model.AddLink("Body", SpatialInertia<double>::NaN());

@@ -6464,8 +6464,8 @@ Warning:
     provided. If your simulation requires joint limits currently you
     must use a discrete MultibodyPlant model. Joint dry friction is
     not supported either; evaluating the dynamics throws if any joint
-    has a non-zero dry friction bound, see
-    Joint∷default_dry_friction().
+    has a non-zero dry friction bound in the Context, see
+    Joint∷GetDryFriction().
 
 Raises:
     RuntimeError if ``time_step`` is negative.)""";

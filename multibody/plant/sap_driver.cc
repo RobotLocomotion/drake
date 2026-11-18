@@ -64,6 +64,15 @@ using drake::systems::DependencyTicket;
 namespace drake {
 namespace multibody {
 namespace internal {
+namespace {
+
+// Dimensionless parameter σ used by SAP to estimate the regularization of
+// friction, see [Castro et al., 2021]. Contact constraints and joint dry
+// friction constraints use the same value.
+// TODO(amcastro-tri): consider exposing this parameter.
+constexpr double kFrictionSigma = 1.0e-3;
+
+}  // namespace
 
 template <typename T>
 SapDriver<T>::SapDriver(const CompliantContactManager<T>* manager,
@@ -209,11 +218,6 @@ std::vector<RotationMatrix<T>> SapDriver<T>::AddContactConstraints(
     const systems::Context<T>& context, SapContactProblem<T>* problem) const {
   DRAKE_DEMAND(problem != nullptr);
 
-  // Parameters used by SAP to estimate regularization, see [Castro et al.,
-  // 2021].
-  // TODO(amcastro-tri): consider exposing these parameters.
-  constexpr double sigma = 1.0e-3;
-
   const DiscreteContactData<DiscreteContactPair<T>>& contact_pairs =
       manager().EvalDiscreteContactPairs(context);
   const int num_contacts = contact_pairs.size();
@@ -235,7 +239,7 @@ std::vector<RotationMatrix<T>> SapDriver<T>::AddContactConstraints(
 
     auto make_sap_parameters = [&]() {
       return typename SapFrictionConeConstraint<T>::Parameters{
-          friction, stiffness, dissipation_time_scale, beta, sigma};
+          friction, stiffness, dissipation_time_scale, beta, kFrictionSigma};
     };
 
     auto make_hunt_crossley_parameters = [&]() {
@@ -252,7 +256,7 @@ std::vector<RotationMatrix<T>> SapDriver<T>::AddContactConstraints(
           DRAKE_UNREACHABLE();
       }
       return typename SapHuntCrossleyConstraint<T>::Parameters{
-          model, friction, stiffness, damping, vs, sigma};
+          model, friction, stiffness, damping, vs, kFrictionSigma};
     };
 
     R_WC.push_back(pair.R_WC);
@@ -396,11 +400,6 @@ void SapDriver<T>::AddJointFrictionConstraints(
     const systems::Context<T>& context, SapContactProblem<T>* problem) const {
   DRAKE_DEMAND(problem != nullptr);
 
-  // Dimensionless regularization parameter, see SapJointFrictionConstraint. We
-  // use the same value as for the regularization of friction in contact
-  // constraints, see AddContactConstraints().
-  constexpr double kSigma = 1.0e-3;
-
   const SpanningForest& forest = get_forest();
   for (JointIndex joint_index : plant().GetJointIndices()) {
     const Joint<T>& joint = plant().get_joint(joint_index);
@@ -408,16 +407,6 @@ void SapDriver<T>::AddJointFrictionConstraints(
     if (joint.num_velocities() != 1) continue;
     const T& dry_friction = joint.GetDryFriction(context);
     if (dry_friction == 0.0) continue;
-
-    // Joint::SetDryFriction() rejects negative and NaN values. Reading one here
-    // means the parameter was corrupted by bypassing the Joint API altogether.
-    // We throw instead of letting SapJointFrictionConstraint abort on it.
-    if (!(dry_friction > 0.0)) {
-      throw std::logic_error(fmt::format(
-          "Joint '{}' has an invalid dry friction. Dry friction must be "
-          "non-negative. See Joint::SetDryFriction().",
-          joint.name()));
-    }
 
     // Constraints do not act on locked joints since their velocity is
     // prescribed.
@@ -429,8 +418,8 @@ void SapDriver<T>::AddJointFrictionConstraints(
     const int tree_nv = tree.nv();
     const int tree_dof = velocity_start - tree.v_start();
 
-    typename SapJointFrictionConstraint<T>::Parameters parameters{dry_friction,
-                                                                  kSigma};
+    typename SapJointFrictionConstraint<T>::Parameters parameters{
+        dry_friction, kFrictionSigma};
     problem->AddConstraint(std::make_unique<SapJointFrictionConstraint<T>>(
         tree_index, tree_dof, tree_nv, std::move(parameters)));
   }

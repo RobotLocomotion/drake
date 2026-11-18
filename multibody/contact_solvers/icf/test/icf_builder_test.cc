@@ -1159,7 +1159,7 @@ GTEST_TEST(IcfBuilder, JointDryFrictionUnsupported) {
   IcfModel<double> model;
   DRAKE_EXPECT_THROWS_MESSAGE(
       builder.UpdateModel(plant_context, 0.01, nullptr, nullptr, &model),
-      ".*not.*support joint dry friction.*'joint2'.*");
+      ".*not.*support joint dry friction.*for joint 'joint2' in.*");
 }
 
 GTEST_TEST(IcfBuilder, DeformableUnsupported) {

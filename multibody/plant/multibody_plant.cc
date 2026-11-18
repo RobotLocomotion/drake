@@ -3445,6 +3445,9 @@ void MultibodyPlant<T>::ThrowIfUnsupportedContinuousTimeDynamics(
   }
 
   // Reject joint dry friction.
+  // TODO(xuchen-han): Remove this scan over all joints on every evaluation of
+  // the dynamics, e.g. by caching the indices of the joints with a single
+  // degree of freedom at Finalize().
   std::vector<std::string> joints_with_dry_friction;
   for (JointIndex joint_index : GetJointIndices()) {
     const Joint<T>& joint = get_joint(joint_index);
@@ -3455,12 +3458,13 @@ void MultibodyPlant<T>::ThrowIfUnsupportedContinuousTimeDynamics(
     }
   }
   if (!joints_with_dry_friction.empty()) {
+    const char* s = (joints_with_dry_friction.size() == 1 ? "" : "s");
     throw std::logic_error(fmt::format(
-        "Currently this MultibodyPlant is set to use continuous time. "
-        "Continuous time does not support joint dry friction, but it is "
-        "specified for joints {}. Use a discrete time model, or set the dry "
-        "friction of these joints to zero, see Joint::SetDryFriction().",
-        fmt::join(joints_with_dry_friction, ", ")));
+        "Standard continuous-time dynamics do not support joint dry friction, "
+        "but it is non-zero for joint{} {}. Use a discrete-time plant with "
+        "SAP, or set the dry friction of the joint{} to zero, see "
+        "Joint::SetDryFriction().",
+        s, fmt::join(joints_with_dry_friction, ", "), s));
   }
 
   // TODO(#24061): consider rejecting models with joint limits here, once CENIC

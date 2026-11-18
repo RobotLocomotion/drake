@@ -154,6 +154,9 @@ TEST_F(RevoluteJointTest, DryFriction) {
   EXPECT_THROW(
       joint.set_default_dry_friction(std::numeric_limits<double>::quiet_NaN()),
       std::exception);
+  EXPECT_THROW(
+      joint.set_default_dry_friction(std::numeric_limits<double>::infinity()),
+      std::exception);
 
   // Expect to throw for a joint that is not part of a model.
   RevoluteJoint<double> orphan("orphan", joint.frame_on_parent(),
@@ -199,6 +202,9 @@ TEST_F(RevoluteJointTest, ContextDependentAccess) {
   EXPECT_THROW(joint1_->SetDryFriction(context_.get(), -1), std::exception);
   EXPECT_THROW(joint1_->SetDryFriction(
                    context_.get(), std::numeric_limits<double>::quiet_NaN()),
+               std::exception);
+  EXPECT_THROW(joint1_->SetDryFriction(context_.get(),
+                                       std::numeric_limits<double>::infinity()),
                std::exception);
 }
 

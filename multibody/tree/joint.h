@@ -806,13 +806,14 @@ class Joint : public MultibodyElement<T> {
   /// default_dry_friction() for details.
   /// @throws std::exception if the joint does not have a single degree of
   ///   freedom.
-  /// @throws std::exception if dry_friction is negative.
+  /// @throws std::exception if dry_friction is negative, infinite or NaN.
   /// @throws std::exception if this element is not associated with a
   ///   MultibodyPlant.
   /// @pre the MultibodyPlant must not be finalized.
   void set_default_dry_friction(double dry_friction) {
     DRAKE_THROW_UNLESS(num_velocities() == 1);
     DRAKE_THROW_UNLESS(dry_friction >= 0);
+    DRAKE_THROW_UNLESS(dry_friction < std::numeric_limits<double>::infinity());
     DRAKE_THROW_UNLESS(this->has_parent_tree());
     DRAKE_DEMAND(!this->get_parent_tree().is_finalized());
     dry_friction_ = dry_friction;
@@ -825,11 +826,12 @@ class Joint : public MultibodyElement<T> {
   /// @param[in] dry_friction The dry friction bound.
   /// @throws std::exception if the joint does not have a single degree of
   ///   freedom.
-  /// @throws std::exception if dry_friction is negative.
+  /// @throws std::exception if dry_friction is negative, infinite or NaN.
   void SetDryFriction(systems::Context<T>* context,
                       const T& dry_friction) const {
     DRAKE_THROW_UNLESS(num_velocities() == 1);
     DRAKE_THROW_UNLESS(dry_friction >= 0);
+    DRAKE_THROW_UNLESS(dry_friction < std::numeric_limits<double>::infinity());
     context->get_mutable_numeric_parameter(dry_friction_parameter_index_)
         .SetAtIndex(0, dry_friction);
   }

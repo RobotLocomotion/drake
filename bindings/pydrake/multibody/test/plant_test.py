@@ -2596,13 +2596,18 @@ class TestPlant(unittest.TestCase):
 
             if joint.num_velocities() == 1:
                 numpy_compare.assert_equal(
-                    joint.GetDryFriction(context), T(dry_friction)
+                    joint.GetDryFriction(context=context), T(dry_friction)
                 )
-                joint.SetDryFriction(context, T(different_dry_friction))
+                joint.SetDryFriction(
+                    context=context, dry_friction=T(different_dry_friction)
+                )
                 numpy_compare.assert_equal(
-                    joint.GetDryFriction(context), T(different_dry_friction)
+                    joint.GetDryFriction(context=context),
+                    T(different_dry_friction),
                 )
-                joint.SetDryFriction(context, T(dry_friction))
+                joint.SetDryFriction(
+                    context=context, dry_friction=T(dry_friction)
+                )
 
             if joint.name() == "ball_rpy":
                 self.assertEqual(joint.default_damping(), damping)
