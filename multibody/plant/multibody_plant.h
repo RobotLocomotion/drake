@@ -4879,14 +4879,13 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// point Bp of frame B with respect to "speeds" 𝑠. It is calculated with
   /// CalcJacobianTranslationalVelocity().
   ///
-  /// H𝑠_V_ABp denotes the derivatives of J𝑠_V_ABp along each of the "speeds"
-  /// 𝑠, taken in the frame E in which J𝑠_V_ABp is expressed. It is calculated
-  /// with CalcHessianSpatialVelocity().
+  /// HJ𝑠_V_ABp_E denotes the "Hessian-like" quantity [D₁ … Dₙ], where Dᵢ is
+  /// ∂(ᴱd/dt J𝑠_V_ABp_E)/∂𝑠ᵢ. It is calculated by CalcHessianSpatialVelocity().
   ///
   /// J𝑠_v_AScm_E denotes the translational velocity Jacobian in a frame A of a
   /// point Scm with respect to "speeds" 𝑠, where point Scm is the center of
   /// mass of a system S. It is calculated with
-  /// CalcJacobianCenterOfMassTranslationalVelocity()
+  /// CalcJacobianCenterOfMassTranslationalVelocity().
   ///@{
 
   /// (Internal use only) Returns the System Jacobian Jv_V_WB(q) in block form.
@@ -5040,13 +5039,9 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// </pre>
   /// HJ𝑠_V_ABp_E (n × 6 × n) and D (n × n × 6) hold the same 6n² numbers in
   /// different orders.
-  /// @note The special prefix HJ signifies derivatives of a Jacobian. Unlike a
-  /// conventional Hessian, HJ𝑠_V_ABp_E is generally not symmetric (Dᵢⱼ ≠ Dⱼᵢ).
-  /// Asymmetry arises in its angular rows because angular velocity is generally
-  /// not the time derivative of any quantity. Its translational rows are a
-  /// conventional Hessian ∂²(p_AoBp_A)/∂qᵢ∂qⱼ when E = A and 𝑠 = q̇, but are
-  /// generally asymmetric otherwise.
-  /// @note Some uses for the result returned by this function include:
+  ///
+  /// Some uses for the result returned by this function include:
+  ///
   /// - Calculations using partial derivatives of J𝑠_V_ABp_E with respect to q,
   ///   e.g., Newton steps in inverse kinematics, gradients of manipulability,
   ///   trajectory-optimization constraints, and mass matrix partial
@@ -5061,6 +5056,12 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   ///   ᴱd/dt(J𝑠_V_ABp_E) = Σᵢ Dᵢ(J𝑠_V_ABp_E) ⋅ 𝑠ᵢ.
   /// - Linearizing ᴬd/dt(V_ABp) with respect to 𝑠 (e.g., for model-predictive
   ///   control) uses ∂(ᴬd/dt V_ABp)/∂𝑠ⱼ = 2 Σᵢ 𝑠ᵢ Sᵢⱼ (E = A, j = 1 … n).
+  /// @note The special prefix HJ signifies derivatives of a Jacobian. Unlike a
+  /// conventional Hessian, HJ𝑠_V_ABp_E is generally not symmetric (Dᵢⱼ ≠ Dⱼᵢ).
+  /// Asymmetry arises in its angular rows because angular velocity is generally
+  /// not the time derivative of any quantity. Its translational rows are a
+  /// conventional Hessian ∂²(p_AoBp_A)/∂qᵢ∂qⱼ when E = A and 𝑠 = q̇, but are
+  /// generally asymmetric otherwise.
   /// @param[in] context The state of the multibody system.
   /// @param[in] with_respect_to Enum equal to JacobianWrtVariable::kQDot or
   /// JacobianWrtVariable::kV, indicating whether 𝑠 = q̇ (time-derivatives of
@@ -5073,14 +5074,14 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// @param[in] frame_E The frame in which the derivatives are taken and in
   /// which `J𝑠_V_ABp` and its derivatives are expressed. Changing frame_E
   /// changes the result by more than a re-expression.
-  /// @param[out] Hs_V_ABp_E On output, a list of n matrices (resized as
+  /// @param[out] HJs_V_ABp_E On output, a list of n matrices (resized as
   /// needed), where n is the number of elements in 𝑠, whose iᵗʰ element is
   /// `Dᵢ(J𝑠_V_ABp_E)`, a `6 x n` matrix with the same rows and columns as
   /// `J𝑠_V_ABp_E`. The result is a function of only generalized positions q
   /// (which are pulled from the context).
   /// @see See @ref Jacobian_functions "Jacobian functions" for related
   /// functions.
-  /// @throws std::exception if `Hs_V_ABp_E` is nullptr.
+  /// @throws std::exception if `HJs_V_ABp_E` is nullptr.
   /// @throws std::exception if `with_respect_to` is JacobianWrtVariable::kQDot
   /// and a joint with q̇ ≠ v (e.g., a floating or ball joint) is on the
   /// kinematic path between frame_A and frame_B (not yet supported).
@@ -5092,11 +5093,11 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
                                   const Eigen::Ref<const Vector3<T>>& p_BoBp_B,
                                   const Frame<T>& frame_A,
                                   const Frame<T>& frame_E,
-                                  std::vector<Matrix6X<T>>* Hs_V_ABp_E) const {
+                                  std::vector<Matrix6X<T>>* HJs_V_ABp_E) const {
     this->ValidateContext(context);
     internal_tree().CalcHessianSpatialVelocity(context, with_respect_to,
                                                frame_B, p_BoBp_B, frame_A,
-                                               frame_E, Hs_V_ABp_E);
+                                               frame_E, HJs_V_ABp_E);
   }
 
   /// (Advanced) Computes τ = Jᵀ⋅F, the transpose-times-vector product of the

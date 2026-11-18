@@ -3835,6 +3835,23 @@ Sizes and definitions of the symbols used above:
 HJ𝑠_V_ABp_E (n × 6 × n) and D (n × n × 6) hold the same 6n² numbers in
 different orders.
 
+Some uses for the result returned by this function include:
+
+- Calculations using partial derivatives of J𝑠_V_ABp_E with respect to q,
+  e.g., Newton steps in inverse kinematics, gradients of manipulability,
+  trajectory-optimization constraints, and mass matrix partial
+  derivatives. For 𝑠 = q̇, ᴱ∂(Jq̇_V_ABp_E)/∂qᵢ = Dᵢ(Jq̇_V_ABp_E).
+  For 𝑠 = v, ᴱ∂(Jv_V_ABp_E)/∂qₖ = Σᵢ Dᵢ(Jv_V_ABp_E) ⋅ N⁺ᵢₖ(q),
+  where N⁺(q) is returned by MakeQDotToVelocityMap() (valid for unit
+  quaternions and for roll-pitch-yaw angles away from gimbal lock).
+- Calculations needing partial derivatives of a Jacobian in a frame other
+  than A, e.g., the end-effector or body frame B used by many controllers.
+- Task-space controllers use the matrix ᴬd/dt(J𝑠_V_ABp), e.g., for the
+  time derivative of a null-space projector. To compute it, use E = A in
+  ᴱd/dt(J𝑠_V_ABp_E) = Σᵢ Dᵢ(J𝑠_V_ABp_E) ⋅ 𝑠ᵢ.
+- Linearizing ᴬd/dt(V_ABp) with respect to 𝑠 (e.g., for model-predictive
+  control) uses ∂(ᴬd/dt V_ABp)/∂𝑠ⱼ = 2 Σᵢ 𝑠ᵢ Sᵢⱼ (E = A, j = 1 … n).
+
 Note:
     The special prefix HJ signifies derivatives of a Jacobian. Unlike
     a conventional Hessian, HJ𝑠_V_ABp_E is generally not symmetric
@@ -3842,24 +3859,6 @@ Note:
     velocity is generally not the time derivative of any quantity. Its
     translational rows are a conventional Hessian ∂²(p_AoBp_A)/∂qᵢ∂qⱼ
     when E = A and 𝑠 = q̇, but are generally asymmetric otherwise.
-
-Note:
-    Some uses for the result returned by this function include: -
-    Calculations using partial derivatives of J𝑠_V_ABp_E with respect
-    to q, e.g., Newton steps in inverse kinematics, gradients of
-    manipulability, trajectory-optimization constraints, and mass
-    matrix partial derivatives. For 𝑠 = q̇, ᴱ∂(Jq̇_V_ABp_E)/∂qᵢ =
-    Dᵢ(Jq̇_V_ABp_E). For 𝑠 = v, ᴱ∂(Jv_V_ABp_E)/∂qₖ = Σᵢ Dᵢ(Jv_V_ABp_E)
-    ⋅ N⁺ᵢₖ(q), where N⁺(q) is returned by MakeQDotToVelocityMap()
-    (valid for unit quaternions and for roll-pitch-yaw angles away
-    from gimbal lock). - Calculations needing partial derivatives of a
-    Jacobian in a frame other than A, e.g., the end-effector or body
-    frame B used by many controllers. - Task-space controllers use the
-    matrix ᴬd/dt(J𝑠_V_ABp), e.g., for the time derivative of a
-    null-space projector. To compute it, use E = A in
-    ᴱd/dt(J𝑠_V_ABp_E) = Σᵢ Dᵢ(J𝑠_V_ABp_E) ⋅ 𝑠ᵢ. - Linearizing
-    ᴬd/dt(V_ABp) with respect to 𝑠 (e.g., for model-predictive
-    control) uses ∂(ᴬd/dt V_ABp)/∂𝑠ⱼ = 2 Σᵢ 𝑠ᵢ Sᵢⱼ (E = A, j = 1 … n).
 
 Parameter ``context``:
     The state of the multibody system.
@@ -3885,7 +3884,7 @@ Parameter ``frame_E``:
     ``J𝑠_V_ABp`` and its derivatives are expressed. Changing frame_E
     changes the result by more than a re-expression.
 
-Parameter ``Hs_V_ABp_E``:
+Parameter ``HJs_V_ABp_E``:
     On output, a list of n matrices (resized as needed), where n is
     the number of elements in 𝑠, whose iᵗʰ element is
     ``Dᵢ(J𝑠_V_ABp_E)``, a ``6 x n`` matrix with the same rows and
@@ -3896,7 +3895,7 @@ See also:
     See Jacobian_functions "Jacobian functions" for related functions.
 
 Raises:
-    RuntimeError if ``Hs_V_ABp_E`` is nullptr.
+    RuntimeError if ``HJs_V_ABp_E`` is nullptr.
 
 Raises:
     RuntimeError if ``with_respect_to`` is JacobianWrtVariable∷kQDot
