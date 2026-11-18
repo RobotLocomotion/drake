@@ -10,6 +10,7 @@ load(
     "//tools/skylark:drake_py.bzl",
     "drake_py_unittest",
 )
+load("//tools/skylark:drake_sh.bzl", "drake_sh_test")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -181,6 +182,41 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "coal_backend",
+    srcs = ["coal_backend.cc"],
+    hdrs = ["coal_backend.h"],
+    internal = True,
+    visibility = [
+        "//geometry:__pkg__",
+    ],
+    deps = [
+        ":proximity_utilities",
+        "//common:drake_export",
+        "//common:essential",
+        "//math:geometric_transform",
+        "@coal_internal//:coal",
+    ],
+)
+
+drake_cc_library(
+    name = "collision_backend",
+    srcs = ["collision_backend.cc"],
+    hdrs = ["collision_backend.h"],
+    internal = True,
+    visibility = [
+        "//geometry:__pkg__",
+    ],
+    deps = [
+        ":coal_backend",
+        ":fcl_backend",
+        "//common:autodiff",
+        "//common:essential",
+        "//common/symbolic:expression",
+        "//geometry:collision_backend",
+    ],
+)
+
+drake_cc_library(
     name = "collision_filter",
     srcs = ["collision_filter.cc"],
     hdrs = ["collision_filter.h"],
@@ -201,11 +237,11 @@ drake_cc_library(
         "//geometry:__pkg__",
     ],
     deps = [
+        ":collision_backend",
         ":collision_filter",
         ":proximity_utilities",
         "//common:drake_export",
         "//geometry:geometry_ids",
-        "@fcl_internal//:fcl",
     ],
 )
 
@@ -314,6 +350,7 @@ drake_cc_library(
     deps = [
         ":bv",
         ":bvh",
+        ":collision_backend",
         ":proximity_utilities",
         ":triangle_surface_mesh",
         ":volume_mesh",
@@ -325,7 +362,6 @@ drake_cc_library(
         "//geometry:shape_specification",
         "//geometry/query_results:signed_distance_to_point",
         "//math:geometric_transform",
-        "@fcl_internal//:fcl",
     ],
     implementation_deps = [
         ":obj_to_surface_mesh",
@@ -343,6 +379,7 @@ drake_cc_library(
         "//geometry:__pkg__",
     ],
     deps = [
+        ":collision_backend",
         ":collision_filter",
         ":distance_to_point_callback",
         ":distance_to_shape_touching",
@@ -363,6 +400,22 @@ drake_cc_library(
         "//geometry:__pkg__",
     ],
     deps = [
+        ":collision_backend",
+        "//common:drake_export",
+        "//common:essential",
+        "//math:geometric_transform",
+    ],
+)
+
+drake_cc_library(
+    name = "fcl_backend",
+    hdrs = ["fcl_backend.h"],
+    internal = True,
+    visibility = [
+        "//geometry:__pkg__",
+    ],
+    deps = [
+        ":proximity_utilities",
         "//common:drake_export",
         "//common:essential",
         "//math:geometric_transform",
@@ -400,11 +453,11 @@ drake_cc_library(
         "//geometry:__pkg__",
     ],
     deps = [
+        ":collision_backend",
         ":collision_filter",
         ":proximity_utilities",
         "//common:drake_export",
         "//common:sorted_pair",
-        "@fcl_internal//:fcl",
         "@fmt",
     ],
 )
@@ -631,6 +684,7 @@ drake_cc_library(
     ],
     implementation_deps = [
         ":distance_to_point_callback",
+        ":fcl_backend",
         ":volume_to_surface_mesh",
         "//common:default_scalars",
         "//common:essential",
@@ -853,6 +907,7 @@ drake_cc_library(
         "//geometry:__pkg__",
     ],
     deps = [
+        ":collision_backend",
         ":collision_filter",
         ":distance_to_point_callback",
         "//common:default_scalars",
@@ -924,9 +979,9 @@ drake_cc_library(
         ":volume_mesh",
         "//common:drake_export",
         "//common:sorted_pair",
+        "//geometry:collision_backend",
         "//geometry:geometry_ids",
         "//geometry:shape_specification",
-        "@fcl_internal//:fcl",
         "@fmt",
     ],
 )
@@ -1109,6 +1164,64 @@ drake_cc_googletest(
     ],
 )
 
+drake_cc_library(
+    name = "backend_test_utilities",
+    testonly = 1,
+    hdrs = ["test/backend_test_utilities.h"],
+    visibility = ["//visibility:private"],
+    deps = [
+        ":coal_backend",
+        ":collision_backend",
+        ":fcl_backend",
+        "@googletest//:gtest",
+    ],
+)
+
+drake_cc_library(
+    name = "backend_utilities",
+    testonly = 1,
+    srcs = ["test/backend_utilities.cc"],
+    hdrs = ["test/backend_utilities.h"],
+    visibility = ["//visibility:private"],
+    deps = [
+        ":coal_backend",
+        ":fcl_backend",
+        ":polygon_surface_mesh",
+        ":proximity_utilities",
+        "//geometry:geometry_ids",
+        "//geometry:shape_specification",
+        "//math:geometric_transform",
+        "@fcl_internal//:fcl",
+    ],
+)
+
+drake_cc_binary(
+    name = "backend_utilities_test_bin",
+    testonly = True,
+    srcs = ["test/backend_utilities_test.cc"],
+    deps = [
+        ":backend_test_utilities",
+        ":backend_utilities",
+        ":coal_backend",
+        ":fcl_backend",
+        "//common/test_utilities:drake_cc_googletest_main",
+    ],
+)
+
+drake_sh_test(
+    name = "backend_utilities_fcl_test",
+    srcs = [":backend_utilities_test_bin"],
+    data = [":backend_utilities_test_bin"],
+    env = {"DRAKE_PROXIMITY_BACKEND": "fcl"},
+)
+
+drake_sh_test(
+    name = "backend_utilities_coal_test",
+    srcs = [":backend_utilities_test_bin"],
+    data = [":backend_utilities_test_bin"],
+    env = {"DRAKE_PROXIMITY_BACKEND": "coal"},
+)
+
 drake_cc_googletest(
     name = "bvh_test",
     deps = [
@@ -1171,6 +1284,7 @@ drake_cc_library(
     visibility = ["//visibility:private"],
     deps = [
         ":collision_filter",
+        ":fcl_backend",
         "//common:drake_export",
         "//common:temp_directory",
         "//common/test_utilities:eigen_matrix_compare",
@@ -1189,6 +1303,36 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "coal_backend_test",
+    deps = [":coal_backend"],
+)
+
+drake_cc_binary(
+    name = "collision_backend_test_bin",
+    testonly = True,
+    srcs = ["test/collision_backend_test.cc"],
+    deps = [
+        ":collision_backend",
+        "//common/test_utilities:drake_cc_googletest_main",
+        "//geometry:proximity_engine",
+    ],
+)
+
+drake_sh_test(
+    name = "collision_backend_fcl_test",
+    srcs = [":collision_backend_test_bin"],
+    data = [":collision_backend_test_bin"],
+    env = {"DRAKE_PROXIMITY_BACKEND": "fcl"},
+)
+
+drake_sh_test(
+    name = "collision_backend_coal_test",
+    srcs = [":collision_backend_test_bin"],
+    data = [":collision_backend_test_bin"],
+    env = {"DRAKE_PROXIMITY_BACKEND": "coal"},
+)
+
+drake_cc_googletest(
     name = "collision_filter_test",
     deps = [
         ":collision_filter",
@@ -1204,11 +1348,32 @@ drake_cc_googletest(
     ],
 )
 
-drake_cc_googletest(
-    name = "collisions_exist_callback_test",
+drake_cc_binary(
+    name = "collisions_exist_callback_test_bin",
+    testonly = True,
+    srcs = ["test/collisions_exist_callback_test.cc"],
     deps = [
+        ":backend_test_utilities",
+        ":coal_backend",
+        ":collision_backend",
         ":collisions_exist_callback",
+        ":fcl_backend",
+        "//common/test_utilities:drake_cc_googletest_main",
     ],
+)
+
+drake_sh_test(
+    name = "collisions_exist_callback_fcl_test",
+    srcs = [":collisions_exist_callback_test_bin"],
+    data = [":collisions_exist_callback_test_bin"],
+    env = {"DRAKE_PROXIMITY_BACKEND": "fcl"},
+)
+
+drake_sh_test(
+    name = "collisions_exist_callback_coal_test",
+    srcs = [":collisions_exist_callback_test_bin"],
+    data = [":collisions_exist_callback_test_bin"],
+    env = {"DRAKE_PROXIMITY_BACKEND": "coal"},
 )
 
 drake_cc_googletest(
@@ -1300,8 +1465,8 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "distance_to_point_callback_test",
     deps = [
+        ":backend_utilities",
         ":distance_to_point_callback",
-        ":fcl_utilities",
         "//common/test_utilities",
         "//geometry:shape_specification",
         "//geometry:utilities",
@@ -1331,8 +1496,8 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "distance_to_shape_callback_test",
     deps = [
+        ":backend_utilities",
         ":distance_to_shape_callback",
-        ":fcl_utilities",
         ":proximity_utilities",
         "//common/test_utilities",
         "//geometry:shape_specification",
@@ -1351,30 +1516,32 @@ drake_cc_googletest(
     ],
 )
 
-drake_cc_googletest(
-    name = "distance_to_shape_touching_test",
+drake_cc_binary(
+    name = "distance_to_shape_touching_test_bin",
+    testonly = True,
+    srcs = ["test/distance_to_shape_touching_test.cc"],
     deps = [
+        ":backend_test_utilities",
         ":distance_to_shape_touching",
         "//common:essential",
         "//common/test_utilities",
+        "//common/test_utilities:drake_cc_googletest_main",
         "//math:geometric_transform",
     ],
 )
 
-drake_cc_library(
-    name = "fcl_utilities",
-    testonly = 1,
-    srcs = ["test/fcl_utilities.cc"],
-    hdrs = ["test/fcl_utilities.h"],
-    visibility = ["//visibility:private"],
-    deps = [
-        ":polygon_surface_mesh",
-        ":proximity_utilities",
-        "//geometry:geometry_ids",
-        "//geometry:shape_specification",
-        "//math:geometric_transform",
-        "@fcl_internal//:fcl",
-    ],
+drake_sh_test(
+    name = "distance_to_shape_touching_fcl_test",
+    srcs = [":distance_to_shape_touching_test_bin"],
+    data = [":distance_to_shape_touching_test_bin"],
+    env = {"DRAKE_PROXIMITY_BACKEND": "fcl"},
+)
+
+drake_sh_test(
+    name = "distance_to_shape_touching_coal_test",
+    srcs = [":distance_to_shape_touching_test_bin"],
+    data = [":distance_to_shape_touching_test_bin"],
+    env = {"DRAKE_PROXIMITY_BACKEND": "coal"},
 )
 
 drake_cc_googletest(
@@ -1395,11 +1562,31 @@ drake_cc_googletest(
     ],
 )
 
-drake_cc_googletest(
-    name = "find_collision_candidates_callback_test",
+drake_cc_binary(
+    name = "find_collision_candidates_callback_test_bin",
+    testonly = True,
+    srcs = ["test/find_collision_candidates_callback_test.cc"],
     deps = [
+        ":backend_test_utilities",
+        ":coal_backend",
+        ":fcl_backend",
         ":find_collision_candidates_callback",
+        "//common/test_utilities:drake_cc_googletest_main",
     ],
+)
+
+drake_sh_test(
+    name = "find_collision_candidates_callback_fcl_test",
+    srcs = [":find_collision_candidates_callback_test_bin"],
+    data = [":find_collision_candidates_callback_test_bin"],
+    env = {"DRAKE_PROXIMITY_BACKEND": "fcl"},
+)
+
+drake_sh_test(
+    name = "find_collision_candidates_callback_coal_test",
+    srcs = [":find_collision_candidates_callback_test_bin"],
+    data = [":find_collision_candidates_callback_test_bin"],
+    env = {"DRAKE_PROXIMITY_BACKEND": "coal"},
 )
 
 drake_cc_googletest(
@@ -1759,7 +1946,7 @@ drake_cc_googletest(
         "//geometry:test_obj_files",
     ],
     deps = [
-        ":fcl_utilities",
+        ":backend_utilities",
         ":penetration_as_point_pair_callback",
         "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
@@ -1819,7 +2006,10 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "proximity_utilities_test",
-    deps = [":proximity_utilities"],
+    deps = [
+        ":proximity_utilities",
+        "@fcl_internal//:fcl",
+    ],
 )
 
 drake_cc_googletest(

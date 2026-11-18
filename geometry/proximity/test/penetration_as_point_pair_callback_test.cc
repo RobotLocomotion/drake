@@ -14,8 +14,9 @@
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/geometry/proximity/fcl_backend.h"
 #include "drake/geometry/proximity/proximity_utilities.h"
-#include "drake/geometry/proximity/test/fcl_utilities.h"
+#include "drake/geometry/proximity/test/backend_utilities.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/math/rigid_transform.h"
@@ -105,11 +106,14 @@ class PenetrationAsPointPairCallbackTest : public ::testing::Test {
     const std::unordered_map<GeometryId, RigidTransform<T>> X_WGs{
         {{id_A_, X_WA}, {id_B_, X_WB}}};
     vector<PenetrationAsPointPair<T>> point_pairs;
-    CallbackData<T> callback_data(&collision_filter_, &X_WGs, &point_pairs);
-    EXPECT_FALSE(Callback<T>(&sphere_A_, &sphere_B_, &callback_data));
+    CallbackData<T, FclBackend> callback_data(&collision_filter_, &X_WGs,
+                                              &point_pairs);
+    EXPECT_FALSE(
+        (Callback<T, FclBackend>(&sphere_A_, &sphere_B_, &callback_data)));
     EXPECT_EQ(point_pairs.size(), 0u);
 
-    EXPECT_FALSE(Callback<T>(&sphere_B_, &sphere_A_, &callback_data));
+    EXPECT_FALSE(
+        (Callback<T, FclBackend>(&sphere_B_, &sphere_A_, &callback_data)));
     EXPECT_EQ(point_pairs.size(), 0u);
   }
 
@@ -144,8 +148,10 @@ class PenetrationAsPointPairCallbackTest : public ::testing::Test {
     // Two executions with the order of the objects reversed -- should produce
     // identical results.
     vector<PenetrationAsPointPair<T>> point_pairs;
-    CallbackData<T> callback_data(&collision_filter_, &X_WGs, &point_pairs);
-    EXPECT_FALSE(Callback<T>(&sphere_A_, &sphere_B_, &callback_data));
+    CallbackData<T, FclBackend> callback_data(&collision_filter_, &X_WGs,
+                                              &point_pairs);
+    EXPECT_FALSE(
+        (Callback<T, FclBackend>(&sphere_A_, &sphere_B_, &callback_data)));
     ASSERT_EQ(point_pairs.size(), 1u);
     const PenetrationAsPointPair<T> first_result = point_pairs[0];
     point_pairs.clear();
@@ -157,7 +163,8 @@ class PenetrationAsPointPairCallbackTest : public ::testing::Test {
     EXPECT_NEAR((p_WCa - p_WCb).norm(), depth, kEps);
     EXPECT_TRUE(CompareMatrices(p_WCb - p_WCa, depth * nhat_BA_W, kEps));
 
-    EXPECT_FALSE(Callback<T>(&sphere_B_, &sphere_A_, &callback_data));
+    EXPECT_FALSE(
+        (Callback<T, FclBackend>(&sphere_B_, &sphere_A_, &callback_data)));
     ASSERT_EQ(point_pairs.size(), 1u);
     const PenetrationAsPointPair<T> second_result = point_pairs[0];
     point_pairs.clear();
@@ -185,10 +192,12 @@ class PenetrationAsPointPairCallbackTest : public ::testing::Test {
         CollisionFilterDeclaration().ExcludeWithin(GeometrySet{id_A_, id_B_}),
         extract, false /* is_invariant */);
 
-    EXPECT_FALSE(Callback<T>(&sphere_A_, &sphere_B_, &callback_data));
+    EXPECT_FALSE(
+        (Callback<T, FclBackend>(&sphere_A_, &sphere_B_, &callback_data)));
     EXPECT_EQ(point_pairs.size(), 0u);
 
-    EXPECT_FALSE(Callback<T>(&sphere_B_, &sphere_A_, &callback_data));
+    EXPECT_FALSE(
+        (Callback<T, FclBackend>(&sphere_B_, &sphere_A_, &callback_data)));
     EXPECT_EQ(point_pairs.size(), 0u);
   }
 
@@ -206,8 +215,9 @@ class PenetrationAsPointPairCallbackTest : public ::testing::Test {
         {{id_A_, X_WA}, {shape_id, X_WB}}};
 
     vector<PenetrationAsPointPair<T>> point_pairs;
-    CallbackData<T> callback_data(&collision_filter_, &X_WGs, &point_pairs);
-    EXPECT_FALSE(Callback<T>(&sphere_A_, &shape, &callback_data));
+    CallbackData<T, FclBackend> callback_data(&collision_filter_, &X_WGs,
+                                              &point_pairs);
+    EXPECT_FALSE((Callback<T, FclBackend>(&sphere_A_, &shape, &callback_data)));
     ASSERT_EQ(point_pairs.size(), 1u);
     const PenetrationAsPointPair<T> first_result = point_pairs[0];
     EXPECT_NEAR(ExtractDoubleOrThrow(first_result.depth), target_depth, kEps);
@@ -217,7 +227,7 @@ class PenetrationAsPointPairCallbackTest : public ::testing::Test {
     point_pairs.clear();
 
     // Now reverse the order of the geometries.
-    EXPECT_FALSE(Callback<T>(&shape, &sphere_A_, &callback_data));
+    EXPECT_FALSE((Callback<T, FclBackend>(&shape, &sphere_A_, &callback_data)));
     ASSERT_EQ(point_pairs.size(), 1u);
     const PenetrationAsPointPair<T> second_result = point_pairs[0];
     EXPECT_EQ(ExtractDoubleOrThrow(second_result.depth),
@@ -241,9 +251,10 @@ class PenetrationAsPointPairCallbackTest : public ::testing::Test {
           {{id_A_, X_WA_double}, {shape_id, X_WB_double}}};
 
       vector<PenetrationAsPointPair<double>> point_pairs_double;
-      CallbackData<double> callback_data_double(
+      CallbackData<double, FclBackend> callback_data_double(
           &collision_filter_, &X_WGs_double, &point_pairs_double);
-      EXPECT_FALSE(Callback<double>(&sphere_A_, &shape, &callback_data_double));
+      EXPECT_FALSE((Callback<double, FclBackend>(&sphere_A_, &shape,
+                                                 &callback_data_double)));
       ASSERT_EQ(point_pairs_double.size(), 1u);
       EXPECT_NEAR(ExtractDoubleOrThrow(first_result.depth),
                   point_pairs_double[0].depth, 2 * kEps);
@@ -332,9 +343,10 @@ class PenetrationAsPointPairCallbackTest : public ::testing::Test {
         {{id1, RigidTransform<T>::Identity()},
          {id2, RigidTransform<T>::Identity()}}};
     vector<PenetrationAsPointPair<T>> point_pairs;
-    CallbackData<T> callback_data(&collision_filter_, &X_WGs, &point_pairs);
+    CallbackData<T, FclBackend> callback_data(&collision_filter_, &X_WGs,
+                                              &point_pairs);
     DRAKE_EXPECT_THROWS_MESSAGE(
-        Callback<T>(&shape1, &shape2, &callback_data),
+        (Callback<T, FclBackend>(&shape1, &shape2, &callback_data)),
         "Penetration queries between shapes .* and .* are not supported for "
         "scalar type .*");
   }
@@ -400,9 +412,10 @@ TEST_F(PenetrationAsPointPairCallbackTest, TestGradient) {
   X_WGs.emplace(id_A_, X_WA);
   X_WGs.emplace(id_B_, X_WB);
   vector<PenetrationAsPointPair<AutoDiffXd>> point_pairs;
-  CallbackData<AutoDiffXd> callback_data(&collision_filter_, &X_WGs,
-                                         &point_pairs);
-  EXPECT_FALSE(Callback<AutoDiffXd>(&sphere_A_, &sphere_B_, &callback_data));
+  CallbackData<AutoDiffXd, FclBackend> callback_data(&collision_filter_, &X_WGs,
+                                                     &point_pairs);
+  EXPECT_FALSE((Callback<AutoDiffXd, FclBackend>(&sphere_A_, &sphere_B_,
+                                                 &callback_data)));
   ASSERT_EQ(point_pairs.size(), 1u);
   const Eigen::Vector3d ddepth_dp_WBo = -p_WBo_val / p_WBo_val.norm();
   const PenetrationAsPointPair<AutoDiffXd> result = point_pairs[0];
@@ -563,16 +576,17 @@ TEST_F(PenetrationAsPointPairCallbackTest, Issue10577Regression_Osculation) {
   RigidTransformd X_WA(Eigen::AngleAxisd{M_PI_2, Vector3d::UnitZ()},
                        Vector3d{-0.25, 0, 0});
   RigidTransformd X_WB(Vector3d{0, 0, 0.0085});
-  std::unique_ptr<CollisionObjectd> box =
-      MakeFclObject(Box(0.49, 0.63, 0.015), id_A, /* is_dynamic= */ true, X_WA);
-  std::unique_ptr<CollisionObjectd> cylinder =
-      MakeFclObject(Cylinder(0.08, 0.002), id_B, /* is_dynamic= */ true, X_WB);
+  std::unique_ptr<CollisionObjectd> box = MakeBackendObject<FclBackend>(
+      Box(0.49, 0.63, 0.015), id_A, /* is_dynamic= */ true, X_WA);
+  std::unique_ptr<CollisionObjectd> cylinder = MakeBackendObject<FclBackend>(
+      Cylinder(0.08, 0.002), id_B, /* is_dynamic= */ true, X_WB);
   const unordered_map<GeometryId, RigidTransformd> X_WG{{id_A, X_WA},
                                                         {id_B, X_WB}};
 
   vector<PenetrationAsPointPair<double>> pairs;
-  CallbackData<double> callback_data(&collision_filter_, &X_WG, &pairs);
-  Callback<double>(box.get(), cylinder.get(), &callback_data);
+  CallbackData<double, FclBackend> callback_data(&collision_filter_, &X_WG,
+                                                 &pairs);
+  Callback<double, FclBackend>(box.get(), cylinder.get(), &callback_data);
   EXPECT_EQ(pairs.size(), 0);
 }
 
@@ -713,12 +727,14 @@ class BoxPenetrationTest : public ::testing::Test {
                      const math::RigidTransformd& X_WB) {
     const GeometryId tangent_id = GeometryId::get_new_id();
     const RigidTransformd X_WA = shape_pose(shape_type);
-    std::unique_ptr<CollisionObjectd> tangent_object = MakeFclObject(
-        shape(shape_type), tangent_id, /* is_dynamic= */ true, X_WA);
+    std::unique_ptr<CollisionObjectd> tangent_object =
+        MakeBackendObject<FclBackend>(shape(shape_type), tangent_id,
+                                      /* is_dynamic= */ true, X_WA);
 
     const GeometryId box_id = GeometryId::get_new_id();
     std::unique_ptr<CollisionObjectd> box_object =
-        MakeFclObject(box_, box_id, /* is_dynamic= */ true, X_WB);
+        MakeBackendObject<FclBackend>(box_, box_id, /* is_dynamic= */ true,
+                                      X_WB);
 
     // Note: we need a CollisionFilter for the callback data, but we don't need
     // to populate it, because we're not actually filtering anything.
@@ -726,8 +742,10 @@ class BoxPenetrationTest : public ::testing::Test {
     const unordered_map<GeometryId, RigidTransformd> X_WGs{{tangent_id, X_WA},
                                                            {box_id, X_WB}};
     vector<PenetrationAsPointPair<double>> results;
-    CallbackData<double> callback_data(&collision_filter, &X_WGs, &results);
-    Callback<double>(tangent_object.get(), box_object.get(), &callback_data);
+    CallbackData<double, FclBackend> callback_data(&collision_filter, &X_WGs,
+                                                   &results);
+    Callback<double, FclBackend>(tangent_object.get(), box_object.get(),
+                                 &callback_data);
 
     ASSERT_EQ(results.size(), 1u)
         << "Against tangent " << shape_name(shape_type);

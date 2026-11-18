@@ -1,6 +1,7 @@
 #include "drake/geometry/proximity/proximity_utilities.h"
 
 #include <set>
+#include <string_view>
 #include <unordered_set>
 
 #include "drake/common/sorted_pair.h"
@@ -10,41 +11,23 @@ namespace drake {
 namespace geometry {
 namespace internal {
 
-std::string GetGeometryName(const fcl::CollisionObjectd& object) {
-  switch (object.collisionGeometry()->getNodeType()) {
-    case fcl::BV_UNKNOWN:
-    case fcl::BV_AABB:
-    case fcl::BV_OBB:
-    case fcl::BV_RSS:
-    case fcl::BV_kIOS:
-    case fcl::BV_OBBRSS:
-    case fcl::BV_KDOP16:
-    case fcl::BV_KDOP18:
-    case fcl::BV_KDOP24:
-      return "Unsupported";
-    case fcl::GEOM_BOX:
+std::string_view to_string(ShapeKind kind) {
+  switch (kind) {
+    case ShapeKind::kBox:
       return "Box";
-    case fcl::GEOM_SPHERE:
-      return "Sphere";
-    case fcl::GEOM_ELLIPSOID:
-      return "Ellipsoid";
-    case fcl::GEOM_CAPSULE:
+    case ShapeKind::kCapsule:
       return "Capsule";
-    case fcl::GEOM_CONE:
-      return "Cone";
-    case fcl::GEOM_CYLINDER:
-      return "Cylinder";
-    case fcl::GEOM_CONVEX:
+    case ShapeKind::kConvex:
       return "Convex";
-    case fcl::GEOM_PLANE:
-      return "Plane";
-    case fcl::GEOM_HALFSPACE:
+    case ShapeKind::kCylinder:
+      return "Cylinder";
+    case ShapeKind::kEllipsoid:
+      return "Ellipsoid";
+    case ShapeKind::kHalfspace:
       return "Halfspace";
-    case fcl::GEOM_TRIANGLE:
-      return "Mesh";
-    case fcl::GEOM_OCTREE:
-      return "Octtree";
-    case fcl::NODE_COUNT:
+    case ShapeKind::kSphere:
+      return "Sphere";
+    case ShapeKind::kUnsupported:
       return "Unsupported";
   }
   DRAKE_UNREACHABLE();

@@ -158,8 +158,7 @@ class BvhVisitor {
     const Vector3d p_BQ = X_WB.inverse() * p_WQ_;
 
     const auto [closest_point_on_box_boundary_B, grad_signed_distance_B, _] =
-        point_distance::DistanceToPoint<double>::ComputeDistanceToBox<3>(
-            box_half_width_B, p_BQ);
+        point_distance::ComputeDistanceToBox<3>(box_half_width_B, p_BQ);
     // Mathematically we can calculate the signed distance phi from the gradient
     // grad_phi, the query point Q and its closest point C on the box's
     // boundary as:

@@ -4,6 +4,7 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/geometry/proximity/fcl_backend.h"
 #include "drake/geometry/proximity/penetration_as_point_pair_callback.h"
 #include "drake/geometry/proximity/test/characterization_utilities.h"
 #include "drake/math/rigid_transform.h"
@@ -33,8 +34,8 @@ class PenetrationCallback : public DistanceCallback<T> {
               const CollisionFilter* collision_filter,
               const std::unordered_map<GeometryId, math::RigidTransform<T>>*
                   X_WGs) override {
-    CallbackData<T> data(collision_filter, X_WGs, &results_);
-    return Callback<T>(obj_A, obj_B, &data);
+    CallbackData<T, FclBackend> data(collision_filter, X_WGs, &results_);
+    return Callback<T, FclBackend>(obj_A, obj_B, &data);
   }
 
   void ClearResults() override { results_.clear(); }
@@ -62,7 +63,7 @@ class CharacterizePointPairResultTest : public CharacterizeResultTest<T> {
  However, this single test will detect when that condition is no longer true
  and call for implementation of *-Mesh tests. */
 GTEST_TEST(CharacterizePointPairResultTest, MeshMesh) {
-  ASSERT_TRUE(MeshIsConvexInFcl());
+  ASSERT_TRUE(MeshIsConvexInEngine());
 }
 
 class DoubleTest : public CharacterizePointPairResultTest<double>,

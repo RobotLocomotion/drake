@@ -6,17 +6,18 @@
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_bool.h"
 #include "drake/geometry/proximity/calc_signed_distance_to_surface_mesh.h"
+#include "drake/geometry/proximity/collision_backend.h"
 
 namespace drake {
 namespace geometry {
 namespace internal {
 namespace point_distance {
 
-template <typename T>
-void SphereDistanceInSphereFrame(const fcl::Sphered& sphere,
+template <typename T, typename Backend>
+void SphereDistanceInSphereFrame(const typename Backend::Sphere& sphere,
                                  const Vector3<T>& p_SQ, Vector3<T>* p_SN,
                                  T* distance, Vector3<T>* grad_S) {
-  const double radius = sphere.radius;
+  const double radius = Backend::radius(sphere);
   const T dist_SQ = p_SQ.norm();
   // The gradient is always in the direction from the center of the sphere to
   // the query point Q, regardless of whether the point Q is outside or inside
@@ -44,21 +45,22 @@ void SphereDistanceInSphereFrame(const fcl::Sphered& sphere,
   *distance = (p_SQ - *p_SN).dot(*grad_S);
 }
 
-template <typename T>
-void ComputeDistanceToPrimitive(const fcl::Sphered& sphere,
+template <typename T, typename Backend>
+void ComputeDistanceToPrimitive(const typename Backend::Sphere& sphere,
                                 const math::RigidTransform<T>& X_WG,
                                 const Vector3<T>& p_WQ, Vector3<T>* p_GN,
                                 T* distance, Vector3<T>* grad_W) {
   const Vector3<T> p_GQ_G = X_WG.inverse() * p_WQ;
   Vector3<T> grad_G;
-  SphereDistanceInSphereFrame(sphere, p_GQ_G, p_GN, distance, &grad_G);
+  SphereDistanceInSphereFrame<T, Backend>(sphere, p_GQ_G, p_GN, distance,
+                                          &grad_G);
 
   // Gradient vector expressed in World frame.
   *grad_W = X_WG.rotation() * grad_G;
 }
 
-template <typename T>
-void ComputeDistanceToPrimitive(const fcl::Halfspaced& halfspace,
+template <typename T, typename Backend>
+void ComputeDistanceToPrimitive(const typename Backend::Halfspace& halfspace,
                                 const math::RigidTransform<T>& X_WG,
                                 const Vector3<T>& p_WQ, Vector3<T>* p_GN,
                                 T* distance, Vector3<T>* grad_W) {
@@ -67,22 +69,22 @@ void ComputeDistanceToPrimitive(const fcl::Halfspaced& halfspace,
   // In Drake, the halfspace is *always* defined as n_G = (0, 0, 1), d = 0.
   // That means the distance to the plane is merely the z-component of p_GQ and
   // the nearest point on the surface is (p_GQ(0), pGQ(1), 0).
-  const Vector3<T> n_G = halfspace.n.cast<T>();
+  const Vector3<T> n_G = Backend::normal(halfspace).template cast<T>();
   const Vector3<T> p_GQ = X_WG.inverse() * p_WQ;
   DRAKE_ASSERT(n_G(0) == 0 && n_G(1) == 0 && n_G(2) == 1);
-  DRAKE_DEMAND(halfspace.d == 0);
+  DRAKE_DEMAND(Backend::offset(halfspace) == 0);
   *distance = p_GQ(2);
   *p_GN << p_GQ(0), p_GQ(1), 0;
   *grad_W = X_WG.rotation() * n_G;
 }
 
-template <typename T>
-void ComputeDistanceToPrimitive(const fcl::Capsuled& capsule,
+template <typename T, typename Backend>
+void ComputeDistanceToPrimitive(const typename Backend::Capsule& capsule,
                                 const math::RigidTransform<T>& X_WG,
                                 const Vector3<T>& p_WQ, Vector3<T>* p_GN,
                                 T* distance, Vector3<T>* grad_W) {
-  const double radius = capsule.radius;
-  const double half_length = capsule.lz / 2;
+  const double radius = Backend::radius(capsule);
+  const double half_length = Backend::half_length(capsule);
 
   // If the query point Q is closest to the end caps of the capsule, then we can
   // re-use the distance to sphere calculations since they are effectively the
@@ -103,7 +105,7 @@ void ComputeDistanceToPrimitive(const fcl::Capsuled& capsule,
   const Vector3<T> p_GQ = X_WG.inverse() * p_WQ;
   if (p_GQ.z() >= half_length || p_GQ.z() <= -half_length) {
     // Represent the end cap of the capsule using a sphere S of the same radius.
-    const fcl::Sphered sphere_S(radius);
+    const typename Backend::Sphere sphere_S(radius);
     // The sphere is defined centered on the origin of frame S. Frame S and G
     // are related by a simple translation (their bases are perfectly aligned).
     // So, a vector quantity expressed in frame G is the same as when expressed
@@ -116,7 +118,8 @@ void ComputeDistanceToPrimitive(const fcl::Capsuled& capsule,
     // Position vector of the nearest point N expressed in S's frame.
     Vector3<T> grad_S;
     Vector3<T> p_SN;
-    SphereDistanceInSphereFrame(sphere_S, p_SQ, &p_SN, distance, &grad_S);
+    SphereDistanceInSphereFrame<T, Backend>(sphere_S, p_SQ, &p_SN, distance,
+                                            &grad_S);
     *grad_W = X_WG.rotation() * grad_S;  // grad_S = grad_G because R_GS = I.
     *p_GN = p_GS + p_SN;                 // p_SN = p_SN_G because R_GS = I.
   } else {
@@ -149,23 +152,25 @@ void ComputeDistanceToPrimitive(const fcl::Capsuled& capsule,
     // TODO(SeanCurtis-TRI): For further efficiency, consider doing these
     //  calculations in 2D and then promoting them back into 3D.
     const Vector3<T> p_GR{p_GQ.x(), p_GQ.y(), 0};
-    const fcl::Sphered sphere_S(radius);
+    const typename Backend::Sphere sphere_S(radius);
     Vector3<T> p_GM;
     Vector3<T> grad_G;
-    SphereDistanceInSphereFrame(sphere_S, p_GR, &p_GM, distance, &grad_G);
+    SphereDistanceInSphereFrame<T, Backend>(sphere_S, p_GR, &p_GM, distance,
+                                            &grad_G);
     *p_GN << p_GM.x(), p_GM.y(), p_GQ.z();
     *grad_W = X_WG.rotation() * grad_G;
   }
 }
 
-template <typename T>
-SignedDistanceToPoint<T> DistanceToPoint<T>::operator()(const fcl::Boxd& box) {
+template <typename T, typename Backend>
+SignedDistanceToPoint<T> DistanceToPoint<T, Backend>::operator()(
+    const typename Backend::Box& box) {
   // Express the given query point Q in the frame of the box geometry G.
   const Vector3<T> p_GQ_G = X_WG_.inverse() * p_WQ_;
   // The box G is an axis-aligned box [-h(0),h(0)]x[-h(1),h(1)]x[-h(2),h(2)]
   // centered at the origin, where h(i) is half the size of the box in the
   // i-th coordinate.
-  const Eigen::Vector3d h = box.side / 2.0;
+  const Eigen::Vector3d h = Backend::half_extents(box);
   Vector3<T> p_GN_G, grad_G;
   bool is_Q_on_edge_or_vertex{};
   std::tie(p_GN_G, grad_G, is_Q_on_edge_or_vertex) =
@@ -176,24 +181,24 @@ SignedDistanceToPoint<T> DistanceToPoint<T>::operator()(const fcl::Boxd& box) {
   return SignedDistanceToPoint<T>{geometry_id_, p_GN_G, distance, grad_W};
 }
 
-template <typename T>
-SignedDistanceToPoint<T> DistanceToPoint<T>::operator()(
-    const fcl::Capsuled& capsule) {
+template <typename T, typename Backend>
+SignedDistanceToPoint<T> DistanceToPoint<T, Backend>::operator()(
+    const typename Backend::Capsule& capsule) {
   // TODO(SeanCurtis-TRI): This would be better if `SignedDistanceToPoint`
   //  could be default constructed in an uninitialized state and then
   //  pointers to its contents could be passed directly to ComputeDistance...
   //  This would eliminate the inevitable copy in the constructor.
   T distance{};
   Vector3<T> p_GN_G, grad_W;
-  ComputeDistanceToPrimitive(capsule, X_WG_, p_WQ_, &p_GN_G, &distance,
-                             &grad_W);
+  ComputeDistanceToPrimitive<T, Backend>(capsule, X_WG_, p_WQ_, &p_GN_G,
+                                         &distance, &grad_W);
 
   return SignedDistanceToPoint<T>{geometry_id_, p_GN_G, distance, grad_W};
 }
 
-template <typename T>
-SignedDistanceToPoint<T> DistanceToPoint<T>::operator()(
-    const fcl::Cylinderd& cylinder) {
+template <typename T, typename Backend>
+SignedDistanceToPoint<T> DistanceToPoint<T, Backend>::operator()(
+    const typename Backend::Cylinder& cylinder) {
   using std::sqrt;
   // TODO(SeanCurtis-TRI): This is not a good algorithm for differentiation.
   //  Replace it with one that is.
@@ -208,7 +213,8 @@ SignedDistanceToPoint<T> DistanceToPoint<T>::operator()(
   const Vector3<T> p_GQ = X_WG_.inverse() * p_WQ_;
   // The 2D cross section B is the box [-h(0),h(0)]x[-h(1),h(1)], where
   // h(0) and h(1) are the radius and the half length of the cylinder.
-  const Eigen::Vector2d h(cylinder.radius, cylinder.lz / 2.0);
+  const Eigen::Vector2d h(Backend::radius(cylinder),
+                          Backend::half_length(cylinder));
   // Transform coordinates between (x,y,z) in G's frame and (r,z) in B's
   // frame. The basis vector `Bz` is aligned with `Gz`, and `r` is the
   // distance to the z-axis (i.e., √(x² + y²)), and z transfers unchanged. The
@@ -252,7 +258,7 @@ SignedDistanceToPoint<T> DistanceToPoint<T>::operator()(
   // Note: Skip near_center_line check for non-numeric T.
   const bool near_center_line =
       scalar_predicate<T>::is_bool &&
-      (r_Q < DistanceToPointRelativeTolerance(cylinder.radius));
+      (r_Q < DistanceToPointRelativeTolerance(Backend::radius(cylinder)));
   const Vector2<T> v_GBr = near_center_line
                                ? Vector2<T>(1., 0.)
                                : Vector2<T>(p_GQ(0), p_GQ(1)) / r_Q;
@@ -286,9 +292,9 @@ SignedDistanceToPoint<T> DistanceToPoint<T>::operator()(
   return SignedDistanceToPoint<T>{geometry_id_, p_GN, distance, grad_W};
 }
 
-template <typename T>
-SignedDistanceToPoint<T> DistanceToPoint<T>::operator()(
-    const fcl::Ellipsoidd& ellipsoid) {
+template <typename T, typename Backend>
+SignedDistanceToPoint<T> DistanceToPoint<T, Backend>::operator()(
+    const typename Backend::Ellipsoid& ellipsoid) {
   if constexpr (std::is_same_v<T, double>) {
     // TODO(SeanCurtis-TRI): Replace this short-term hack with something that
     //  provides higher precision. Can an iterative method provide derivatives?
@@ -298,25 +304,22 @@ SignedDistanceToPoint<T> DistanceToPoint<T>::operator()(
     // For now, we'll simply use FCL's sphere-ellipsoid algorithm to compute
     // the signed distance for a zero-radius sphere. (Note: this uses the
     // generic GJK-EPA algorithm pair).
-    const fcl::Sphered sphere_Q(0.0);
+    const typename Backend::Sphere sphere_Q(0.0);
 
-    fcl::DistanceRequestd request;
-    request.enable_nearest_points = true;
-    request.enable_signed_distance = true;
-    request.distance_tolerance = 1e-6;
-    request.gjk_solver_type = fcl::GJKSolverType::GST_LIBCCD;
+    typename Backend::DistanceRequest request;
+    Backend::ConfigureSignedDistanceRequest(&request, 1e-6);
 
     // By passing in poses X_WG and X_WQ, the result will likewise be in the
     // world frame.
-    fcl::DistanceResultd result_W;
+    typename Backend::DistanceResult result_W;
 
-    fcl::distance(&ellipsoid, X_WG_.GetAsIsometry3(), &sphere_Q,
-                  math::RigidTransformd(p_WQ_).GetAsIsometry3(), request,
-                  result_W);
+    Backend::Distance(&ellipsoid, Backend::ToTransform(X_WG_), &sphere_Q,
+                      Backend::ToTransform(math::RigidTransformd(p_WQ_)),
+                      request, &result_W);
 
     const Vector3d& p_WN = result_W.nearest_points[0];
     const Vector3d p_GN = X_WG_.inverse() * p_WN;
-    const Vector3d& radii = ellipsoid.radii;
+    const Vector3d& radii = Backend::radii(ellipsoid);
     // The gradient is always perpendicular to the ellipsoid at the witness
     // point on the ellipsoid surface. Therefore, for the implicit equation of
     // the ellipsoid:
@@ -347,29 +350,30 @@ SignedDistanceToPoint<T> DistanceToPoint<T>::operator()(
   }
 }
 
-template <typename T>
-SignedDistanceToPoint<T> DistanceToPoint<T>::operator()(
-    const fcl::Halfspaced& halfspace) {
+template <typename T, typename Backend>
+SignedDistanceToPoint<T> DistanceToPoint<T, Backend>::operator()(
+    const typename Backend::Halfspace& halfspace) {
   T distance{};
   Vector3<T> p_GN_G, grad_W;
-  ComputeDistanceToPrimitive(halfspace, X_WG_, p_WQ_, &p_GN_G, &distance,
-                             &grad_W);
+  ComputeDistanceToPrimitive<T, Backend>(halfspace, X_WG_, p_WQ_, &p_GN_G,
+                                         &distance, &grad_W);
 
   return SignedDistanceToPoint<T>{geometry_id_, p_GN_G, distance, grad_W};
 }
 
-template <typename T>
-SignedDistanceToPoint<T> DistanceToPoint<T>::operator()(
-    const fcl::Sphered& sphere) {
+template <typename T, typename Backend>
+SignedDistanceToPoint<T> DistanceToPoint<T, Backend>::operator()(
+    const typename Backend::Sphere& sphere) {
   T distance{};
   Vector3<T> p_GN_G, grad_W;
-  ComputeDistanceToPrimitive(sphere, X_WG_, p_WQ_, &p_GN_G, &distance, &grad_W);
+  ComputeDistanceToPrimitive<T, Backend>(sphere, X_WG_, p_WQ_, &p_GN_G,
+                                         &distance, &grad_W);
 
   return SignedDistanceToPoint<T>{geometry_id_, p_GN_G, distance, grad_W};
 }
 
-template <typename T>
-SignedDistanceToPoint<T> DistanceToPoint<T>::operator()(
+template <typename T, typename Backend>
+SignedDistanceToPoint<T> DistanceToPoint<T, Backend>::operator()(
     const MeshDistanceBoundary& mesh_G) {
   const Vector3<double> p_GQ = ExtractDoubleOrThrow(X_WG_.inverse() * p_WQ_);
   if (!std::holds_alternative<FeatureNormalSet>(mesh_G.feature_normal())) {
@@ -384,10 +388,8 @@ SignedDistanceToPoint<T> DistanceToPoint<T>::operator()(
                                   X_WG_.rotation() * Vector3<T>(d.gradient)};
 }
 
-template <typename T>
 template <int dim, typename U>
-int DistanceToPoint<T>::ExtremalAxis(const Vector<U, dim>& p,
-                                     const Vector<double, dim>& bounds) {
+int ExtremalAxis(const Vector<U, dim>& p, const Vector<double, dim>& bounds) {
   double min_dist = std::numeric_limits<double>::infinity();
   int axis = -1;
   for (int i = 0; i < dim; ++i) {
@@ -402,11 +404,9 @@ int DistanceToPoint<T>::ExtremalAxis(const Vector<U, dim>& p,
   return axis;
 }
 
-template <typename T>
-template <int dim>
-std::tuple<Vector<T, dim>, Vector<T, dim>, bool>
-DistanceToPoint<T>::ComputeDistanceToBox(const Vector<double, dim>& h,
-                                         const Vector<T, dim>& p_GQ_G) {
+template <int dim, typename T>
+std::tuple<Vector<T, dim>, Vector<T, dim>, bool> ComputeDistanceToBox(
+    const Vector<double, dim>& h, const Vector<T, dim>& p_GQ_G) {
   using std::abs;
 
   // TODO(DamrongGuoy): Revisit this implementation based on a recommendation
@@ -493,18 +493,19 @@ DistanceToPoint<T>::ComputeDistanceToBox(const Vector<double, dim>& h,
   return std::make_tuple(p_GN_G, grad_G, is_Q_on_edge_or_vertex);
 }
 
-template <typename T>
-bool Callback(fcl::CollisionObjectd* object_A_ptr,
-              fcl::CollisionObjectd* object_B_ptr,
+template <typename T, typename Backend>
+bool Callback(typename Backend::Object* object_A_ptr,
+              typename Backend::Object* object_B_ptr,
               // NOLINTNEXTLINE
-              void* callback_data, double& threshold_out) {
-  auto& data = *static_cast<CallbackData<T>*>(callback_data);
+              void* callback_data, typename Backend::Scalar& threshold_out) {
+  auto& data = *static_cast<CallbackData<T, Backend>*>(callback_data);
 
   // Three things:
   //   1. We repeatedly set `threshold_out` in each call to the callback because
   //   we can't initialize it. The cost is negligible but maximizes any culling
   //   benefit.
-  //   2. Due to how FCL is implemented, passing a value <= 0 will cause results
+  //   2. Due to how the broadphase is implemented, passing a value <= 0 will
+  //   cause results
   //   to be omitted because the bounding box test only considers *separating*
   //   distance and doesn't do any work if the distance between bounding boxes
   //   is zero.
@@ -517,59 +518,63 @@ bool Callback(fcl::CollisionObjectd* object_A_ptr,
   threshold_out = std::max(data.threshold, kEps);
 
   // We use `const` to prevent modification of the collision objects.
-  const fcl::CollisionObjectd* geometry_object =
+  const typename Backend::Object* geometry_object =
       (&data.query_point == object_A_ptr) ? object_B_ptr : object_A_ptr;
 
   const EncodedData encoding(*geometry_object);
   GeometryId geometry_id = encoding.id();
 
-  const fcl::CollisionGeometryd* collision_geometry =
+  const typename Backend::Geometry* collision_geometry =
       geometry_object->collisionGeometry().get();
-  if (ScalarSupport<T>::is_supported(collision_geometry->getNodeType())) {
+  const ShapeKind kind = Backend::Classify(collision_geometry->getNodeType());
+  if (ScalarSupport<T>::is_supported(kind)) {
     const math::RigidTransform<T> typed_X_WG(data.X_WGs.at(geometry_id));
-    DistanceToPoint<T> distance_to_point(geometry_id, typed_X_WG, data.p_WQ_W);
+    DistanceToPoint<T, Backend> distance_to_point(geometry_id, typed_X_WG,
+                                                  data.p_WQ_W);
 
     SignedDistanceToPoint<T> distance;
-    switch (collision_geometry->getNodeType()) {
-      case fcl::GEOM_BOX:
+    switch (kind) {
+      case ShapeKind::kBox:
         distance = distance_to_point(
-            *static_cast<const fcl::Boxd*>(collision_geometry));
+            *static_cast<const typename Backend::Box*>(collision_geometry));
         break;
-      case fcl::GEOM_CAPSULE:
+      case ShapeKind::kCapsule:
         distance = distance_to_point(
-            *static_cast<const fcl::Capsuled*>(collision_geometry));
+            *static_cast<const typename Backend::Capsule*>(collision_geometry));
         break;
-      // Both drake::geometry::Mesh and Convex use fcl::GEOM_CONVEX.
-      case fcl::GEOM_CONVEX:
+      // Both drake::geometry::Mesh and Convex are convex hulls.
+      case ShapeKind::kConvex:
         if (data.mesh_distance_boundary_cache.GetBoundary(geometry_id) !=
             nullptr) {
           distance = distance_to_point(
               *data.mesh_distance_boundary_cache.GetBoundary(geometry_id));
         } else {
-          // Unsupported mesh types. Returning false tells fcl to continue
-          // to other objects.
+          // Unsupported mesh types. Returning false tells the broadphase
+          // to continue to other objects.
           return false;
         }
         break;
-      case fcl::GEOM_CYLINDER:
-        distance = distance_to_point(
-            *static_cast<const fcl::Cylinderd*>(collision_geometry));
+      case ShapeKind::kCylinder:
+        distance =
+            distance_to_point(*static_cast<const typename Backend::Cylinder*>(
+                collision_geometry));
         break;
-      case fcl::GEOM_ELLIPSOID:
-        distance = distance_to_point(
-            *static_cast<const fcl::Ellipsoidd*>(collision_geometry));
+      case ShapeKind::kEllipsoid:
+        distance =
+            distance_to_point(*static_cast<const typename Backend::Ellipsoid*>(
+                collision_geometry));
         break;
-      case fcl::GEOM_HALFSPACE:
-        distance = distance_to_point(
-            *static_cast<const fcl::Halfspaced*>(collision_geometry));
+      case ShapeKind::kHalfspace:
+        distance =
+            distance_to_point(*static_cast<const typename Backend::Halfspace*>(
+                collision_geometry));
         break;
-      case fcl::GEOM_SPHERE:
+      case ShapeKind::kSphere:
         distance = distance_to_point(
-            *static_cast<const fcl::Sphered*>(collision_geometry));
+            *static_cast<const typename Backend::Sphere*>(collision_geometry));
         break;
-      default:
-        // Unsupported shapes.  Returning false tells fcl to continue to
-        // other objects.
+      case ShapeKind::kUnsupported:
+        // Returning false tells the broadphase to continue to other objects.
         return false;
     }
 
@@ -578,16 +583,20 @@ bool Callback(fcl::CollisionObjectd* object_A_ptr,
     }
   }
 
-  return false;  // Returning false tells fcl to continue to other objects.
+  // Returning false tells the broadphase to continue to other objects.
+  return false;
 }
 
+DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_SCALARS_AND_BACKENDS(
+    (&Callback<T, Backend>));
+
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    (&Callback<T>));
+    (&ComputeDistanceToBox<2, T>, &ComputeDistanceToBox<3, T>));
 
 }  // namespace point_distance
 }  // namespace internal
 }  // namespace geometry
 }  // namespace drake
 
-DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_SCALARS_AND_BACKENDS(
     class ::drake::geometry::internal::point_distance::DistanceToPoint);

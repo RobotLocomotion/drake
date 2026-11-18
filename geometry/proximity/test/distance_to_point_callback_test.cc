@@ -12,8 +12,9 @@
 #include "drake/common/fmt_eigen.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/geometry/proximity/fcl_backend.h"
 #include "drake/geometry/proximity/proximity_utilities.h"
-#include "drake/geometry/proximity/test/fcl_utilities.h"
+#include "drake/geometry/proximity/test/backend_utilities.h"
 #include "drake/geometry/shape_specification.h"
 #include "drake/geometry/utilities.h"
 #include "drake/math/autodiff_gradient.h"
@@ -90,7 +91,7 @@ class PointShapeAutoDiffSignedDistanceTester {
     Vector3<AutoDiffXd> p_WQ_ad = math::InitializeAutoDiff(p_WQ);
     // The size of the variables we take gradient with (p_WQ) is 3.
     const int grad_size = 3;
-    DistanceToPoint<AutoDiffXd> distance_to_point(
+    DistanceToPoint<AutoDiffXd, FclBackend> distance_to_point(
         GeometryId::get_new_id(), X_WG_.cast<AutoDiffXd>(), p_WQ_ad);
 
     SignedDistanceToPoint<AutoDiffXd> result = distance_to_point(shape_);
@@ -400,7 +401,7 @@ GTEST_TEST(DistanceToPoint, Ellipsoid) {
     for (const double distance : {-0.125, 0.0, 0.2}) {
       const Vector3d p_GQ = p_GN + n_G * distance;
       const Vector3d p_WQ = X_WG * p_GQ;
-      DistanceToPoint<double> distance_to_point(id, X_WG, p_WQ);
+      DistanceToPoint<double, FclBackend> distance_to_point(id, X_WG, p_WQ);
       const SignedDistanceToPoint<double> result = distance_to_point(ellipsoid);
 
       SCOPED_TRACE(fmt::format(
@@ -427,7 +428,7 @@ GTEST_TEST(DistanceToPoint, Ellipsoid) {
   const double min_radius = ellipsoid.radii.y();
   const Vector3d min_axis_G(0, 1, 0);
   const Vector3d p_WQ = X_WG * Vector3d::Zero();
-  DistanceToPoint<double> distance_to_point(id, X_WG, p_WQ);
+  DistanceToPoint<double, FclBackend> distance_to_point(id, X_WG, p_WQ);
   const SignedDistanceToPoint<double> result = distance_to_point(ellipsoid);
   EXPECT_EQ(result.id_G, id);
   EXPECT_NEAR(result.distance, -min_radius, kDistTolerance);
@@ -486,7 +487,8 @@ GTEST_TEST(DistanceToPoint, MeshDistanceBoundary) {
   // The query point Q in frame G of the mesh is at 10 meters above the origin.
   const Vector3d p_GQ{0, 0, 10};
   const Vector3d p_WQ = X_WG * p_GQ;
-  DistanceToPoint<double> distance_to_point(mesh_geometry_id, X_WG, p_WQ);
+  DistanceToPoint<double, FclBackend> distance_to_point(mesh_geometry_id, X_WG,
+                                                        p_WQ);
 
   // Throw if there is no feature normals.
   {
@@ -735,7 +737,7 @@ void TestScalarShapeSupport() {
       MakeSdfCacheWithMesh(other_id);
   std::unordered_map<GeometryId, RigidTransform<T>> X_WGs{
       {point_id, X_WQ}, {other_id, RigidTransform<T>::Identity()}};
-  CallbackData<T> data{
+  CallbackData<T, FclBackend> data{
       &query_point, threshold, p_WQ, &X_WGs, &mesh_distance_boundary_cache,
       &distances};
 
@@ -748,7 +750,7 @@ void TestScalarShapeSupport() {
     fcl::CollisionObjectd object(geometry_shared_ptr);
     EncodedData object_encoding(other_id, true);
     object_encoding.write_to(&object);
-    Callback<T>(&query_point, &object, &data, threshold);
+    Callback<T, FclBackend>(&query_point, &object, &data, threshold);
   };
 
   // Box
@@ -851,15 +853,15 @@ GTEST_TEST(Callback, MeshAndConvex) {
     MeshDistanceBoundaryCache mesh_distance_boundary_cache =
         MakeSdfCacheWithMesh(mesh_id);
     std::vector<SignedDistanceToPoint<double>> distances;
-    CallbackData<double> callback_data{
+    CallbackData<double, FclBackend> callback_data{
         &query_point, kThreshold100Meters,           p_WQ,
         &X_WGs,       &mesh_distance_boundary_cache, &distances};
 
     double threshold_out = 0;
     // Expect Callback() to return false, so the broad-phase fcl will continue
     // to other objects.
-    EXPECT_FALSE(Callback<double>(&query_point, &mesh_collision_object,
-                                  &callback_data, threshold_out));
+    EXPECT_FALSE((Callback<double, FclBackend>(
+        &query_point, &mesh_collision_object, &callback_data, threshold_out)));
     EXPECT_EQ(distances.size(), 1);
     EXPECT_EQ(threshold_out, kThreshold100Meters);
   }
@@ -868,18 +870,19 @@ GTEST_TEST(Callback, MeshAndConvex) {
   {
     MeshDistanceBoundaryCache no_mesh_distance_boundary_cache;
     std::vector<SignedDistanceToPoint<double>> distances;
-    CallbackData<double> callback_data{&query_point,
-                                       kThreshold100Meters,
-                                       p_WQ,
-                                       &X_WGs,
-                                       &no_mesh_distance_boundary_cache,
-                                       &distances};
+    CallbackData<double, FclBackend> callback_data{
+        &query_point,
+        kThreshold100Meters,
+        p_WQ,
+        &X_WGs,
+        &no_mesh_distance_boundary_cache,
+        &distances};
 
     double threshold_out = 0;
     // Expect Callback() to return false, so the broad-phase fcl will continue
     // to other objects.
-    EXPECT_FALSE(Callback<double>(&query_point, &mesh_collision_object,
-                                  &callback_data, threshold_out));
+    EXPECT_FALSE((Callback<double, FclBackend>(
+        &query_point, &mesh_collision_object, &callback_data, threshold_out)));
     EXPECT_EQ(distances.size(), 0);
     EXPECT_EQ(threshold_out, kThreshold100Meters);
   }
@@ -1546,14 +1549,15 @@ struct SignedDistanceToPointTest
     fcl::CollisionObjectd query_point = MakeQueryPoint(data.p_WQ);
 
     std::unique_ptr<fcl::CollisionObjectd> geometry_object =
-        MakeFclObject(*data.geometry, id, /* is_dynamic= */ true);
+        MakeBackendObject<FclBackend>(*data.geometry, id,
+                                      /* is_dynamic= */ true);
 
     vector<SignedDistanceToPoint<double>> distances;
     MeshDistanceBoundaryCache no_meshes;
-    CallbackData<double> callback_data{&query_point, threshold,  data.p_WQ,
-                                       &X_WGs,       &no_meshes, &distances};
-    Callback<double>(&query_point, geometry_object.get(), &callback_data,
-                     threshold);
+    CallbackData<double, FclBackend> callback_data{
+        &query_point, threshold, data.p_WQ, &X_WGs, &no_meshes, &distances};
+    Callback<double, FclBackend>(&query_point, geometry_object.get(),
+                                 &callback_data, threshold);
     return distances;
   }
 };
@@ -1596,17 +1600,17 @@ TEST_P(SignedDistanceToPointTest, SingleQueryPointSymbolic) {
   fcl::CollisionObjectd query_point = MakeQueryPoint(data.p_WQ);
 
   std::unique_ptr<fcl::CollisionObjectd> geometry_object =
-      MakeFclObject(*data.geometry, id, /* is_dynamic= */ true);
+      MakeBackendObject<FclBackend>(*data.geometry, id, /* is_dynamic= */ true);
 
   vector<SignedDistanceToPoint<Expression>> sym_distances;
   unordered_map<GeometryId, RigidTransform<Expression>> X_WGs_sym{
       {id, data.X_WG.cast<Expression>()}};
   MeshDistanceBoundaryCache no_meshes;
-  CallbackData<Expression> callback_data{
+  CallbackData<Expression, FclBackend> callback_data{
       &query_point, threshold,  data.p_WQ.cast<Expression>(),
       &X_WGs_sym,   &no_meshes, &sym_distances};
-  Callback<Expression>(&query_point, geometry_object.get(), &callback_data,
-                       threshold);
+  Callback<Expression, FclBackend>(&query_point, geometry_object.get(),
+                                   &callback_data, threshold);
   // No geometries are supported yet for Expression. Currently, this call
   // succeeds, but will always return empty results.
   EXPECT_EQ(sym_distances.size(), 0);

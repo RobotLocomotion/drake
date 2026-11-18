@@ -10,6 +10,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/geometry/proximity/fcl_backend.h"
 #include "drake/math/rigid_transform.h"
 
 namespace drake {
@@ -31,26 +32,27 @@ namespace {
  are controlled by the test to make sure that the test is detecting error that
  is *known* to exist.  */
 
-/* The MakeFclShapeTest tests confirm that Drake shape specifications turn into
- the expected fcl geometries. */
+/* The MakeCharacterizationShapeTest tests confirm that Drake shape
+ specifications turn into the expected fcl geometries. */
 
-GTEST_TEST(MakeFclShapeTest, Box) {
+GTEST_TEST(MakeCharacterizationShapeTest, Box) {
   const Box box(1, 2, 3);
-  auto fcl_geometry = MakeFclShape(box).object();
+  auto fcl_geometry = MakeCharacterizationShape(box).object();
   const auto& fcl_box = dynamic_cast<fcl::Boxd&>(*fcl_geometry);
   EXPECT_EQ(fcl_box.side, box.size());
 }
 
-GTEST_TEST(MakeFclShapeTest, Capsule) {
+GTEST_TEST(MakeCharacterizationShapeTest, Capsule) {
   const Capsule capsule(0.25, 0.75);
-  auto fcl_geometry = MakeFclShape(capsule).object();
+  auto fcl_geometry = MakeCharacterizationShape(capsule).object();
   const auto& fcl_capsule = dynamic_cast<fcl::Capsuled&>(*fcl_geometry);
   EXPECT_EQ(fcl_capsule.radius, capsule.radius());
   EXPECT_EQ(fcl_capsule.lz, capsule.length());
 }
 
-GTEST_TEST(MakeFclShapeTest, Convex) {
-  auto fcl_geometry = MakeFclShape(Convex("ignored", 1.0)).object();
+GTEST_TEST(MakeCharacterizationShapeTest, Convex) {
+  auto fcl_geometry =
+      MakeCharacterizationShape(Convex("ignored", 1.0)).object();
   const auto& fcl_convex = dynamic_cast<fcl::Convexd&>(*fcl_geometry);
   /* The convex shape is actually a box with fixed dimensions. We won't *prove*
    it's the expected box. But we'll confirm:
@@ -76,33 +78,33 @@ GTEST_TEST(MakeFclShapeTest, Convex) {
   EXPECT_TRUE(CompareMatrices(max_corner, half_size, kEps));
 }
 
-GTEST_TEST(MakeFclShapeTest, Cylinder) {
+GTEST_TEST(MakeCharacterizationShapeTest, Cylinder) {
   const Cylinder cylinder(0.25, 0.75);
-  auto fcl_geometry = MakeFclShape(cylinder).object();
+  auto fcl_geometry = MakeCharacterizationShape(cylinder).object();
   const auto& fcl_cylinder = dynamic_cast<fcl::Cylinderd&>(*fcl_geometry);
   EXPECT_EQ(fcl_cylinder.radius, cylinder.radius());
   EXPECT_EQ(fcl_cylinder.lz, cylinder.length());
 }
 
-GTEST_TEST(MakeFclShapeTest, Ellipsoid) {
+GTEST_TEST(MakeCharacterizationShapeTest, Ellipsoid) {
   const Ellipsoid ellipsoid(0.25, 0.75, 0.6);
-  auto fcl_geometry = MakeFclShape(ellipsoid).object();
+  auto fcl_geometry = MakeCharacterizationShape(ellipsoid).object();
   const auto& fcl_ellipsoid = dynamic_cast<fcl::Ellipsoidd&>(*fcl_geometry);
   EXPECT_EQ(fcl_ellipsoid.radii[0], ellipsoid.a());
   EXPECT_EQ(fcl_ellipsoid.radii[1], ellipsoid.b());
   EXPECT_EQ(fcl_ellipsoid.radii[2], ellipsoid.c());
 }
 
-GTEST_TEST(MakeFclShapeTest, HalfSpace) {
-  auto fcl_geometry = MakeFclShape(HalfSpace{}).object();
+GTEST_TEST(MakeCharacterizationShapeTest, HalfSpace) {
+  auto fcl_geometry = MakeCharacterizationShape(HalfSpace{}).object();
   const auto& fcl_half_space = dynamic_cast<fcl::Halfspaced&>(*fcl_geometry);
   EXPECT_EQ(fcl_half_space.n, Vector3d(0, 0, 1));
   EXPECT_EQ(fcl_half_space.d, 0);
 }
 
-GTEST_TEST(MakeFclShapeTest, Sphere) {
+GTEST_TEST(MakeCharacterizationShapeTest, Sphere) {
   const Sphere sphere(0.7);
-  auto fcl_geometry = MakeFclShape(sphere).object();
+  auto fcl_geometry = MakeCharacterizationShape(sphere).object();
   const auto& fcl_sphere = dynamic_cast<fcl::Sphered&>(*fcl_geometry);
   EXPECT_EQ(fcl_sphere.radius, sphere.radius());
 }

@@ -190,6 +190,29 @@ GeometryState<T>::GeometryState()
   source_root_frame_map_[self_source_] = {world};
 }
 
+template <typename T>
+CollisionBackend GeometryState<T>::collision_backend() const {
+  return geometry_engine_->collision_backend();
+}
+
+template <typename T>
+void GeometryState<T>::SetCollisionBackend(
+    std::optional<CollisionBackend> backend) {
+  auto new_engine = backend.has_value()
+                        ? make_unique<internal::ProximityEngine<T>>(*backend)
+                        : make_unique<internal::ProximityEngine<T>>();
+  if (new_engine->collision_backend() ==
+      geometry_engine_->collision_backend()) {
+    return;
+  }
+  if (!GetAllGeometryIds(Role::kProximity).empty()) {
+    throw std::logic_error(
+        "SceneGraph's collision backend cannot be changed after proximity "
+        "geometry has been registered.");
+  }
+  geometry_engine_ = std::move(new_engine);
+}
+
 namespace {
 
 // Helper for the scalar-converting copy constructor.

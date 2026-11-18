@@ -25,6 +25,7 @@
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/geometry_state.h"
 #include "drake/geometry/proximity/mesh_distance_boundary.h"
+#include "drake/geometry/proximity/proximity_utilities.h"
 #include "drake/geometry/proximity_properties.h"
 #include "drake/geometry/shape_specification.h"
 #include "drake/math/autodiff.h"
@@ -79,11 +80,20 @@ class ProximityEngineTester {
   }
 
   template <typename T>
+  static bool IsConvexType(const ProximityEngine<T>& engine, GeometryId id) {
+    return engine.IsConvexType(id);
+  }
+
+  template <typename T>
   static const fcl::CollisionObjectd* GetCollisionObject(
       const ProximityEngine<T>& engine, GeometryId id) {
+    // The engine type erases this pointer, so the cast below is only safe for
+    // an engine built on FCL. Guard it: before this check, a Coal-backed
+    // engine would hand back a coal::CollisionObject* and the first
+    // dereference would be undefined behavior rather than a test failure.
+    DRAKE_DEMAND(engine.collision_backend() == CollisionBackend::kFcl);
     void* erase_ptr = engine.GetCollisionObject(id);
     if (erase_ptr != nullptr) {
-      // API promises that this is a safe cast.
       return static_cast<const fcl::CollisionObjectd*>(erase_ptr);
     }
     return nullptr;
@@ -228,7 +238,11 @@ class ProximityEngineTests : public ::testing::Test {
         });
   }
 
-  ProximityEngine<double> engine_;
+  // This suite makes white-box assertions about FCL's representation (convex
+  // hull vertex counts, aabb_local inflation, collision object identity), so
+  // it pins the backend rather than following DRAKE_PROXIMITY_BACKEND. Coal
+  // is covered by proximity_engine_coal_test and the backend agreement test.
+  ProximityEngine<double> engine_{CollisionBackend::kFcl};
   unordered_map<GeometryId, RigidTransform<double>> X_WGs_;
 };
 

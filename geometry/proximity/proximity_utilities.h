@@ -1,14 +1,16 @@
 #pragma once
 
 #include <algorithm>
+#include <concepts>
 #include <cstdint>
 #include <string>
+#include <string_view>
 #include <vector>
 
-#include <fcl/fcl.h>
 #include <fmt/format.h>
 
 #include "drake/common/drake_export.h"
+#include "drake/geometry/collision_backend.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/proximity/volume_mesh.h"
 #include "drake/geometry/shape_specification.h"
@@ -17,9 +19,38 @@ namespace drake {
 namespace geometry {
 namespace internal DRAKE_NO_EXPORT {
 
-// TODO(SeanCurtis-TRI): Given the dependencies on fcl for this file, the name
-//  should reflect it so that it doesn't get included in files that will
-//  eventually get included in the public API.
+/* The geometry kinds Drake registers with a proximity backend, plus a catch-
+ all for everything else the backend's library can represent.
+
+ This exists because the collision libraries' NODE_TYPE enumerations do not
+ agree -- see fcl_backend.h (D6). Code shared across backends switches on
+ ShapeKind, which is exhaustive and stable; each backend policy owns the
+ exhaustive switch that maps its own NODE_TYPE onto this. */
+enum class ShapeKind {
+  kBox,
+  kCapsule,
+  kConvex,
+  kCylinder,
+  kEllipsoid,
+  kHalfspace,
+  kSphere,
+  /* A geometry the backend's library can represent but Drake never registers.
+   */
+  kUnsupported
+};
+
+/* Returns the name Drake uses for the given shape kind. */
+std::string_view to_string(ShapeKind kind);
+
+/* A collision object, as modeled by any of Drake's proximity backends. Used to
+ constrain the templates below that need nothing from the object beyond its
+ user-data accessors; see fcl_backend.h for what a backend policy is.  */
+template <typename Object>
+concept BackendCollisionObject =
+    requires(Object* mutable_object, const Object& object, void* data) {
+      { object.getUserData() } -> std::same_as<void*>;
+      mutable_object->setUserData(data);
+    };
 
 // TODO(SeanCurtis-TRI): Snake case this name.
 /* Calculates an absolute tolerance value conditioned to a problem's
@@ -39,8 +70,8 @@ constexpr double DistanceToPointRelativeTolerance(double size) {
  id value with a bit indicating if the id refers to dynamic or anchored geometry
  (proximity engine segregates them). The highest-order bit indicates dynamic (1)
  or anchored (0). The remaining lower bits store the id. The data is stored in a
- pointer-sized integer. This integer is, in turn, stored directly into
- fcl::CollisionObject's void* user data member.  */
+ pointer-sized integer. This integer is, in turn, stored directly into the
+ collision object's void* user data member.  */
 class EncodedData {
  public:
   using ValueType = decltype(GeometryId::get_new_id().get_value());
@@ -59,8 +90,9 @@ class EncodedData {
 
   /* Constructs encoded data by extracting it from the given collision object.
    */
-  explicit EncodedData(const fcl::CollisionObject<double>& fcl_object)
-      : data_(reinterpret_cast<ValueType>(fcl_object.getUserData())) {}
+  template <BackendCollisionObject Object>
+  explicit EncodedData(const Object& object)
+      : data_(reinterpret_cast<ValueType>(object.getUserData())) {}
 
   /* Constructs encoded data for the given id identified as dynamic.  */
   static EncodedData encode_dynamic(GeometryId id) { return {id, true}; }
@@ -75,7 +107,8 @@ class EncodedData {
   void set_anchored() { data_ &= ~kIsDynamicMask; }
 
   /* Writes the encoded data into the collision object's user data.  */
-  void write_to(fcl::CollisionObject<double>* object) const {
+  template <BackendCollisionObject Object>
+  void write_to(Object* object) const {
     object->setUserData(reinterpret_cast<void*>(data_));
   }
 
@@ -121,8 +154,13 @@ class EncodedData {
 };
 
 /* Returns the name of the geometry associated with the given collision
- `object`.  */
-std::string GetGeometryName(const fcl::CollisionObjectd& object);
+ `object`. The node-type-to-name mapping belongs to the backend because the
+ libraries' NODE_TYPE enumerator sets differ; see fcl_backend.h (D6).  */
+template <typename Backend>
+std::string GetGeometryName(const typename Backend::Object& object) {
+  return std::string(
+      to_string(Backend::Classify(object.collisionGeometry()->getNodeType())));
+}
 
 // TODO(joemasterjohn): Move the below mesh testing utilities to a separate
 // target only used by tests.
