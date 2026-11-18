@@ -51,7 +51,7 @@ GTEST_TEST(SimulatorConfigFunctionsCenicTest, IntegratorParams) {
   const auto& cenic =
       dynamic_cast<const CenicIntegrator<double>&>(simulator.get_integrator());
   EXPECT_TRUE(cenic.GetParameters().explicit_external_inputs);
-  EXPECT_EQ(cenic.get_solver_parameters().min_tolerance, 1e-6);
+  EXPECT_EQ(cenic.GetParameters().icf_solver.min_tolerance, 1e-6);
   const auto readback = ExtractSimulatorConfig(simulator);
   const auto* readback_params =
       std::get_if<CenicIntegratorParameters>(&readback.integrator_params);
