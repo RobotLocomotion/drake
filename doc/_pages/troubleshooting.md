@@ -87,7 +87,10 @@ shadows.
 Because of the added weld constraints, loop closure requires a solver that can
 process constraints. Discrete-time plants use SAP; continuous-time simulation
 requires the CENIC integrator (integration scheme `"cenic"` in a
-`SimulatorConfig`).
+`SimulatorConfig`). Also call `MultibodyPlant::SetUseSampledOutputPorts(true)`
+before `Finalize()` (or set `use_sampled_output_ports: true` in a
+`MultibodyPlantConfig`); using CENIC without sampled output ports is
+deprecated.
 
 ### Assembly
 

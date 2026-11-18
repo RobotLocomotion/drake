@@ -74,6 +74,7 @@ GTEST_TEST(BallConstraintSimulation, LargeInitialError) {
   // Continuous-time plant is required for the CENIC integrator.
   MultibodyPlantConfig plant_config;
   plant_config.time_step = 0.0;
+  plant_config.use_sampled_output_ports = true;
   auto [plant, scene_graph] = AddMultibodyPlant(plant_config, &builder);
 
   Parser(&plant).AddModelsFromString(kMjcf, "xml");

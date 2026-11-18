@@ -1473,6 +1473,7 @@ GTEST_TEST(ClosedTopologyTest, CenicEnforcesTheLoopConstraint) {
     FourBar four_bar;  // Continuous.
     MultibodyPlant<double>& plant = four_bar.plant();
     plant.mutable_gravity_field().set_gravity_vector({5.0, 0.0, -9.81});
+    plant.SetUseSampledOutputPorts(true);
     plant.Finalize();
     std::unique_ptr<systems::Diagram<double>> diagram = four_bar.Build();
     systems::Simulator<double> simulator(*diagram);

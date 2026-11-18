@@ -627,7 +627,10 @@ class OrthogonalSurfaceVelocityTest
   static constexpr double kCenicTimeStep = 1e-3;
 
   void SetUp() override {
-    const auto& config = GetParam().plant_config;
+    MultibodyPlantConfig config = GetParam().plant_config;
+    if (GetParam().use_cenic) {
+      config.use_sampled_output_ports = true;
+    }
 
     systems::DiagramBuilder<double> builder;
     auto [plant_ref, _] = AddMultibodyPlant(config, &builder);
