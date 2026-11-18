@@ -761,6 +761,29 @@ TEST_F(SceneGraphTest, RoleManagementSmokeTest) {
   EXPECT_EQ(scene_graph_.RemoveRole(s_id, g_id, Role::kIllustration), 1);
 }
 
+// SceneGraph::AnchorFrames() is a thin wrapper on
+// GeometryState::AnchorFrames(). This is just a smoke test that it reaches the
+// model; it relies on GeometryState to properly unit test the full behavior.
+// Anchoring is observed through the collision candidates: two anchored
+// geometries are never candidates.
+TEST_F(SceneGraphTest, AnchorFramesSmokeTest) {
+  const SourceId s_id = scene_graph_.RegisterSource("test");
+  std::vector<FrameId> frame_ids;
+  for (const char* name : {"f1", "f2"}) {
+    const FrameId f_id = scene_graph_.RegisterFrame(s_id, GeometryFrame(name));
+    auto instance = make_sphere_instance();
+    instance->set_proximity_properties(ProximityProperties());
+    scene_graph_.RegisterGeometry(s_id, f_id, std::move(instance));
+    frame_ids.push_back(f_id);
+  }
+
+  const SceneGraphInspector<double>& inspector = scene_graph_.model_inspector();
+  ASSERT_EQ(inspector.GetCollisionCandidates().size(), 1);
+
+  scene_graph_.AnchorFrames(frame_ids);
+  EXPECT_EQ(inspector.GetCollisionCandidates().size(), 0);
+}
+
 // For SceneGraph::ChangeShape to be correct, we need to make sure it invokes
 // GeometryState correctly. So, we'll invoke it and look for minimum evidence
 // that the change has happened (i.e., we report a different shape) and rely
@@ -1063,6 +1086,32 @@ GTEST_TEST(SceneGraphExpressionTest, InstantiateExpression) {
   QueryObject<Expression> handle =
       QueryObjectTest::MakeNullQueryObject<Expression>();
   SceneGraphTester::GetQueryObjectPortValue(scene_graph, *context, &handle);
+}
+
+// An anchored frame (without geometry) can have a symbolic pose (e.g., a
+// symbolic parameter in a world weld). SceneGraph must not try to evaluate it
+// numerically. The first pose update is always a full refresh, so we need a
+// second update to exercise the change detection.
+GTEST_TEST(SceneGraphExpressionTest, SymbolicAnchoredFramePose) {
+  SceneGraph<Expression> scene_graph;
+  const SourceId s_id = scene_graph.RegisterSource("source");
+  const FrameId f_id = scene_graph.RegisterFrame(s_id, GeometryFrame("frame"));
+  scene_graph.AnchorFrames({f_id});
+  auto context = scene_graph.CreateDefaultContext();
+
+  const symbolic::Variable x("x");
+  for (const Expression& offset : {Expression(x), Expression(2 * x)}) {
+    FramePoseVector<Expression> poses;
+    poses.set_value(f_id, math::RigidTransform<Expression>(
+                              Vector3<Expression>(offset, 0, 0)));
+    scene_graph.get_source_pose_port(s_id).FixValue(context.get(), poses);
+    const auto& query_object =
+        scene_graph.get_query_output_port().Eval<QueryObject<Expression>>(
+            *context);
+    const math::RigidTransform<Expression>& X_WF =
+        query_object.GetPoseInWorld(f_id);
+    EXPECT_TRUE(X_WF.translation().x().EqualTo(offset));
+  }
 }
 
 // Tests that exercise the Context-modifying API
