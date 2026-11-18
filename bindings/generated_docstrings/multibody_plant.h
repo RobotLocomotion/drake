@@ -4989,7 +4989,8 @@ R"""(Returns a list of actuated joint indices associated with
 ``model_instance``. The vector is ordered by the actuators'
 JointActuatorIndex (i.e., it is parallel to
 GetJointActuatorIndices(model_instance)). This may be called either
-pre- or post-finalize.
+pre- or post-finalize. Pre-finalize, the result reflects the actuators
+added (and not removed) so far, so it can change until Finalize().
 
 Raises:
     RuntimeError if ``model_instance`` does not exist.)""";
@@ -5514,6 +5515,8 @@ general not be consecutive due to actuators that were removed.)""";
 R"""(Returns a list of joint actuator indices associated with
 ``model_instance``. The vector is ordered by monotonically increasing
 JointActuatorIndex. This may be called either pre- or post-finalize.
+Pre-finalize, the result reflects the actuators added (and not
+removed) so far, so it can change until Finalize().
 
 Raises:
     RuntimeError if ``model_instance`` does not exist.)""";

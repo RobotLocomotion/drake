@@ -422,9 +422,10 @@ GTEST_TEST(MultibodyPlantTest, AddJointActuator) {
       ".*3 degrees of freedom.*");
 }
 
-// Per-model-instance actuator queries give the same answers pre- and
-// post-finalize, including after an actuator has been removed (see #21547).
-GTEST_TEST(MultibodyPlantTest, GetJointActuatorIndicesPreFinalize) {
+// Per-model-instance actuator queries work pre-finalize (see #21547), and give
+// the same answers pre- and post-finalize, including after an actuator has been
+// removed.
+GTEST_TEST(MultibodyPlantTest, PerInstanceActuatorQueriesPreFinalize) {
   MultibodyPlant<double> plant(0.0);
   const ModelInstanceIndex instance_a = plant.AddModelInstance("a");
   const ModelInstanceIndex instance_b = plant.AddModelInstance("b");
@@ -461,6 +462,12 @@ GTEST_TEST(MultibodyPlantTest, GetJointActuatorIndicesPreFinalize) {
                 testing::ElementsAre(joint_b0->index()));
     EXPECT_TRUE(plant.GetJointActuatorIndices(world_model_instance()).empty());
     EXPECT_TRUE(plant.GetActuatedJointIndices(world_model_instance()).empty());
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        plant.GetJointActuatorIndices(ModelInstanceIndex(99)),
+        ".*has_element.*");
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        plant.GetActuatedJointIndices(ModelInstanceIndex(99)),
+        ".*has_element.*");
   };
   check();
   plant.Finalize();
