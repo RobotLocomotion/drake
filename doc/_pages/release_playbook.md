@@ -192,11 +192,8 @@ the main body of the document:
       job from Jenkins.
    4. Create a new GitHub issue on the [drake](https://github.com/RobotLocomotion/drake/issues/new/choose)
       repository and select the "Post-Release Actions" template.
-   5. Create a GitHub issue on the [drake-ros](https://github.com/RobotLocomotion/drake-ros/issues)
-      repository, requesting an update of the `DRAKE_SUGGESTED_VERSION`
-      constant.
-   6. Announce on Drake Slack, ``#general``.
-   7. Party on, Wayne.
+   5. Announce on Drake Slack, ``#general``.
+   6. Party on, Wayne.
 
 ## Post-release wheel upload
 
