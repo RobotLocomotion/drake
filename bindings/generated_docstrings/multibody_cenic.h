@@ -257,9 +257,12 @@ CenicIntegratorParameters for the meaning of each setting.)""";
         // Symbol: drake::multibody::CenicIntegrator::SetSolverParameters
         struct /* SetSolverParameters */ {
           // Source: drake/multibody/cenic/cenic_integrator.h
-          const char* doc =
-R"""(Sets the convex solver tolerances and iteration limits, leaving the
-other CENIC parameters unchanged.)""";
+          const char* doc_deprecated =
+R"""((Deprecated.)
+
+Deprecated:
+    Use GetParameters() and SetParameters() instead. This will be
+    removed from Drake on or after 2027-03-01.)""";
         } SetSolverParameters;
         // Symbol: drake::multibody::CenicIntegrator::get_error_estimate_order
         struct /* get_error_estimate_order */ {
@@ -269,9 +272,12 @@ other CENIC parameters unchanged.)""";
         // Symbol: drake::multibody::CenicIntegrator::get_solver_parameters
         struct /* get_solver_parameters */ {
           // Source: drake/multibody/cenic/cenic_integrator.h
-          const char* doc =
-R"""(Gets the current convex solver tolerances and iteration limits. This
-is a shortcut for ``GetParameters().icf_solver``.)""";
+          const char* doc_deprecated =
+R"""((Deprecated.)
+
+Deprecated:
+    Use GetParameters().icf_solver instead. This will be removed from
+    Drake on or after 2027-03-01.)""";
         } get_solver_parameters;
         // Symbol: drake::multibody::CenicIntegrator::plant
         struct /* plant */ {

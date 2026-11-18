@@ -2,6 +2,7 @@ import copy
 import unittest
 
 from pydrake.common.test_utilities import numpy_compare
+from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 import pydrake.multibody.cenic as mut
 from pydrake.multibody.contact_solvers import IcfSolverParameters
 from pydrake.planning import RobotDiagramBuilder_
@@ -22,16 +23,24 @@ class TestCenic(unittest.TestCase):
         dut = CenicIntegrator(system=diagram, context=None)
 
         # Confirm parameter operations.
-        parameters = dut.get_solver_parameters()
-        self.assertIsNotNone(parameters)
-        dut.SetSolverParameters(parameters=parameters)
         full = dut.GetParameters()
         self.assertFalse(full.explicit_external_inputs)
         full.explicit_external_inputs = True
         full.icf_solver.max_iterations = 7
         dut.SetParameters(parameters=full)
         self.assertTrue(dut.GetParameters().explicit_external_inputs)
-        self.assertEqual(dut.get_solver_parameters().max_iterations, 7)
+        self.assertEqual(dut.GetParameters().icf_solver.max_iterations, 7)
+
+        # Confirm the deprecated solver-only parameter operations.
+        # Remove on 2027-03-01 per deprecation.
+        with catch_drake_warnings(expected_count=1):
+            parameters = dut.get_solver_parameters()
+        self.assertEqual(parameters.max_iterations, 7)
+        parameters.max_iterations = 9
+        with catch_drake_warnings(expected_count=1):
+            dut.SetSolverParameters(parameters=parameters)
+        self.assertTrue(dut.GetParameters().explicit_external_inputs)
+        self.assertEqual(dut.GetParameters().icf_solver.max_iterations, 9)
 
         # Confirm the IntegratorBase inheritance.
         dut.set_fixed_step_mode(True)
