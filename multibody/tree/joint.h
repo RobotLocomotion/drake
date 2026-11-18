@@ -7,6 +7,7 @@
 #include <utility>
 #include <vector>
 
+#include "drake/common/drake_bool.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/multibody/tree/fixed_offset_frame.h"
 #include "drake/multibody/tree/mobilizer.h"
@@ -784,6 +785,9 @@ class Joint : public MultibodyElement<T> {
   /// N⋅m for a revolute joint and in N for a prismatic joint.
   ///
   /// @note Only discrete MultibodyPlant models support dry friction.
+  /// @note Dry friction is not supported for T = symbolic::Expression. A
+  ///   MultibodyPlant with a joint with non-zero default dry friction cannot be
+  ///   converted to symbolic::Expression.
   /// @throws std::exception if the joint does not have a single degree of
   ///   freedom.
   double default_dry_friction() const {
@@ -809,9 +813,16 @@ class Joint : public MultibodyElement<T> {
   /// @throws std::exception if dry_friction is negative, infinite or NaN.
   /// @throws std::exception if this element is not associated with a
   ///   MultibodyPlant.
+  /// @throws std::exception if T is symbolic::Expression, since joint dry
+  ///   friction is not supported for symbolic scalars.
   /// @pre the MultibodyPlant must not be finalized.
   void set_default_dry_friction(double dry_friction) {
     DRAKE_THROW_UNLESS(num_velocities() == 1);
+    if constexpr (!scalar_predicate<T>::is_bool) {
+      throw std::logic_error(
+          "set_default_dry_friction(): not supported for T = "
+          "symbolic::Expression.");
+    }
     DRAKE_THROW_UNLESS(dry_friction >= 0);
     DRAKE_THROW_UNLESS(dry_friction < std::numeric_limits<double>::infinity());
     DRAKE_THROW_UNLESS(this->has_parent_tree());
@@ -827,9 +838,15 @@ class Joint : public MultibodyElement<T> {
   /// @throws std::exception if the joint does not have a single degree of
   ///   freedom.
   /// @throws std::exception if dry_friction is negative, infinite or NaN.
+  /// @throws std::exception if T is symbolic::Expression, since joint dry
+  ///   friction is not supported for symbolic scalars.
   void SetDryFriction(systems::Context<T>* context,
                       const T& dry_friction) const {
     DRAKE_THROW_UNLESS(num_velocities() == 1);
+    if constexpr (!scalar_predicate<T>::is_bool) {
+      throw std::logic_error(
+          "SetDryFriction(): not supported for T = symbolic::Expression.");
+    }
     DRAKE_THROW_UNLESS(dry_friction >= 0);
     DRAKE_THROW_UNLESS(dry_friction < std::numeric_limits<double>::infinity());
     context->get_mutable_numeric_parameter(dry_friction_parameter_index_)
@@ -873,9 +890,19 @@ class Joint : public MultibodyElement<T> {
   // NVI to DoCloneToScalar() templated on the scalar type of the new clone to
   // be created. This method is intended to be called by
   // MultibodyTree::CloneToScalar().
+  // @throws std::exception if ToScalar is symbolic::Expression and this joint
+  //   has non-zero default dry friction.
   template <typename ToScalar>
   std::unique_ptr<Joint<ToScalar>> CloneToScalar(
       internal::MultibodyTree<ToScalar>* tree_clone) const {
+    if constexpr (!scalar_predicate<ToScalar>::is_bool) {
+      if (dry_friction_ != 0.0) {
+        throw std::logic_error(fmt::format(
+            "Joint '{}' has non-zero dry friction, which is not supported for "
+            "T = symbolic::Expression.",
+            name()));
+      }
+    }
     std::unique_ptr<Joint<ToScalar>> joint_clone = DoCloneToScalar(*tree_clone);
     // Dry friction is not a constructor argument of concrete joints, so it is
     // copied here rather than in each DoCloneToScalar() implementation.

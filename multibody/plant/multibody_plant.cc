@@ -292,6 +292,23 @@ bool HasNaN(const EigenMatrix& x) {
   }
 }
 
+// Returns the quoted names of the joints of `plant` with non-zero default dry
+// friction.
+template <typename T>
+std::vector<std::string> GetJointsWithDefaultDryFriction(
+    const MultibodyPlant<T>& plant) {
+  std::vector<std::string> joint_names;
+  for (JointIndex joint_index : plant.GetJointIndices()) {
+    const Joint<T>& joint = plant.get_joint(joint_index);
+    // Only joints with a single degree of freedom model dry friction.
+    if (joint.num_velocities() != 1) continue;
+    if (joint.default_dry_friction() != 0.0) {
+      joint_names.push_back(fmt::format("'{}'", joint.name()));
+    }
+  }
+  return joint_names;
+}
+
 }  // namespace
 
 template <typename T>
@@ -1597,6 +1614,11 @@ void MultibodyPlant<T>::FinalizePlantOnly() {
   // support" message, rather than silently producing a degenerate plant that
   // fails downstream with an inscrutable error.
   RemoveUnsupportedScalars(*physical_models_);
+  // Likewise, joint dry friction is not supported for T = symbolic::Expression.
+  if (!GetJointsWithDefaultDryFriction(*this).empty()) {
+    this->get_mutable_system_scalar_converter()
+        .template Remove<symbolic::Expression, T>();
+  }
 
   DeclareInputPorts();
   DeclareParameters();
@@ -3444,27 +3466,31 @@ void MultibodyPlant<T>::ThrowIfUnsupportedContinuousTimeDynamics(
         constraints));
   }
 
-  // Reject joint dry friction.
+  // Reject joint dry friction. Dry friction is not supported for
+  // T = symbolic::Expression (see Joint::SetDryFriction()), so there is nothing
+  // to reject for symbolic plants.
   // TODO(xuchen-han): Remove this scan over all joints on every evaluation of
   // the dynamics, e.g. by caching the indices of the joints with a single
   // degree of freedom at Finalize().
-  std::vector<std::string> joints_with_dry_friction;
-  for (JointIndex joint_index : GetJointIndices()) {
-    const Joint<T>& joint = get_joint(joint_index);
-    // Only joints with a single degree of freedom model dry friction.
-    if (joint.num_velocities() != 1) continue;
-    if (joint.GetDryFriction(context) != 0.0) {
-      joints_with_dry_friction.push_back(fmt::format("'{}'", joint.name()));
+  if constexpr (scalar_predicate<T>::is_bool) {
+    std::vector<std::string> joints_with_dry_friction;
+    for (JointIndex joint_index : GetJointIndices()) {
+      const Joint<T>& joint = get_joint(joint_index);
+      // Only joints with a single degree of freedom model dry friction.
+      if (joint.num_velocities() != 1) continue;
+      if (joint.GetDryFriction(context) != 0.0) {
+        joints_with_dry_friction.push_back(fmt::format("'{}'", joint.name()));
+      }
     }
-  }
-  if (!joints_with_dry_friction.empty()) {
-    const char* s = (joints_with_dry_friction.size() == 1 ? "" : "s");
-    throw std::logic_error(fmt::format(
-        "Standard continuous-time dynamics do not support joint dry friction, "
-        "but it is non-zero for joint{} {}. Use a discrete-time plant with "
-        "SAP, or set the dry friction of the joint{} to zero, see "
-        "Joint::SetDryFriction().",
-        s, fmt::join(joints_with_dry_friction, ", "), s));
+    if (!joints_with_dry_friction.empty()) {
+      const char* s = (joints_with_dry_friction.size() == 1 ? "" : "s");
+      throw std::logic_error(fmt::format(
+          "Standard continuous-time dynamics do not support joint dry "
+          "friction, but it is non-zero for joint{} {}. Use a discrete-time "
+          "plant with SAP, or set the dry friction of the joint{} to zero, see "
+          "Joint::SetDryFriction().",
+          s, fmt::join(joints_with_dry_friction, ", "), s));
+    }
   }
 
   // TODO(#24061): consider rejecting models with joint limits here, once CENIC
@@ -4764,6 +4790,17 @@ std::string MultibodyPlant<T>::GetUnsupportedScalarConversionMessage(
   };
   if (physical_models_ != nullptr) collect(*physical_models_);
   if (discrete_update_manager_ != nullptr) collect(*discrete_update_manager_);
+  // NOLINTNEXTLINE(readability/casting) False positive.
+  if (destination_type == typeid(symbolic::Expression)) {
+    const std::vector<std::string> joints_with_dry_friction =
+        GetJointsWithDefaultDryFriction(*this);
+    if (!joints_with_dry_friction.empty()) {
+      const bool plural = joints_with_dry_friction.size() > 1;
+      causes.push_back(fmt::format(
+          "joint{} {} {} non-zero dry friction", plural ? "s" : "",
+          fmt::join(joints_with_dry_friction, ", "), plural ? "have" : "has"));
+    }
+  }
   if (!causes.empty()) {
     result += fmt::format(" (because {})", fmt::join(causes, " and "));
   }

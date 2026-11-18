@@ -3579,7 +3579,11 @@ Raises:
     freedom.
 
 Raises:
-    RuntimeError if dry_friction is negative, infinite or NaN.)""";
+    RuntimeError if dry_friction is negative, infinite or NaN.
+
+Raises:
+    RuntimeError if T is symbolic∷Expression, since joint dry friction
+    is not supported for symbolic scalars.)""";
         } SetDryFriction;
         // Symbol: drake::multibody::Joint::SetPose
         struct /* SetPose */ {
@@ -3800,6 +3804,11 @@ prismatic joint.
 
 Note:
     Only discrete MultibodyPlant models support dry friction.
+
+Note:
+    Dry friction is not supported for T = symbolic∷Expression. A
+    MultibodyPlant with a joint with non-zero default dry friction
+    cannot be converted to symbolic∷Expression.
 
 Raises:
     RuntimeError if the joint does not have a single degree of
@@ -4036,6 +4045,10 @@ Raises:
 Raises:
     RuntimeError if this element is not associated with a
     MultibodyPlant.
+
+Raises:
+    RuntimeError if T is symbolic∷Expression, since joint dry friction
+    is not supported for symbolic scalars.
 
 Precondition:
     the MultibodyPlant must not be finalized.)""";
