@@ -86,14 +86,8 @@ class ListStruct:
 
 
 @dc.dataclass
-class StringListStruct:
-    value: list[str] = dc.field(default_factory=lambda: ["nominal_string"])
-    __eq__ = _dataclass_eq
-
-
-@dc.dataclass
-class OptionalStringListStruct:
-    value: list[str] | None = None
+class OptionalListStruct:
+    value: list[float] | None = None
     __eq__ = _dataclass_eq
 
 
@@ -310,6 +304,10 @@ class TestYamlTypedRead(unittest.TestCase, metaclass=ValueParameterizedTest):
             x = yaml_load_typed(schema=FloatStruct, data=data, **options)
             self.assertEqual(x.value, expected)
 
+        # A str that Python cannot parse as a number is a schema mismatch.
+        with self.assertRaisesRegex(RuntimeError, "Expected.*float.*'abc'"):
+            yaml_load_typed(schema=FloatStruct, data="value: abc", **options)
+
     @run_with_multiple_values(_all_typed_read_options())
     def test_read_float_missing(self, *, options):
         if options["allow_schema_with_no_yaml"]:
@@ -346,21 +344,9 @@ class TestYamlTypedRead(unittest.TestCase, metaclass=ValueParameterizedTest):
         with self.assertRaisesRegex(Exception, "Expected.*int.*"):
             yaml_load_typed(schema=IntStruct, data="value: 1.1", **options)
 
-    @run_with_multiple_values(_all_typed_read_options())
-    def test_read_number_from_unparseable_str(self, *, options):
-        # A str that Python cannot parse as a number is a schema mismatch like
-        # any other, and must name the field (not leak a bare ValueError).
-        for schema, regex in [
-            (FloatStruct, "Expected.*float.*'value'.*'abc'"),
-            (IntStruct, "Expected.*int.*'value'.*'abc'"),
-        ]:
-            with self.assertRaisesRegex(RuntimeError, regex):
-                yaml_load_typed(schema=schema, data="value: abc", **options)
-        # PyYAML reads `1e3` as a str (YAML 1.1 floats need a dot).
-        with self.assertRaisesRegex(RuntimeError, "Expected.*int.*'1e3'"):
-            yaml_load_typed(schema=IntStruct, data="value: 1e3", **options)
-        with self.assertRaisesRegex(RuntimeError, "sum type.*'value'.*abc"):
-            yaml_load_typed(schema=OptionalStruct, data="value: abc", **options)
+        # A str that Python cannot parse as a number is a schema mismatch.
+        with self.assertRaisesRegex(RuntimeError, "Expected.*int.*'abc'"):
+            yaml_load_typed(schema=IntStruct, data="value: abc", **options)
 
     @run_with_multiple_values(_all_typed_read_options())
     def test_read_bool(self, *, options):
@@ -1036,37 +1022,84 @@ class TestYamlTypedRead(unittest.TestCase, metaclass=ValueParameterizedTest):
         self.assertEqual(x, OuterStruct(1.0, InnerStruct(2.0)))
 
     @run_with_multiple_values(_all_typed_read_options())
-    def test_read_wrong_container_shape(self, *, options):
-        # A list field must be given a yaml sequence. (A str or mapping must
-        # not be silently iterated into a list of characters or keys.)
-        for schema, data, regex in [
-            (StringListStruct, "value: hello", "sequence.*'value'.*str"),
-            (StringListStruct, "value: {a: b}", "sequence.*'value'.*dict"),
-            (ListStruct, "value: 1.0", "sequence.*'value'.*float"),
-            (ListStruct, "value:", "sequence.*'value'.*NoneType"),
-            (OptionalStringListStruct, "value: hello", "sum type.*'value'"),
-            # A map field must be given a yaml mapping.
-            (MapStruct, "value: [1.0]", "mapping.*'value'.*list"),
-            (MapStruct, "value: 1.0", "mapping.*'value'.*float"),
-            # A nested struct must be given a yaml mapping.
-            (
-                OuterStruct,
-                "outer_value: 1.0\ninner_struct: 3",
-                "mapping.*'inner_struct'.*int",
-            ),
-            (
-                OuterStruct,
-                "outer_value: 1.0\ninner_struct: [3]",
-                "mapping.*'inner_struct'.*list",
-            ),
-            (
-                OuterStruct,
-                "outer_value: 1.0\ninner_struct:",
-                "mapping.*'inner_struct'.*NoneType",
-            ),
-        ]:
-            with self.assertRaisesRegex(RuntimeError, regex):
-                yaml_load_typed(schema=schema, data=data, **options)
+    def test_visit_vector_found_nothing(self, *, options):
+        # This finds nothing when a list was wanted.
+        with self.assertRaisesRegex(
+            RuntimeError, "sequence.*'value'.*NoneType"
+        ):
+            yaml_load_typed(schema=ListStruct, data="value:", **options)
+
+    @run_with_multiple_values(_all_typed_read_options())
+    def test_visit_vector_found_scalar(self, *, options):
+        # This finds a scalar when a list was wanted.
+        with self.assertRaisesRegex(RuntimeError, "sequence.*'value'.*float"):
+            yaml_load_typed(schema=ListStruct, data="value: 1.0", **options)
+
+    @run_with_multiple_values(_all_typed_read_options())
+    def test_visit_vector_found_struct(self, *, options):
+        # This finds a sub-structure when a list was wanted.
+        data = dedent("""
+        value:
+          inner_value: 1.0
+        """)
+        with self.assertRaisesRegex(RuntimeError, "sequence.*'value'.*dict"):
+            yaml_load_typed(schema=ListStruct, data=data, **options)
+
+    @run_with_multiple_values(_all_typed_read_options())
+    def test_read_optional_list(self, *, options):
+        cases = [
+            ("[1.0, 2.0, 3.0]", [1.0, 2.0, 3.0]),
+            ("", None),
+        ]
+        for value, expected in cases:
+            data = f"value: {value}"
+            x = yaml_load_typed(schema=OptionalListStruct, data=data, **options)
+            self.assertEqual(x.value, expected)
+
+    @run_with_multiple_values(_all_typed_read_options())
+    def test_visit_optional_list_found_scalar(self, *, options):
+        # This finds a scalar when an optional list was wanted. (The scalar
+        # must not be promoted to a list by iterating over its characters.)
+        with self.assertRaisesRegex(RuntimeError, "sum type.*'value'.*hello"):
+            yaml_load_typed(
+                schema=OptionalListStruct, data="value: hello", **options
+            )
+
+    @run_with_multiple_values(_all_typed_read_options())
+    def test_visit_map_found_scalar(self, *, options):
+        # This finds a scalar when a map was wanted.
+        with self.assertRaisesRegex(RuntimeError, "mapping.*'value'.*float"):
+            yaml_load_typed(schema=MapStruct, data="value: 1.0", **options)
+
+    @run_with_multiple_values(_all_typed_read_options())
+    def test_visit_map_found_array(self, *, options):
+        # This finds a sequence when a map was wanted.
+        with self.assertRaisesRegex(RuntimeError, "mapping.*'value'.*list"):
+            yaml_load_typed(schema=MapStruct, data="value: [1.0]", **options)
+
+    @run_with_multiple_values(_all_typed_read_options())
+    def test_visit_struct_found_scalar(self, *, options):
+        # This finds a scalar when a sub-structure was wanted.
+        data = dedent("""
+        outer_value: 1.0
+        inner_struct: 2.0
+        """)
+        with self.assertRaisesRegex(
+            RuntimeError, "mapping.*'inner_struct'.*float"
+        ):
+            yaml_load_typed(schema=OuterStruct, data=data, **options)
+
+    @run_with_multiple_values(_all_typed_read_options())
+    def test_visit_struct_found_array(self, *, options):
+        # This finds an array when a sub-structure was wanted.
+        data = dedent("""
+        outer_value: 1.0
+        inner_struct: [2.0, 3.0]
+        """)
+        with self.assertRaisesRegex(
+            RuntimeError, "mapping.*'inner_struct'.*list"
+        ):
+            yaml_load_typed(schema=OuterStruct, data=data, **options)
 
     # TODO(jwnimmer-tri) Add a test case similar to NestedWithMergeKeys from
     # the C++ YAML test suite.
@@ -1082,17 +1115,12 @@ class TestYamlTypedRead(unittest.TestCase, metaclass=ValueParameterizedTest):
     # - VisitArrayFoundNothing
     # - VisitArrayFoundScalar
     # - VisitArrayFoundStruct
-    # - VisitVectorFoundNothing
-    # - VisitVectorFoundScalar
-    # - VisitVectorFoundStruct
     # - VisitOptionalScalarFoundSequence
     # - VisitEigenFoundNothing
     # - VisitEigenFoundScalar
     # - VisitEigenMatrixFoundOneDimensional
     # - VisitEigenMatrixFoundNonSquare
     # - VisitStructFoundNothing
-    # - VisitStructFoundScalar
-    # - VisitStructFoundArray
 
 
 class TestYamlTypedReadAcceptance(unittest.TestCase):

@@ -175,6 +175,10 @@ TEST_P(YamlReadArchiveTest, Double) {
   test("5.6E-7", 5.6e-7);
   test("-5.6E7", -5.6e7);
   test("-5.6E-7", -5.6e-7);
+
+  // A string that is not a number.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      AcceptIntoDummy<DoubleStruct>(LoadSingleValue("abc")), ".*not parse.*");
 }
 
 TEST_P(YamlReadArchiveTest, DoubleMissing) {
@@ -210,6 +214,10 @@ TEST_P(YamlReadArchiveTest, Int) {
       AcceptIntoDummy<IntStruct>(LoadSingleValue("-1.0")), ".*not parse.*");
   DRAKE_EXPECT_THROWS_MESSAGE(
       AcceptIntoDummy<IntStruct>(LoadSingleValue("3.0e+4")), ".*not parse.*");
+
+  // A string that is not a number.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      AcceptIntoDummy<IntStruct>(LoadSingleValue("abc")), ".*not parse.*");
 }
 
 TEST_P(YamlReadArchiveTest, Bool) {
@@ -414,6 +422,17 @@ TEST_P(YamlReadArchiveTest, StdVector) {
   };
 
   test("[1.0, 2.0, 3.0]", {1.0, 2.0, 3.0});
+}
+
+TEST_P(YamlReadArchiveTest, OptionalVector) {
+  const auto test = [](const std::string& value,
+                       const std::optional<std::vector<double>>& expected) {
+    const auto& x = AcceptNoThrow<OptionalVectorStruct>(LoadSingleValue(value));
+    EXPECT_EQ(x.value, expected);
+  };
+
+  test("[1.0, 2.0, 3.0]", std::vector<double>{1.0, 2.0, 3.0});
+  test("", std::nullopt);
 }
 
 TEST_P(YamlReadArchiveTest, StdVectorMissing) {
@@ -1311,6 +1330,16 @@ doc:
       " has non-Sequence \\(Mapping\\) entry for std::vector<.*> value\\.");
 }
 
+// This finds a scalar when an optional<std::vector> was wanted.
+TEST_P(YamlReadArchiveTest, VisitOptionalVectorFoundScalar) {
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      AcceptIntoDummy<OptionalVectorStruct>(LoadSingleValue("hello")),
+      "<string>:2:3:"
+      " YAML node of type Mapping \\(with size 1 and keys \\{value\\}\\)"
+      " has non-Sequence \\(Scalar\\) entry for"
+      " std::optional<std::vector<.*>> value\\.");
+}
+
 // This finds a sequence when an optional<double> was wanted.
 TEST_P(YamlReadArchiveTest, VisitOptionalScalarFoundSequence) {
   DRAKE_EXPECT_THROWS_MESSAGE(
@@ -1477,6 +1506,24 @@ TEST_P(YamlReadArchiveTest, VisitStructFoundNothing) {
         " \\(with size 1 and keys \\{outer_value\\}\\)"
         " is missing entry for [^ ]*InnerStruct inner_struct\\.");
   }
+}
+
+// This finds a scalar when a std::map was wanted.
+TEST_P(YamlReadArchiveTest, VisitMapFoundScalar) {
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      AcceptIntoDummy<MapStruct>(LoadSingleValue("1.0")),
+      "<string>:2:3:"
+      " YAML node of type Mapping \\(with size 1 and keys \\{value\\}\\)"
+      " has non-Mapping \\(Scalar\\) entry for std::map<.*> value\\.");
+}
+
+// This finds an array when a std::map was wanted.
+TEST_P(YamlReadArchiveTest, VisitMapFoundArray) {
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      AcceptIntoDummy<MapStruct>(LoadSingleValue("[1.0]")),
+      "<string>:2:3:"
+      " YAML node of type Mapping \\(with size 1 and keys \\{value\\}\\)"
+      " has non-Mapping \\(Sequence\\) entry for std::map<.*> value\\.");
 }
 
 // This finds a scalar when a sub-structure was wanted.
