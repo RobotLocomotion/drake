@@ -428,7 +428,6 @@ GTEST_TEST(RigidTransform, IsIdentity) {
   EXPECT_TRUE(X2.IsExactlyIdentity());
 }
 
-// Tests calculating the inverse of a RigidTransform.
 // A RigidTransform with any non-finite element is never nearly equal to
 // anything (not even itself), no matter which element it is (see #17356).
 GTEST_TEST(RigidTransform, NonFiniteComparisons) {
@@ -471,6 +470,7 @@ GTEST_TEST(RigidTransform, NonFiniteComparisons) {
   }
 }
 
+// Tests calculating the inverse of a RigidTransform.
 GTEST_TEST(RigidTransform, Inverse) {
   const RotationMatrix<double> R_AB = GetRotationMatrixA();
   const Vector3d p_AoBo_A(2, 3, 4);

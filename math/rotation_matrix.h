@@ -811,6 +811,7 @@ class RotationMatrix {
   /// Returns true if `this` is within tolerance of the identity RigidTransform.
   /// @param[in] tolerance non-negative number that is generally the default
   /// value, namely RotationMatrix::get_internal_tolerance_for_orthonormality().
+  /// Returns false if any element of `this` is non-finite (NaN or ±∞).
   /// @see IsExactlyIdentity().
   boolean<T> IsNearlyIdentity(
       double tolerance = get_internal_tolerance_for_orthonormality()) const {
@@ -822,7 +823,8 @@ class RotationMatrix {
   /// @param[in] other %RotationMatrix to compare to `this`.
   /// @param[in] tolerance maximum allowable absolute difference between the
   /// matrix elements in `this` and `other`.
-  /// @returns `true` if `‖this - other‖∞ <= tolerance`.
+  /// @returns `true` if `‖this - other‖∞ <= tolerance`. Returns false if any
+  /// element of `this` or `other` is non-finite (NaN or ±∞).
   /// @see IsExactlyEqualTo().
   boolean<T> IsNearlyEqualTo(const RotationMatrix<T>& other,
                              double tolerance) const {

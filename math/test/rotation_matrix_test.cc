@@ -498,12 +498,15 @@ GTEST_TEST(RotationMatrix, IsValid) {
   EXPECT_LT(m.determinant(), 0);
   EXPECT_TRUE(RotationMatrix<double>::IsOrthonormal(m, 5 * kEpsilon));
   EXPECT_FALSE(RotationMatrix<double>::IsValid(m, 5 * kEpsilon));
+}
 
-  // A matrix with any non-finite element is neither orthonormal nor valid,
-  // nor nearly equal to anything, no matter which element it is (see #17356).
+// A matrix with any non-finite element is neither orthonormal nor valid, nor
+// nearly equal to anything, no matter which element it is (see #17356).
+GTEST_TEST(RotationMatrix, NonFiniteComparisons) {
   // We use MakeUnchecked() because the constructor rejects such matrices in
-  // Debug builds. (Eigen's infinity norm can skip NaN elements, so without
-  // special handling a NaN in rows 1 or 2 would pass these checks.)
+  // Debug builds. Without special handling, Eigen's infinity norm can skip NaN
+  // elements, so a NaN in rows 1 or 2 would pass the orthonormality check, and
+  // a NaN in most positions would pass the near-equality checks.
   const RotationMatrix<double> identity;
   for (const double bad : {std::numeric_limits<double>::infinity(),
                            -std::numeric_limits<double>::infinity(),

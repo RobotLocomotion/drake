@@ -2173,7 +2173,10 @@ Parameter ``other``:
 
 Returns:
     ``‖this - other‖∞``, or NaN if any element of ``this - other`` is
-    NaN.)""";
+    NaN. Note that ``inf - inf`` is NaN, so if ``this`` and ``other``
+    have an infinite element in the same place this returns NaN, and
+    therefore IsNearlyEqualTo() is false (even when comparing a
+    transform to itself).)""";
         } GetMaximumAbsoluteDifference;
         // Symbol: drake::math::RigidTransform::GetMaximumAbsoluteTranslationDifference
         struct /* GetMaximumAbsoluteTranslationDifference */ {
@@ -2267,6 +2270,8 @@ Parameter ``tolerance``:
 
 Returns:
     ``True`` if ``‖this.matrix() - other.matrix()‖∞ <= tolerance``.
+    Returns false if any element of ``this`` or ``other`` is
+    non-finite (NaN or ±∞).
 
 Note:
     Consider scaling tolerance with the largest of magA and magB,
@@ -2290,7 +2295,8 @@ Returns:
     ``True`` if the RotationMatrix portion of ``this`` satisfies
     RotationMatrix∷IsNearlyIdentity() and if the position vector
     portion of ``this`` is equal to zero vector within
-    ``translation_tolerance``.
+    ``translation_tolerance``. Returns false if any element of
+    ``this`` is non-finite (NaN or ±∞).
 
 See also:
     IsExactlyIdentity().)""";
@@ -3808,7 +3814,8 @@ Parameter ``tolerance``:
     in ``this`` and ``other``.
 
 Returns:
-    ``True`` if ``‖this - other‖∞ <= tolerance``.
+    ``True`` if ``‖this - other‖∞ <= tolerance``. Returns false if any
+    element of ``this`` or ``other`` is non-finite (NaN or ±∞).
 
 See also:
     IsExactlyEqualTo().)""";
@@ -3823,6 +3830,8 @@ RigidTransform.
 Parameter ``tolerance``:
     non-negative number that is generally the default value, namely
     RotationMatrix∷get_internal_tolerance_for_orthonormality().
+    Returns false if any element of ``this`` is non-finite (NaN or
+    ±∞).
 
 See also:
     IsExactlyIdentity().)""";
