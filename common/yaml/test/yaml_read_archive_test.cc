@@ -424,6 +424,12 @@ TEST_P(YamlReadArchiveTest, StdVector) {
   test("[1.0, 2.0, 3.0]", {1.0, 2.0, 3.0});
 }
 
+TEST_P(YamlReadArchiveTest, StdVectorMissing) {
+  const auto& x = AcceptEmptyDoc<VectorStruct>();
+  ASSERT_EQ(x.value.size(), 1);
+  EXPECT_EQ(x.value[0], kNominalDouble);
+}
+
 TEST_P(YamlReadArchiveTest, OptionalVector) {
   const auto test = [](const std::string& value,
                        const std::optional<std::vector<double>>& expected) {
@@ -433,12 +439,6 @@ TEST_P(YamlReadArchiveTest, OptionalVector) {
 
   test("[1.0, 2.0, 3.0]", std::vector<double>{1.0, 2.0, 3.0});
   test("", std::nullopt);
-}
-
-TEST_P(YamlReadArchiveTest, StdVectorMissing) {
-  const auto& x = AcceptEmptyDoc<VectorStruct>();
-  ASSERT_EQ(x.value.size(), 1);
-  EXPECT_EQ(x.value[0], kNominalDouble);
 }
 
 TEST_P(YamlReadArchiveTest, StdMap) {
@@ -1488,6 +1488,24 @@ doc:
       " has inconsistent cols dimensions entry for Eigen::Matrix.* value\\.");
 }
 
+// This finds a scalar when a std::map was wanted.
+TEST_P(YamlReadArchiveTest, VisitMapFoundScalar) {
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      AcceptIntoDummy<MapStruct>(LoadSingleValue("1.0")),
+      "<string>:2:3:"
+      " YAML node of type Mapping \\(with size 1 and keys \\{value\\}\\)"
+      " has non-Mapping \\(Scalar\\) entry for std::map<.*> value\\.");
+}
+
+// This finds an array when a std::map was wanted.
+TEST_P(YamlReadArchiveTest, VisitMapFoundArray) {
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      AcceptIntoDummy<MapStruct>(LoadSingleValue("[1.0]")),
+      "<string>:2:3:"
+      " YAML node of type Mapping \\(with size 1 and keys \\{value\\}\\)"
+      " has non-Mapping \\(Sequence\\) entry for std::map<.*> value\\.");
+}
+
 // This finds nothing when a sub-structure was wanted.
 TEST_P(YamlReadArchiveTest, VisitStructFoundNothing) {
   const internal::Node node = Load(R"""(
@@ -1506,24 +1524,6 @@ TEST_P(YamlReadArchiveTest, VisitStructFoundNothing) {
         " \\(with size 1 and keys \\{outer_value\\}\\)"
         " is missing entry for [^ ]*InnerStruct inner_struct\\.");
   }
-}
-
-// This finds a scalar when a std::map was wanted.
-TEST_P(YamlReadArchiveTest, VisitMapFoundScalar) {
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      AcceptIntoDummy<MapStruct>(LoadSingleValue("1.0")),
-      "<string>:2:3:"
-      " YAML node of type Mapping \\(with size 1 and keys \\{value\\}\\)"
-      " has non-Mapping \\(Scalar\\) entry for std::map<.*> value\\.");
-}
-
-// This finds an array when a std::map was wanted.
-TEST_P(YamlReadArchiveTest, VisitMapFoundArray) {
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      AcceptIntoDummy<MapStruct>(LoadSingleValue("[1.0]")),
-      "<string>:2:3:"
-      " YAML node of type Mapping \\(with size 1 and keys \\{value\\}\\)"
-      " has non-Mapping \\(Sequence\\) entry for std::map<.*> value\\.");
 }
 
 // This finds a scalar when a sub-structure was wanted.

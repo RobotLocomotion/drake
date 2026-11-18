@@ -254,12 +254,6 @@ struct OptionalVectorStruct {
     a->Visit(DRAKE_NVP(value));
   }
 
-  OptionalVectorStruct() = default;
-
-  explicit OptionalVectorStruct(
-      const std::optional<std::vector<double>>& value_in)
-      : value(value_in) {}
-
   std::optional<std::vector<double>> value;
 };
 

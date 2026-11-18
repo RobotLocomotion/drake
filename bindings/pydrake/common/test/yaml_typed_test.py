@@ -551,6 +551,17 @@ class TestYamlTypedRead(unittest.TestCase, metaclass=ValueParameterizedTest):
                 yaml_load_typed(schema=ListStruct, data="{}", **options)
 
     @run_with_multiple_values(_all_typed_read_options())
+    def test_read_optional_list(self, *, options):
+        cases = [
+            ("[1.0, 2.0, 3.0]", [1.0, 2.0, 3.0]),
+            ("", None),
+        ]
+        for value, expected in cases:
+            data = f"value: {value}"
+            x = yaml_load_typed(schema=OptionalListStruct, data=data, **options)
+            self.assertEqual(x.value, expected)
+
+    @run_with_multiple_values(_all_typed_read_options())
     def test_read_map(self, *, options):
         data = dedent("""
         value:
@@ -1046,18 +1057,7 @@ class TestYamlTypedRead(unittest.TestCase, metaclass=ValueParameterizedTest):
             yaml_load_typed(schema=ListStruct, data=data, **options)
 
     @run_with_multiple_values(_all_typed_read_options())
-    def test_read_optional_list(self, *, options):
-        cases = [
-            ("[1.0, 2.0, 3.0]", [1.0, 2.0, 3.0]),
-            ("", None),
-        ]
-        for value, expected in cases:
-            data = f"value: {value}"
-            x = yaml_load_typed(schema=OptionalListStruct, data=data, **options)
-            self.assertEqual(x.value, expected)
-
-    @run_with_multiple_values(_all_typed_read_options())
-    def test_visit_optional_list_found_scalar(self, *, options):
+    def test_visit_optional_vector_found_scalar(self, *, options):
         # This finds a scalar when an optional list was wanted. (The scalar
         # must not be promoted to a list by iterating over its characters.)
         with self.assertRaisesRegex(RuntimeError, "sum type.*'value'.*hello"):
