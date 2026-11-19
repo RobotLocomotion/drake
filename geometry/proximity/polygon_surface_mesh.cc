@@ -1,5 +1,6 @@
 #include "drake/geometry/proximity/polygon_surface_mesh.h"
 
+#include <algorithm>
 #include <limits>
 
 namespace drake {

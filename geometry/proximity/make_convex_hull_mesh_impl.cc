@@ -4,7 +4,7 @@
 #include <map>
 #include <memory>
 #include <stack>
-#include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -14,17 +14,12 @@
 #include <libqhullcpp/QhullFacet.h>
 #include <libqhullcpp/QhullVertexSet.h>
 #include <vtkGLTFDocumentLoader.h>  // vtkIOGeometry
-#include <vtkMapper.h>              // vtkCommonCore
 #include <vtkMatrix4x4.h>           // vtkCommonMath
 #include <vtkPolyData.h>            // vtkCommonDataModel
-#include <vtkRenderer.h>            // vtkRenderingCore
 
 #include "drake/common/diagnostic_policy.h"
-#include "drake/common/find_resource.h"
-#include "drake/common/fmt_eigen.h"
 #include "drake/geometry/proximity/volume_mesh.h"
 #include "drake/geometry/proximity/vtk_to_volume_mesh.h"
-#include "drake/geometry/read_gltf_to_memory.h"
 #include "drake/geometry/read_obj.h"
 #include "drake/geometry/vtk_gltf_uri_loader.h"
 #include "drake/math/rigid_transform.h"

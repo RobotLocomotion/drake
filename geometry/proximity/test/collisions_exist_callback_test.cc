@@ -2,7 +2,6 @@
 
 #include <memory>
 #include <unordered_set>
-#include <utility>
 
 #include <fcl/fcl.h>
 #include <gtest/gtest.h>

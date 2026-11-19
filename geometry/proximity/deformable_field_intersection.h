@@ -1,11 +1,7 @@
 #pragma once
 
-#include <memory>
-#include <unordered_set>
-#include <vector>
-
+#include "drake/geometry/deformable_mesh_with_bvh.h"
 #include "drake/geometry/geometry_ids.h"
-#include "drake/geometry/proximity/deformable_contact_geometries.h"
 #include "drake/geometry/proximity/volume_mesh_field.h"
 #include "drake/geometry/query_results/deformable_contact.h"
 

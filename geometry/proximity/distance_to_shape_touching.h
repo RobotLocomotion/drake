@@ -6,7 +6,6 @@
 
 #include <fcl/fcl.h>
 
-#include "drake/common/drake_export.h"
 #include "drake/common/eigen_types.h"
 #include "drake/math/rigid_transform.h"
 

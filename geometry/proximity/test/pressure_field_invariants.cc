@@ -1,7 +1,6 @@
 #include "drake/geometry/proximity/test/pressure_field_invariants.h"
 
 #include <algorithm>
-#include <limits>
 #include <vector>
 
 #include <gtest/gtest.h>

@@ -1,12 +1,9 @@
 #pragma once
 
 #include <algorithm>
-#include <cstdint>
 #include <string>
-#include <vector>
 
 #include <fcl/fcl.h>
-#include <fmt/format.h>
 
 #include "drake/common/drake_export.h"
 #include "drake/geometry/geometry_ids.h"

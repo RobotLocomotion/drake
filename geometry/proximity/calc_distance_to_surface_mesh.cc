@@ -2,7 +2,6 @@
 
 #include <algorithm>
 #include <limits>
-#include <vector>
 
 #include "drake/geometry/proximity/distance_to_point_callback.h"
 #include "drake/math/rotation_matrix.h"

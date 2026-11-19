@@ -1,10 +1,13 @@
 #include "drake/geometry/proximity/make_capsule_mesh.h"
 
+#include <algorithm>
 #include <cmath>
+#include <utility>
+#include <vector>
 
 #include "drake/common/default_scalars.h"
+#include "drake/common/eigen_types.h"
 #include "drake/geometry/proximity/meshing_utilities.h"
-#include "drake/geometry/proximity/proximity_utilities.h"
 
 namespace drake {
 namespace geometry {

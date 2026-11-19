@@ -9,8 +9,6 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/find_resource.h"
 #include "drake/geometry/proximity/make_convex_mesh.h"
-#include "drake/geometry/proximity/obj_to_surface_mesh.h"
-#include "drake/geometry/proximity/proximity_utilities.h"
 #include "drake/geometry/proximity/volume_to_surface_mesh.h"
 
 namespace drake {
