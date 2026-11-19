@@ -495,7 +495,20 @@ class RenderEngineGl final : public render::RenderEngine, private ShapeReifier {
 
     // Decrements the use count of each of the given `buffers`. When a buffer's
     // count reaches zero, the buffer is no longer tracked and `on_unused` is
-    // invoked with it (while the counts are still locked).
+    // invoked with it, on the calling thread.
+    //
+    // Restrictions on `on_unused`:
+    //  - It is invoked while this object's mutex is held. It must not call
+    //    Increment() or Decrement() on this object, directly or indirectly
+    //    (the mutex isn't recursive, so that would deadlock). For the same
+    //    reason it should not block on, or acquire, any lock that another
+    //    thread might hold while calling into this object.
+    //  - It must not throw. By the time it is invoked, the buffer is no longer
+    //    tracked, so a throw would leak the buffer and leave the rest of
+    //    `buffers` still counted.
+    //  - It is invoked exactly once for each buffer whose count reaches zero.
+    //    Anything releasing the buffer requires (e.g., a bound OpenGL context
+    //    for glDeleteBuffers()) is the caller's to provide.
     // @pre Each entry in `buffers` matches a use counted by Increment().
     void Decrement(std::span<const GLuint> buffers,
                    const std::function<void(GLuint)>& on_unused) {
