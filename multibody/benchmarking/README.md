@@ -114,10 +114,10 @@ discrete step including contact-pair assembly and the SAP solve
 (`SimulationStep`). The Args are the number of columns of free bodies and the
 edge length (mm) of the desk pieces:
 
-  - `3/60`: nv = 36 with about 20 hydroelastic contacts. A tiny case that
-    exists only for the smoke test.
+  - `3/60`: nv = 36 with about 20 hydroelastic contacts. A tiny parameter
+    instance that exists only for the smoke test.
   - `12/60`: nv = 144 with about 80 hydroelastic contacts and a few
-    point-pair contacts. The reference case.
+    point-pair contacts. The reference parameter instance.
   - `12/250`: the same free bodies, sticks and initial poses on a coarser desk
     (about 40 hydroelastic contacts; fewer, larger contacting pairs); useful
     for telling apart optimizations that scale with the number of small
@@ -128,9 +128,9 @@ edge length (mm) of the desk pieces:
 The reported counters `nv`, `hydro_contacts`, and `point_pair_contacts` give the
 size of each problem, and `settled_max_speed` (the largest generalized velocity
 after the warmup) shows how close to rest the scene is. Building and settling a
-scene takes seconds, and Google Benchmark repeats that while it searches for an
-iteration count; pass `--benchmark_min_time=<N>x` to bound the number of runs.
-The smoke test fails if the scene has no contacts at all.
+scene takes seconds, so each parameter instance is settled once per process and
+shared by all of its timing runs and by both benchmarks. The smoke test fails if
+the scene has no contacts at all.
 
 The desk tiles, the sticks and the free bodies come from independent random
 sequences, so changing the desk piece size changes nothing else. As with the
@@ -141,14 +141,14 @@ counts from `perf stat`, which are far less noisy than times).
 ## Inspecting the scene
 
 Because the scene exists only in code, the benchmark can write it out for
-viewing. Pass `--scene_html_dir=<dir>` and, for each case that runs, a Meshcat
-recording of the scene settling (from its initial poses through the warmup) is
-written to `<dir>/hydroelastic_clutter_<columns>_<tile>.html`. Open it in any
-browser; it is self-contained. The recording plays once as the page loads, and
-is short enough that it may be over before the page appears; replay it from the
-Animations folder of the viewer's control panel. Use `--benchmark_filter` to
-choose which cases are written; each desk configuration is written once, even
-though both benchmarks use it.
+viewing. Pass `--scene_html_dir=<dir>` and, for each parameter instance that
+runs, a Meshcat recording of the scene settling (from its initial poses through
+the warmup) is written to `<dir>/hydroelastic_clutter_<columns>_<tile>.html`.
+Open it in any browser; it is self-contained. The recording plays once as the
+page loads, and is short enough that it may be over before the page appears;
+replay it from the Animations folder of the viewer's control panel. Use
+`--benchmark_filter` to choose which cases are written; each desk configuration
+is written once, even though both benchmarks use it.
 
     $ bazel run //multibody/benchmarking:hydroelastic_clutter -- \
         --benchmark_filter='.*/12/60' --benchmark_min_time=1x \
@@ -162,9 +162,8 @@ beneath show through), the sticks orange, the free bodies' rigid parts red, and
 their compliant hulls blue.
 
 The recording is made from a separate copy of the scene, so the timed scene
-has no visualizer in it, and the timings are unaffected. Writing a file does
-cost one extra warmup per case. The smoke test exercises this option; its file
-lands in the test's undeclared outputs.
+has no visualizer in it, and the timings are unaffected. The smoke test
+exercises this option; its file lands in the test's undeclared outputs.
 
 # iiwa_relaxed_pos_ik
 
