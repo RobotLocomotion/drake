@@ -15,11 +15,6 @@ import subprocess
 import sys
 import zipfile
 
-# This bit may need adjusting if this file moves to a new directory.
-WORKSPACE = os.path.dirname(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-)
-
 
 def has_kcov_data(path):
     """Returns True iff the supplied path contains kcov data, either in a
@@ -42,8 +37,12 @@ def maybe_expand_zipped_kcov_data(path):
     kcov_dir = os.path.join(path, "kcov")
     if os.path.exists(os.path.join(kcov_dir, "index.html")):
         return
-    # Maybe our data has been zipped and deleted.
+    # Maybe our data has been zipped and deleted. If there is no zip, there is
+    # nothing to expand, and whatever is in `kcov_dir` is all we have, so leave
+    # it alone.
     zip_path = os.path.join(path, "outputs.zip")
+    if not os.path.exists(zip_path):
+        return
     shutil.rmtree(kcov_dir, ignore_errors=True)
     os.chmod(path, 0o755)
     with zipfile.ZipFile(zip_path, "r") as zf:
@@ -62,7 +61,12 @@ def remove_kcov_data(path):
     and from any bazel-constructed zip file.
     """
     kcov_dir = os.path.join(path, "kcov")
-    shutil.rmtree(kcov_dir, onexc=_on_rmtree_error)
+    try:
+        shutil.rmtree(kcov_dir, onexc=_on_rmtree_error)
+    except FileNotFoundError:
+        # The data may exist only in the zip, in which case there is no
+        # subtree. (The error comes from the chmod in our error handler.)
+        pass
     zip_path = os.path.join(path, "outputs.zip")
     if not os.path.exists(zip_path):
         return
@@ -72,12 +76,12 @@ def remove_kcov_data(path):
     os.remove(zip_path)
 
 
-def find_kcov_test_outputs():
+def find_kcov_test_outputs(workspace):
     """Finds the `test.outputs` paths of individual test runs that contain kcov
-    data, within the tree linked by `bazel-testlogs`.
+    data, within the tree linked by `bazel-testlogs` under the given workspace.
     """
     dirs = glob.glob(
-        os.path.join(WORKSPACE, "bazel-testlogs/**/test.outputs"),
+        os.path.join(workspace, "bazel-testlogs/**/test.outputs"),
         recursive=True,
     )
     return [d for d in dirs if has_kcov_data(d)]
@@ -85,13 +89,13 @@ def find_kcov_test_outputs():
 
 def clean(args):
     """Implements the clean subcommand."""
-    for d in find_kcov_test_outputs():
+    for d in find_kcov_test_outputs(args.workspace):
         remove_kcov_data(d)
 
 
-def do_merge(output_dir):
+def do_merge(workspace, output_dir):
     """Merges the kcov data of individual test runs into output_dir."""
-    dirs = find_kcov_test_outputs()
+    dirs = find_kcov_test_outputs(workspace)
     if not dirs:
         sys.exit("Error: no kcov data to merge")
 
@@ -105,16 +109,27 @@ def do_merge(output_dir):
 
 def ci_merge(args):
     """Implements the ci_merge subcommand."""
-    do_merge(os.path.join(WORKSPACE, "bazel-kcov"))
+    do_merge(args.workspace, os.path.join(args.workspace, "bazel-kcov"))
 
 
 def merge(args):
     """Implements the merge subcommand."""
-    do_merge(args.output_dir)
+    do_merge(args.workspace, args.output_dir)
 
 
 def main():
+    # This bit may need adjusting if this file moves to a new directory.
+    default_workspace = os.path.dirname(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    )
+
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--workspace",
+        default=default_workspace,
+        help="directory containing the bazel-testlogs link to search for kcov"
+        " data; defaults to the workspace that contains this script.",
+    )
     subparsers = parser.add_subparsers(
         help="subcommand to run", dest="subcommand"
     )
