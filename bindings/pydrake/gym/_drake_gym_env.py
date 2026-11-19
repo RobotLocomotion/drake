@@ -16,6 +16,10 @@ from pydrake.systems.framework import (
 )
 from pydrake.systems.sensors import ImageRgba8U
 
+# The values of `render_mode` that DrakeGymEnv knows about. N.B. "rgb_array"
+# is only available when `render_rgb_port_id` is given.
+_RENDER_MODES = ("human", "ansi", "rgb_array")
+
 
 def _reached_termination(status: SimulatorStatus):
     """Returns true iff status is "reached termination condition"."""
@@ -39,7 +43,7 @@ class DrakeGymEnv(gym.Env):
         action_port_id: InputPort | InputPortIndex | str = None,
         observation_port_id: OutputPortIndex | str = None,
         render_rgb_port_id: OutputPortIndex | str = None,
-        render_mode: str = "human",
+        render_mode: str | None = "human",
         reset_handler: Callable[[Simulator, Context], None] | None = None,
         info_handler: Callable[[Simulator], dict] | None = None,
         hardware: bool = False,
@@ -84,7 +88,12 @@ class DrakeGymEnv(gym.Env):
                 inside the System (e.g. MeshcatVisualizer,
                 PlanarSceneGraphVisualizer, etc.). ``render_mode`` equal to
                 ``rgb_array`` evaluates the ``render_rgb_port`` and ``ansi``
-                calls ``__repr__`` on the system Context.
+                calls ``__repr__`` on the system Context. ``None`` means no
+                rendering; ``render()`` then warns and returns ``None``. If
+                ``render_rgb_port_id`` is given, the mode is always set to
+                ``rgb_array``, whatever the value passed here. Any other
+                value raises a ``ValueError``, as does ``rgb_array`` without
+                ``render_rgb_port_id``.
             reset_handler: A function that sets the home state
                 (plant, and/or env.) at ``reset()``.
                 The reset state can be specified in one of
@@ -158,15 +167,24 @@ class DrakeGymEnv(gym.Env):
         else:
             self.observation_port_id = OutputPortIndex(0)
 
-        self.metadata["render_modes"] = ["human", "ascii"]
-
         # Setup rendering.
+        if render_mode is not None and render_mode not in _RENDER_MODES:
+            raise ValueError(
+                f"Unsupported render_mode {render_mode!r}; "
+                f"supported modes are {list(_RENDER_MODES)}"
+            )
+        self.metadata["render_modes"] = ["human", "ansi"]
         self.render_mode = render_mode
         if render_rgb_port_id:
             assert isinstance(render_rgb_port_id, (OutputPortIndex, str))
             self.render_mode = "rgb_array"
             self.metadata["render_modes"].append("rgb_array")
+        elif render_mode == "rgb_array":
+            raise ValueError(
+                "render_mode 'rgb_array' requires render_rgb_port_id"
+            )
         self.render_rgb_port_id = render_rgb_port_id
+        self.render_rgb_port = None
 
         self.generator = RandomGenerator()
 
@@ -359,14 +377,30 @@ class DrakeGymEnv(gym.Env):
         outputs.  To be fully compliant, those visualizers should set their
         default publishing period to ``np.inf`` (do not publish periodically).
 
-        Rendering in ``ascii`` mode calls ``__repr__`` on the system Context.
+        Rendering in ``ansi`` mode calls ``__repr__`` on the system Context.
 
         Rendering in ``rgb_array`` mode is enabled by passing a compatible
-        ``render_rgb_port`` to the class constructor.
+        ``render_rgb_port_id`` to the class constructor.
+
+        With ``render_mode=None``, nothing is rendered: a warning is issued
+        and ``None`` is returned.
+
+        Raises:
+            ValueError: If ``render_mode`` is not one of
+                ``metadata["render_modes"]``. (The constructor already
+                rejects unsupported values, so this only happens if the
+                attribute was changed afterwards.)
         """
         assert self.simulator, "You must call reset() first"
 
-        if self.render_mode == "human":
+        if self.render_mode is None:
+            warnings.warn(
+                "render() was called, but render_mode is None; nothing is "
+                "rendered. Pass render_mode to the constructor.",
+                stacklevel=2,
+            )
+            return None
+        elif self.render_mode == "human":
             self.simulator.get_system().ForcedPublish(
                 self.simulator.get_context()
             )
@@ -374,11 +408,15 @@ class DrakeGymEnv(gym.Env):
         elif self.render_mode == "ansi":
             return repr(self.simulator.get_context())
         elif self.render_mode == "rgb_array":
-            assert self.render_rgb_port, (
-                "You must set render_rgb_port in the constructor"
-            )
+            if self.render_rgb_port is None:
+                raise ValueError(
+                    "You must set render_rgb_port_id in the constructor"
+                )
             return self.render_rgb_port.Eval(self.simulator.get_context()).data[
                 :, :, :3
             ]
         else:
-            raise ValueError(f"Unsupported render_mode {self.render_mode!r}")
+            raise ValueError(
+                f"Unsupported render_mode {self.render_mode!r}; "
+                f"supported modes are {self.metadata['render_modes']}"
+            )
