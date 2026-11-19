@@ -12,6 +12,7 @@
 #include "drake/common/fmt_eigen.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/geometry/proximity/fcl_backend.h"
 #include "drake/geometry/proximity/proximity_utilities.h"
 #include "drake/geometry/proximity/test/fcl_utilities.h"
 #include "drake/geometry/shape_specification.h"
@@ -747,7 +748,7 @@ void TestScalarShapeSupport() {
     distances.clear();
     fcl::CollisionObjectd object(geometry_shared_ptr);
     EncodedData object_encoding(other_id, true);
-    object_encoding.write_to(&object);
+    object_encoding.write_to<FclBackend>(&object);
     Callback<T>(&query_point, &object, &data, threshold);
   };
 
@@ -840,7 +841,7 @@ GTEST_TEST(Callback, MeshAndConvex) {
   // in CollisionObject.
   fcl::CollisionObjectd mesh_collision_object(
       mesh_fcl_geometry, X_WM.rotation().matrix(), X_WM.translation());
-  EncodedData(mesh_id, true).write_to(&mesh_collision_object);
+  EncodedData(mesh_id, true).write_to<FclBackend>(&mesh_collision_object);
 
   // Remaining components of CallbackData other than the mesh_boundaries.
   const double kThreshold100Meters = 100;

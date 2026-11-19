@@ -202,6 +202,7 @@ drake_cc_library(
     ],
     deps = [
         ":collision_filter",
+        ":fcl_backend",
         ":proximity_utilities",
         "//common:drake_export",
         "//geometry:geometry_ids",
@@ -328,6 +329,7 @@ drake_cc_library(
         "@fcl_internal//:fcl",
     ],
     implementation_deps = [
+        ":fcl_backend",
         ":obj_to_surface_mesh",
         ":polygon_to_triangle_mesh",
         ":vtk_to_volume_mesh",
@@ -346,6 +348,7 @@ drake_cc_library(
         ":collision_filter",
         ":distance_to_point_callback",
         ":distance_to_shape_touching",
+        ":fcl_backend",
         ":proximity_utilities",
         "//common:default_scalars",
         "//common:drake_export",
@@ -366,6 +369,21 @@ drake_cc_library(
         "//common:drake_export",
         "//common:essential",
         "//math:geometric_transform",
+        "@fcl_internal//:fcl",
+    ],
+)
+
+drake_cc_library(
+    name = "fcl_backend",
+    srcs = ["fcl_backend.cc"],
+    hdrs = ["fcl_backend.h"],
+    internal = True,
+    visibility = [
+        "//geometry:__pkg__",
+    ],
+    deps = [
+        "//common:drake_export",
+        "//common:essential",
         "@fcl_internal//:fcl",
     ],
 )
@@ -401,6 +419,7 @@ drake_cc_library(
     ],
     deps = [
         ":collision_filter",
+        ":fcl_backend",
         ":proximity_utilities",
         "//common:drake_export",
         "//common:sorted_pair",
@@ -855,6 +874,7 @@ drake_cc_library(
     deps = [
         ":collision_filter",
         ":distance_to_point_callback",
+        ":fcl_backend",
         "//common:default_scalars",
         "//common:drake_export",
         "//common:nice_type_name",
@@ -926,7 +946,6 @@ drake_cc_library(
         "//common:sorted_pair",
         "//geometry:geometry_ids",
         "//geometry:shape_specification",
-        "@fcl_internal//:fcl",
         "@fmt",
     ],
 )
@@ -1171,6 +1190,7 @@ drake_cc_library(
     visibility = ["//visibility:private"],
     deps = [
         ":collision_filter",
+        ":fcl_backend",
         "//common:drake_export",
         "//common:temp_directory",
         "//common/test_utilities:eigen_matrix_compare",
@@ -1208,6 +1228,7 @@ drake_cc_googletest(
     name = "collisions_exist_callback_test",
     deps = [
         ":collisions_exist_callback",
+        ":fcl_backend",
     ],
 )
 
@@ -1290,6 +1311,7 @@ drake_cc_googletest(
     name = "distance_sphere_to_shape_test",
     deps = [
         ":distance_to_shape_callback",
+        ":fcl_backend",
         "//common/test_utilities",
         "//geometry:geometry_ids",
         "//geometry:utilities",
@@ -1301,6 +1323,7 @@ drake_cc_googletest(
     name = "distance_to_point_callback_test",
     deps = [
         ":distance_to_point_callback",
+        ":fcl_backend",
         ":fcl_utilities",
         "//common/test_utilities",
         "//geometry:shape_specification",
@@ -1324,6 +1347,7 @@ drake_cc_googletest(
     deps = [
         ":characterization_utilities",
         ":distance_to_point_callback",
+        ":fcl_backend",
         ":make_box_mesh",
     ],
 )
@@ -1368,11 +1392,20 @@ drake_cc_library(
     hdrs = ["test/fcl_utilities.h"],
     visibility = ["//visibility:private"],
     deps = [
+        ":fcl_backend",
         ":polygon_surface_mesh",
         ":proximity_utilities",
         "//geometry:geometry_ids",
         "//geometry:shape_specification",
         "//math:geometric_transform",
+        "@fcl_internal//:fcl",
+    ],
+)
+
+drake_cc_googletest(
+    name = "fcl_backend_test",
+    deps = [
+        ":fcl_backend",
         "@fcl_internal//:fcl",
     ],
 )
@@ -1398,6 +1431,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "find_collision_candidates_callback_test",
     deps = [
+        ":fcl_backend",
         ":find_collision_candidates_callback",
     ],
 )
@@ -1405,6 +1439,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "hydroelastic_calculator_test",
     deps = [
+        ":fcl_backend",
         ":hydroelastic_calculator",
         "//common/test_utilities",
         "//math:autodiff",
@@ -1759,6 +1794,7 @@ drake_cc_googletest(
         "//geometry:test_obj_files",
     ],
     deps = [
+        ":fcl_backend",
         ":fcl_utilities",
         ":penetration_as_point_pair_callback",
         "//common:find_resource",
@@ -1819,7 +1855,11 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "proximity_utilities_test",
-    deps = [":proximity_utilities"],
+    deps = [
+        ":fcl_backend",
+        ":proximity_utilities",
+        "@fcl_internal//:fcl",
+    ],
 )
 
 drake_cc_googletest(

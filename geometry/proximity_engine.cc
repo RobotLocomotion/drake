@@ -26,6 +26,7 @@
 #include "drake/geometry/proximity/deformable_contact_internal.h"
 #include "drake/geometry/proximity/distance_to_point_callback.h"
 #include "drake/geometry/proximity/distance_to_shape_callback.h"
+#include "drake/geometry/proximity/fcl_backend.h"
 #include "drake/geometry/proximity/find_collision_candidates_callback.h"
 #include "drake/geometry/proximity/hydroelastic_calculator.h"
 #include "drake/geometry/proximity/hydroelastic_internal.h"
@@ -569,7 +570,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
       }
       // The dynamic/anchored bit is also encoded in the fcl object's user
       // data; update accordingly.
-      EncodedData(id, /* is_dynamic = */ false).write_to(object);
+      EncodedData(id, /* is_dynamic = */ false).write_to<FclBackend>(object);
       // Only register objects with a current AABB, so the tree is consistent
       // the moment the loop ends (see ApplyActiveStatusChange()).
       object->computeAABB();
@@ -1364,7 +1365,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     data.fcl_object->setTransform(X_WG.GetAsIsometry3());
     data.fcl_object->computeAABB();
     EncodedData encoding(id, is_dynamic);
-    encoding.write_to(data.fcl_object.get());
+    encoding.write_to<FclBackend>(data.fcl_object.get());
 
     DisableTopdownRebalanceIfUnbounded(*data.fcl_object, tree);
     tree->registerObject(data.fcl_object.get());
@@ -1489,8 +1490,8 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
       fcl::CollisionObjectd* object_B_ptr) const {
     // Give a slightly better diagnostic for a misplaced happy result code.
     DRAKE_DEMAND(hydroelastic::ContactSurfaceFailed(result));
-    const EncodedData encoding_a(*object_A_ptr);
-    const EncodedData encoding_b(*object_B_ptr);
+    const auto encoding_a = EncodedData::read_from<FclBackend>(*object_A_ptr);
+    const auto encoding_b = EncodedData::read_from<FclBackend>(*object_B_ptr);
 
     const HydroelasticType type_A =
         hydroelastic_geometries_.hydroelastic_type(encoding_a.id());
@@ -1504,8 +1505,9 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
             "Requested a contact surface between a pair of geometries without "
             "hydroelastic representation for at least one shape: a {} {} with "
             "id {} and a {} {} with id {}",
-            type_A, GetGeometryName(*object_A_ptr), encoding_a.id(), type_B,
-            GetGeometryName(*object_B_ptr), encoding_b.id()));
+            type_A, GetGeometryName<FclBackend>(*object_A_ptr), encoding_a.id(),
+            type_B, GetGeometryName<FclBackend>(*object_B_ptr),
+            encoding_b.id()));
       case kRigidRigid:
         throw std::logic_error(fmt::format(
             "Requested contact between two rigid objects ({} with id "
@@ -1514,15 +1516,15 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
             "fallback, e.g., QueryObject::ComputeContactSurfacesWithFallback() "
             "or MultibodyPlant::set_contact_model("
             "ContactModel::kHydroelasticWithFallback)",
-            GetGeometryName(*object_A_ptr), encoding_a.id(),
-            GetGeometryName(*object_B_ptr), encoding_b.id()));
+            GetGeometryName<FclBackend>(*object_A_ptr), encoding_a.id(),
+            GetGeometryName<FclBackend>(*object_B_ptr), encoding_b.id()));
       case kCompliantHalfSpaceCompliantMesh:
         throw std::logic_error(fmt::format(
             "Requested hydroelastic contact between two compliant geometries, "
             "one of which is a half space ({} with id {}, {} with id {}); "
             "that is not allowed",
-            GetGeometryName(*object_A_ptr), encoding_a.id(),
-            GetGeometryName(*object_B_ptr), encoding_b.id()));
+            GetGeometryName<FclBackend>(*object_A_ptr), encoding_a.id(),
+            GetGeometryName<FclBackend>(*object_B_ptr), encoding_b.id()));
       case kHalfSpaceHalfSpace:
         throw std::logic_error(fmt::format(
             "Requested contact between two half spaces with ids {} and {}; "

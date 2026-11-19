@@ -7,6 +7,7 @@
 #include "drake/common/default_scalars.h"
 #include "drake/geometry/proximity/distance_to_point_callback.h"
 #include "drake/geometry/proximity/distance_to_shape_touching.h"
+#include "drake/geometry/proximity/fcl_backend.h"
 #include "drake/math/rotation_matrix.h"
 
 namespace drake {
@@ -72,8 +73,8 @@ void CalcDistanceFallback<double>(const fcl::CollisionObjectd& a,
   fcl::DistanceResultd result;
   fcl::distance(&a, &b, request, result);
 
-  pair_data->id_A = EncodedData(a).id();
-  pair_data->id_B = EncodedData(b).id();
+  pair_data->id_A = EncodedData::read_from<FclBackend>(a).id();
+  pair_data->id_B = EncodedData::read_from<FclBackend>(b).id();
 
   pair_data->distance = result.min_distance;
 
@@ -143,8 +144,8 @@ void ComputeNarrowPhaseDistance(const fcl::CollisionObjectd& a,
   const fcl::CollisionGeometryd* o_geometry = o.collisionGeometry().get();
   const math::RigidTransform<T>& X_WS(a_is_sphere ? X_WA : X_WB);
   const math::RigidTransform<T>& X_WO(a_is_sphere ? X_WB : X_WA);
-  const auto id_S = EncodedData(s).id();
-  const auto id_O = EncodedData(o).id();
+  const auto id_S = EncodedData::read_from<FclBackend>(s).id();
+  const auto id_O = EncodedData::read_from<FclBackend>(o).id();
   DistancePairGeometry<T> distance_pair(id_S, id_O, X_WS, X_WO, result);
   const auto& sphere_S = *static_cast<const fcl::Sphered*>(s_geometry);
   switch (o_geometry->getNodeType()) {
@@ -227,8 +228,8 @@ bool Callback(fcl::CollisionObjectd* object_A_ptr,
   const double kEps = std::numeric_limits<double>::epsilon() / 10;
   max_distance = std::max(data.max_distance, kEps);
 
-  const EncodedData encoding_a(*object_A_ptr);
-  const EncodedData encoding_b(*object_B_ptr);
+  const auto encoding_a = EncodedData::read_from<FclBackend>(*object_A_ptr);
+  const auto encoding_b = EncodedData::read_from<FclBackend>(*object_B_ptr);
 
   const bool can_collide =
       data.collision_filter == nullptr ||
@@ -272,8 +273,8 @@ bool Callback(fcl::CollisionObjectd* object_A_ptr,
           "are not supported for scalar type {}. See the documentation for "
           "QueryObject::ComputeSignedDistancePairwiseClosestPoints() for the "
           "full status of supported geometries.",
-          GetGeometryName(*object_A_ptr), GetGeometryName(*object_B_ptr),
-          NiceTypeName::Get<T>()));
+          GetGeometryName<FclBackend>(*object_A_ptr),
+          GetGeometryName<FclBackend>(*object_B_ptr), NiceTypeName::Get<T>()));
     }
   }
   // Returning true would tell the broadphase manager to terminate early. Since
