@@ -45,6 +45,7 @@ Defines an SDF model with various types of joints used for testing the parser.
           </limit>
           <dynamics>
             <damping>0.2</damping>
+            <friction>0.4</friction>
             <spring_reference>0</spring_reference>
             <spring_stiffness>0</spring_stiffness>
           </dynamics>
@@ -77,6 +78,7 @@ Defines an SDF model with various types of joints used for testing the parser.
           </limit>
           <dynamics>
             <damping>0.3</damping>
+            <friction>0.5</friction>
             <spring_reference>0</spring_reference>
             <spring_stiffness>0</spring_stiffness>
           </dynamics>
@@ -212,6 +214,7 @@ Defines an SDF model with various types of joints used for testing the parser.
         <axis>
           <xyz expressed_in="__model__">0 0 1</xyz>
           <dynamics>
+            <friction>0.6</friction>
             <spring_reference>0</spring_reference>
             <spring_stiffness>0</spring_stiffness>
           </dynamics>
@@ -238,6 +241,7 @@ Defines an SDF model with various types of joints used for testing the parser.
           <xyz expressed_in="__model__">1 0 0</xyz>
           <dynamics>
             <damping>0.1</damping>
+            <friction>0.7</friction>
           </dynamics>
         </axis>
       </joint>

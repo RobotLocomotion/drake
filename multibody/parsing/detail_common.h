@@ -418,6 +418,23 @@ SpatialInertia<double> ParseSpatialInertia(
     const math::RigidTransformd& X_BBi, double mass,
     const InertiaInputs& inertia_Bi_Bi);
 
+// Sets `dry_friction`, parsed from a model file, as the default dry friction of
+// the joint with index `joint_index` in `plant`, see
+// Joint::default_dry_friction(). A non-zero value is ignored with a warning
+// when MultibodyPlant does not support dry friction for the joint: when the
+// joint does not have exactly one degree of freedom, or when `plant` is
+// continuous.
+//
+// @param diagnostic   The error-reporting channel. A negative, infinite or NaN
+//                     `dry_friction` is reported as an error.
+// @param dry_friction The parsed dry friction.
+// @param joint_index  The index of the joint that the model file specifies
+//                     `dry_friction` for.
+// @param plant        The plant that holds the joint.
+void SetDefaultJointDryFriction(
+    const drake::internal::DiagnosticPolicy& diagnostic, double dry_friction,
+    JointIndex joint_index, MultibodyPlant<double>* plant);
+
 }  // namespace internal
 }  // namespace multibody
 }  // namespace drake

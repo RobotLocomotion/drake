@@ -111,6 +111,15 @@ For Drake extensions to SDFormat files, see
 Drake's parser does not implement all of the features of SDFormat. In the
 future, we intend to update this documentation to itemize what isn't supported.
 
+@subsection sdf_joint_dry_friction Joint dry friction
+
+The `//joint/axis/dynamics/friction` element sets the dry friction of a joint
+with one degree of freedom, see drake::multibody::Joint::default_dry_friction().
+For a joint with another number of degrees of freedom, or in a continuous
+MultibodyPlant model, a non-zero value provokes a warning that the value is
+being ignored. The URDF attribute `/robot/joint/dynamics/@friction` and the
+MJCF attribute `//joint/@frictionloss` get the same treatment.
+
 @subsection model_composition SDFormat model composition
 
 Drake's SDFormat parsing supports composing multiple models into a single
@@ -252,8 +261,14 @@ one of several treatments:
 
 @subsubsection urdf_ignored_special Tags given special treatment.
 
+- `/robot/joint/dynamics/@friction`
 - `/robot/transmission/actuator/mechanicalReduction`
 - `/robot/transmission/mechanicalReduction`
+
+The `friction` attribute sets the dry friction of a joint with one degree of
+freedom, see drake::multibody::Joint::default_dry_friction(). For a joint with
+another number of degrees of freedom, or in a continuous MultibodyPlant model, a
+non-zero value provokes a warning that the value is being ignored.
 
 Both versions of `mechanicalReduction` will be silently ignored if the supplied
 value is 1; otherwise the they will provoke a warning that the value is being

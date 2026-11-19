@@ -461,6 +461,9 @@ class MujocoParser {
     double damping{0.0};
     ParseScalarAttribute(node, "damping", &damping);
 
+    double frictionloss{0.0};
+    ParseScalarAttribute(node, "frictionloss", &frictionloss);
+
     std::string type;
     if (!ParseStringAttribute(node, "type", &type)) {
       type = "hinge";
@@ -477,6 +480,12 @@ class MujocoParser {
                     "Damping was specified for the 'free' joint {}, but is not "
                     "supported for free bodies.",
                     name));
+      }
+      if (frictionloss != 0.0) {
+        Warning(*node, fmt::format("Friction loss was specified for the 'free' "
+                                   "joint {}, but is not supported for free "
+                                   "bodies.",
+                                   name));
       }
       plant_->SetDefaultFloatingBaseBodyPose(child, X_WC);
     } else if (type == "ball") {
@@ -532,6 +541,11 @@ class MujocoParser {
       return;
     }
 
+    if (index.is_valid()) {
+      SetDefaultJointDryFriction(diagnostic_.MakePolicyForNode(node),
+                                 frictionloss, index, plant_);
+    }
+
     // Note: The MuJoCo docs state that the armature is *always* added to all
     // dofs of the inertia matrix: "Armature inertia (or rotor inertia, or
     // reflected inertia) of all degrees of freedom created by this joint.
@@ -560,7 +574,6 @@ class MujocoParser {
     WarnUnsupportedAttribute(*node, "actuatorgravcomp");
     LogIgnoredAttribute(*node, "margin");
     WarnUnsupportedAttribute(*node, "springref");
-    WarnUnsupportedAttribute(*node, "frictionloss");
     WarnUnsupportedAttribute(*node, "user");
   }
 

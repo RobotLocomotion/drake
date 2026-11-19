@@ -97,7 +97,7 @@ Defines a URDF model with various types of joints.
     <child link="link2"/>
     <origin rpy="0 0 0" xyz="0 0 0"/>
     <limit effort="100" lower="-1" upper="2" velocity="100" drake:acceleration="200"/>
-    <dynamics damping="0.1"/>
+    <dynamics damping="0.1" friction="0.2"/>
   </joint>
   <joint name="prismatic_joint" type="prismatic">
     <axis xyz="0 0 1"/>
@@ -105,7 +105,7 @@ Defines a URDF model with various types of joints.
     <child link="link3"/>
     <origin rpy="0 0 0" xyz="0 0 0"/>
     <limit effort="0" lower="-2" upper="1" velocity="5" drake:acceleration="10"/>
-    <dynamics damping="0.1"/>
+    <dynamics damping="0.1" friction="0.3"/>
   </joint>
   <drake:joint name="ball_joint" type="ball">
     <parent link="link3"/>
@@ -143,7 +143,7 @@ Defines a URDF model with various types of joints.
     <child link="link9"/>
     <origin rpy="0 0 0" xyz="0 0 0"/>
     <drake:screw_thread_pitch value="0.04"/>
-    <dynamics damping="0.1"/>
+    <dynamics damping="0.1" friction="0.4"/>
   </drake:joint>
   <!-- Mimic a joint defined *after* this one in the URDF. -->
   <joint name="revolute_joint_with_mimic_forward_reference" type="revolute">
