@@ -6,9 +6,9 @@ half a turn apart. See JansenParts.xacro for the parts, and
 strandbeest_unassembled.cc, which assembles and runs this model.
 
 The chassis floats free, held up only by its legs, and the crankshaft turns on
-it, so that the legs walk it along the ground. Each leg's ten bars form
-five kinematic loops, which MultibodyPlant breaks automatically by splitting a
-bar of each loop in two.
+it, so that the legs walk it along the ground. Each leg's four bars and two
+triangles form three kinematic loops, which MultibodyPlant breaks automatically
+by splitting a part of each loop in two.
 -->
 <sdf version="1.9" xmlns:xacro="http://ros.org/wiki/xacro"
      xmlns:drake="http://drake.mit.edu">

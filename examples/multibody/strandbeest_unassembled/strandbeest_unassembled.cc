@@ -1,21 +1,24 @@
 /* @file
-A Strandbeest leg demo demonstrating MultibodyPlant's automatic modeling of
-closed kinematic loops, applied to a mechanism described in an SDFormat file as
-unassembled parts. The leg, described in model/JansenLeg.sdf.xacro, is Theo
-Jansen's linkage built entirely from straight bars and pins, each bar laid out
-along a coordinate axis, so that describing it takes no trigonometry. Its pins
-form five kinematic loops, which MultibodyPlant breaks by splitting links and
-closing each loop with a weld constraint.
+A Strandbeest demo demonstrating MultibodyPlant's automatic modeling of closed
+kinematic loops, applied to a mechanism described in an SDFormat file as
+unassembled parts. Each leg, described in model/JansenParts.xacro, is Theo
+Jansen's linkage built from straight bars and rigid triangles joined by pins,
+each part laid out from a pin along a coordinate axis, so that describing it
+takes no trigonometry. Each leg's pins form three kinematic loops, which
+MultibodyPlant breaks by splitting links and closing each loop with a weld
+constraint. The default model, model/TwelveLegs.sdf.xacro, has twelve legs.
 
-The leg is then assembled by optimization: AssembleNearestConfiguration() finds
-the configuration nearest the unassembled one that satisfies every weld. That
-function is not specific to this example; you can copy it for your own models.
-Finally, the crank drives the assembled leg through its stride.
+The legs are then assembled by optimization: AssembleNearestConfiguration()
+finds the configuration nearest the unassembled one that satisfies every weld.
+Next, each leg's crank is turned to its phase on the crankshaft by simulation,
+using SimulateWhileMovingJoints(). Neither function is specific to this
+example; you can copy them for your own models. Finally, the crankshaft turns
+and the legs walk the machine along the ground.
 
-For pedagogical purposes, the example also visualizes the shadow links that
-Drake creates to model the loops; a shadow does not exist until the model is
-finalized, so it cannot be drawn by the model file. Refer to README.md for more
-details. */
+For pedagogical purposes, the example can also draw the shadow links that
+Drake creates to model the loops (see --show_shadows); a shadow does not exist
+until the model is finalized, so it cannot be drawn by the model file. Refer to
+README.md for more details. */
 
 #include <algorithm>
 #include <chrono>
@@ -126,11 +129,12 @@ DEFINE_bool(interactive, true,
             "waiting for you to press Enter before going on each time. Set "
             "--nointeractive to run start to finish without stopping.");
 
-DEFINE_bool(show_shadows, false,
-            "Draw the shadow links that Drake creates to model the kinematic "
-            "loops, each as a translucent, fatter copy of the bar it was split "
-            "from, carrying the pin that was moved onto it. By default, just "
-            "the bars and pins are drawn, as the model file describes them.");
+DEFINE_bool(
+    show_shadows, false,
+    "Draw the shadow links that Drake creates to model the kinematic "
+    "loops, each as a translucent, fatter copy of the part it was split "
+    "from, carrying the pin that was moved onto it. By default, just "
+    "the parts and pins are drawn, as the model file describes them.");
 
 constexpr char kModelDirectory[] =
     "package://drake/examples/multibody/strandbeest_unassembled/model/";
@@ -246,9 +250,9 @@ class StrandbeestUnassembledDemo final {
     ShowAndWait(
         std::string(
             "The legs are unassembled. Drake broke each kinematic loop by "
-            "splitting one of its bars into two links, the bar and a shadow, "
-            "and moving one of the bar's pins onto the shadow. Every "
-            "pin is connected, but each shadow lies away from its bar, so the "
+            "splitting one of its parts into two links, the part and a "
+            "shadow, and moving one of the part's pins onto the shadow. Every "
+            "pin is connected, but each shadow lies away from its part, so the "
             "weld constraint that joins the two is not satisfied yet.") +
             (FLAGS_show_shadows
                  ? ""
@@ -259,13 +263,12 @@ class StrandbeestUnassembledDemo final {
     Assemble();
     ShowAndWait(
         "The legs are assembled, each as it is drawn, with all the cranks "
-        "lined up. Each shadow now surrounds the bar it was split from, "
-        "together reconstituting the original bar's properties.",
+        "lined up. Each shadow now surrounds the part it was split from, "
+        "together reconstituting the original part's properties.",
         "turn the cranks to their phases");
 
     // Turn each leg's crank to its phase on the crankshaft and lock it there.
     TurnCranksToPhases();
-    PrintPinLocations();
     ShowAndWait("Each crank is now locked at its phase on the crankshaft.",
                 "turn the crankshaft and walk");
 
@@ -312,7 +315,6 @@ class StrandbeestUnassembledDemo final {
 
   // Presentation.
   void ReportAndIllustrateModeledLoops();
-  void PrintPinLocations() const;
   void ShowAndWait(const std::string& message, const std::string& next);
   void ShowMotionFrom(const VectorXd& q_start, double duration);
 
@@ -530,15 +532,15 @@ std::unique_ptr<Shape> MakeFatter(const Shape& shape) {
   return shape.Clone();
 }
 
-/* Draws `shadow` as a faint, fatter copy of the bar it was split from, by
-copying that bar's illustration geometry, except for the pins at its holes. The
-fatter shadow surrounds its bar once the legs are assembled, rather than hiding
-inside it, and is drawn in the bar's colors, but translucent. The shadow is
-connected only by the one pin that Finalize() moved onto it, at its hole
-`held_hole`, and by the weld to its primary at their origins, so the shadow
-shows only that pin. A hole at its other end will lie on another pin once the
-legs are assembled, but it is not connected there. The model file names each
-hole's pin visual "<hole>_pin".
+/* Draws `shadow` as a faint, fatter copy of the part it was split from, by
+copying that part's illustration geometry, except for the pins at its holes.
+The fatter shadow surrounds its part once the legs are assembled, rather than
+hiding inside it, and is drawn in the part's colors, but translucent. The
+shadow is connected only by the one pin that Finalize() moved onto it, at its
+hole `held_hole`, and by the weld to its primary at their origins, so the
+shadow shows only that pin. Its other holes will lie on other pins once the
+legs are assembled, but they are not connected there. The model file names
+each hole's pin visual "<hole>_pin".
 
 A shadow does not exist until Finalize(), so it cannot be drawn by the model
 file, and its geometry must be registered directly with SceneGraph rather than
@@ -656,39 +658,6 @@ void StrandbeestUnassembledDemo::HidePinVisual(const Link<double>& link,
   }
 }
 
-/* Prints where each assembled leg's pins are, relative to the crankshaft axle
-O and expressed in the chassis frame, along with the crankshaft angle. Drake
-found these; describing the legs needed only the bars' lengths. */
-void StrandbeestUnassembledDemo::PrintPinLocations() const {
-  const Frame<double>& O = strandbeest_->GetFrameByName("chassis_O");
-  std::cout << fmt::format(
-      "Assembled pin locations (x, z) relative to the crankshaft axle, with "
-      "the crankshaft at {:.0f} degrees:\n",
-      strandbeest_->GetJointByName<RevoluteJoint>(kCrankshaftJointName)
-              .get_angle(plant_context()) *
-          180 / M_PI);
-  for (const Leg& leg : legs_) {
-    std::cout << fmt::format("  {}\n", leg.prefix);
-    for (const auto& [pin, frame_name] :
-         std::vector<std::pair<std::string, std::string>>{{"X", "crank_X"},
-                                                          {"Y", "bracket_Y"},
-                                                          {"U1", "b_U1"},
-                                                          {"U2", "d_U2"},
-                                                          {"L1", "c_L1"},
-                                                          {"L2", "g_L2"},
-                                                          {"F", "i_F"}}) {
-      const Vector3d p_OP =
-          strandbeest_
-              ->CalcRelativeTransform(
-                  plant_context(), O,
-                  strandbeest_->GetFrameByName(leg.prefix + frame_name))
-              .translation();
-      std::cout << fmt::format("    {:2} ({:7.4f}, {:7.4f}) m\n", pin, p_OP.x(),
-                               p_OP.z());
-    }
-  }
-}
-
 /* Shows the current configuration and, unless --nointeractive, waits for the
 user to press Enter before doing whatever `next` describes. */
 void StrandbeestUnassembledDemo::ShowAndWait(const std::string& message,
@@ -707,7 +676,7 @@ void StrandbeestUnassembledDemo::ShowAndWait(const std::string& message,
 /* Shows the model moving from `q_start` to its current configuration over
 `duration` seconds of wall time, then leaves it there. The optimizer reports
 only where a solve ends up, not how it gets there, so this simply interpolates
-the positions; the shadows close in on their bars as it goes. */
+the positions; the shadows close in on their parts as it goes. */
 void StrandbeestUnassembledDemo::ShowMotionFrom(const VectorXd& q_start,
                                                 double duration) {
   Context<double>& context = mutable_plant_context();

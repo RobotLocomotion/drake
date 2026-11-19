@@ -2,15 +2,16 @@
 <!--
 Parts for building Theo Jansen's Strandbeest linkage, unassembled, in SDFormat.
 
-Every part is a straight bar with a pin hole at each end, and every connection
-is a revolute joint pinning two holes together. No part's placement needs any
-trigonometry: each bar is laid along a coordinate axis, and its two holes are
-the frames ${bar}_${pin0} and ${bar}_${pin1}, half a bar length either side of
-its link frame, which is at its middle. Each joint uses Drake's
-<drake:independent_frames/> extension to name the two holes it pins together,
-so that the joint is all that relates its two bars. MultibodyPlant breaks each
-kinematic loop that the pins form by splitting one of its bars in two, and the
-example program assembles them.
+The parts are straight bars, with a pin hole at each end, and rigid triangles
+of three bars, with a pin hole at each corner. Every connection is a revolute
+joint pinning two holes together. No part's placement needs any trigonometry:
+each bar, and one side of each triangle, is laid along a coordinate axis, and
+a triangle's shape follows from its side lengths alone. Each hole is a frame
+named ${part}_${pin}. Each joint uses Drake's <drake:independent_frames/>
+extension to name the two holes it pins together, so that the joint is all
+that relates its two parts. MultibodyPlant breaks each kinematic loop that the
+pins form by splitting one of its parts in two, and the example program
+assembles them.
 
 The bar lengths are Jansen's published lengths ("holy numbers"), in units of
 0.01 m, matching the existing Drake Strandbeest example in
@@ -85,14 +86,36 @@ https://en.wikipedia.org/wiki/Jansen%27s_linkage for the usual drawing.
     </visual>
   </xacro:macro>
 
+  <!-- A foot, a sphere that touches the ground, at (x, 0, z). -->
+  <xacro:macro name="foot" params="name x z">
+    <visual name="${name}">
+      <pose>${x} 0 ${z} 0 0 0</pose>
+      <geometry>
+        <sphere>
+          <radius>${foot_radius}</radius>
+        </sphere>
+      </geometry>
+      <material>
+        <diffuse>${red}</diffuse>
+      </material>
+    </visual>
+    <collision name="${name}">
+      <pose>${x} 0 ${z} 0 0 0</pose>
+      <geometry>
+        <sphere>
+          <radius>${foot_radius}</radius>
+        </sphere>
+      </geometry>
+      <xacro:friction/>
+    </collision>
+  </xacro:macro>
+
   <!-- A straight PVC bar of the given length, running along the coordinate
   axis (ux, 0, uz) from the hole ${name}_${pin0} to the hole ${name}_${pin1}.
-  Exactly one of ux and uz is nonzero, and it is either 1 or -1. With
-  foot:=true, the bar also has a foot at ${pin1}.
+  Exactly one of ux and uz is nonzero, and it is either 1 or -1.
 
   The bar's link frame is at its middle, where its center of mass is. -->
-  <xacro:macro name="bar"
-      params="name length ux uz pin0 pin1 color foot:=false">
+  <xacro:macro name="bar" params="name length ux uz pin0 pin1 color">
     <xacro:property name="mass" value="${pvc_kg_per_m * length}"/>
     <xacro:property name="axial" value="${0.5 * mass * pvc_r2}"/>
     <xacro:property name="transverse"
@@ -137,34 +160,156 @@ https://en.wikipedia.org/wiki/Jansen%27s_linkage for the usual drawing.
           z="${-half_z}" color="${color}"/>
       <xacro:pin_visual name="${name}_${pin1}_pin" x="${half_x}" z="${half_z}"
           color="${color}"/>
-      <xacro:if value="${foot}">
-        <visual name="${name}_foot">
-          <pose>${half_x} 0 ${half_z} 0 0 0</pose>
-          <geometry>
-            <sphere>
-              <radius>${foot_radius}</radius>
-            </sphere>
-          </geometry>
-          <material>
-            <diffuse>${red}</diffuse>
-          </material>
-        </visual>
-        <collision name="${name}_foot">
-          <pose>${half_x} 0 ${half_z} 0 0 0</pose>
-          <geometry>
-            <sphere>
-              <radius>${foot_radius}</radius>
-            </sphere>
-          </geometry>
-          <xacro:friction/>
-        </collision>
-      </xacro:if>
     </link>
     <frame name="${name}_${pin0}" attached_to="${name}">
       <pose relative_to="${name}">${-half_x} 0 ${-half_z} 0 0 0</pose>
     </frame>
     <frame name="${name}_${pin1}" attached_to="${name}">
       <pose relative_to="${name}">${half_x} 0 ${half_z} 0 0 0</pose>
+    </frame>
+  </xacro:macro>
+
+  <!-- The visual and collision cylinders of a PVC bar running from (xa, za) to
+  (xb, zb) in its link's x-z plane. -->
+  <xacro:macro name="bar_geometry" params="name xa za xb zb color">
+    <xacro:property name="length" value="${sqrt((xb - xa)**2 + (zb - za)**2)}"/>
+    <!-- A cylinder's own axis is z; pitching it by this much about y turns
+    that axis to point from a to b. -->
+    <xacro:property name="pitch" value="${atan2(xb - xa, zb - za)}"/>
+    <visual name="${name}_bar">
+      <pose>${0.5*(xa + xb)} 0 ${0.5*(za + zb)} 0 ${pitch} 0</pose>
+      <geometry>
+        <cylinder>
+          <radius>${bar_radius}</radius>
+          <length>${length}</length>
+        </cylinder>
+      </geometry>
+      <material>
+        <diffuse>${color}</diffuse>
+      </material>
+    </visual>
+    <collision name="${name}_bar">
+      <pose>${0.5*(xa + xb)} 0 ${0.5*(za + zb)} 0 ${pitch} 0</pose>
+      <geometry>
+        <cylinder>
+          <radius>${bar_radius}</radius>
+          <length>${length}</length>
+        </cylinder>
+      </geometry>
+      <xacro:friction/>
+    </collision>
+  </xacro:macro>
+
+  <!-- Sets ${tag}_ixx, ${tag}_iyy, ${tag}_izz, and ${tag}_ixz in the caller's
+  scope to the inertia, about its link frame origin, of a PVC bar running from
+  (xa, za) to (xb, zb) in the link's x-z plane: the bar's inertia about its own
+  center, shifted to the origin. -->
+  <xacro:macro name="bar_inertia" params="tag xa za xb zb">
+    <xacro:property name="length" value="${sqrt((xb - xa)**2 + (zb - za)**2)}"/>
+    <xacro:property name="mass" value="${pvc_kg_per_m * length}"/>
+    <xacro:property name="axial" value="${0.5 * mass * pvc_r2}"/>
+    <xacro:property name="transverse"
+        value="${mass * (3 * pvc_r2 + length**2) / 12}"/>
+    <!-- The bar's direction and center. -->
+    <xacro:property name="ux" value="${(xb - xa) / length}"/>
+    <xacro:property name="uz" value="${(zb - za) / length}"/>
+    <xacro:property name="cx" value="${0.5*(xa + xb)}"/>
+    <xacro:property name="cz" value="${0.5*(za + zb)}"/>
+    <xacro:property name="${tag}_ixx" scope="parent"
+        value="${axial*ux*ux + transverse*uz*uz + mass*cz*cz}"/>
+    <xacro:property name="${tag}_iyy" scope="parent"
+        value="${transverse + mass*(cx*cx + cz*cz)}"/>
+    <xacro:property name="${tag}_izz" scope="parent"
+        value="${axial*uz*uz + transverse*ux*ux + mass*cx*cx}"/>
+    <xacro:property name="${tag}_ixz" scope="parent"
+        value="${(axial - transverse)*ux*uz - mass*cx*cz}"/>
+  </xacro:macro>
+
+  <!-- A triangle's corner at (x, 0, z): a foot if `corner` is `foot`, or
+  otherwise a pin. -->
+  <xacro:macro name="corner" params="name corner foot x z color">
+    <xacro:if value="${corner == foot}">
+      <xacro:foot name="${name}_foot" x="${x}" z="${z}"/>
+    </xacro:if>
+    <xacro:unless value="${corner == foot}">
+      <xacro:pin_visual name="${name}_${corner}_pin" x="${x}" z="${z}"
+          color="${color}"/>
+    </xacro:unless>
+  </xacro:macro>
+
+  <!-- A rigid triangle of three PVC bars, as a single link, with a pin hole at
+  each corner: ${name}_${p0}, ${name}_${p1}, and ${name}_${p2}. Its sides are
+  named n01, n02, and n12, and are l01, l02, and l12 long, by the corners they
+  join. Like a bar, it is laid out from p0, with p1 along the coordinate axis
+  (ux, 0, uz). Then p2 is on the `side` of that: 1 for counterclockwise of it
+  (in a drawing with x to the right and z up), -1 for clockwise. Its position
+  follows from the side lengths by the law of cosines. If `foot` names one of
+  the corners, the triangle has a foot there, rather than a pin.
+
+  The triangle's link frame is at its center of mass. -->
+  <xacro:macro name="triangle"
+      params="name p0 p1 p2 n01 n02 n12 l01 l02 l12 ux uz side color
+              foot:=''">
+    <!-- The corners, relative to p0: p1 is l01 along (ux, uz), and p2 is
+    `along` that way and `across` counterclockwise of it. -->
+    <xacro:property name="along" value="${(l01**2 + l02**2 - l12**2) / (2*l01)}"/>
+    <xacro:property name="across" value="${side * sqrt(l02**2 - along**2)}"/>
+    <xacro:property name="x1" value="${l01*ux}"/>
+    <xacro:property name="z1" value="${l01*uz}"/>
+    <xacro:property name="x2" value="${along*ux - across*uz}"/>
+    <xacro:property name="z2" value="${along*uz + across*ux}"/>
+    <!-- The center of mass, the length-weighted mean of the sides' centers.
+    The corners relative to it are (v0x, v0z), (v1x, v1z), and (v2x, v2z). -->
+    <xacro:property name="perimeter" value="${l01 + l02 + l12}"/>
+    <xacro:property name="cx"
+        value="${0.5*(l01*x1 + l02*x2 + l12*(x1 + x2)) / perimeter}"/>
+    <xacro:property name="cz"
+        value="${0.5*(l01*z1 + l02*z2 + l12*(z1 + z2)) / perimeter}"/>
+    <xacro:property name="v0x" value="${-cx}"/>
+    <xacro:property name="v0z" value="${-cz}"/>
+    <xacro:property name="v1x" value="${x1 - cx}"/>
+    <xacro:property name="v1z" value="${z1 - cz}"/>
+    <xacro:property name="v2x" value="${x2 - cx}"/>
+    <xacro:property name="v2z" value="${z2 - cz}"/>
+    <xacro:bar_inertia tag="s01" xa="${v0x}" za="${v0z}" xb="${v1x}"
+        zb="${v1z}"/>
+    <xacro:bar_inertia tag="s02" xa="${v0x}" za="${v0z}" xb="${v2x}"
+        zb="${v2z}"/>
+    <xacro:bar_inertia tag="s12" xa="${v1x}" za="${v1z}" xb="${v2x}"
+        zb="${v2z}"/>
+    <link name="${name}">
+      <inertial>
+        <mass>${pvc_kg_per_m * perimeter}</mass>
+        <inertia>
+          <ixx>${s01_ixx + s02_ixx + s12_ixx}</ixx>
+          <iyy>${s01_iyy + s02_iyy + s12_iyy}</iyy>
+          <izz>${s01_izz + s02_izz + s12_izz}</izz>
+          <ixy>0</ixy>
+          <ixz>${s01_ixz + s02_ixz + s12_ixz}</ixz>
+          <iyz>0</iyz>
+        </inertia>
+      </inertial>
+      <xacro:bar_geometry name="${name}_${n01}" xa="${v0x}" za="${v0z}"
+          xb="${v1x}" zb="${v1z}" color="${color}"/>
+      <xacro:bar_geometry name="${name}_${n02}" xa="${v0x}" za="${v0z}"
+          xb="${v2x}" zb="${v2z}" color="${color}"/>
+      <xacro:bar_geometry name="${name}_${n12}" xa="${v1x}" za="${v1z}"
+          xb="${v2x}" zb="${v2z}" color="${color}"/>
+      <xacro:corner name="${name}" corner="${p0}" foot="${foot}" x="${v0x}"
+          z="${v0z}" color="${color}"/>
+      <xacro:corner name="${name}" corner="${p1}" foot="${foot}" x="${v1x}"
+          z="${v1z}" color="${color}"/>
+      <xacro:corner name="${name}" corner="${p2}" foot="${foot}" x="${v2x}"
+          z="${v2z}" color="${color}"/>
+    </link>
+    <frame name="${name}_${p0}" attached_to="${name}">
+      <pose relative_to="${name}">${v0x} 0 ${v0z} 0 0 0</pose>
+    </frame>
+    <frame name="${name}_${p1}" attached_to="${name}">
+      <pose relative_to="${name}">${v1x} 0 ${v1z} 0 0 0</pose>
+    </frame>
+    <frame name="${name}_${p2}" attached_to="${name}">
+      <pose relative_to="${name}">${v2x} 0 ${v2z} 0 0 0</pose>
     </frame>
   </xacro:macro>
 
@@ -187,47 +332,47 @@ https://en.wikipedia.org/wiki/Jansen%27s_linkage for the usual drawing.
     </joint>
   </xacro:macro>
 
-  <!-- One Jansen leg: ten bars, pinned at seven places, two of which are on
-  other parts. `crank_pin` names the crank pin hole on the crank, and `pivot`
-  names the fixed pivot hole on the chassis. Every other name is prefixed by
-  `prefix`.
+  <!-- One Jansen leg: four bars and two rigid triangles, pinned at six places,
+  two of which are on other parts. `crank_pin` names the crank pin hole on the
+  crank, and `pivot` names the fixed pivot hole on the chassis. Every other
+  name is prefixed by `prefix`.
 
-  The seven pins, and the bars each one holds together, are:
-    X   the crank pin:                                crank, j, k
-    Y   the fixed pivot:                              chassis, b, c, d
-    U1  the top of the upper triangle bde:            j, b, e
-    U2  the outer corner of the upper triangle bde:   d, e, f
-    L1  the top of the lower triangle ghi:            k, c, g, i
-    L2  the inner corner of the lower triangle ghi:   f, g, h
-    F   the foot, the bottom of the lower triangle:   h, i
-  The two triangles are rigid only because their three pinned bars make them
-  so; nothing here makes them single parts.
+  The leg's two triangles are each a single part: bde, the upper triangle,
+  made of Jansen's bars b, d, and e, and ghi, the lower triangle, made of g, h,
+  and i. The six pins, and the parts each one holds together, are:
+    X   the crank pin:                          crank, j, k
+    Y   the fixed pivot, a corner of bde:       chassis, bde, c
+    U1  the top corner of bde:                  bde, j
+    U2  the outer corner of bde:                bde, f
+    L1  the top corner of ghi:                  c, k, ghi
+    L2  the inner corner of ghi:                ghi, f
+  The foot is at F, the bottom corner of ghi.
 
-  Each bar is laid out from its first pin along the coordinate axis nearest
-  its direction in the assembled leg, with the crank pin horizontal and
-  pointing away from the leg. That needs no trigonometry, and it starts the
-  assembly on the intended branch of each pair of bars that meet at a pin. -->
+  Each bar, and the first side of each triangle, is laid out from its first
+  pin along the coordinate axis nearest its direction in the assembled leg,
+  with the crank pin horizontal and pointing away from the leg. That needs no
+  trigonometry, and it starts the assembly on the intended branch of each pair
+  of parts that meet at a pin. Which side of a triangle is laid along an axis
+  matters: laying ghi out along its side i, from L1 straight down to the foot,
+  instead of along g, starts it nearer the other branch at L2, and the
+  assembled leg comes out wrong. -->
   <xacro:macro name="jansen_leg" params="prefix crank_pin pivot">
     <xacro:bar name="${prefix}j" length="${jansen_j}" ux="-1" uz="0"
         pin0="X" pin1="U1" color="${yellow}"/>
     <xacro:bar name="${prefix}k" length="${jansen_k}" ux="0" uz="-1"
         pin0="X" pin1="L1" color="${yellow}"/>
-    <xacro:bar name="${prefix}b" length="${jansen_b}" ux="0" uz="1"
-        pin0="Y" pin1="U1" color="${blue}"/>
     <xacro:bar name="${prefix}c" length="${jansen_c}" ux="0" uz="-1"
         pin0="Y" pin1="L1" color="${yellow}"/>
-    <xacro:bar name="${prefix}d" length="${jansen_d}" ux="-1" uz="0"
-        pin0="Y" pin1="U2" color="${blue}"/>
-    <xacro:bar name="${prefix}e" length="${jansen_e}" ux="-1" uz="0"
-        pin0="U1" pin1="U2" color="${blue}"/>
     <xacro:bar name="${prefix}f" length="${jansen_f}" ux="0" uz="-1"
         pin0="U2" pin1="L2" color="${yellow}"/>
-    <xacro:bar name="${prefix}g" length="${jansen_g}" ux="-1" uz="0"
-        pin0="L1" pin1="L2" color="${black}"/>
-    <xacro:bar name="${prefix}h" length="${jansen_h}" ux="0" uz="-1"
-        pin0="L2" pin1="F" color="${black}" foot="true"/>
-    <xacro:bar name="${prefix}i" length="${jansen_i}" ux="0" uz="-1"
-        pin0="L1" pin1="F" color="${black}"/>
+    <xacro:triangle name="${prefix}bde" p0="Y" p1="U1" p2="U2"
+        n01="b" n02="d" n12="e"
+        l01="${jansen_b}" l02="${jansen_d}" l12="${jansen_e}"
+        ux="0" uz="1" side="1" color="${blue}"/>
+    <xacro:triangle name="${prefix}ghi" p0="L1" p1="L2" p2="F"
+        n01="g" n02="i" n12="h"
+        l01="${jansen_g}" l02="${jansen_i}" l12="${jansen_h}"
+        ux="-1" uz="0" side="1" color="${black}" foot="F"/>
 
     <!-- X, the crank pin. -->
     <xacro:pin name="${prefix}crank_j" parent="${crank_pin}"
@@ -235,37 +380,24 @@ https://en.wikipedia.org/wiki/Jansen%27s_linkage for the usual drawing.
     <xacro:pin name="${prefix}crank_k" parent="${crank_pin}"
         child="${prefix}k_X"/>
     <!-- Y, the fixed pivot. -->
-    <xacro:pin name="${prefix}chassis_b" parent="${pivot}"
-        child="${prefix}b_Y"/>
+    <xacro:pin name="${prefix}chassis_bde" parent="${pivot}"
+        child="${prefix}bde_Y"/>
     <xacro:pin name="${prefix}chassis_c" parent="${pivot}"
         child="${prefix}c_Y"/>
-    <xacro:pin name="${prefix}chassis_d" parent="${pivot}"
-        child="${prefix}d_Y"/>
-    <!-- U1, the top of the upper triangle. -->
-    <xacro:pin name="${prefix}b_j" parent="${prefix}b_U1"
+    <!-- U1, the top corner of the upper triangle. -->
+    <xacro:pin name="${prefix}bde_j" parent="${prefix}bde_U1"
         child="${prefix}j_U1"/>
-    <xacro:pin name="${prefix}b_e" parent="${prefix}b_U1"
-        child="${prefix}e_U1"/>
     <!-- U2, the outer corner of the upper triangle. -->
-    <xacro:pin name="${prefix}d_e" parent="${prefix}d_U2"
-        child="${prefix}e_U2"/>
-    <xacro:pin name="${prefix}d_f" parent="${prefix}d_U2"
+    <xacro:pin name="${prefix}bde_f" parent="${prefix}bde_U2"
         child="${prefix}f_U2"/>
-    <!-- L1, the top of the lower triangle. -->
+    <!-- L1, the top corner of the lower triangle. -->
     <xacro:pin name="${prefix}c_k" parent="${prefix}c_L1"
         child="${prefix}k_L1"/>
-    <xacro:pin name="${prefix}c_g" parent="${prefix}c_L1"
-        child="${prefix}g_L1"/>
-    <xacro:pin name="${prefix}c_i" parent="${prefix}c_L1"
-        child="${prefix}i_L1"/>
+    <xacro:pin name="${prefix}c_ghi" parent="${prefix}c_L1"
+        child="${prefix}ghi_L1"/>
     <!-- L2, the inner corner of the lower triangle. -->
-    <xacro:pin name="${prefix}g_f" parent="${prefix}g_L2"
+    <xacro:pin name="${prefix}ghi_f" parent="${prefix}ghi_L2"
         child="${prefix}f_L2"/>
-    <xacro:pin name="${prefix}g_h" parent="${prefix}g_L2"
-        child="${prefix}h_L2"/>
-    <!-- F, the foot. -->
-    <xacro:pin name="${prefix}i_h" parent="${prefix}i_F"
-        child="${prefix}h_F"/>
   </xacro:macro>
 
   <!-- A weld joint between two frames, using independent frames as the pins
