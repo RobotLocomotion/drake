@@ -1,5 +1,6 @@
 load("@bazel_skylib//rules:common_settings.bzl", "bool_flag")
 load("//tools/lint:lint.bzl", "add_lint_tests")
+load("//tools/skylark:drake_py.bzl", "drake_py_unittest")
 load("//tools/skylark:sh.bzl", "sh_binary")
 
 package(default_visibility = ["//visibility:private"])
@@ -19,6 +20,12 @@ bool_flag(
 config_setting(
     name = "enabled",
     flag_values = {":active": "True"},
+)
+
+drake_py_unittest(
+    name = "kcov_tool_test",
+    data = ["kcov_tool"],
+    deps = ["@rules_python//python/runfiles"],
 )
 
 add_lint_tests(
