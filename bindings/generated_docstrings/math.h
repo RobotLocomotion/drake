@@ -3850,8 +3850,7 @@ Parameter ``tolerance``:
     tolerance``).
 
 Returns:
-    ``True`` if R is a valid rotation matrix. Returns false if any
-    element of R is non-finite (NaN or ±∞).)""";
+    ``True`` if R is a valid rotation matrix.)""";
           // Source: drake/math/rotation_matrix.h
           const char* doc_1args =
 R"""(Tests if a generic Matrix3 is a proper orthonormal rotation matrix to

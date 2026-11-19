@@ -520,6 +520,21 @@ GTEST_TEST(RotationMatrix, IsValidNonFinite) {
   }
 }
 
+// IsValid() also rejects non-finite elements for symbolic scalars.
+GTEST_TEST(RotationMatrix, IsValidNonFiniteSymbolic) {
+  using symbolic::Expression;
+  const Matrix3<Expression> good_m = Matrix3<Expression>::Identity();
+  EXPECT_TRUE(
+      symbolic::is_true(RotationMatrix<Expression>::IsValid(good_m, kEpsilon)));
+  for (const double bad : {std::numeric_limits<double>::infinity(),
+                           -std::numeric_limits<double>::infinity()}) {
+    Matrix3<Expression> bad_m = Matrix3<Expression>::Identity();
+    bad_m(1, 2) = bad;
+    EXPECT_TRUE(symbolic::is_false(
+        RotationMatrix<Expression>::IsValid(bad_m, kEpsilon)));
+  }
+}
+
 // Tests whether or not a RotationMatrix is an identity matrix.
 GTEST_TEST(RotationMatrix, IsExactlyIdentity) {
   // Test that the default constructor creates an exact identity matrix.
