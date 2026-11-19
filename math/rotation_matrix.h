@@ -26,24 +26,6 @@ namespace internal {
 // This is used to select a non-initializing constructor for use by
 // RigidTransform.
 struct DoNotInitializeMemberFields {};
-
-// Returns the infinity norm of `m` (i.e., the maximum absolute value of its
-// elements). Unlike Eigen's lpNorm<Eigen::Infinity>(), which may silently skip
-// NaN elements (depending on where they appear), for numeric scalar types this
-// returns NaN if any element of `m` is NaN (see #17356). This is used by
-// RotationMatrix and RigidTransform so that their tolerance checks (e.g.,
-// `norm <= tolerance`) fail for matrices that contain NaN.
-template <typename Derived>
-typename Derived::Scalar InfinityNormOrNaN(
-    const Eigen::MatrixBase<Derived>& m) {
-  using T = typename Derived::Scalar;
-  if constexpr (scalar_predicate<T>::is_bool) {
-    if (m.hasNaN()) {
-      return std::numeric_limits<double>::quiet_NaN();
-    }
-  }
-  return m.template lpNorm<Eigen::Infinity>();
-}
 }  // namespace internal
 
 /// This class represents a 3x3 rotation matrix between two arbitrary frames
@@ -762,8 +744,7 @@ class RotationMatrix {
   /// computing `‖R ⋅ Rᵀ - I‖∞` (i.e., the maximum absolute value of the
   /// difference between the elements of R ⋅ Rᵀ and the 3x3 identity matrix).
   /// @param[in] R matrix being checked for orthonormality.
-  /// @returns `‖R ⋅ Rᵀ - I‖∞`, or NaN if any element of `R ⋅ Rᵀ - I` is NaN
-  /// (e.g., if R contains a NaN).
+  /// @returns `‖R ⋅ Rᵀ - I‖∞`
   static T GetMeasureOfOrthonormality(const Matrix3<T>& R) {
     const Matrix3<T> m = R * R.transpose();
     return GetMaximumAbsoluteDifference(m, Matrix3<T>::Identity());
@@ -784,8 +765,16 @@ class RotationMatrix {
   /// @param[in] R an allegedly valid rotation matrix.
   /// @param[in] tolerance maximum allowable absolute difference of `R * Rᵀ`
   /// and the identity matrix I (i.e., checks if `‖R ⋅ Rᵀ - I‖∞ <= tolerance`).
-  /// @returns `true` if R is a valid rotation matrix.
+  /// @returns `true` if R is a valid rotation matrix. Returns false if any
+  /// element of R is non-finite (NaN or ±∞).
   static boolean<T> IsValid(const Matrix3<T>& R, double tolerance) {
+    if constexpr (scalar_predicate<T>::is_bool) {
+      // Check this up front: the orthonormality measure is not reliable for
+      // non-finite elements (Eigen's infinity norm can skip NaN; see #17356).
+      if (!R.allFinite()) {
+        return false;
+      }
+    }
     return IsOrthonormal(R, tolerance) && R.determinant() > 0;
   }
 
@@ -811,7 +800,6 @@ class RotationMatrix {
   /// Returns true if `this` is within tolerance of the identity RigidTransform.
   /// @param[in] tolerance non-negative number that is generally the default
   /// value, namely RotationMatrix::get_internal_tolerance_for_orthonormality().
-  /// Returns false if any element of `this` is non-finite (NaN or ±∞).
   /// @see IsExactlyIdentity().
   boolean<T> IsNearlyIdentity(
       double tolerance = get_internal_tolerance_for_orthonormality()) const {
@@ -823,8 +811,7 @@ class RotationMatrix {
   /// @param[in] other %RotationMatrix to compare to `this`.
   /// @param[in] tolerance maximum allowable absolute difference between the
   /// matrix elements in `this` and `other`.
-  /// @returns `true` if `‖this - other‖∞ <= tolerance`. Returns false if any
-  /// element of `this` or `other` is non-finite (NaN or ±∞).
+  /// @returns `true` if `‖this - other‖∞ <= tolerance`.
   /// @see IsExactlyEqualTo().
   boolean<T> IsNearlyEqualTo(const RotationMatrix<T>& other,
                              double tolerance) const {
@@ -844,10 +831,7 @@ class RotationMatrix {
   /// Computes the infinity norm of `this` - `other` (i.e., the maximum absolute
   /// value of the difference between the elements of `this` and `other`).
   /// @param[in] other %RotationMatrix to subtract from `this`.
-  /// @returns `‖this - other‖∞`, or NaN if any element of `this - other` is
-  /// NaN. Note that `inf - inf` is NaN, so if `this` and `other` have an
-  /// infinite element in the same place this returns NaN, and therefore
-  /// IsNearlyEqualTo() is false (even when comparing a matrix to itself).
+  /// @returns `‖this - other‖∞`
   T GetMaximumAbsoluteDifference(const RotationMatrix<T>& other) const {
     return GetMaximumAbsoluteDifference(matrix(), other.matrix());
   }
@@ -1029,11 +1013,11 @@ class RotationMatrix {
   // value of the difference between the elements of R and `other`).
   // @param[in] R matrix from which `other` is subtracted.
   // @param[in] other matrix to subtract from R.
-  // @returns `‖R - other‖∞`, or NaN if any element of `R - other` is NaN.
+  // @returns `‖R - other‖∞`
   static T GetMaximumAbsoluteDifference(const Matrix3<T>& R,
                                         const Matrix3<T>& other) {
     const Matrix3<T> R_difference = R - other;
-    return internal::InfinityNormOrNaN(R_difference);
+    return R_difference.template lpNorm<Eigen::Infinity>();
   }
 
   // Compares corresponding elements in two matrices to check if they are the

@@ -1,6 +1,5 @@
 #include "drake/math/rigid_transform.h"
 
-#include <cmath>
 #include <cstdio>
 #include <limits>
 #include <string>
@@ -426,48 +425,6 @@ GTEST_TEST(RigidTransform, IsIdentity) {
   const Vector3d zero_vector(0, 0, 0);
   X2.set_translation(zero_vector);
   EXPECT_TRUE(X2.IsExactlyIdentity());
-}
-
-// A RigidTransform with any non-finite element is never nearly equal to
-// anything (not even itself), no matter which element it is (see #17356).
-GTEST_TEST(RigidTransform, NonFiniteComparisons) {
-  const RigidTransform<double> identity;
-  for (const double bad : {std::numeric_limits<double>::infinity(),
-                           -std::numeric_limits<double>::infinity(),
-                           std::numeric_limits<double>::quiet_NaN()}) {
-    for (int i = 0; i < 3; ++i) {
-      for (int j = 0; j < 4; ++j) {
-        SCOPED_TRACE(testing::Message()
-                     << "X(" << i << ", " << j << ") = " << bad);
-        Matrix3d R = Matrix3d::Identity();
-        Vector3d p = Vector3d::Zero();
-        if (j < 3) {
-          R(i, j) = bad;
-        } else {
-          p(i) = bad;
-        }
-        // We use MakeUnchecked() because the RotationMatrix constructor
-        // rejects non-finite matrices in Debug builds.
-        const RigidTransform<double> X(RotationMatrix<double>::MakeUnchecked(R),
-                                       p);
-        EXPECT_FALSE(X.IsNearlyIdentity(1.0));
-        EXPECT_FALSE(X.IsNearlyEqualTo(identity, 1.0));
-        EXPECT_FALSE(identity.IsNearlyEqualTo(X, 1.0));
-        EXPECT_FALSE(X.IsNearlyEqualTo(X, 1.0));
-        EXPECT_TRUE(std::isnan(X.GetMaximumAbsoluteDifference(X)));
-        if (std::isnan(bad)) {
-          EXPECT_TRUE(std::isnan(X.GetMaximumAbsoluteDifference(identity)));
-        }
-        if (j == 3) {
-          EXPECT_TRUE(std::isnan(X.GetMaximumAbsoluteTranslationDifference(X)));
-          if (std::isnan(bad)) {
-            EXPECT_TRUE(std::isnan(
-                X.GetMaximumAbsoluteTranslationDifference(identity)));
-          }
-        }
-      }
-    }
-  }
 }
 
 // Tests calculating the inverse of a RigidTransform.

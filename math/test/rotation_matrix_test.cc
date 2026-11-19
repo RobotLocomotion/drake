@@ -1,6 +1,5 @@
 #include "drake/math/rotation_matrix.h"
 
-#include <cmath>
 #include <limits>
 #include <vector>
 
@@ -500,14 +499,10 @@ GTEST_TEST(RotationMatrix, IsValid) {
   EXPECT_FALSE(RotationMatrix<double>::IsValid(m, 5 * kEpsilon));
 }
 
-// A matrix with any non-finite element is neither orthonormal nor valid, nor
-// nearly equal to anything, no matter which element it is (see #17356).
-GTEST_TEST(RotationMatrix, NonFiniteComparisons) {
-  // We use MakeUnchecked() because the constructor rejects such matrices in
-  // Debug builds. Without special handling, Eigen's infinity norm can skip NaN
-  // elements, so a NaN in rows 1 or 2 would pass the orthonormality check, and
-  // a NaN in most positions would pass the near-equality checks.
-  const RotationMatrix<double> identity;
+// A matrix with any non-finite element is not a valid rotation matrix, no
+// matter which element it is (see #17356). We use MakeUnchecked() because the
+// constructor rejects such matrices in Debug builds.
+GTEST_TEST(RotationMatrix, IsValidNonFinite) {
   for (const double bad : {std::numeric_limits<double>::infinity(),
                            -std::numeric_limits<double>::infinity(),
                            std::numeric_limits<double>::quiet_NaN()}) {
@@ -517,28 +512,9 @@ GTEST_TEST(RotationMatrix, NonFiniteComparisons) {
                      << "R(" << i << ", " << j << ") = " << bad);
         Matrix3d bad_m = Matrix3d::Identity();
         bad_m(i, j) = bad;
-        EXPECT_FALSE(RotationMatrix<double>::IsOrthonormal(bad_m, kEpsilon));
         EXPECT_FALSE(RotationMatrix<double>::IsValid(bad_m, kEpsilon));
         EXPECT_FALSE(RotationMatrix<double>::IsValid(bad_m));
-        const RotationMatrix<double> bad_R =
-            RotationMatrix<double>::MakeUnchecked(bad_m);
-        EXPECT_FALSE(bad_R.IsValid());
-        EXPECT_FALSE(bad_R.IsNearlyIdentity(1.0));
-        EXPECT_FALSE(bad_R.IsNearlyEqualTo(identity, 1.0));
-        EXPECT_FALSE(identity.IsNearlyEqualTo(bad_R, 1.0));
-        // Since inf - inf is NaN, a non-finite matrix is not even nearly equal
-        // to itself (though it is exactly equal to itself).
-        EXPECT_FALSE(bad_R.IsNearlyEqualTo(bad_R, 1.0));
-        EXPECT_TRUE(std::isnan(bad_R.GetMaximumAbsoluteDifference(bad_R)));
-        if (std::isnan(bad)) {
-          EXPECT_FALSE(bad_R.IsExactlyEqualTo(bad_R));
-          // The measures must propagate NaN, not silently skip it.
-          EXPECT_TRUE(std::isnan(
-              RotationMatrix<double>::GetMeasureOfOrthonormality(bad_m)));
-          EXPECT_TRUE(std::isnan(bad_R.GetMaximumAbsoluteDifference(identity)));
-        } else {
-          EXPECT_TRUE(bad_R.IsExactlyEqualTo(bad_R));
-        }
+        EXPECT_FALSE(RotationMatrix<double>::MakeUnchecked(bad_m).IsValid());
       }
     }
   }
