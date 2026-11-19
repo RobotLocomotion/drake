@@ -1,7 +1,9 @@
 #include "drake/geometry/proximity/deformable_field_intersection.h"
 
+#include <memory>
 #include <unordered_set>
 #include <utility>
+#include <vector>
 
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/proximity/aabb.h"

@@ -1,5 +1,6 @@
 #include "drake/geometry/proximity/find_collision_candidates_callback.h"
 
+#include "drake/common/drake_assert.h"
 #include "drake/geometry/proximity/proximity_utilities.h"
 
 namespace drake {

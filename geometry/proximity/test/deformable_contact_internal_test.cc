@@ -11,8 +11,6 @@
 
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
-#include "drake/common/test_utilities/expect_no_throw.h"
-#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/proximity/deformable_field_intersection.h"
 #include "drake/geometry/proximity/deformable_mesh_intersection.h"
 #include "drake/geometry/proximity/make_box_mesh.h"

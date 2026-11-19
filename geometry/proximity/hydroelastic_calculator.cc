@@ -2,14 +2,11 @@
 
 #include <utility>
 
-#include <fmt/format.h>
-
 #include "drake/common/drake_assert.h"
 #include "drake/geometry/proximity/field_intersection.h"
 #include "drake/geometry/proximity/mesh_half_space_intersection.h"
 #include "drake/geometry/proximity/mesh_intersection.h"
 #include "drake/geometry/proximity/mesh_plane_intersection.h"
-#include "drake/geometry/proximity/proximity_utilities.h"
 
 namespace drake {
 namespace geometry {

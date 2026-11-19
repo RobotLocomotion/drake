@@ -5,7 +5,6 @@
 #include <limits>
 
 #include "drake/common/fmt_eigen.h"
-#include "drake/common/nice_type_name.h"
 #include "drake/common/temp_directory.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/proximity/proximity_utilities.h"

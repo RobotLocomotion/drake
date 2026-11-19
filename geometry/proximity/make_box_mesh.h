@@ -1,7 +1,6 @@
 #pragma once
 
 #include <cmath>
-#include <utility>
 #include <vector>
 
 #include "drake/common/eigen_types.h"

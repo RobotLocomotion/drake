@@ -1,14 +1,5 @@
 #pragma once
 
-#include <algorithm>
-#include <limits>
-#include <unordered_map>
-#include <utility>
-#include <vector>
-
-#include "drake/common/drake_copyable.h"
-#include "drake/common/eigen_types.h"
-#include "drake/common/sorted_pair.h"
 #include "drake/geometry/proximity/triangle_surface_mesh.h"
 #include "drake/geometry/proximity/volume_mesh.h"
 #include "drake/geometry/proximity/volume_to_surface_mesh.h"
@@ -35,8 +26,6 @@ namespace internal {
  https://en.wikipedia.org/wiki/Medial_axis for more about the medial axis.) For
  any parameterization of the capsule, the MA consists of a line segment between
  the points M₀ = (0, 0, -0.5 * length) and M₁ = (0, 0, 0.5 * length):
-
-
 
                         Z (axis of rotation)
                         ↑

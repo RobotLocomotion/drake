@@ -8,8 +8,6 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/test_utilities/expect_no_throw.h"
-#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/proximity/make_box_mesh.h"
 #include "drake/geometry/proximity/make_sphere_field.h"
 #include "drake/geometry/proximity/make_sphere_mesh.h"

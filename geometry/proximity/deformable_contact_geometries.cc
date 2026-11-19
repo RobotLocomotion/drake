@@ -1,7 +1,5 @@
 #include "drake/geometry/proximity/deformable_contact_geometries.h"
 
-#include <algorithm>
-
 #include "drake/geometry/proximity/calc_distance_to_surface_mesh.h"
 #include "drake/geometry/proximity/volume_to_surface_mesh.h"
 

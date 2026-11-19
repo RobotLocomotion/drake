@@ -1,8 +1,6 @@
 #include "drake/geometry/proximity/volume_mesh_refiner.h"
 
 #include <array>
-#include <unordered_set>
-#include <utility>
 #include <vector>
 
 #include "drake/geometry/proximity/detect_zero_simplex.h"

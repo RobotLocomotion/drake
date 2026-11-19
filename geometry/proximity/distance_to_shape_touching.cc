@@ -1,6 +1,5 @@
 #include "drake/geometry/proximity/distance_to_shape_touching.h"
 
-#include <algorithm>
 #include <limits>
 #include <optional>
 #include <vector>

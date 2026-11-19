@@ -3,9 +3,7 @@
 #include <filesystem>
 #include <functional>
 #include <optional>
-#include <string>
 #include <string_view>
-#include <vector>
 
 #include "drake/common/diagnostic_policy.h"
 #include "drake/geometry/mesh_source.h"
