@@ -9,7 +9,7 @@ from pydrake.common.value import Value
 from pydrake.gym import DrakeGymEnv
 from pydrake.systems.analysis import Simulator
 from pydrake.systems.framework import DiagramBuilder
-from pydrake.systems.primitives import PassThrough
+from pydrake.systems.primitives import ConstantValueSource, PassThrough
 from pydrake.systems.sensors import ImageRgba8U
 
 
@@ -76,13 +76,61 @@ class DrakeGymTest(unittest.TestCase):
         self.assertTrue(dut.observation_space.contains(observation))
 
     def test_render_unsupported_mode(self):
-        """An unsupported render_mode reports a useful error from render()."""
-        dut = self._make_pass_through_env(render_mode="no_such_mode")
-        dut.reset()
+        """An unsupported render_mode is rejected by the constructor."""
         with self.assertRaisesRegex(
-            ValueError, "Unsupported render_mode 'no_such_mode'"
+            ValueError,
+            r"Unsupported render_mode 'rgb'.*\['human', 'ansi', "
+            r"'rgb_array'\]",
+        ):
+            self._make_pass_through_env(render_mode="rgb")
+        # A port id does not hide an invalid mode.
+        with self.assertRaisesRegex(ValueError, "Unsupported render_mode"):
+            self._make_pass_through_env(
+                render_mode="no_such_mode", render_rgb_port_id="image"
+            )
+
+    def test_render_unsupported_mode_backstop(self):
+        """render() still reports a bad mode set after construction."""
+        dut = self._make_pass_through_env()
+        dut.reset()
+        dut.render_mode = "no_such_mode"
+        with self.assertRaisesRegex(
+            ValueError, r"Unsupported render_mode 'no_such_mode'.*'human'"
         ):
             dut.render()
+
+    def test_render_modes(self):
+        """Each supported render_mode renders; None warns and returns None."""
+        dut = self._make_pass_through_env(render_mode="human")
+        self.assertEqual(dut.metadata["render_modes"], ["human", "ansi"])
+        dut.reset()
+        self.assertIsNone(dut.render())
+
+        dut = self._make_pass_through_env(render_mode="ansi")
+        dut.reset()
+        self.assertIsInstance(dut.render(), str)
+
+        dut = self._make_pass_through_env(
+            render_mode="rgb_array", render_rgb_port_id="image"
+        )
+        self.assertIn("rgb_array", dut.metadata["render_modes"])
+        dut.reset()
+        image = dut.render()
+        self.assertEqual(image.shape, (3, 4, 3))
+
+        # With a port id, the mode is always rgb_array.
+        dut = self._make_pass_through_env(render_rgb_port_id="image")
+        self.assertEqual(dut.render_mode, "rgb_array")
+
+        dut = self._make_pass_through_env(render_mode=None)
+        dut.reset()
+        with self.assertWarnsRegex(UserWarning, "render_mode is None"):
+            self.assertIsNone(dut.render())
+
+    def test_render_rgb_array_without_port(self):
+        """rgb_array needs render_rgb_port_id; this is reported up front."""
+        with self.assertRaisesRegex(ValueError, "requires render_rgb_port_id"):
+            self._make_pass_through_env(render_mode="rgb_array")
 
     def test_none_spaces_default_to_infinite_box(self):
         """Passing None for vector-valued ports builds ±inf Boxes."""
@@ -156,6 +204,10 @@ class DrakeGymTest(unittest.TestCase):
         pass_through = builder.AddSystem(PassThrough(vector_size=1))
         builder.ExportInput(pass_through.get_input_port(), "actions")
         builder.ExportOutput(pass_through.get_output_port(), "observations")
+        image_source = builder.AddSystem(
+            ConstantValueSource(Value(ImageRgba8U(4, 3)))
+        )
+        builder.ExportOutput(image_source.get_output_port(), "image")
         simulator = Simulator(builder.Build())
         return DrakeGymEnv(
             simulator=simulator,
