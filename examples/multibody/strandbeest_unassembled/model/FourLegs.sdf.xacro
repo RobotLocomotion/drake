@@ -5,14 +5,17 @@ pairs of mirror-image legs, side by side on the crankshaft with their cranks
 half a turn apart. See JansenParts.xacro for the parts, and
 strandbeest_unassembled.cc, which assembles and runs this model.
 
-The chassis is welded to World, and the crankshaft turns on it. Each leg's ten
-bars form five kinematic loops, which MultibodyPlant breaks automatically.
+The chassis floats free, held up only by its legs, and the crankshaft turns on
+it, so that the legs walk it along the ground. Each leg's ten bars form
+five kinematic loops, which MultibodyPlant breaks automatically by splitting a
+bar of each loop in two.
 -->
 <sdf version="1.9" xmlns:xacro="http://ros.org/wiki/xacro"
      xmlns:drake="http://drake.mit.edu">
   <xacro:include filename="JansenParts.xacro"/>
   <model name="four_legs">
-    <xacro:chassis_and_crankshaft width="0.4" height="1"/>
+    <xacro:ground/>
+    <xacro:chassis_and_crankshaft width="0.4"/>
     <xacro:leg_pair prefix="pair1_" y="0.12" phase="0"/>
     <xacro:leg_pair prefix="pair2_" y="-0.12" phase="${pi}"/>
   </model>

@@ -31,10 +31,13 @@ details. */
 #include <fmt/format.h>
 #include <gflags/gflags.h>
 
+#include "drake/common/drake_throw.h"
+#include "drake/geometry/collision_filter_declaration.h"
 #include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/rgba.h"
 #include "drake/geometry/scene_graph.h"
+#include "drake/geometry/shape_specification.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/inverse_kinematics/position_constraint.h"
@@ -57,6 +60,7 @@ using Eigen::Vector2d;
 using Eigen::Vector3d;
 using Eigen::Vector4d;
 using Eigen::VectorXd;
+using geometry::Cylinder;
 using geometry::FrameId;
 using geometry::GeometryId;
 using geometry::GeometryInstance;
@@ -65,10 +69,14 @@ using geometry::Rgba;
 using geometry::Role;
 using geometry::SceneGraph;
 using geometry::SceneGraphInspector;
+using geometry::Shape;
 using geometry::SourceId;
+using geometry::Sphere;
+using math::RigidTransformd;
 using multibody::AddMultibodyPlantSceneGraph;
 using multibody::BodyIndex;
 using multibody::Frame;
+using multibody::FrameIndex;
 using multibody::Joint;
 using multibody::JointIndex;
 using multibody::Link;
@@ -118,6 +126,12 @@ DEFINE_bool(interactive, true,
             "waiting for you to press Enter before going on each time. Set "
             "--nointeractive to run start to finish without stopping.");
 
+DEFINE_bool(show_shadows, false,
+            "Draw the shadow links that Drake creates to model the kinematic "
+            "loops, each as a translucent, fatter copy of the bar it was split "
+            "from, carrying the pin that was moved onto it. By default, just "
+            "the bars and pins are drawn, as the model file describes them.");
+
 constexpr char kModelDirectory[] =
     "package://drake/examples/multibody/strandbeest_unassembled/model/";
 constexpr char kCrankshaftJointName[] = "chassis_crankshaft";
@@ -161,9 +175,9 @@ stays assembled the way it was.
 `targets` gives each joint to move, which must have a single position and be
 locked, and the position to move it to. They all move together, the farthest
 at `max_speed` (position units per second of simulated time). Then the
-simulation goes on for `settling_time` seconds more, to let the solver close
-the small gaps the last moves opened, and finally the velocities are set to
-zero. The simulator's clock advances by the time all this takes; if it is
+simulation goes on for `settling_time` seconds more, to let the solver correct
+the small constraint errors the last moves left, and finally the velocities are
+set to zero. The simulator's clock advances by the time all this takes; if it is
 paced in real time and visualized, you can watch.
 
 This is defined below the example's own code, with the function above. */
@@ -202,6 +216,7 @@ class StrandbeestUnassembledDemo final {
     // We are done defining the model. Splitting links, retargeting joints,
     // and adding welds happens here.
     strandbeest_->Finalize();
+    IgnoreContactWithinMachine();
     ReportAndIllustrateModeledLoops();
 
     visualization::AddDefaultVisualization(&builder_);
@@ -220,36 +235,54 @@ class StrandbeestUnassembledDemo final {
     // is the unassembled configuration of the model file's parts.
     simulator_->Initialize();
     FindLegs();
-    const double initial_gap = CalcLargestPinGap(plant_context());
-    if (!(initial_gap > kAssembledTolerance)) {
+    const double initial_error = CalcLoopClosureError(plant_context());
+    if (!(initial_error > kAssembledTolerance)) {
       throw std::runtime_error(fmt::format(
-          "Expected an unassembled model, but its largest pin gap is {} m.",
-          initial_gap));
+          "Expected an unassembled model, but its loop closure error is {} m.",
+          initial_error));
     }
-    std::cout << fmt::format("Largest pin gap as defined: {:.4f} m\n",
-                             initial_gap);
+    std::cout << fmt::format("Loop closure error as defined: {:.4f} m\n",
+                             initial_error);
     ShowAndWait(
-        "The legs are unassembled: each kinematic loop is broken at a pin "
-        "whose two holes are apart, and the pale shadow links Drake split off "
-        "to break the loops lie away from the bars they were split from. "
-        "Every other pin already holds its holes together. ",
+        std::string(
+            "The legs are unassembled. Drake broke each kinematic loop by "
+            "splitting one of its bars into two links, the bar and a shadow, "
+            "and moving one of the bar's pins onto the shadow. Every "
+            "pin is connected, but each shadow lies away from its bar, so the "
+            "weld constraint that joins the two is not satisfied yet.") +
+            (FLAGS_show_shadows
+                 ? ""
+                 : " (Run with --show_shadows to see the shadows.)"),
         "assemble the legs");
 
-    // Assemble the legs, showing each stage as it happens.
+    // Assemble the legs, with their cranks lined up as the legs are drawn.
     Assemble();
-    PrintPinLocations();
     ShowAndWait(
-        "The legs are assembled: each shadow now lies on top of the bar it "
-        "was split from, together reconstituting the original bar's "
-        "properties.",
-        "turn the crankshaft");
+        "The legs are assembled, each as it is drawn, with all the cranks "
+        "lined up. Each shadow now surrounds the bar it was split from, "
+        "together reconstituting the original bar's properties.",
+        "turn the cranks to their phases");
 
-    // Turn the crankshaft and let the legs walk through their strides.
+    // Turn each leg's crank to its phase on the crankshaft and lock it there.
+    TurnCranksToPhases();
+    PrintPinLocations();
+    ShowAndWait("Each crank is now locked at its phase on the crankshaft.",
+                "turn the crankshaft and walk");
+
+    // Turn the crankshaft, and let the legs walk the chassis along the ground.
+    const Link<double>& chassis = strandbeest_->GetBodyByName("chassis");
+    const Vector3d p_WC_start =
+        chassis.EvalPoseInWorld(plant_context()).translation();
     SetCrankSpeed(FLAGS_crank_speed);
     simulator_->AdvanceTo(FLAGS_simulation_time);
     std::cout << fmt::format(
-        "Largest pin gap after simulating {} s: {:.3g} m\n",
-        FLAGS_simulation_time, CalcLargestPinGap(plant_context()));
+        "Loop closure error after simulating {} s: {:.3g} m\n",
+        FLAGS_simulation_time, CalcLoopClosureError(plant_context()));
+    const Vector3d p_WC =
+        chassis.EvalPoseInWorld(plant_context()).translation();
+    std::cout << fmt::format(
+        "The strandbeest walked {:.2f} m, and its axle is {:.3f} m up.\n",
+        (p_WC - p_WC_start).head<2>().norm(), p_WC.z());
     PrintSimulatorStatistics(*simulator_);
     return 0;
   }
@@ -269,11 +302,13 @@ class StrandbeestUnassembledDemo final {
   // Assembly.
   const Context<double>& plant_context() const;
   Context<double>& mutable_plant_context();
+  void IgnoreContactWithinMachine();
   void SetCrankSpeed(double speed);
-  double CalcLargestPinGap(const Context<double>& context) const;
+  double CalcLoopClosureError(const Context<double>& context) const;
   void FindLegs();
   void AssembleOrThrow(const std::string& what);
   void Assemble();
+  void TurnCranksToPhases();
 
   // Presentation.
   void ReportAndIllustrateModeledLoops();
@@ -282,13 +317,27 @@ class StrandbeestUnassembledDemo final {
   void ShowMotionFrom(const VectorXd& q_start, double duration);
 
   // Low-level illustration support.
-  void DrawShadowLink(const Link<double>& shadow);
+  std::vector<const Frame<double>*> GetFramesOn(const Link<double>& link) const;
+  void DrawShadowLink(const Link<double>& shadow, const std::string& held_hole);
+  void HidePinVisual(const Link<double>& link, const std::string& hole);
 
   DiagramBuilder<double> builder_;
   MultibodyPlant<double>* strandbeest_{};
   SceneGraph<double>* scene_graph_{};
   ModelInstanceIndex model_instance_;
-  std::vector<const Joint<double>*> pins_;
+  // A link that Finalize() split in two to break a kinematic loop.
+  struct SplitLink {
+    const Link<double>* primary{};
+    const Link<double>* shadow{};
+    // The positions of the primary's frames in its link frame P; for a bar,
+    // its origin and its two holes. The shadow has copies of them at the same
+    // positions in its own link frame.
+    std::vector<Vector3d> p_PF;
+    // The primary's frame for the end of the joint that Finalize() moved onto
+    // the shadow; for a bar, one of its holes.
+    const Frame<double>* held_hole{};
+  };
+  std::vector<SplitLink> split_links_;
   std::vector<Leg> legs_;
   std::unique_ptr<Diagram<double>> diagram_;
   std::unique_ptr<Simulator<double>> simulator_;
@@ -303,6 +352,25 @@ Context<double>& StrandbeestUnassembledDemo::mutable_plant_context() {
       &simulator_->get_mutable_context());
 }
 
+/* Makes the machine's parts ignore contact with one another, so that only the
+ground can touch them. Each leg lies in a single plane, so its bars cross one
+another and would otherwise jam. The machine is everything not welded to
+World. */
+void StrandbeestUnassembledDemo::IgnoreContactWithinMachine() {
+  const std::vector<const Link<double>*> grounded =
+      strandbeest_->GetBodiesWeldedTo(strandbeest_->world_body());
+  std::vector<const Link<double>*> machine;
+  for (BodyIndex index(0); index < strandbeest_->num_bodies(); ++index) {
+    const Link<double>& link = strandbeest_->get_body(index);
+    if (std::find(grounded.begin(), grounded.end(), &link) == grounded.end()) {
+      machine.push_back(&link);
+    }
+  }
+  scene_graph_->collision_filter_manager().Apply(
+      geometry::CollisionFilterDeclaration().ExcludeWithin(
+          strandbeest_->CollectRegisteredGeometries(machine)));
+}
+
 /* Sets the desired angular velocity of the crankshaft's velocity servo. The
 servo has no proportional gain, so the desired angle is ignored. */
 void StrandbeestUnassembledDemo::SetCrankSpeed(double speed) {
@@ -310,23 +378,24 @@ void StrandbeestUnassembledDemo::SetCrankSpeed(double speed) {
       .FixValue(&mutable_plant_context(), Vector2d(0.0, speed));
 }
 
-/* Returns the loop closure error, in meters, as the largest distance between
-the two holes that any pin joins. A joint that loop breaking retargeted onto a
-shadow link no longer holds its own two frames together, so the distance
-between them is that loop's closure error. Every other pin's gap is zero. */
-double StrandbeestUnassembledDemo::CalcLargestPinGap(
+/* Returns the loop closure error, in meters: how far the shadow links are from
+coinciding with the links they were split from, as the largest distance between
+where a primary and its shadow put any of the primary's frames. Every pin is
+always connected, and so is every weld that the model file asked for; only the
+weld constraints that join each shadow to its primary can be unsatisfied, and
+this measures how far from satisfied they are. */
+double StrandbeestUnassembledDemo::CalcLoopClosureError(
     const Context<double>& context) const {
-  double largest_gap = 0.0;
-  for (const Joint<double>* pin : pins_) {
-    const double gap =
-        strandbeest_
-            ->CalcRelativeTransform(context, pin->frame_on_parent(),
-                                    pin->frame_on_child())
-            .translation()
-            .norm();
-    largest_gap = std::max(largest_gap, gap);
+  double error = 0.0;
+  for (const SplitLink& split : split_links_) {
+    const RigidTransformd X_PS = strandbeest_->CalcRelativeTransform(
+        context, split.primary->body_frame(), split.shadow->body_frame());
+    for (const Vector3d& p_PF : split.p_PF) {
+      // The shadow's copy of F is at p_PF in S, which is X_PS * p_PF in P.
+      error = std::max(error, (X_PS * p_PF - p_PF).norm());
+    }
   }
-  return largest_gap;
+  return error;
 }
 
 /* Finds the legs in the model, by their cranks' joints
@@ -368,36 +437,38 @@ void StrandbeestUnassembledDemo::AssembleOrThrow(const std::string& what) {
   }
 }
 
-/* Assembles the legs in two steps. Each leg is drawn as it looks when its
-crank points away from it, which is when its crank joint is at zero, so:
-  1. With the crankshaft and every crank locked at zero, the nearest assembled
-     configuration is the intended one for every leg at once.
-  2. Then we turn each crank, still locked, to its phase, as if bolting it to
-     the crankshaft there. That is done by simulating, which keeps the legs
-     assembled as they turn, and is much faster than reassembling them
-     repeatedly with the optimizer.
-The cranks stay locked from then on; only the crankshaft turns. Each step is
-shown as soon as it is done. */
+/* Assembles the legs, with the crankshaft and every crank locked at zero, and
+shows them moving there from their drawn configuration. Each leg is drawn as
+it looks when its crank points away from it, which is when its crank joint is
+at zero, so the nearest assembled configuration is the intended one for every
+leg at once. A floating chassis is locked too, where the model file put it,
+so that it waits in the air while the legs are assembled. The chassis,
+crankshaft, and cranks are left locked. */
 void StrandbeestUnassembledDemo::Assemble() {
   Context<double>& context = mutable_plant_context();
   const VectorXd q_unassembled = strandbeest_->GetPositions(context);
 
-  const RevoluteJoint<double>& crankshaft_joint =
-      strandbeest_->GetJointByName<RevoluteJoint>(kCrankshaftJointName);
-  crankshaft_joint.Lock(&context);
+  for (BodyIndex index : strandbeest_->GetFloatingBaseBodies()) {
+    strandbeest_->get_body(index).Lock(&context);
+  }
+  strandbeest_->GetJointByName(kCrankshaftJointName).Lock(&context);
   for (const Leg& leg : legs_) leg.crank_joint->Lock(&context);
   AssembleOrThrow("the legs with their cranks lined up");
   std::cout << fmt::format(
-      "Assembled the legs with their cranks lined up; the largest pin gap is "
-      "{:.3g} m.\n",
-      CalcLargestPinGap(context));
+      "Assembled the legs with their cranks lined up; the loop closure error "
+      "is {:.3g} m.\n",
+      CalcLoopClosureError(context));
   ShowMotionFrom(q_unassembled, FLAGS_assembly_playback_time);
-  ShowAndWait(
-      "The legs are assembled with their cranks lined up, each leg just as it "
-      "is drawn. Next, the cranks turn to their phases, simulated so that the "
-      "legs stay assembled as they go.",
-      "turn the cranks to their phases");
+}
 
+/* Turns each assembled leg's crank, still locked, to its phase, as if bolting
+it to the crankshaft there, then unlocks the crankshaft and lets go of a
+floating chassis. The turning is
+simulated, so the legs stay assembled as they would during any simulation; that
+is much faster than reassembling them repeatedly with the optimizer. The cranks
+stay locked from then on; only the crankshaft turns. */
+void StrandbeestUnassembledDemo::TurnCranksToPhases() {
+  Context<double>& context = mutable_plant_context();
   std::vector<std::pair<const Joint<double>*, double>> phases;
   for (const Leg& leg : legs_) phases.emplace_back(leg.crank_joint, leg.phase);
   const double start_time = simulator_->get_context().get_time();
@@ -406,17 +477,20 @@ void StrandbeestUnassembledDemo::Assemble() {
   std::cout << fmt::format(
       "Turned the cranks to their phases in {:.2f} s of simulated time.\n",
       simulator_->get_context().get_time() - start_time);
-  crankshaft_joint.Unlock(&context);
-
-  const double gap = CalcLargestPinGap(context);
-  if (!(gap < kAssembledTolerance)) {
-    throw std::runtime_error(fmt::format(
-        "Failed to assemble the legs; the largest pin gap is {} m.", gap));
+  strandbeest_->GetJointByName(kCrankshaftJointName).Unlock(&context);
+  for (BodyIndex index : strandbeest_->GetFloatingBaseBodies()) {
+    strandbeest_->get_body(index).Unlock(&context);
   }
-  std::cout << fmt::format(
-      "Assembled the legs; the largest pin gap is now {:.3g} m.\n", gap);
 
-  // Start the simulation from the assembled configuration, at time zero.
+  const double error = CalcLoopClosureError(context);
+  if (!(error < kAssembledTolerance)) {
+    throw std::runtime_error(fmt::format(
+        "The legs came apart while the cranks turned; the loop closure error "
+        "is {} m.",
+        error));
+  }
+
+  // Start the simulation from here, at time zero.
   simulator_->get_mutable_context().SetTime(0.0);
   simulator_->Initialize();
 }
@@ -426,13 +500,51 @@ void StrandbeestUnassembledDemo::Assemble() {
 
 constexpr double kShadowAlpha = 0.33;
 constexpr double kPlaybackFps = 30.0;
+constexpr double kShadowFattening = 1.5;
 
-/* Draws `shadow` as a faint copy of the link it was split from, by copying
-that link's illustration geometry. A shadow does not exist until Finalize(), so
-it cannot be drawn by the model file, and its geometry must be registered
-directly with SceneGraph rather than through
-MultibodyPlant::RegisterVisualGeometry(). */
-void StrandbeestUnassembledDemo::DrawShadowLink(const Link<double>& shadow) {
+/* Returns every frame fixed to `link`, its own link frame first. That includes
+any frames that Finalize() added. */
+std::vector<const Frame<double>*> StrandbeestUnassembledDemo::GetFramesOn(
+    const Link<double>& link) const {
+  std::vector<const Frame<double>*> frames{&link.body_frame()};
+  for (FrameIndex index(0); index < strandbeest_->num_frames(); ++index) {
+    const Frame<double>& frame = strandbeest_->get_frame(index);
+    if (&frame.link() == &link && !frame.is_link_frame()) {
+      frames.push_back(&frame);
+    }
+  }
+  return frames;
+}
+
+/* Returns a copy of `shape` that is kShadowFattening times as fat: a cylinder's
+or sphere's radius grows, but a cylinder's length does not. The model file uses
+no other shapes; they are copied unchanged. */
+std::unique_ptr<Shape> MakeFatter(const Shape& shape) {
+  if (const auto* cylinder = dynamic_cast<const Cylinder*>(&shape)) {
+    return std::make_unique<Cylinder>(kShadowFattening * cylinder->radius(),
+                                      cylinder->length());
+  }
+  if (const auto* sphere = dynamic_cast<const Sphere*>(&shape)) {
+    return std::make_unique<Sphere>(kShadowFattening * sphere->radius());
+  }
+  return shape.Clone();
+}
+
+/* Draws `shadow` as a faint, fatter copy of the bar it was split from, by
+copying that bar's illustration geometry, except for the pins at its holes. The
+fatter shadow surrounds its bar once the legs are assembled, rather than hiding
+inside it, and is drawn in the bar's colors, but translucent. The shadow is
+connected only by the one pin that Finalize() moved onto it, at its hole
+`held_hole`, and by the weld to its primary at their origins, so the shadow
+shows only that pin. A hole at its other end will lie on another pin once the
+legs are assembled, but it is not connected there. The model file names each
+hole's pin visual "<hole>_pin".
+
+A shadow does not exist until Finalize(), so it cannot be drawn by the model
+file, and its geometry must be registered directly with SceneGraph rather than
+through MultibodyPlant::RegisterVisualGeometry(). */
+void StrandbeestUnassembledDemo::DrawShadowLink(const Link<double>& shadow,
+                                                const std::string& held_hole) {
   const SceneGraphInspector<double>& inspector =
       scene_graph_->model_inspector();
   const SourceId source_id = strandbeest_->get_source_id().value();
@@ -442,13 +554,17 @@ void StrandbeestUnassembledDemo::DrawShadowLink(const Link<double>& shadow) {
       strandbeest_->GetBodyFrameIdOrThrow(shadow.index());
   for (const GeometryId id :
        inspector.GetGeometries(primary_frame_id, Role::kIllustration)) {
+    const std::string& name = inspector.GetName(id);
+    if (name.ends_with("_pin") && !name.ends_with(held_hole + "_pin")) {
+      continue;
+    }
     const IllustrationProperties* properties =
         inspector.GetIllustrationProperties(id);
     const Rgba color = properties->GetPropertyOrDefault(
         "phong", "diffuse", Rgba(0.9, 0.9, 0.9, 1.0));
     auto instance = std::make_unique<GeometryInstance>(
-        inspector.GetPoseInFrame(id), inspector.GetShape(id),
-        fmt::format("{}_shadow", inspector.GetName(id)));
+        inspector.GetPoseInFrame(id), MakeFatter(inspector.GetShape(id)),
+        fmt::format("{}_shadow", name));
     instance->set_illustration_properties(
         geometry::MakePhongIllustrationProperties(
             Vector4d(color.r(), color.g(), color.b(), kShadowAlpha)));
@@ -467,17 +583,75 @@ void StrandbeestUnassembledDemo::ReportAndIllustrateModeledLoops() {
   for (BodyIndex index(strandbeest_->num_user_bodies());
        index < strandbeest_->num_bodies(); ++index) {
     const Link<double>& shadow = strandbeest_->get_body(index);
-    std::cout << fmt::format(
-        "  shadow link '{}' of '{}' was added to break a loop.\n",
-        shadow.name(), shadow.primary_link().name());
-    DrawShadowLink(shadow);
+    const Link<double>& primary = shadow.primary_link();
+    SplitLink split{.primary = &primary, .shadow = &shadow};
+    for (const Frame<double>* frame : GetFramesOn(primary)) {
+      split.p_PF.push_back(frame->GetFixedPoseInBodyFrame().translation());
+    }
+
+    // Besides its link frame, a shadow has just one frame: the copy, made by
+    // Finalize(), of the primary's frame for the end of the pin it moved onto
+    // the shadow. The copy is where the original is, so find which of the
+    // primary's holes it copies.
+    for (const Frame<double>* shadow_frame : GetFramesOn(shadow)) {
+      if (shadow_frame->is_link_frame()) continue;
+      const Vector3d p_SH =
+          shadow_frame->GetFixedPoseInBodyFrame().translation();
+      for (const Frame<double>* frame : GetFramesOn(primary)) {
+        if (!frame->is_link_frame() &&
+            frame->GetFixedPoseInBodyFrame().translation() == p_SH) {
+          split.held_hole = frame;
+        }
+      }
+    }
+    DRAKE_THROW_UNLESS(split.held_hole != nullptr);
+
+    if (FLAGS_show_shadows) DrawShadowLink(shadow, split.held_hole->name());
+    split_links_.push_back(std::move(split));
   }
 
-  // Every revolute joint is a pin.
-  for (JointIndex index : strandbeest_->GetJointIndices()) {
-    const Joint<double>& joint = strandbeest_->get_joint(index);
-    if (joint.type_name() == RevoluteJoint<double>::kTypeName) {
-      pins_.push_back(&joint);
+  // Without the shadows, leave the model file's geometry as it is.
+  if (!FLAGS_show_shadows) return;
+
+  // Now that the shadows have copied them, stop drawing the primaries' pins
+  // that moved to the shadows: a hole whose joints all moved no longer
+  // connects its bar to anything. (Only one joint moves to each shadow, so a
+  // hole that also holds other joints stays connected.)
+  for (const SplitLink& split : split_links_) {
+    const Frame<double>& hole = *split.held_hole;
+    int joints_at_hole = 0;
+    for (JointIndex index : strandbeest_->GetJointIndices()) {
+      const Joint<double>& joint = strandbeest_->get_joint(index);
+      if (&joint.frame_on_parent() == &hole ||
+          &joint.frame_on_child() == &hole) {
+        ++joints_at_hole;
+      }
+    }
+    const auto joints_moved =
+        std::count_if(split_links_.begin(), split_links_.end(),
+                      [&hole](const SplitLink& other) {
+                        return other.held_hole == &hole;
+                      });
+    if (joints_at_hole == joints_moved) {
+      HidePinVisual(*split.primary, hole.name());
+    }
+  }
+}
+
+/* Stops illustrating `link`'s pin visual at its hole `hole`, if it is still
+illustrated. The model file names each hole's pin visual "<hole>_pin". Only the
+visual's illustration role is removed; the geometry itself still belongs to
+MultibodyPlant, which registered it. */
+void StrandbeestUnassembledDemo::HidePinVisual(const Link<double>& link,
+                                               const std::string& hole) {
+  const SceneGraphInspector<double>& inspector =
+      scene_graph_->model_inspector();
+  const SourceId source_id = strandbeest_->get_source_id().value();
+  for (const GeometryId id : inspector.GetGeometries(
+           strandbeest_->GetBodyFrameIdOrThrow(link.index()),
+           Role::kIllustration)) {
+    if (inspector.GetName(id).ends_with(hole + "_pin")) {
+      scene_graph_->RemoveRole(source_id, id, Role::kIllustration);
     }
   }
 }

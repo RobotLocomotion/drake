@@ -26,10 +26,13 @@ drake_cc_binary(
     srcs = ["strandbeest_unassembled.cc"],
     data = [":models"],
     deps = [
+        "//common:essential",
+        "//geometry:collision_filter_declaration",
         "//geometry:geometry_instance",
         "//geometry:geometry_roles",
         "//geometry:rgba",
         "//geometry:scene_graph",
+        "//geometry:shape_specification",
         "//math:geometric_transform",
         "//multibody/inverse_kinematics",
         "//multibody/parsing",
