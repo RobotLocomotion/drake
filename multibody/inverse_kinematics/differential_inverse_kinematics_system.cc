@@ -472,7 +472,6 @@ void DifferentialInverseKinematicsSystem::StaticStabilityConstraint::SetConfig(
   const HPolyhedron& region = config.support_region;
   DRAKE_THROW_UNLESS(region.ambient_dimension() == 2,
                      region.ambient_dimension());
-  DRAKE_THROW_UNLESS(region.A().allFinite(), fmt_eigen(region.A()));
   DRAKE_THROW_UNLESS((region.A().rowwise().norm().array() > 0).all(),
                      fmt_eigen(region.A()));
   DRAKE_THROW_UNLESS(std::isfinite(config.margin), config.margin);

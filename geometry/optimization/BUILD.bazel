@@ -497,6 +497,7 @@ drake_cc_googletest(
         ":convex_set",
         ":test_utilities",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
         "//common/test_utilities:maybe_pause_for_user",
         "//common/yaml",
         "//geometry:meshcat",

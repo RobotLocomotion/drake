@@ -1338,16 +1338,6 @@ TEST_F(StaticStabilityTest, BadConfig) {
   DRAKE_EXPECT_THROWS_MESSAGE(Constraint{config},
                               ".*rowwise.*norm.*region.A\\(\\) = [\\s\\S]*");
 
-  for (const double bad : {std::numeric_limits<double>::infinity(),
-                           std::numeric_limits<double>::quiet_NaN()}) {
-    config = MakeConfig();
-    A = config.support_region.A();
-    A(1, 0) = bad;
-    config.support_region = HPolyhedron(A, config.support_region.b());
-    DRAKE_EXPECT_THROWS_MESSAGE(Constraint{config},
-                                ".*allFinite.*region.A\\(\\) = [\\s\\S]*");
-  }
-
   // A failed SetConfig leaves the prior config intact.
   Constraint dut(MakeConfig(0.125));
   config = MakeConfig(std::numeric_limits<double>::infinity());

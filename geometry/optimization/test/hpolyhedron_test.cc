@@ -14,6 +14,7 @@
 #include "drake/common/fmt_eigen.h"
 #include "drake/common/random.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/test_utilities/maybe_pause_for_user.h"
 #include "drake/common/yaml/yaml_io.h"
 #include "drake/geometry/geometry_frame.h"
@@ -73,6 +74,22 @@ GTEST_TEST(HPolyhedronTest, DefaultConstructor) {
   EXPECT_TRUE(H.PointInSet(Eigen::VectorXd::Zero(0)));
   ASSERT_TRUE(H.MaybeGetFeasiblePoint().has_value());
   EXPECT_TRUE(H.PointInSet(H.MaybeGetFeasiblePoint().value()));
+}
+
+// Regression test for #25246.
+GTEST_TEST(HPolyhedronTest, NonFiniteThrows) {
+  const HPolyhedron box = HPolyhedron::MakeUnitBox(2);
+  for (const double bad : {std::numeric_limits<double>::infinity(),
+                           std::numeric_limits<double>::quiet_NaN()}) {
+    MatrixXd A = box.A();
+    A(0, 0) = bad;
+    DRAKE_EXPECT_THROWS_MESSAGE(HPolyhedron(A, box.b()),
+                                ".*A_.allFinite.*A_ = [\\s\\S]*");
+    VectorXd b = box.b();
+    b(0) = bad;
+    DRAKE_EXPECT_THROWS_MESSAGE(HPolyhedron(box.A(), b),
+                                ".*b_.*isFinite.*b_ = [\\s\\S]*");
+  }
 }
 
 GTEST_TEST(HPolyhedronTest, UnitBoxTest) {
