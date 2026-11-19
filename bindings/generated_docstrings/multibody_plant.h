@@ -3839,7 +3839,7 @@ different orders.
 Some uses for the result returned by this function include:
 
 - Calculations using partial derivatives of J𝑠_V_ABp_E with respect to q,
-  e.g., Newton steps in inverse kinematics, gradients of manipulability
+  e.g., Newton steps in inverse kinematics, gradients of manipulability,
   trajectory-optimization constraints, and partial derivatives of the
   mass matrix or generalized forces Jᵀ F such as [(J𝑠_V_ABp_E)ᵀ F_Bp_E].
   For 𝑠 = q̇, ᴱ∂(Jq̇_V_ABp_E)/∂qᵢ = Dᵢ(Jq̇_V_ABp_E).
