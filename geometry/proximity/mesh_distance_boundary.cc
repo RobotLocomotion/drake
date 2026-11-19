@@ -1,8 +1,8 @@
 #include "drake/geometry/proximity/mesh_distance_boundary.h"
 
-#include "drake/geometry/proximity/bvh.h"
+#include <utility>
+
 #include "drake/geometry/proximity/calc_signed_distance_to_surface_mesh.h"
-#include "drake/geometry/proximity/obb.h"
 #include "drake/geometry/proximity/triangle_surface_mesh.h"
 #include "drake/geometry/proximity/volume_to_surface_mesh.h"
 

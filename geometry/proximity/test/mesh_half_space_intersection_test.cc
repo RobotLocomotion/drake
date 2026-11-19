@@ -17,7 +17,6 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/fmt_eigen.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
-#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/proximity/contact_surface_utility.h"
 #include "drake/geometry/utilities.h"
 #include "drake/math/autodiff.h"

@@ -1,5 +1,7 @@
 #include "drake/geometry/proximity/distance_to_point_callback.h"
 
+#include <algorithm>
+#include <limits>
 #include <string>
 #include <variant>
 

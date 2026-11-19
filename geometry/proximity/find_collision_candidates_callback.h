@@ -1,11 +1,8 @@
 #pragma once
 
-#include <optional>
-#include <utility>
 #include <vector>
 
 #include <fcl/fcl.h>
-#include <fmt/format.h>
 
 #include "drake/common/drake_export.h"
 #include "drake/common/sorted_pair.h"

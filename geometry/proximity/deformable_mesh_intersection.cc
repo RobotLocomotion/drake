@@ -1,5 +1,6 @@
 #include "drake/geometry/proximity/deformable_mesh_intersection.h"
 
+#include <memory>
 #include <unordered_set>
 #include <utility>
 #include <vector>

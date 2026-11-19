@@ -1,7 +1,5 @@
 #include "drake/geometry/proximity/contact_surface_utility.h"
 
-#include <algorithm>
-
 #include <fmt/format.h>
 
 #include "drake/common/default_scalars.h"

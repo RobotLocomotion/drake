@@ -1035,6 +1035,7 @@ drake_cc_googletest(
         "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:expect_throws_message",
         "//geometry/proximity:hydroelastic_calculator",
+        "//geometry/proximity:triangle_surface_mesh",
         "//math",
         "@fcl_internal//:fcl",
     ],

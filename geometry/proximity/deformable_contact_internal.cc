@@ -1,7 +1,7 @@
 #include "drake/geometry/proximity/deformable_contact_internal.h"
 
 #include <algorithm>
-#include <memory>
+#include <optional>
 #include <unordered_map>
 #include <utility>
 

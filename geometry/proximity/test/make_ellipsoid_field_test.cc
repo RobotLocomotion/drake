@@ -6,7 +6,6 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/proximity/make_ellipsoid_mesh.h"
-#include "drake/geometry/proximity/test/pressure_field_invariants.h"
 
 namespace drake {
 namespace geometry {

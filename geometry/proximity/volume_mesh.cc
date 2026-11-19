@@ -1,5 +1,7 @@
 #include "drake/geometry/proximity/volume_mesh.h"
 
+#include <utility>
+
 #include "drake/common/default_scalars.h"
 #include "drake/math/linear_solve.h"
 

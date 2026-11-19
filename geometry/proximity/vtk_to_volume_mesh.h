@@ -1,7 +1,5 @@
 #pragma once
 
-#include <string>
-
 #include "drake/geometry/mesh_source.h"
 #include "drake/geometry/proximity/volume_mesh.h"
 

@@ -5,7 +5,6 @@
 
 #include "drake/common/default_scalars.h"
 #include "drake/geometry/proximity/contact_surface_utility.h"
-#include "drake/geometry/proximity/triangle_surface_mesh_field.h"
 #include "drake/geometry/proximity/volume_mesh.h"
 
 namespace drake {

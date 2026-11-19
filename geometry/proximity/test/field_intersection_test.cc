@@ -5,7 +5,6 @@
 #include <utility>
 #include <vector>
 
-#include <fmt/format.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
