@@ -31,7 +31,12 @@ struct ContactVisualizerParams {
   /** The duration (in simulation seconds) between attempts to update poses in
    the visualizer. (To help avoid small simulation time steps, we use a default
    period that has an exact representation in binary floating point; see
-   drake#15021 for details.) */
+   drake#15021 for details.)
+   If zero, the visualizer instead updates on every simulator step. That does
+   not constrain the integrator's step size, so it does not change the
+   simulation (unlike a positive period). Updates are then as frequent as the
+   simulator's steps, including steps forced by discrete updates or other
+   events, which can be much more often than a typical period. */
   double publish_period{1 / 32.0};
 
   /** The color used to draw the point contact force arrows. */

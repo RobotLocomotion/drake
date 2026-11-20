@@ -1,5 +1,6 @@
 #include "drake/visualization/visualization_config_functions.h"
 
+#include <limits>
 #include <memory>
 #include <optional>
 #include <set>
@@ -430,6 +431,29 @@ GTEST_TEST(VisualizationConfigFunctionsTest, UpdatePeriod) {
   std::unique_ptr<CompositeEventCollection<double>> events =
       diagram->AllocateCompositeEventCollection();
   EXPECT_EQ(diagram->CalcNextUpdateTime(*context, events.get()), kLongPeriod);
+  EXPECT_TRUE(events->HasPublishEvents());
+}
+
+// Check that a zero period schedules per-step publishing instead of periodic
+// publishing, for every visualizer in the config.
+GTEST_TEST(VisualizationConfigFunctionsTest, PerStepUpdate) {
+  VisualizationConfig config;
+  config.publish_period = 0.0;
+  DiagramBuilder<double> builder;
+  auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.0);
+  plant.Finalize();
+  ApplyVisualizationConfig(config, &builder);
+  auto diagram = builder.Build();
+
+  auto context = diagram->CreateDefaultContext();
+  std::unique_ptr<CompositeEventCollection<double>> events =
+      diagram->AllocateCompositeEventCollection();
+  // Nothing is scheduled, so nothing can constrain the integrator's steps.
+  EXPECT_EQ(diagram->CalcNextUpdateTime(*context, events.get()),
+            std::numeric_limits<double>::infinity());
+  EXPECT_FALSE(events->HasPublishEvents());
+  // The publishing happens on every step instead.
+  diagram->GetPerStepEvents(*context, events.get());
   EXPECT_TRUE(events->HasPublishEvents());
 }
 
