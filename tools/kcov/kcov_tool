@@ -42,8 +42,12 @@ def maybe_expand_zipped_kcov_data(path):
     kcov_dir = os.path.join(path, "kcov")
     if os.path.exists(os.path.join(kcov_dir, "index.html")):
         return
-    # Maybe our data has been zipped and deleted.
+    # Maybe our data has been zipped and deleted. If there is no zip, there is
+    # nothing to expand, and whatever is in `kcov_dir` is all we have, so leave
+    # it alone.
     zip_path = os.path.join(path, "outputs.zip")
+    if not os.path.exists(zip_path):
+        return
     shutil.rmtree(kcov_dir, ignore_errors=True)
     os.chmod(path, 0o755)
     with zipfile.ZipFile(zip_path, "r") as zf:
@@ -62,7 +66,9 @@ def remove_kcov_data(path):
     and from any bazel-constructed zip file.
     """
     kcov_dir = os.path.join(path, "kcov")
-    shutil.rmtree(kcov_dir, onexc=_on_rmtree_error)
+    # The data may exist only in the zip, in which case there is no subtree.
+    if os.path.isdir(kcov_dir):
+        shutil.rmtree(kcov_dir, onexc=_on_rmtree_error)
     zip_path = os.path.join(path, "outputs.zip")
     if not os.path.exists(zip_path):
         return
