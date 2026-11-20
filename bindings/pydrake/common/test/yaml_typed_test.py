@@ -157,6 +157,25 @@ class RejectGetattrNumpyStruct:
 
 
 @dc.dataclass
+class SetFieldsStruct:
+    """A struct whose fields must be set together, to keep lo <= hi."""
+
+    lo: float = 0.0
+    hi: float = 1.0
+
+    def _yaml_load_set_fields(self, *, lo, hi):
+        if lo > hi:
+            raise ValueError(f"lo={lo} > hi={hi}")
+        self.lo = lo
+        self.hi = hi
+
+
+@dc.dataclass
+class OuterSetFieldsStruct:
+    inner: SetFieldsStruct = dc.field(default_factory=SetFieldsStruct)
+
+
+@dc.dataclass
 class VariantStruct:
     value: str | float | FloatStruct | NumpyStruct = nan
     __eq__ = _dataclass_eq
@@ -1032,6 +1051,46 @@ class TestYamlTypedRead(unittest.TestCase, metaclass=ValueParameterizedTest):
     # - VisitStructFoundNothing
     # - VisitStructFoundScalar
     # - VisitStructFoundArray
+
+    def test_read_set_fields(self):
+        # Moving both bounds is valid only if they're set together.
+        x = yaml_load_typed(schema=SetFieldsStruct, data="{lo: 5.0, hi: 6.0}")
+        self.assertEqual(x, SetFieldsStruct(lo=5.0, hi=6.0))
+        # The fields that the yaml omits keep their default values.
+        x = yaml_load_typed(schema=SetFieldsStruct, data="hi: 0.5")
+        self.assertEqual(x, SetFieldsStruct(lo=0.0, hi=0.5))
+        with self.assertRaisesRegex(ValueError, "lo=2.0 > hi=1.0"):
+            yaml_load_typed(schema=SetFieldsStruct, data="lo: 2.0")
+        # The same holds for a nested struct.
+        x = yaml_load_typed(
+            schema=OuterSetFieldsStruct, data="inner: {lo: 5.0, hi: 6.0}"
+        )
+        self.assertEqual(x.inner, SetFieldsStruct(lo=5.0, hi=6.0))
+        with self.assertRaisesRegex(ValueError, "lo=2.0 > hi=1.0"):
+            yaml_load_typed(
+                schema=OuterSetFieldsStruct, data="inner: {lo: 2.0}"
+            )
+        # Omitted fields use the given defaults.
+        x = yaml_load_typed(
+            schema=SetFieldsStruct,
+            data="lo: 5.0",
+            defaults=SetFieldsStruct(lo=0.0, hi=9.0),
+        )
+        self.assertEqual(x, SetFieldsStruct(lo=5.0, hi=9.0))
+        # The hook also applies to the values of a dict.
+        x = yaml_load_typed(
+            schema=dict[str, SetFieldsStruct], data="a: {lo: 5.0, hi: 6.0}"
+        )
+        self.assertEqual(x["a"], SetFieldsStruct(lo=5.0, hi=6.0))
+        # The checks for missing and extra fields still apply.
+        with self.assertRaisesRegex(RuntimeError, "missing"):
+            yaml_load_typed(
+                schema=SetFieldsStruct,
+                data="lo: 0.5",
+                allow_schema_with_no_yaml=False,
+            )
+        with self.assertRaisesRegex(RuntimeError, "unknown"):
+            yaml_load_typed(schema=SetFieldsStruct, data="{lo: 0.5, mid: 0.7}")
 
 
 class TestYamlTypedReadAcceptance(unittest.TestCase):

@@ -1870,7 +1870,7 @@ R"""(The support region {p : A p ≤ b} in F's xy plane (in meters). Its
 ambient dimension must be 2, and A must be finite with no zero rows.
 To construct it from the vertices of a support polygon, use
 ``HPolyhedron(VPolytope(vertices))``. A region with no rows adds no
-constraint. (In Python, yaml_dump_typed does not support this field.))""";
+constraint.)""";
             } support_region;
             auto Serialize__fields() const {
               return std::array{

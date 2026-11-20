@@ -879,7 +879,7 @@ class DifferentialInverseKinematicsSystem::StaticStabilityConstraint final
     ambient dimension must be 2, and A must be finite with no zero rows. To
     construct it from the vertices of a support polygon, use
     `HPolyhedron(VPolytope(vertices))`. A region with no rows adds no
-    constraint. (In Python, yaml_dump_typed does not support this field.) */
+    constraint. */
     geometry::optimization::HPolyhedron support_region;
 
     /** "m" in the class overview (in meters). Must be finite. Positive values
