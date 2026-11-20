@@ -1,5 +1,6 @@
 #include "drake/multibody/parsing/detail_common.h"
 
+#include <cmath>
 #include <filesystem>
 #include <vector>
 
@@ -513,6 +514,40 @@ SpatialInertia<double> ParseSpatialInertia(const DiagnosticPolicy& diagnostic,
     return Mdum_BBo_B;
   }
   DRAKE_UNREACHABLE();
+}
+
+void SetDefaultJointDryFriction(const DiagnosticPolicy& diagnostic,
+                                double dry_friction, JointIndex joint_index,
+                                MultibodyPlant<double>* plant) {
+  DRAKE_DEMAND(plant != nullptr);
+  Joint<double>& joint = plant->get_mutable_joint(joint_index);
+  if (!(std::isfinite(dry_friction) && dry_friction >= 0.0)) {
+    diagnostic.Error(fmt::format(
+        "Joint '{}' has an invalid dry friction of {}. Joint dry friction must "
+        "be non-negative and finite.",
+        joint.name(), dry_friction));
+    return;
+  }
+  if (dry_friction == 0.0) {
+    return;
+  }
+  if (joint.num_velocities() != 1) {
+    diagnostic.Warning(fmt::format(
+        "Joint '{}' specifies a non-zero dry friction, but only joints with "
+        "one degree of freedom support dry friction. The dry friction is "
+        "ignored.",
+        joint.name()));
+    return;
+  }
+  if (!plant->is_discrete()) {
+    diagnostic.Warning(fmt::format(
+        "Joint '{}' specifies a non-zero dry friction, but only discrete "
+        "MultibodyPlant models support dry friction. The dry friction is "
+        "ignored.",
+        joint.name()));
+    return;
+  }
+  joint.set_default_dry_friction(dry_friction);
 }
 
 }  // namespace internal

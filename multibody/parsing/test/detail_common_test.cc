@@ -1,5 +1,8 @@
 #include "drake/multibody/parsing/detail_common.h"
 
+#include <limits>
+#include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -7,6 +10,8 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/diagnostic_policy_test_base.h"
+#include "drake/multibody/tree/ball_rpy_joint.h"
+#include "drake/multibody/tree/revolute_joint.h"
 
 namespace drake {
 namespace multibody {
@@ -15,6 +20,7 @@ namespace {
 
 using drake::internal::DiagnosticDetail;
 using drake::internal::DiagnosticPolicy;
+using Eigen::Vector3d;
 using geometry::GeometryProperties;
 using geometry::ProximityProperties;
 using geometry::internal::HydroelasticType;
@@ -437,6 +443,76 @@ TEST_F(ParseSpatialInertiaTest, BadInertiaValues) {
     EXPECT_TRUE(result.IsPhysicallyValid());
     ++k;
   }
+}
+
+class SetDefaultJointDryFrictionTest : public test::DiagnosticPolicyTestBase {
+ protected:
+  // Makes a plant with a revolute joint, which has one degree of freedom, and a
+  // ball joint, which has three.
+  void MakePlant(double time_step) {
+    plant_ = std::make_unique<MultibodyPlant<double>>(time_step);
+    const RigidBody<double>& wheel =
+        plant_->AddRigidBody("wheel", SpatialInertia<double>::MakeUnitary());
+    revolute_ = plant_
+                    ->AddJoint<RevoluteJoint>("revolute", plant_->world_body(),
+                                              std::nullopt, wheel, std::nullopt,
+                                              Vector3d::UnitZ())
+                    .index();
+    const RigidBody<double>& ball =
+        plant_->AddRigidBody("ball", SpatialInertia<double>::MakeUnitary());
+    ball_ = plant_
+                ->AddJoint<BallRpyJoint>("ball", plant_->world_body(),
+                                         std::nullopt, ball, std::nullopt)
+                .index();
+  }
+
+  // This shadows the namespace-scoped free function under test in order to
+  // bind the `diagnostic` and `plant` arguments.
+  void SetDefaultJointDryFriction(double dry_friction, JointIndex joint_index) {
+    internal::SetDefaultJointDryFriction(diagnostic_policy_, dry_friction,
+                                         joint_index, plant_.get());
+  }
+
+  std::unique_ptr<MultibodyPlant<double>> plant_;
+  JointIndex revolute_;
+  JointIndex ball_;
+};
+
+// A joint with one degree of freedom in a discrete plant takes the value.
+TEST_F(SetDefaultJointDryFrictionTest, SetsDryFriction) {
+  MakePlant(0.01);
+  SetDefaultJointDryFriction(0.5, revolute_);
+  EXPECT_EQ(plant_->get_joint(revolute_).default_dry_friction(), 0.5);
+}
+
+// Negative, infinite and NaN values are errors, and the joint keeps its value.
+TEST_F(SetDefaultJointDryFrictionTest, InvalidDryFrictionIsAnError) {
+  MakePlant(0.01);
+  for (const double dry_friction :
+       {-1.0, std::numeric_limits<double>::infinity(),
+        std::numeric_limits<double>::quiet_NaN()}) {
+    SetDefaultJointDryFriction(dry_friction, revolute_);
+    EXPECT_THAT(TakeError(),
+                MatchesRegex(".*'revolute'.*invalid dry friction.*"));
+  }
+  EXPECT_EQ(plant_->get_joint(revolute_).default_dry_friction(), 0.0);
+}
+
+// Where MultibodyPlant does not support dry friction, a non-zero value is
+// ignored with a warning, and zero is accepted without one.
+TEST_F(SetDefaultJointDryFrictionTest, UnsupportedDryFrictionIsIgnored) {
+  MakePlant(0.01);
+  SetDefaultJointDryFriction(0.0, ball_);
+  SetDefaultJointDryFriction(0.5, ball_);
+  EXPECT_THAT(TakeWarning(),
+              MatchesRegex(".*'ball'.*one degree of freedom.*ignored.*"));
+
+  MakePlant(0.0);
+  SetDefaultJointDryFriction(0.0, revolute_);
+  SetDefaultJointDryFriction(0.5, revolute_);
+  EXPECT_THAT(TakeWarning(),
+              MatchesRegex(".*'revolute'.*only discrete.*ignored.*"));
+  EXPECT_EQ(plant_->get_joint(revolute_).default_dry_friction(), 0.0);
 }
 
 }  // namespace

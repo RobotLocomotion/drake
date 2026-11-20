@@ -2579,6 +2579,36 @@ TEST_F(SdfParserTest, ThrowsWhenJointDampingIsNegative) {
   EXPECT_THAT(TakeError(), MatchesRegex(".*damping is negative.*"));
 }
 
+// A universal joint has two degrees of freedom, so friction on either of its
+// axes is ignored with a warning.
+TEST_F(SdfParserTest, DryFrictionIgnoredOnUniversalJoint) {
+  ParseTestString(R"""(
+<model name="molly">
+  <link name="larry" />
+  <joint name="jerry" type="universal">
+    <parent>world</parent>
+    <child>larry</child>
+    <axis>
+      <xyz>1 0 0</xyz>
+      <limit>
+        <effort>0</effort>
+      </limit>
+    </axis>
+    <axis2>
+      <xyz>0 1 0</xyz>
+      <dynamics>
+        <friction>0.5</friction>
+      </dynamics>
+      <limit>
+        <effort>0</effort>
+      </limit>
+    </axis2>
+  </joint>
+</model>)""");
+  EXPECT_THAT(TakeWarning(),
+              MatchesRegex(".*'jerry'.*one degree of freedom.*ignored.*"));
+}
+
 TEST_F(SdfParserTest, IncludeTags) {
   const std::string full_name = FindResourceOrThrow(
       "drake/multibody/parsing/test/sdf_parser_test/"
@@ -2681,6 +2711,7 @@ TEST_F(SdfParserTest, JointParsingTest) {
   EXPECT_EQ(revolute_joint.child_body().name(), "link2");
   EXPECT_EQ(revolute_joint.revolute_axis(), Vector3d::UnitZ());
   EXPECT_EQ(revolute_joint.default_damping(), 0.2);
+  EXPECT_EQ(revolute_joint.default_dry_friction(), 0.4);
   EXPECT_TRUE(
       CompareMatrices(revolute_joint.position_lower_limits(), Vector1d(-1)));
   EXPECT_TRUE(
@@ -2704,6 +2735,7 @@ TEST_F(SdfParserTest, JointParsingTest) {
   EXPECT_EQ(prismatic_joint.child_body().name(), "link3");
   EXPECT_EQ(prismatic_joint.translation_axis(), Vector3d::UnitZ());
   EXPECT_EQ(prismatic_joint.default_damping(), 0.3);
+  EXPECT_EQ(prismatic_joint.default_dry_friction(), 0.5);
   EXPECT_TRUE(
       CompareMatrices(prismatic_joint.position_lower_limits(), Vector1d(-2)));
   EXPECT_TRUE(
@@ -2852,6 +2884,7 @@ TEST_F(SdfParserTest, JointParsingTest) {
   EXPECT_EQ(continuous_joint.parent_body().name(), "link7");
   EXPECT_EQ(continuous_joint.child_body().name(), "link8");
   EXPECT_EQ(continuous_joint.revolute_axis(), Vector3d::UnitZ());
+  EXPECT_EQ(continuous_joint.default_dry_friction(), 0.6);
   EXPECT_TRUE(
       CompareMatrices(continuous_joint.position_lower_limits(), neg_inf));
   EXPECT_TRUE(CompareMatrices(continuous_joint.position_upper_limits(), inf));
@@ -2874,6 +2907,7 @@ TEST_F(SdfParserTest, JointParsingTest) {
   EXPECT_EQ(screw_joint.screw_axis(), Vector3d::UnitX());
   EXPECT_EQ(screw_joint.screw_pitch(), 0.04);
   EXPECT_EQ(screw_joint.default_damping(), 0.1);
+  EXPECT_EQ(screw_joint.default_dry_friction(), 0.7);
   EXPECT_TRUE(CompareMatrices(screw_joint.position_lower_limits(), neg_inf));
   EXPECT_TRUE(CompareMatrices(screw_joint.position_upper_limits(), inf));
   EXPECT_TRUE(CompareMatrices(screw_joint.velocity_lower_limits(), neg_inf));
