@@ -1,0 +1,35 @@
+<?xml version='1.0' encoding='utf-8'?>
+<sdf xmlns:drake="drake.mit.edu" version="1.7">
+  <model name="alarm_clock">
+    <link name="base_link">
+      <inertial>
+        <mass>0.350000</mass>
+        <pose>-2.88213e-05 -0.0011240307 0.037610543 0 0 0</pose>
+        <inertia>
+          <ixx>2.295627e-04</ixx>
+          <iyy>7.187413e-04</iyy>
+          <izz>6.210169e-04</izz>
+          <ixy>-4.950917e-07</ixy>
+          <ixz>7.741041e-07</ixz>
+          <iyz>-1.135843e-07</iyz>
+        </inertia>
+      </inertial>
+      <collision name="body">
+        <pose>8.5532512e-06 -6.1175014e-05 0.037587999 1.5726896 -0.002133697 1.5712202</pose>
+        <geometry>
+          <box>
+            <size>0.04997064 0.07513806 0.13899354</size>
+          </box>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:compliant_hydroelastic />
+          <drake:hydroelastic_modulus>19938808.7701</drake:hydroelastic_modulus>
+          <drake:mesh_resolution_hint>0.02498532</drake:mesh_resolution_hint>
+          <drake:mu_dynamic>0.35</drake:mu_dynamic>
+          <drake:mu_static>0.35</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+    </link>
+  </model>
+</sdf>

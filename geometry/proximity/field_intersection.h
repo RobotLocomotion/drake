@@ -1,5 +1,7 @@
 #pragma once
 
+#include <array>
+#include <cstdint>
 #include <memory>
 #include <utility>
 #include <vector>
@@ -91,6 +93,45 @@ std::pair<std::vector<Vector3<T>>, std::vector<int>> IntersectTetrahedra(
     int element0, const VolumeMesh<double>& mesh0_M, int element1,
     const VolumeMesh<double>& mesh1_N, const math::RigidTransform<T>& X_MN,
     const Plane<T>& equilibrium_plane_M);
+
+/* Reusable buffers for IntersectTetrahedra() (the overload below), so that
+ repeated calls perform no per-call heap allocation once the buffers have
+ grown to their steady-state capacities. After a call, `result` indicates
+ which of the two buffers holds the output. */
+template <typename T>
+struct IntersectTetrahedraScratch {
+  IntersectTetrahedraScratch() {
+    // Each contact polygon has at most 8 vertices because it is the
+    // intersection of the pressure-equilibrium plane and the two tetrahedra.
+    for (int i = 0; i < 2; ++i) {
+      polygon_buffer[i].reserve(8);
+      face_buffer[i].reserve(8);
+    }
+  }
+  std::vector<Vector3<T>> polygon_buffer[2];
+  std::vector<int> face_buffer[2];
+  int result{0};
+};
+
+/* Variant of IntersectTetrahedra() (above) that (a) uses caller-provided
+ scratch buffers instead of allocating, and (b) consumes the four
+ already-transformed vertex positions and outward face half-spaces of
+ `element1` (expressed in frame M), which depend only on `element1` and the
+ fixed relative pose and can therefore be computed once and reused across the
+ many `element0` candidates paired with the same `element1`. The face
+ half-spaces are given unpacked: the unit outward normal n̂ and displacement d
+ such that a point Q's signed distance is n̂⋅Q − d.
+
+ On return, the resulting polygon and face-index sequence are in
+ `scratch->polygon_buffer[scratch->result]` and
+ `scratch->face_buffer[scratch->result]` respectively (empty when there is no
+ intersection). */
+template <typename T>
+void IntersectTetrahedra(int element0, const VolumeMesh<double>& mesh0_M,
+                         const std::array<Vector3<T>, 4>& face_nhat1_M,
+                         const std::array<T, 4>& face_d1_M,
+                         const Plane<T>& equilibrium_plane_M,
+                         IntersectTetrahedraScratch<T>* scratch);
 
 // TODO(DamrongGuoy): Move IsPlaneNormalAlongPressureGradient() into
 //  contact_surface_utility for code reuse if and when we work on compliant
@@ -272,6 +313,63 @@ class VolumeIntersector {
       const VolumeMeshFieldLinear<double, double>& field1_N,
       const math::RigidTransform<T>& X_MN, const math::RotationMatrix<T>& R_NM,
       int tet0, int tet1, MeshBuilder* builder_M);
+
+  /* Resets the per-call caches below for a new pair of fields (and their
+   fixed relative pose X_MN). Called at the top of both IntersectFields()
+   overloads. */
+  void ResetCaches(const VolumeMeshFieldLinear<double, double>& field0_M,
+                   const VolumeMeshFieldLinear<double, double>& field1_N,
+                   const math::RigidTransform<T>& X_MN);
+
+  /* Quantities derived from a single tetrahedron of mesh1/field1 (and the
+   fixed pose X_MN) that do not depend on the tetrahedron of mesh0 it is
+   paired with. Within one call to IntersectFields() the same tet1 is
+   typically paired with many candidate tet0's, so these are computed once
+   per tet1 rather than once per (tet0, tet1) candidate pair. Filled lazily;
+   `flags` records which parts are valid. */
+  struct Tet1Cache {
+    static constexpr uint8_t kFieldValid = 1;
+    static constexpr uint8_t kGeometryValid = 2;
+    static constexpr uint8_t kGradNhatValid = 4;
+    /* The field1 gradient re-expressed in frame M: R_MN * ∇f₁. */
+    Vector3<T> grad_f1_M;
+    /* The value of field1 at the origin of frame M. */
+    T f1_Mo;
+    /* The four outward face half-spaces in frame M, unpacked as the unit
+     normal n̂ and displacement d (signed distance of Q is n̂⋅Q − d), exactly
+     as PosedHalfSpace<T> would compute them. */
+    std::array<Vector3<T>, 4> face_nhat_M;
+    std::array<T, 4> face_d_M;
+    /* The normalized field1 gradient (in frame N) used by
+     IsPlaneNormalAlongPressureGradient(). */
+    Vector3<double> grad_nhat_N;
+    uint8_t flags{0};
+  };
+
+  /* Per-tet0 cached quantities: the normalized field0 gradient plus a
+   bounding sphere (centroid and radius) used to cheaply reject equilibrium
+   planes that cannot intersect the tetrahedron. */
+  struct Tet0Cache {
+    Vector3<double> grad_nhat;
+    Vector3<double> centroid_M;
+    double radius{};
+  };
+
+  /* Per-call caches, reset by ResetCaches(). `tet1_cache_` is indexed by
+   tet1; `tet0_cache_` by tet0 (with `tet0_valid_` marking filled entries).
+   `p_NMo_` is the origin of frame M expressed in frame N, hoisted out of the
+   per-pair equilibrium plane computation. */
+  std::vector<Tet1Cache> tet1_cache_;
+  std::vector<Tet0Cache> tet0_cache_;
+  std::vector<char> tet0_valid_;
+  Vector3<T> p_NMo_;
+
+  /* Scratch buffers for IntersectTetrahedra() to avoid per-candidate heap
+   allocation. See that function's documentation. */
+  IntersectTetrahedraScratch<T> scratch_;
+
+  /* Scratch for the polygon vertex indices handed to the mesh builder. */
+  std::vector<int> polygon_vertex_indices_;
 
   // List of tetrahedron indices in the meshes of field0 and field1. One
   // index per contact polygon;

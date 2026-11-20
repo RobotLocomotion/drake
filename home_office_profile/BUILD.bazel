@@ -1,0 +1,14 @@
+load("//tools/skylark:drake_py.bzl", "drake_py_binary")
+
+package(default_visibility = ["//visibility:private"])
+
+drake_py_binary(
+    name = "harness",
+    srcs = ["harness.py"],
+    data = glob([
+        "packages/**",
+    ]),
+    deps = [
+        "//bindings/pydrake",
+    ],
+)

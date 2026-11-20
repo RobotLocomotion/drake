@@ -1,0 +1,548 @@
+<?xml version='1.0' encoding='utf-8'?>
+<sdf xmlns:drake="drake.mit.edu" version="1.7">
+  <model name="wireless_optical_mouse">
+    <link name="base_link">
+      <inertial>
+        <mass>0.100000</mass>
+        <pose>0.000296794 -0.0026070002 0.015957943 0 0 0</pose>
+        <inertia>
+          <ixx>6.490763e-05</ixx>
+          <iyy>3.748647e-05</iyy>
+          <izz>8.541051e-05</izz>
+          <ixy>2.370208e-06</ixy>
+          <ixz>-6.104328e-07</ixz>
+          <iyz>3.095292e-06</iyz>
+        </inertia>
+      </inertial>
+      <collision name="base_hull">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/wireless_optical_mouse/assets/wireless_optical_mouse_cf_0.obj</uri>
+            <drake:declare_convex />
+            <scale>0.95740000 0.95740000 0.95740000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:compliant_hydroelastic />
+          <drake:hydroelastic_modulus>5449931.49812</drake:hydroelastic_modulus>
+          <drake:mu_dynamic>0.45</drake:mu_dynamic>
+          <drake:mu_static>0.45</drake:mu_static>
+          <drake:hunt_crossley_dissipation>60</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="part_0">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/wireless_optical_mouse/assets/wireless_optical_mouse_cf_1.obj</uri>
+            <drake:declare_convex />
+            <scale>0.95740000 0.95740000 0.95740000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.45</drake:mu_dynamic>
+          <drake:mu_static>0.45</drake:mu_static>
+          <drake:hunt_crossley_dissipation>60</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="part_1">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/wireless_optical_mouse/assets/wireless_optical_mouse_cf_2.obj</uri>
+            <drake:declare_convex />
+            <scale>0.95740000 0.95740000 0.95740000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.45</drake:mu_dynamic>
+          <drake:mu_static>0.45</drake:mu_static>
+          <drake:hunt_crossley_dissipation>60</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="part_2">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/wireless_optical_mouse/assets/wireless_optical_mouse_cf_3.obj</uri>
+            <drake:declare_convex />
+            <scale>0.95740000 0.95740000 0.95740000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.45</drake:mu_dynamic>
+          <drake:mu_static>0.45</drake:mu_static>
+          <drake:hunt_crossley_dissipation>60</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="part_3">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/wireless_optical_mouse/assets/wireless_optical_mouse_cf_4.obj</uri>
+            <drake:declare_convex />
+            <scale>0.95740000 0.95740000 0.95740000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.45</drake:mu_dynamic>
+          <drake:mu_static>0.45</drake:mu_static>
+          <drake:hunt_crossley_dissipation>60</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="part_4">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/wireless_optical_mouse/assets/wireless_optical_mouse_cf_5.obj</uri>
+            <drake:declare_convex />
+            <scale>0.95740000 0.95740000 0.95740000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.45</drake:mu_dynamic>
+          <drake:mu_static>0.45</drake:mu_static>
+          <drake:hunt_crossley_dissipation>60</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="part_5">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/wireless_optical_mouse/assets/wireless_optical_mouse_cf_6.obj</uri>
+            <drake:declare_convex />
+            <scale>0.95740000 0.95740000 0.95740000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.45</drake:mu_dynamic>
+          <drake:mu_static>0.45</drake:mu_static>
+          <drake:hunt_crossley_dissipation>60</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="part_6">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/wireless_optical_mouse/assets/wireless_optical_mouse_cf_7.obj</uri>
+            <drake:declare_convex />
+            <scale>0.95740000 0.95740000 0.95740000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.45</drake:mu_dynamic>
+          <drake:mu_static>0.45</drake:mu_static>
+          <drake:hunt_crossley_dissipation>60</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="part_7">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/wireless_optical_mouse/assets/wireless_optical_mouse_cf_8.obj</uri>
+            <drake:declare_convex />
+            <scale>0.95740000 0.95740000 0.95740000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.45</drake:mu_dynamic>
+          <drake:mu_static>0.45</drake:mu_static>
+          <drake:hunt_crossley_dissipation>60</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="part_8">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/wireless_optical_mouse/assets/wireless_optical_mouse_cf_9.obj</uri>
+            <drake:declare_convex />
+            <scale>0.95740000 0.95740000 0.95740000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.45</drake:mu_dynamic>
+          <drake:mu_static>0.45</drake:mu_static>
+          <drake:hunt_crossley_dissipation>60</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="part_9">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/wireless_optical_mouse/assets/wireless_optical_mouse_cf_10.obj</uri>
+            <drake:declare_convex />
+            <scale>0.95740000 0.95740000 0.95740000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.45</drake:mu_dynamic>
+          <drake:mu_static>0.45</drake:mu_static>
+          <drake:hunt_crossley_dissipation>60</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="part_10">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/wireless_optical_mouse/assets/wireless_optical_mouse_cf_11.obj</uri>
+            <drake:declare_convex />
+            <scale>0.95740000 0.95740000 0.95740000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.45</drake:mu_dynamic>
+          <drake:mu_static>0.45</drake:mu_static>
+          <drake:hunt_crossley_dissipation>60</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="part_11">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/wireless_optical_mouse/assets/wireless_optical_mouse_cf_12.obj</uri>
+            <drake:declare_convex />
+            <scale>0.95740000 0.95740000 0.95740000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.45</drake:mu_dynamic>
+          <drake:mu_static>0.45</drake:mu_static>
+          <drake:hunt_crossley_dissipation>60</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="part_12">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/wireless_optical_mouse/assets/wireless_optical_mouse_cf_13.obj</uri>
+            <drake:declare_convex />
+            <scale>0.95740000 0.95740000 0.95740000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.45</drake:mu_dynamic>
+          <drake:mu_static>0.45</drake:mu_static>
+          <drake:hunt_crossley_dissipation>60</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="part_13">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/wireless_optical_mouse/assets/wireless_optical_mouse_cf_14.obj</uri>
+            <drake:declare_convex />
+            <scale>0.95740000 0.95740000 0.95740000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.45</drake:mu_dynamic>
+          <drake:mu_static>0.45</drake:mu_static>
+          <drake:hunt_crossley_dissipation>60</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="part_14">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/wireless_optical_mouse/assets/wireless_optical_mouse_cf_15.obj</uri>
+            <drake:declare_convex />
+            <scale>0.95740000 0.95740000 0.95740000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.45</drake:mu_dynamic>
+          <drake:mu_static>0.45</drake:mu_static>
+          <drake:hunt_crossley_dissipation>60</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="part_15">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/wireless_optical_mouse/assets/wireless_optical_mouse_cf_16.obj</uri>
+            <drake:declare_convex />
+            <scale>0.95740000 0.95740000 0.95740000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.45</drake:mu_dynamic>
+          <drake:mu_static>0.45</drake:mu_static>
+          <drake:hunt_crossley_dissipation>60</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="part_16">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/wireless_optical_mouse/assets/wireless_optical_mouse_cf_17.obj</uri>
+            <drake:declare_convex />
+            <scale>0.95740000 0.95740000 0.95740000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.45</drake:mu_dynamic>
+          <drake:mu_static>0.45</drake:mu_static>
+          <drake:hunt_crossley_dissipation>60</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="part_17">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/wireless_optical_mouse/assets/wireless_optical_mouse_cf_18.obj</uri>
+            <drake:declare_convex />
+            <scale>0.95740000 0.95740000 0.95740000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.45</drake:mu_dynamic>
+          <drake:mu_static>0.45</drake:mu_static>
+          <drake:hunt_crossley_dissipation>60</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="part_18">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/wireless_optical_mouse/assets/wireless_optical_mouse_cf_19.obj</uri>
+            <drake:declare_convex />
+            <scale>0.95740000 0.95740000 0.95740000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.45</drake:mu_dynamic>
+          <drake:mu_static>0.45</drake:mu_static>
+          <drake:hunt_crossley_dissipation>60</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="part_19">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/wireless_optical_mouse/assets/wireless_optical_mouse_cf_20.obj</uri>
+            <drake:declare_convex />
+            <scale>0.95740000 0.95740000 0.95740000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.45</drake:mu_dynamic>
+          <drake:mu_static>0.45</drake:mu_static>
+          <drake:hunt_crossley_dissipation>60</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="part_20">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/wireless_optical_mouse/assets/wireless_optical_mouse_cf_21.obj</uri>
+            <drake:declare_convex />
+            <scale>0.95740000 0.95740000 0.95740000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.45</drake:mu_dynamic>
+          <drake:mu_static>0.45</drake:mu_static>
+          <drake:hunt_crossley_dissipation>60</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="part_21">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/wireless_optical_mouse/assets/wireless_optical_mouse_cf_22.obj</uri>
+            <drake:declare_convex />
+            <scale>0.95740000 0.95740000 0.95740000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.45</drake:mu_dynamic>
+          <drake:mu_static>0.45</drake:mu_static>
+          <drake:hunt_crossley_dissipation>60</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="part_22">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/wireless_optical_mouse/assets/wireless_optical_mouse_cf_23.obj</uri>
+            <drake:declare_convex />
+            <scale>0.95740000 0.95740000 0.95740000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.45</drake:mu_dynamic>
+          <drake:mu_static>0.45</drake:mu_static>
+          <drake:hunt_crossley_dissipation>60</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="part_23">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/wireless_optical_mouse/assets/wireless_optical_mouse_cf_24.obj</uri>
+            <drake:declare_convex />
+            <scale>0.95740000 0.95740000 0.95740000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.45</drake:mu_dynamic>
+          <drake:mu_static>0.45</drake:mu_static>
+          <drake:hunt_crossley_dissipation>60</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="part_24">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/wireless_optical_mouse/assets/wireless_optical_mouse_cf_25.obj</uri>
+            <drake:declare_convex />
+            <scale>0.95740000 0.95740000 0.95740000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.45</drake:mu_dynamic>
+          <drake:mu_static>0.45</drake:mu_static>
+          <drake:hunt_crossley_dissipation>60</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="part_25">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/wireless_optical_mouse/assets/wireless_optical_mouse_cf_26.obj</uri>
+            <drake:declare_convex />
+            <scale>0.95740000 0.95740000 0.95740000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.45</drake:mu_dynamic>
+          <drake:mu_static>0.45</drake:mu_static>
+          <drake:hunt_crossley_dissipation>60</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="part_26">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/wireless_optical_mouse/assets/wireless_optical_mouse_cf_27.obj</uri>
+            <drake:declare_convex />
+            <scale>0.95740000 0.95740000 0.95740000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.45</drake:mu_dynamic>
+          <drake:mu_static>0.45</drake:mu_static>
+          <drake:hunt_crossley_dissipation>60</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="part_27">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/wireless_optical_mouse/assets/wireless_optical_mouse_cf_28.obj</uri>
+            <drake:declare_convex />
+            <scale>0.95740000 0.95740000 0.95740000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.45</drake:mu_dynamic>
+          <drake:mu_static>0.45</drake:mu_static>
+          <drake:hunt_crossley_dissipation>60</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="part_28">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/wireless_optical_mouse/assets/wireless_optical_mouse_cf_29.obj</uri>
+            <drake:declare_convex />
+            <scale>0.95740000 0.95740000 0.95740000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.45</drake:mu_dynamic>
+          <drake:mu_static>0.45</drake:mu_static>
+          <drake:hunt_crossley_dissipation>60</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="part_29">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/wireless_optical_mouse/assets/wireless_optical_mouse_cf_30.obj</uri>
+            <drake:declare_convex />
+            <scale>0.95740000 0.95740000 0.95740000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.45</drake:mu_dynamic>
+          <drake:mu_static>0.45</drake:mu_static>
+          <drake:hunt_crossley_dissipation>60</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="part_30">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/wireless_optical_mouse/assets/wireless_optical_mouse_cf_31.obj</uri>
+            <drake:declare_convex />
+            <scale>0.95740000 0.95740000 0.95740000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.45</drake:mu_dynamic>
+          <drake:mu_static>0.45</drake:mu_static>
+          <drake:hunt_crossley_dissipation>60</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="part_31">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/wireless_optical_mouse/assets/wireless_optical_mouse_cf_32.obj</uri>
+            <drake:declare_convex />
+            <scale>0.95740000 0.95740000 0.95740000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.45</drake:mu_dynamic>
+          <drake:mu_static>0.45</drake:mu_static>
+          <drake:hunt_crossley_dissipation>60</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+    </link>
+  </model>
+</sdf>
