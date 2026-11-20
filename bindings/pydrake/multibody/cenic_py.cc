@@ -1,6 +1,7 @@
 #include "drake/bindings/generated_docstrings/multibody_cenic.h"
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
+#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/multibody/cenic/cenic_integrator.h"
 
@@ -30,8 +31,10 @@ PYDRAKE_MODULE(cenic, m) {
   auto bind_nonsymbolic_scalar_types = [&m](auto dummy) {
     using T = decltype(dummy);
 
-    DefineTemplateClassWithDefault<CenicIntegrator<T>, IntegratorBase<T>>(
-        m, "CenicIntegrator", GetPyParam<T>(), doc.CenicIntegrator.doc)
+    auto cls =
+        DefineTemplateClassWithDefault<CenicIntegrator<T>, IntegratorBase<T>>(
+            m, "CenicIntegrator", GetPyParam<T>(), doc.CenicIntegrator.doc);
+    cls  // BR
         .def(py::init<const System<T>&, Context<T>*>(), py::arg("system"),
             py::arg("context") = nullptr,
             // Keep alive, reference: `self` keeps `system` alive.
@@ -41,12 +44,20 @@ PYDRAKE_MODULE(cenic, m) {
         .def("GetParameters", &CenicIntegrator<T>::GetParameters,
             doc.CenicIntegrator.GetParameters.doc)
         .def("SetParameters", &CenicIntegrator<T>::SetParameters,
-            py::arg("parameters"), doc.CenicIntegrator.SetParameters.doc)
-        .def("get_solver_parameters",
-            &CenicIntegrator<T>::get_solver_parameters,
-            doc.CenicIntegrator.get_solver_parameters.doc)
-        .def("SetSolverParameters", &CenicIntegrator<T>::SetSolverParameters,
-            py::arg("parameters"), doc.CenicIntegrator.SetSolverParameters.doc);
+            py::arg("parameters"), doc.CenicIntegrator.SetParameters.doc);
+    // Remove on 2027-03-01 per deprecation.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    cls.def("get_solver_parameters",
+        WrapDeprecated(doc.CenicIntegrator.get_solver_parameters.doc_deprecated,
+            &CenicIntegrator<T>::get_solver_parameters),
+        doc.CenicIntegrator.get_solver_parameters.doc_deprecated);
+    cls.def("SetSolverParameters",
+        WrapDeprecated(doc.CenicIntegrator.SetSolverParameters.doc_deprecated,
+            &CenicIntegrator<T>::SetSolverParameters),
+        py::arg("parameters"),
+        doc.CenicIntegrator.SetSolverParameters.doc_deprecated);
+#pragma GCC diagnostic pop
   };
   type_visit(bind_nonsymbolic_scalar_types, NonSymbolicScalarPack{});
 }

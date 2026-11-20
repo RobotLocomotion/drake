@@ -196,16 +196,18 @@ template <typename T>
 void CenicIntegrator<T>::SetParameters(
     const CenicIntegratorParameters& parameters) {
   explicit_external_inputs_ = parameters.explicit_external_inputs;
-  SetSolverParameters(parameters.icf_solver);
+  solver_.SetParameters(parameters.icf_solver);
+  if (builder_ != nullptr) {
+    builder_->SetSolverParameters(parameters.icf_solver);
+  }
 }
 
 template <typename T>
 void CenicIntegrator<T>::SetSolverParameters(
     const IcfSolverParameters& parameters) {
-  solver_.SetParameters(parameters);
-  if (builder_ != nullptr) {
-    builder_->SetSolverParameters(parameters);
-  }
+  CenicIntegratorParameters all = GetParameters();
+  all.icf_solver = parameters;
+  SetParameters(all);
 }
 
 template <typename T>
@@ -300,7 +302,7 @@ void CenicIntegrator<T>::DoInitialize() {
   // Create the ICF builder, which will manage the construction of the convex
   // ICF optimization problem.
   builder_ = std::make_unique<IcfBuilder<T>>(&plant());
-  builder_->SetSolverParameters(get_solver_parameters());
+  builder_->SetSolverParameters(solver_.get_parameters());
 
   // The builder is new (it holds no model or geometry data) and the context may
   // be new, so nothing from earlier steps can be reused. In particular, the
@@ -525,7 +527,7 @@ void CenicIntegrator<T>::ComputeNextContinuousState(
   // TODO(vincekurtz): consider exposing kappa as a user-settable parameter.
   const double kappa = 0.001;
   const double tolerance = this->get_fixed_step_mode()
-                               ? get_solver_parameters().min_tolerance
+                               ? solver_.get_parameters().min_tolerance
                                : kappa * this->get_accuracy_in_use();
 
   // Solve the optimization problem for next-step velocities,
