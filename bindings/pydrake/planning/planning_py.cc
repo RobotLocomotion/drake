@@ -35,6 +35,12 @@ and/or trajectories of dynamical systems.
   internal::DefinePlanningIrisZo(m);
   internal::DefinePlanningIrisFromCliqueCover(m);
   internal::DefinePlanningZmpPlanner(m);
+  // The continuous_collision C++ sub-namespace gets its own Python submodule
+  // (mirroring pydrake.geometry.optimization) because its type names --
+  // Options, Statistics, Certificate, Finding, PairId -- are only meaningful
+  // when namespace-qualified, and would pollute pydrake.planning if flattened.
+  internal::DefinePlanningContinuousCollision(
+      m.def_submodule("continuous_collision"));
 
   // Experimental modules.
   auto experimental = m.def_submodule("experimental");
