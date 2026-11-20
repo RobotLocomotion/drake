@@ -36,6 +36,7 @@ drake_pybind_library(
         "//bindings/pydrake/common:ref_cycle_pybind",
         "//bindings/pydrake/common:wrap_pybind",
         "//bindings/pydrake/geometry:optimization_pybind",
+        "//bindings/pydrake/solvers:borrowing_evaluator_pybind",
         "//bindings/pydrake/systems:builder_life_support_pybind",
     ],
     cc_so_name = "__init__",

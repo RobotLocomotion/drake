@@ -10,6 +10,7 @@
 #include "drake/bindings/pydrake/geometry/optimization_pybind.h"
 #include "drake/bindings/pydrake/planning/planning_py.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
+#include "drake/bindings/pydrake/solvers/borrowing_evaluator_pybind.h"
 #include "drake/bindings/pydrake/symbolic_types_pybind.h"
 #include "drake/geometry/optimization/convex_set.h"
 #include "drake/planning/trajectory_optimization/direct_collocation.h"
@@ -572,10 +573,11 @@ void DefinePlanningTrajectoryOptimization(py::module_ m) {
             py::arg("e"), py::arg("use_in_transcription") = all_transcriptions,
             subgraph_doc.AddVertexCost.doc_2args_e_use_in_transcription)
         .def("AddVertexCost",
-            py::overload_cast<const solvers::Binding<solvers::Cost>&,
+            internal::ReownBinding(py::overload_cast<
+                const solvers::Binding<solvers::Cost>&,
                 const std::unordered_set<
                     geometry::optimization::GraphOfConvexSets::Transcription>&>(
-                &Class::Subgraph::AddVertexCost),
+                &Class::Subgraph::AddVertexCost)),
             py::arg("binding"),
             py::arg("use_in_transcription") = all_transcriptions,
             subgraph_doc.AddVertexCost.doc_2args_binding_use_in_transcription)
@@ -587,10 +589,11 @@ void DefinePlanningTrajectoryOptimization(py::module_ m) {
             py::arg("e"), py::arg("use_in_transcription") = all_transcriptions,
             subgraph_doc.AddVertexConstraint.doc_2args_e_use_in_transcription)
         .def("AddVertexConstraint",
-            py::overload_cast<const solvers::Binding<solvers::Constraint>&,
+            internal::ReownBinding(py::overload_cast<
+                const solvers::Binding<solvers::Constraint>&,
                 const std::unordered_set<
                     geometry::optimization::GraphOfConvexSets::Transcription>&>(
-                &Class::Subgraph::AddVertexConstraint),
+                &Class::Subgraph::AddVertexConstraint)),
             py::arg("binding"),
             py::arg("use_in_transcription") = all_transcriptions,
             subgraph_doc.AddVertexConstraint
@@ -603,10 +606,11 @@ void DefinePlanningTrajectoryOptimization(py::module_ m) {
             py::arg("e"), py::arg("use_in_transcription") = all_transcriptions,
             subgraph_doc.AddEdgeCost.doc_2args_e_use_in_transcription)
         .def("AddEdgeCost",
-            py::overload_cast<const solvers::Binding<solvers::Cost>&,
+            internal::ReownBinding(py::overload_cast<
+                const solvers::Binding<solvers::Cost>&,
                 const std::unordered_set<
                     geometry::optimization::GraphOfConvexSets::Transcription>&>(
-                &Class::Subgraph::AddEdgeCost),
+                &Class::Subgraph::AddEdgeCost)),
             py::arg("binding"),
             py::arg("use_in_transcription") = all_transcriptions,
             subgraph_doc.AddEdgeCost.doc_2args_binding_use_in_transcription)
@@ -618,10 +622,11 @@ void DefinePlanningTrajectoryOptimization(py::module_ m) {
             py::arg("e"), py::arg("use_in_transcription") = all_transcriptions,
             subgraph_doc.AddEdgeConstraint.doc_2args_e_use_in_transcription)
         .def("AddEdgeConstraint",
-            py::overload_cast<const solvers::Binding<solvers::Constraint>&,
+            internal::ReownBinding(py::overload_cast<
+                const solvers::Binding<solvers::Constraint>&,
                 const std::unordered_set<
                     geometry::optimization::GraphOfConvexSets::Transcription>&>(
-                &Class::Subgraph::AddEdgeConstraint),
+                &Class::Subgraph::AddEdgeConstraint)),
             py::arg("binding"),
             py::arg("use_in_transcription") = all_transcriptions,
             subgraph_doc.AddEdgeConstraint
@@ -678,10 +683,11 @@ void DefinePlanningTrajectoryOptimization(py::module_ m) {
             py::arg("e"), py::arg("use_in_transcription") = all_transcriptions,
             subgraph_edges_doc.AddEdgeCost.doc_2args_e_use_in_transcription)
         .def("AddEdgeCost",
-            py::overload_cast<const solvers::Binding<solvers::Cost>&,
+            internal::ReownBinding(py::overload_cast<
+                const solvers::Binding<solvers::Cost>&,
                 const std::unordered_set<
                     geometry::optimization::GraphOfConvexSets::Transcription>&>(
-                &Class::EdgesBetweenSubgraphs::AddEdgeCost),
+                &Class::EdgesBetweenSubgraphs::AddEdgeCost)),
             py::arg("binding"),
             py::arg("use_in_transcription") = all_transcriptions,
             subgraph_edges_doc.AddEdgeCost
@@ -695,10 +701,11 @@ void DefinePlanningTrajectoryOptimization(py::module_ m) {
             subgraph_edges_doc.AddEdgeConstraint
                 .doc_2args_e_use_in_transcription)
         .def("AddEdgeConstraint",
-            py::overload_cast<const solvers::Binding<solvers::Constraint>&,
+            internal::ReownBinding(py::overload_cast<
+                const solvers::Binding<solvers::Constraint>&,
                 const std::unordered_set<
                     geometry::optimization::GraphOfConvexSets::Transcription>&>(
-                &Class::EdgesBetweenSubgraphs::AddEdgeConstraint),
+                &Class::EdgesBetweenSubgraphs::AddEdgeConstraint)),
             py::arg("binding"),
             py::arg("use_in_transcription") = all_transcriptions,
             subgraph_edges_doc.AddEdgeConstraint
