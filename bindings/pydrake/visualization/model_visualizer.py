@@ -35,15 +35,31 @@ resources then you will need to set that environment variable.
 """
 
 import argparse
+import dataclasses as dc
 import logging
 import os
 from pathlib import Path
 import textwrap
 
 from pydrake.common import configure_logging as _configure_logging
+from pydrake.common.yaml import yaml_load_typed
+from pydrake.geometry import LightParameter
 from pydrake.visualization._model_visualizer import (
     ModelVisualizer as _ModelVisualizer,
 )
+
+
+@dc.dataclass
+class _RgbdLighting:
+    """Defines the YAML schema for RGB-D renderer lighting."""
+
+    lights: list[LightParameter] = dc.field(default_factory=list)
+    cast_shadows: bool = False
+    shadow_map_size: int = 1024
+
+
+def _load_rgbd_lighting(filename: Path) -> _RgbdLighting:
+    return yaml_load_typed(schema=_RgbdLighting, filename=filename)
 
 
 def _main():
@@ -140,6 +156,13 @@ def _main():
         "lights. This should be used in conjunction with --environment_map.",
     )
     args_parser.add_argument(
+        "--rgbd_lighting",
+        type=Path,
+        help="Filesystem path to a YAML file configuring the RGB-D renderer "
+        "lights and shadows. The root keys are 'lights', 'cast_shadows', "
+        "and 'shadow_map_size'.",
+    )
+    args_parser.add_argument(
         "--compliance_type",
         default=defaults["compliance_type"],
         help=textwrap.dedent("""Overrides the DefaultProximityProperties
@@ -197,6 +220,15 @@ def _main():
     if "BUILD_WORKSPACE_DIRECTORY" in os.environ:
         os.chdir(os.environ["BUILD_WORKING_DIRECTORY"])
 
+    rgbd_options = {}
+    if args.rgbd_lighting is not None:
+        lighting = _load_rgbd_lighting(args.rgbd_lighting)
+        rgbd_options = dict(
+            rgbd_lights=lighting.lights,
+            rgbd_cast_shadows=lighting.cast_shadows,
+            rgbd_shadow_map_size=lighting.shadow_map_size,
+        )
+
     visualizer = _ModelVisualizer(
         visualize_frames=args.visualize_frames,
         show_rgbd_sensor=args.show_rgbd_sensor,
@@ -209,6 +241,7 @@ def _main():
         environment_map=args.environment_map,
         no_lights=args.no_lights,
         compliance_type=args.compliance_type,
+        **rgbd_options,
     )
     package_map = visualizer.package_map()
     package_map.PopulateFromRosPackagePath()
