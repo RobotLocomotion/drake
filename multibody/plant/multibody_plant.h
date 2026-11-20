@@ -1893,7 +1893,8 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   ///
   /// Loop closure requires a constraint solver. Discrete-time plants use SAP;
   /// continuous-time simulation requires the CENIC integrator (set
-  /// systems::SimulatorConfig::integration_scheme to `"cenic"`).
+  /// systems::SimulatorConfig::integration_scheme to `"cenic"`, and call
+  /// SetUseSampledOutputPorts(true) before Finalize(); see CenicIntegrator).
   ///
   /// A shadow link is a link like any other in most respects (it has a pose and
   /// a velocity, for example), but its mass properties are derived from its
@@ -1977,8 +1978,10 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// Discrete-time %MultibodyPlant models support constraints using SAP.
   /// Continuous-time models can simulate coupler, distance, ball, and weld
   /// constraints using the CENIC integrator (set
-  /// systems::SimulatorConfig::integration_scheme to `"cenic"`), but CENIC
-  /// requires a coupler's two joints to be in the same kinematic tree.
+  /// systems::SimulatorConfig::integration_scheme to `"cenic"`, and call
+  /// SetUseSampledOutputPorts(true) before Finalize(); see CenicIntegrator),
+  /// but CENIC requires a coupler's two joints to be in the same kinematic
+  /// tree.
   /// Tendon constraints currently require a discrete-time model.
   /// <!-- TODO(#23763,#23992): Revise when CENIC supports tendon constraints
   /// and couplers between joints in different trees. -->

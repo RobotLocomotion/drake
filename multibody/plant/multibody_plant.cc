@@ -3486,8 +3486,9 @@ void MultibodyPlant<T>::ThrowIfUnsupportedContinuousTimeDynamics(
     throw std::logic_error(fmt::format(
         "Standard continuous-time dynamics do not support constraints, but "
         "this model has {}. Use the CENIC integrator (integration scheme "
-        "'cenic') to simulate supported constraint types, or use a "
-        "discrete-time plant with SAP.",
+        "'cenic', with SetUseSampledOutputPorts(true) on the plant) to "
+        "simulate supported constraint types, or use a discrete-time plant "
+        "with SAP.",
         constraints));
   }
 
