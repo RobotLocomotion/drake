@@ -499,6 +499,42 @@ GTEST_TEST(RotationMatrix, IsValid) {
   EXPECT_FALSE(RotationMatrix<double>::IsValid(m, 5 * kEpsilon));
 }
 
+// A matrix with any non-finite element is not a valid rotation matrix, no
+// matter which element it is (see #17356). We use MakeUnchecked() because the
+// constructor rejects such matrices in Debug builds.
+GTEST_TEST(RotationMatrix, IsValidNonFinite) {
+  for (const double bad : {std::numeric_limits<double>::infinity(),
+                           -std::numeric_limits<double>::infinity(),
+                           std::numeric_limits<double>::quiet_NaN()}) {
+    for (int i = 0; i < 3; ++i) {
+      for (int j = 0; j < 3; ++j) {
+        SCOPED_TRACE(testing::Message()
+                     << "R(" << i << ", " << j << ") = " << bad);
+        Matrix3d bad_m = Matrix3d::Identity();
+        bad_m(i, j) = bad;
+        EXPECT_FALSE(RotationMatrix<double>::IsValid(bad_m, kEpsilon));
+        EXPECT_FALSE(RotationMatrix<double>::IsValid(bad_m));
+        EXPECT_FALSE(RotationMatrix<double>::MakeUnchecked(bad_m).IsValid());
+      }
+    }
+  }
+}
+
+// IsValid() also rejects non-finite elements for symbolic scalars.
+GTEST_TEST(RotationMatrix, IsValidNonFiniteSymbolic) {
+  using symbolic::Expression;
+  const Matrix3<Expression> good_m = Matrix3<Expression>::Identity();
+  EXPECT_TRUE(
+      symbolic::is_true(RotationMatrix<Expression>::IsValid(good_m, kEpsilon)));
+  for (const double bad : {std::numeric_limits<double>::infinity(),
+                           -std::numeric_limits<double>::infinity()}) {
+    Matrix3<Expression> bad_m = Matrix3<Expression>::Identity();
+    bad_m(1, 2) = bad;
+    EXPECT_TRUE(symbolic::is_false(
+        RotationMatrix<Expression>::IsValid(bad_m, kEpsilon)));
+  }
+}
+
 // Tests whether or not a RotationMatrix is an identity matrix.
 GTEST_TEST(RotationMatrix, IsExactlyIdentity) {
   // Test that the default constructor creates an exact identity matrix.
