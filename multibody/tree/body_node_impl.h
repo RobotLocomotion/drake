@@ -149,7 +149,7 @@ class BodyNodeImpl final : public BodyNode<T> {
       const ArticulatedBodyInertiaCache<T>& abic,
       const ArticulatedBodyForceCache<T>& aba_force_cache,
       const Eigen::Ref<const MatrixUpTo6<T>>& H_PB_W,
-      const SpatialAcceleration<T>& Ab_WB,
+      const VelocityKinematicsCache<T>&, const SpatialAcceleration<T>& Ab_WB,
       AccelerationKinematicsCache<T>* ac) const final;
 
   void CalcSpatialAccelerationBias(
