@@ -58,6 +58,24 @@ struct Formatter;
 
 }  // namespace internal::formatter_as
 
+namespace internal {
+
+/* If `ctx` begins with "r:", advances past that prefix and returns true.
+Otherwise returns false without consuming any characters. Used by Identifier
+and TypeSafeIndex formatters for the optional {:r:} repr specifier. */
+template <typename FormatParseContext>
+constexpr bool ConsumeReprFormatPrefix(FormatParseContext& ctx) {
+  auto it = ctx.begin();
+  if ((it != ctx.end()) && (*it == 'r') && ((it + 1) != ctx.end()) &&
+      (*(it + 1) == ':')) {
+    ctx.advance_to(it + 2);
+    return true;
+  }
+  return false;
+}
+
+}  // namespace internal
+
 }  // namespace drake
 
 /** Adds a `fmt::formatter<NAMESPACE::TYPE>` template specialization that
