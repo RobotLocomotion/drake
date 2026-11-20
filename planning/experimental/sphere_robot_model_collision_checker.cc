@@ -788,16 +788,14 @@ RobotClearance SphereRobotModelCollisionChecker::DoCalcContextRobotClearance(
       // Only compute the Jacobian if row(s) will be returned.
       Matrix3X<double> sphere_jacobian(3, GetZeroConfiguration().size());
 
-      if (has_environment_row || has_self_row) {
-        // Get the translation-only Jacobian for the current point.
+      // Only add the environment Jacobian and gradient if necessary.
+      if (has_environment_row) {
+        // The environment does not move with q, so the sphere's velocity is
+        // measured in the world frame.
         plant().CalcJacobianTranslationalVelocity(
             plant_context, JacobianWrtVariable::kQDot, current_frame,
             body_frame_sphere.Origin().head<3>(), frame_W, frame_W,
             &sphere_jacobian);
-      }
-
-      // Only add the environment Jacobian and gradient if necessary.
-      if (has_environment_row) {
         result.Append(
             body_index, minimum_environment_body_index,
             RobotCollisionType::kEnvironmentCollision,
@@ -806,6 +804,19 @@ RobotClearance SphereRobotModelCollisionChecker::DoCalcContextRobotClearance(
       }
       // Only add the self Jacobian and gradient if necessary.
       if (has_self_row) {
+        // The colliding body also moves with q, so the sphere's velocity is
+        // measured in that body's frame.
+        // TODO(calderpg-tri) sphere_self_gradient combines the gradients from
+        // every body within influence_distance, but the velocity is measured
+        // only relative to the closest one. The Jacobian is exact only when
+        // the gradients all come from the closest body; to make it exact in
+        // general, measure each body's gradient relative to its own body.
+        const Frame<double>& self_body_frame =
+            plant().get_body(minimum_self_body_index).body_frame();
+        plant().CalcJacobianTranslationalVelocity(
+            plant_context, JacobianWrtVariable::kQDot, current_frame,
+            body_frame_sphere.Origin().head<3>(), self_body_frame, frame_W,
+            &sphere_jacobian);
         result.Append(body_index, minimum_self_body_index,
                       RobotCollisionType::kSelfCollision,
                       minimum_distance_from_self_collision,
