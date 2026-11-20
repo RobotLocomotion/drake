@@ -1,5 +1,6 @@
 """Provides extensions for containers of Drake-related objects."""
 
+import copy
 import re
 
 import numpy as np
@@ -45,13 +46,87 @@ class _DictKeyWrap(dict):
         return dict.__setitem__(self, self._key_wrap(key), value)
 
     def __getitem__(self, key):
-        return dict.__getitem__(self, self._key_wrap(key))
+        try:
+            return dict.__getitem__(self, self._key_wrap(key))
+        except KeyError:
+            raise KeyError(key) from None
 
     def __delitem__(self, key):
-        return dict.__delitem__(self, self._key_wrap(key))
+        try:
+            return dict.__delitem__(self, self._key_wrap(key))
+        except KeyError:
+            raise KeyError(key) from None
 
     def __contains__(self, key):
         return dict.__contains__(self, self._key_wrap(key))
+
+    def __iter__(self):
+        return self.keys()
+
+    def __reversed__(self):
+        return (self._key_unwrap(key) for key in dict.__reversed__(self))
+
+    def __repr__(self):
+        # N.B. Show the original keys, not the proxies.
+        items = ", ".join(f"{k!r}: {v!r}" for k, v in self.items())
+        return f"{type(self).__name__}({{{items}}})"
+
+    def copy(self):
+        # N.B. Don't rely on `dict.copy()`, which would return a plain `dict`.
+        return copy.copy(self)
+
+    def get(self, key, default=None):
+        """Returns the value for ``key`` (using ``EqualTo``), or ``default``."""
+        return dict.get(self, self._key_wrap(key), default)
+
+    def pop(self, key, *args):
+        """Removes ``key`` (using ``EqualTo``) and returns its value. Raises
+        ``KeyError(key)`` if absent and no default is given."""
+        try:
+            return dict.pop(self, self._key_wrap(key), *args)
+        except KeyError:
+            raise KeyError(key) from None
+
+    def popitem(self):
+        """Removes and returns the last ``(key, value)``, with the original
+        key."""
+        key, value = dict.popitem(self)
+        return self._key_unwrap(key), value
+
+    def setdefault(self, key, default=None):
+        """Like ``dict.setdefault``, using ``EqualTo`` to find ``key``."""
+        return dict.setdefault(self, self._key_wrap(key), default)
+
+    def update(self, other=(), /, **kwargs):
+        """Like ``dict.update``, using ``EqualTo`` to match keys."""
+        # N.B. Don't copy into a plain `dict` first; that would compare the
+        # keys using their own `__eq__`.
+        if hasattr(other, "keys"):
+            other = [(key, other[key]) for key in other.keys()]  # noqa: SIM118
+        for key, value in other:
+            self[key] = value
+        for key, value in kwargs.items():
+            self[key] = value
+
+    def __or__(self, other):
+        if not isinstance(other, dict):
+            return NotImplemented
+        result = self.copy()
+        result.update(other)
+        return result
+
+    def __ror__(self, other):
+        if not isinstance(other, dict):
+            return NotImplemented
+        result = self.copy()
+        dict.clear(result)
+        result.update(other)
+        result.update(self)
+        return result
+
+    def __ior__(self, other):
+        self.update(other)
+        return self
 
     def items(self):
         return zip(self.keys(), self.values())
@@ -60,10 +135,14 @@ class _DictKeyWrap(dict):
         return (self._key_unwrap(key) for key in dict.keys(self))
 
     def raw(self):
-        """Returns a dict with the original keys.
+        """Returns a plain ``dict`` with the original keys.
 
         Note:
-            Copying to a `dict` will maintain the proxy keys.
+            The result compares its keys with their own ``__eq__``. This is
+            only a problem for keys whose ``__eq__`` does not return a bool
+            (e.g., symbolic types) *and* whose hashes collide, which is rare.
+            To copy while keeping ``EqualTo`` semantics, use ``copy()`` or
+            ``EqualToDict(d)`` instead.
         """
         return dict(self.items())
 
@@ -71,6 +150,19 @@ class _DictKeyWrap(dict):
 class EqualToDict(_DictKeyWrap):
     """Implements a dictionary where keys are compared using type and
     `lhs.EqualTo(rhs)`.
+
+    This is useful for keys whose ``==`` does not return a bool, such as
+    ``Variable``, ``Expression`` and ``Polynomial``.
+
+    Iteration, ``keys()``, ``items()``, ``reversed()``, ``repr()``,
+    ``popitem()`` and ``copy()`` provide the original key objects, not the
+    internal proxies. The mapping methods ``get``, ``pop``, ``setdefault``,
+    ``update`` and the operators ``|`` and ``|=`` look keys up using
+    ``EqualTo``; ``|`` returns an ``EqualToDict``.
+
+    Not supported: ``==`` against another dict. Compare ``raw()`` instead.
+    Converting with ``dict(d)`` or ``d.raw()`` yields a plain ``dict`` that
+    compares keys with their own ``__eq__`` (see ``raw()``).
     """
 
     def __init__(self, *args, **kwargs):
@@ -84,8 +176,8 @@ class EqualToDict(_DictKeyWrap):
             # https://stackoverflow.com/a/1608907/7829525
             __hash__ = _EqualityProxyBase.__hash__
 
-        dict_in = dict(*args, **kwargs)
-        _DictKeyWrap.__init__(self, dict_in, Proxy, Proxy._get_value)
+        _DictKeyWrap.__init__(self, {}, Proxy, Proxy._get_value)
+        self.update(*args, **kwargs)
 
 
 class NamedViewBase:
