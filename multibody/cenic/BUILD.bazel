@@ -65,13 +65,17 @@ drake_cc_googletest(
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
         "//common/yaml",
+        "//geometry:meshcat",
+        "//lcm:drake_lcm",
         "//multibody/parsing",
         "//multibody/plant:multibody_plant_config_functions",
         "//systems/analysis:runge_kutta3_integrator",
         "//systems/analysis:simulator",
         "//systems/analysis:simulator_config_functions",
         "//systems/analysis/test_utilities",
+        "//systems/lcm:lcm_buses",
         "//systems/primitives:gain",
+        "//visualization:visualization_config_functions",
     ],
 )
 

@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <string>
+#include <utility>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
@@ -11,6 +12,7 @@
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/tree/prismatic_joint.h"
+#include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram_builder.h"
 
 namespace drake {
@@ -208,6 +210,27 @@ TEST_F(ContactVisualizerTest, Parameters) {
     EXPECT_EQ(data_and_vector.first.period_sec(), params.publish_period);
     EXPECT_EQ(data_and_vector.first.offset_sec(), 0.0);
   }
+}
+
+// A zero publish period means publishing on every step, not periodically.
+TEST_F(ContactVisualizerTest, PerStepPublish) {
+  ContactVisualizerParams params;
+  params.publish_period = 0.0;
+  SetUpDiagram(0, false, params);
+
+  EXPECT_TRUE(visualizer_->MapPeriodicEventsByTiming().empty());
+  auto events = visualizer_->AllocateCompositeEventCollection();
+  visualizer_->GetPerStepEvents(visualizer_->GetMyContextFromRoot(*context_),
+                                events.get());
+  EXPECT_TRUE(events->HasPublishEvents());
+
+  // Nothing is published until the simulator steps.
+  EXPECT_FALSE(meshcat_->HasPath("contact_forces"));
+  systems::Simulator<double> simulator(*diagram_, std::move(context_));
+  simulator.AdvanceTo(0.002);
+  EXPECT_TRUE(
+      meshcat_->HasPath("contact_forces/point/sphere1::sphere.base_link+"
+                        "sphere2::sphere.base_link"));
 }
 
 TEST_F(ContactVisualizerTest, Delete) {

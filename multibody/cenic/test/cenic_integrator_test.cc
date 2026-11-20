@@ -3,6 +3,7 @@
 #include <cmath>
 #include <limits>
 #include <memory>
+#include <optional>
 #include <set>
 #include <string>
 #include <tuple>
@@ -14,6 +15,8 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/yaml/yaml_io.h"
+#include "drake/geometry/meshcat.h"
+#include "drake/lcm/drake_lcm.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/externally_applied_spatial_force.h"
 #include "drake/multibody/plant/multibody_plant.h"
@@ -30,8 +33,10 @@
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/leaf_system.h"
+#include "drake/systems/lcm/lcm_buses.h"
 #include "drake/systems/primitives/constant_vector_source.h"
 #include "drake/systems/primitives/gain.h"
+#include "drake/visualization/visualization_config_functions.h"
 
 namespace drake {
 namespace multibody {
@@ -2470,6 +2475,51 @@ INSTANTIATE_TEST_SUITE_P(
                          std::get<0>(x.param), std::get<1>(x.param),
                          std::get<2>(x.param));
     });
+
+// A visualizer with a zero publish period publishes on every step, so (unlike
+// one with a positive period) it must not change CENIC's choice of steps.
+GTEST_TEST(CenicIntegrator, PerStepVisualizationDoesNotChangeTrajectory) {
+  struct Result {
+    VectorXd x;
+    int64_t num_steps{};
+  };
+  // Simulates a ball falling onto a table. If `publish_period` is given, the
+  // plant is also visualized with that period.
+  auto simulate = [](std::optional<double> publish_period) {
+    DiagramBuilder<double> builder;
+    auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.0);
+    Parser(&plant).AddModelsFromString(kBallOnTableMjcf, "xml");
+    plant.SetUseSampledOutputPorts(true);
+    plant.Finalize();
+    // The null LCM url keeps LCM visualizers out of the diagram, so only
+    // Meshcat is used. (Meshcat itself serves on localhost.)
+    lcm::DrakeLcm lcm(systems::lcm::LcmBuses::kLcmUrlMemqNull);
+    if (publish_period.has_value()) {
+      visualization::VisualizationConfig config;
+      config.publish_period = *publish_period;
+      ApplyVisualizationConfig(config, &builder, nullptr, &plant, &scene_graph,
+                               std::make_shared<geometry::Meshcat>(), &lcm);
+    }
+    Simulator<double> simulator(builder.Build());
+    auto& integrator = simulator.reset_integrator<CenicIntegrator<double>>();
+    integrator.set_maximum_step_size(0.1);
+    simulator.Initialize();
+    simulator.AdvanceTo(1.0);
+    return Result{.x = plant.GetPositionsAndVelocities(
+                      plant.GetMyContextFromRoot(simulator.get_context())),
+                  .num_steps = integrator.get_num_steps_taken()};
+  };
+
+  const Result plain = simulate(std::nullopt);
+  const Result per_step = simulate(0.0);
+  const Result periodic = simulate(1.0 / 64);
+
+  EXPECT_EQ(per_step.num_steps, plain.num_steps);
+  EXPECT_TRUE(CompareMatrices(per_step.x, plain.x));
+  // A positive period forces extra steps, which is the effect that a zero
+  // period avoids.
+  EXPECT_GT(periodic.num_steps, plain.num_steps);
+}
 
 }  // namespace
 }  // namespace cenic

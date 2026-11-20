@@ -38,8 +38,12 @@ MeshcatVisualizer<T>::MeshcatVisualizer(
         "kIllustration");
   }
 
-  this->DeclarePeriodicPublishEvent(params_.publish_period, 0.0,
-                                    &MeshcatVisualizer<T>::UpdateMeshcat);
+  if (params_.publish_period > 0) {
+    this->DeclarePeriodicPublishEvent(params_.publish_period, 0.0,
+                                      &MeshcatVisualizer<T>::UpdateMeshcat);
+  } else {
+    this->DeclarePerStepPublishEvent(&MeshcatVisualizer<T>::UpdateMeshcat);
+  }
   this->DeclareForcedPublishEvent(&MeshcatVisualizer<T>::UpdateMeshcat);
 
   if (params_.delete_on_initialization_event) {
@@ -80,8 +84,16 @@ void MeshcatVisualizer<T>::Delete() const {
 template <typename T>
 MeshcatAnimation* MeshcatVisualizer<T>::StartRecording(
     bool set_transforms_while_recording) {
-  meshcat_->StartRecording(1.0 / params_.publish_period,
-                           set_transforms_while_recording);
+  if (params_.publish_period > 0.0) {
+    meshcat_->StartRecording(1.0 / params_.publish_period,
+                             set_transforms_while_recording);
+  } else {
+    // Per-step updates have no period to derive a frame rate from, so use the
+    // default period's rate. It only sets the playback resolution: each
+    // transform is recorded at the frame of its simulation time.
+    meshcat_->StartRecording(1.0 / MeshcatVisualizerParams{}.publish_period,
+                             set_transforms_while_recording);
+  }
   return &meshcat_->get_mutable_recording();
 }
 

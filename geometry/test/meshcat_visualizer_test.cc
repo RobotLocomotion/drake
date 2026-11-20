@@ -139,6 +139,28 @@ TEST_F(MeshcatVisualizerWithIiwaTest, PublishPeriod) {
   }
 }
 
+// A zero publish period means publishing on every step, not periodically.
+TEST_F(MeshcatVisualizerWithIiwaTest, PerStepPublish) {
+  MeshcatVisualizerParams params;
+  params.publish_period = 0.0;
+  SetUpDiagram(params);
+  EXPECT_TRUE(visualizer_->MapPeriodicEventsByTiming().empty());
+  auto events = visualizer_->AllocateCompositeEventCollection();
+  visualizer_->GetPerStepEvents(visualizer_->GetMyContextFromRoot(*context_),
+                                events.get());
+  EXPECT_TRUE(events->HasPublishEvents());
+
+  // The visualizer still tracks the simulation. (Publish first, so that the
+  // baseline is the initial pose and not an empty string.)
+  diagram_->ForcedPublish(*context_);
+  const std::string packed_X_W7 =
+      meshcat_->GetPackedTransform("visualizer/iiwa14/iiwa_link_7");
+  systems::Simulator<double> simulator(*diagram_);
+  simulator.AdvanceTo(0.1);
+  EXPECT_NE(meshcat_->GetPackedTransform("visualizer/iiwa14/iiwa_link_7"),
+            packed_X_W7);
+}
+
 // Confirms that all geometry registered to iiwa_link_7 in the urdf (in all
 // three allowed roles) gets properly added.
 TEST_F(MeshcatVisualizerWithIiwaTest, Roles) {
@@ -365,6 +387,19 @@ TEST_F(MeshcatVisualizerWithIiwaTest, RecordingFrameRate) {
   meshcat_->StartRecording();
   animation = &meshcat_->get_mutable_recording();
   EXPECT_EQ(1.0 / animation->frames_per_second(), params.publish_period);
+}
+
+// With per-step publishing there is no publish period to derive a recording
+// frame rate from, so the default period's rate is used.
+TEST_F(MeshcatVisualizerWithIiwaTest, RecordingFrameRatePerStep) {
+  MeshcatVisualizerParams params;
+  params.publish_period = 0.0;
+  SetUpDiagram(params);
+
+  visualizer_->StartRecording();
+  const MeshcatAnimation& animation = meshcat_->get_mutable_recording();
+  EXPECT_EQ(1.0 / animation.frames_per_second(),
+            MeshcatVisualizerParams{}.publish_period);
 }
 
 TEST_F(MeshcatVisualizerWithIiwaTest, ScalarConversion) {
