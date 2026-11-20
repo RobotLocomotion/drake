@@ -1033,6 +1033,24 @@ RenderEngineGlParams CleanupLights(RenderEngineGlParams params) {
   return params;
 }
 
+// Returns the buffers used by the defined entries in `geometries`; a buffer
+// appears once for each geometry that uses it.
+std::vector<GLuint> GetBuffersInUse(
+    const std::vector<OpenGlGeometry>& geometries) {
+  std::vector<GLuint> buffers;
+  for (const OpenGlGeometry& geometry : geometries) {
+    if (!geometry.is_defined()) continue;
+    buffers.push_back(geometry.vertex_buffer);
+    buffers.push_back(geometry.index_buffer);
+  }
+  return buffers;
+}
+
+// Deletes an OpenGl buffer object. An OpenGl context must be bound.
+void DeleteBuffer(GLuint buffer) {
+  glDeleteBuffers(1, &buffer);
+}
+
 }  // namespace
 
 RenderEngineGl::RenderEngineGl(RenderEngineGlParams params)
@@ -1099,8 +1117,12 @@ RenderEngineGl::~RenderEngineGl() {
 
   // Delete vertex array objects.
   for (auto& geometry : geometries_) {
+    if (!geometry.is_defined()) continue;
     glDeleteVertexArrays(1, &geometry.vertex_array);
   }
+  // Drop this engine's uses of the buffers it shares with its clones, deleting
+  // the buffers that no clone uses anymore.
+  buffer_use_counts_->Decrement(GetBuffersInUse(geometries_), &DeleteBuffer);
 
   // Delete programs.
   for (auto& shader_type : shader_programs_) {
@@ -1132,8 +1154,11 @@ void RenderEngineGl::ImplementGeometry(const Capsule& capsule,
       MakeCapsule(resolution, capsule.radius(), capsule.length());
 
   const int geometry = CreateGlGeometry(render_mesh);
-
   AddGeometryInstance(geometry, user_data, Vector3d::Ones());
+
+  // Each capsule has its own OpenGL geometry, released with the capsule.
+  const auto& data = *static_cast<RegistrationData*>(user_data);
+  owned_geometries_[data.id].push_back(geometry);
 }
 
 void RenderEngineGl::ImplementGeometry(const Convex& convex, void* user_data) {
@@ -1204,8 +1229,9 @@ void RenderEngineGl::ImplementMeshesForSource(void* user_data,
   // MaybeMakeMeshFallbackmaterial() to avoid looking for foo.png.
   const fs::path filename =
       mesh_source.is_path() ? mesh_source.path() : fs::path();
+  const RegistrationData& data = *static_cast<RegistrationData*>(user_data);
+
   for (const auto& gl_mesh : meshes_.at(file_key)) {
-    const RegistrationData& data = *static_cast<RegistrationData*>(user_data);
     PerceptionProperties temp_props(data.properties);
 
     RenderMaterial material;
@@ -1243,6 +1269,11 @@ void RenderEngineGl::ImplementMeshesForSource(void* user_data,
                                data.default_diffuse};
     AddGeometryInstance(gl_mesh.mesh_index, &temp_data, scale);
   }
+
+  // Register use of the cached meshes to support cache eviction.
+  DRAKE_DEMAND(!geometry_mesh_keys_.contains(data.id));
+  ++mesh_key_uses_[file_key];
+  geometry_mesh_keys_.emplace(data.id, file_key);
 }
 
 bool RenderEngineGl::DoRegisterVisual(GeometryId id, const Shape& shape,
@@ -1288,6 +1319,8 @@ bool RenderEngineGl::DoRegisterDeformableVisual(
                           parameters_.default_diffuse};
     AddGeometryInstance(mesh_index, &data, kUnitScale);
   }
+  // Each deformable mesh has its own OpenGL geometry, released with it.
+  owned_geometries_.emplace(id, gl_mesh_indices);
   deformable_meshes_.emplace(id, std::move(gl_mesh_indices));
   return true;
 }
@@ -1331,11 +1364,23 @@ void RenderEngineGl::DoUpdateDeformableConfigurations(
 }
 
 bool RenderEngineGl::DoRemoveGeometry(GeometryId id) {
+  // Removing the geometry releases the OpenGL geometries it owns (capsules and
+  // deformable meshes) and the cached meshes it was the last user of; that
+  // requires the context. Bind it before changing anything, so that failing to
+  // bind (e.g., because the context is current on another thread) leaves the
+  // engine unchanged. Like DoRegisterVisual(), it's left bound.
+  auto owned_iter = owned_geometries_.find(id);
+  auto key_iter = geometry_mesh_keys_.find(id);
+  const bool evicts = key_iter != geometry_mesh_keys_.end() &&
+                      mesh_key_uses_.at(key_iter->second) == 1;
+  if (owned_iter != owned_geometries_.end() || evicts) {
+    opengl_context_->MakeCurrent();
+  }
+
+  bool removed = false;
   // Clean up the convenience look up table for deformable if the id is
   // associated with a deformable geometry.
-  if (deformable_meshes_.contains(id)) {
-    deformable_meshes_.erase(id);
-  }
+  deformable_meshes_.erase(id);
   // Now remove the instances associated with the id (stored in visuals_).
   auto iter = visuals_.find(id);
   if (iter != visuals_.end()) {
@@ -1361,15 +1406,43 @@ bool RenderEngineGl::DoRemoveGeometry(GeometryId id) {
       maybe_remove_from_family(id, instance.shader_data, RenderType::kLabel);
     }
     visuals_.erase(iter);
-    return true;
+    removed = true;
   }
-  return false;
+
+  if (owned_iter != owned_geometries_.end()) {
+    for (const int index : owned_iter->second) {
+      ReleaseGlGeometry(index);
+    }
+    owned_geometries_.erase(owned_iter);
+    removed = true;
+  }
+
+  // Drop this geometry's use of its mesh cache entry, evicting the entry if
+  // this was its last user. N.B. A cache entry can be empty (e.g., a glTF file
+  // that defines no meshes); a geometry registered with such a file has no
+  // instances in visuals_ but is still a user of the entry.
+  if (key_iter != geometry_mesh_keys_.end()) {
+    const std::string key = std::move(key_iter->second);
+    geometry_mesh_keys_.erase(key_iter);
+    int& uses = mesh_key_uses_.at(key);
+    DRAKE_DEMAND(uses > 0);
+    if (--uses == 0) {
+      EvictCachedMeshes(key);
+    }
+    removed = true;
+  }
+  return removed;
 }
 
 unique_ptr<RenderEngine> RenderEngineGl::DoClone() const {
   // The clone still requires some last-minute patching before it can work
   // correctly.
   auto clone = unique_ptr<RenderEngineGl>(new RenderEngineGl(*this));
+
+  // The copy constructor shared buffer_use_counts_ with this engine. Count the
+  // clone's uses of the shared buffers before doing anything else; the clone's
+  // destructor drops them and requires that they have been counted.
+  clone->buffer_use_counts_->Increment(GetBuffersInUse(clone->geometries_));
 
   ScopeExit unbind([]() {
     OpenGlContext::ClearCurrent();
@@ -1720,9 +1793,6 @@ int RenderEngineGl::GetSphere() {
     sphere_ = CreateGlGeometry(render_mesh);
   }
 
-  geometries_[sphere_].throw_if_undefined(
-      "Built-in sphere has some invalid objects");
-
   return sphere_;
 }
 
@@ -1735,9 +1805,6 @@ int RenderEngineGl::GetCylinder() {
     RenderMesh render_mesh = MakeUnitCylinder(kLongitudeBands, 1);
     cylinder_ = CreateGlGeometry(render_mesh);
   }
-
-  geometries_[cylinder_].throw_if_undefined(
-      "Built-in cylinder has some invalid objects");
 
   return cylinder_;
 }
@@ -1754,9 +1821,6 @@ int RenderEngineGl::GetHalfSpace() {
     half_space_ = CreateGlGeometry(render_mesh);
   }
 
-  geometries_[half_space_].throw_if_undefined(
-      "Built-in half space has some invalid objects");
-
   return half_space_;
 }
 
@@ -1765,8 +1829,6 @@ int RenderEngineGl::GetBox() {
     RenderMesh render_mesh = MakeUnitBox();
     box_ = CreateGlGeometry(render_mesh);
   }
-
-  geometries_[box_].throw_if_undefined("Built-in box has some invalid objects");
 
   return box_;
 }
@@ -1852,8 +1914,7 @@ class RenderEngineGl::GltfMeshExtractor {
   The extractor does *not* automatically register the final RenderGlMesh
   instances. Those are created by calling ExtractMeshes() and the caller is
   responsible for taking ownership. */
-  GltfMeshExtractor(const MeshSource* mesh_source,
-                    std::vector<OpenGlGeometry>* geometries,
+  GltfMeshExtractor(const MeshSource* mesh_source, RenderEngineGl* engine,
                     TextureLibrary* texture_library)
       : mesh_source_(DRAKE_DEREF(mesh_source)),
         description_(mesh_source_.is_path()
@@ -1861,10 +1922,10 @@ class RenderEngineGl::GltfMeshExtractor {
                                        mesh_source_.description())
                          : fmt::format("the in-memory glTF file: '{}'",
                                        mesh_source_.description())),
-        geometries_(*geometries),
+        engine_(*engine),
         texture_library_(*texture_library) {
     DRAKE_DEMAND(mesh_source != nullptr);
-    DRAKE_DEMAND(geometries != nullptr);
+    DRAKE_DEMAND(engine != nullptr);
     DRAKE_DEMAND(texture_library != nullptr);
   }
 
@@ -2178,7 +2239,7 @@ class RenderEngineGl::GltfMeshExtractor {
 
   /* Walks the node tree rooted at the node indicated by `node_index`. The mesh
    nodes are processed and added to `result` (with additional changes made to
-   this instance's geometries_ as needed).
+   the engine's geometries_ as needed).
 
    @param node_index       The index of the node to process.
    @param model            The full model (used to resolve the quantities
@@ -2266,8 +2327,7 @@ class RenderEngineGl::GltfMeshExtractor {
           VertexSpec{.positions = p_attr, .normals = n_attr, .uvs = uv_attr};
       CreateVertexArray(&geometry);
 
-      const int g_index = ssize(geometries_);
-      geometries_.push_back(geometry);
+      const int g_index = engine_.AddGlGeometry(geometry);
 
       result->push_back(
           MakeRenderGlMesh(g_index, mesh_index, prim, model, data));
@@ -2281,7 +2341,7 @@ class RenderEngineGl::GltfMeshExtractor {
                                 const RegistrationData& data) {
     RenderGlMesh gl_mesh{.mesh_index = geometry_index};
 
-    const OpenGlGeometry& geometry = geometries_.at(geometry_index);
+    const OpenGlGeometry& geometry = engine_.geometries_.at(geometry_index);
     gl_mesh.uv_state = geometry.spec.uvs.components_per_element == 0
                            ? UvState::kNone
                            : UvState::kFull;
@@ -2400,8 +2460,9 @@ class RenderEngineGl::GltfMeshExtractor {
   /* Returns the name of the OpenGL buffer that contains the data in the glTF
    buffer indicated by `buffer_index` (creating the OpenGL object as needed).
 
-   Note: the buffer is created in the current active context and only deleted
-   *with the context*. */
+   Note: the buffer is created in the current active context and deleted when
+   no geometry of the engine or its clones uses it anymore (see
+   RenderEngineGl::BufferUseCounts). */
   GLuint GetOpenGlBuffer(int buffer_index, const tinygltf::Model& model) {
     if (buffers_.contains(buffer_index)) {
       return buffers_.at(buffer_index);
@@ -2423,8 +2484,9 @@ class RenderEngineGl::GltfMeshExtractor {
    @pre `prim.indices` names an accessor that can be interpreted as element
         indices.
 
-   Note: the buffer is created in the current active context and only deleted
-   *with the context*. */
+   Note: the buffer is created in the current active context and deleted when
+   no geometry of the engine or its clones uses it anymore (see
+   RenderEngineGl::BufferUseCounts). */
   void ConfigureIndexBuffer(const tinygltf::Primitive& prim,
                             const tinygltf::Model& model, int mesh_index,
                             OpenGlGeometry* geometry) {
@@ -2605,9 +2667,9 @@ class RenderEngineGl::GltfMeshExtractor {
    to the corresponding OpenGL index buffer. */
   map<int, IndexBuffer> index_buffers_;
 
-  /* The repository for newly created OpenGlGeometry instances. Extracted meshes
-   will strictly be appended. */
-  std::vector<OpenGlGeometry>& geometries_;
+  /* The engine that stores newly created OpenGlGeometry instances (see
+   RenderEngineGl::AddGlGeometry()). */
+  RenderEngineGl& engine_;
 
   /* The texture library for registering embedded textures in the glTF file. */
   TextureLibrary& texture_library_;
@@ -2647,11 +2709,6 @@ void RenderEngineGl::CacheFileMeshesMaybe(const MeshSource& mesh_source,
         int mesh_index = CreateGlGeometry(render_mesh);
         DRAKE_DEMAND(mesh_index >= 0);
 
-        geometries_[mesh_index].throw_if_undefined(
-            fmt::format("Error creating object for mesh '{}'.",
-                        mesh_source.description())
-                .c_str());
-
         file_meshes.push_back(
             {.mesh_index = mesh_index, .uv_state = render_mesh.uv_state});
 
@@ -2687,7 +2744,7 @@ void RenderEngineGl::CacheFileMeshesMaybe(const MeshSource& mesh_source,
       }
     } else {
       file_meshes =
-          GltfMeshExtractor(&mesh_source, &geometries_, texture_library_.get())
+          GltfMeshExtractor(&mesh_source, this, texture_library_.get())
               .ExtractMeshes(*data);
     }
     meshes_[file_key] = std::move(file_meshes);
@@ -2859,22 +2916,60 @@ int RenderEngineGl::CreateGlGeometry(const RenderMesh& render_mesh,
   // clang-format on
   CreateVertexArray(&geometry);
 
-  // Note: We won't need to call the corresponding glDeleteVertexArrays or
-  // glDeleteBuffers. The meshes we store are "canonical" meshes. Even if a
-  // particular GeometryId is removed, it was only referencing its corresponding
-  // canonical mesh. We keep all canonical meshes alive for the lifetime of the
-  // OpenGL context for convenient reuse.
+  return AddGlGeometry(geometry);
+}
+
+int RenderEngineGl::AddGlGeometry(const OpenGlGeometry& geometry) {
+  geometry.throw_if_undefined(
+      "RenderEngineGl: OpenGL geometry has some invalid objects");
+  const std::array<GLuint, 2> buffers{geometry.vertex_buffer,
+                                      geometry.index_buffer};
+  buffer_use_counts_->Increment(buffers);
+  if (!free_geometry_indices_.empty()) {
+    const int index = free_geometry_indices_.back();
+    free_geometry_indices_.pop_back();
+    geometries_[index] = geometry;
+    return index;
+  }
   const int index = ssize(geometries_);
   geometries_.push_back(geometry);
   return index;
+}
+
+void RenderEngineGl::ReleaseGlGeometry(int index) {
+  DRAKE_ASSERT(opengl_context_->IsCurrent());
+  OpenGlGeometry& geometry = geometries_.at(index);
+  DRAKE_DEMAND(geometry.is_defined());
+  glDeleteVertexArrays(1, &geometry.vertex_array);
+  // A glTF file's primitives can share a buffer, so the vertex and index
+  // buffers are counted separately.
+  const std::array<GLuint, 2> buffers{geometry.vertex_buffer,
+                                      geometry.index_buffer};
+  buffer_use_counts_->Decrement(buffers, &DeleteBuffer);
+  geometry = OpenGlGeometry{};
+  free_geometry_indices_.push_back(index);
+}
+
+void RenderEngineGl::EvictCachedMeshes(const std::string& key) {
+  // TODO(ntfshard): Textures registered with texture_library_ for the
+  // evicted meshes (in-memory images, including those embedded in glTF files)
+  // are not released.
+  auto iter = meshes_.find(key);
+  DRAKE_DEMAND(iter != meshes_.end());
+  DRAKE_DEMAND(mesh_key_uses_.at(key) == 0);
+  for (const RenderGlMesh& mesh : iter->second) {
+    ReleaseGlGeometry(mesh.mesh_index);
+  }
+  meshes_.erase(iter);
+  mesh_key_uses_.erase(key);
 }
 
 void RenderEngineGl::UpdateVertexArrays() {
   DRAKE_ASSERT(opengl_context_->IsCurrent());
   // Creating the vertex arrays requires the context to be bound.
   for (auto& geometry : geometries_) {
-    // The only geometries in geometries_ should be fully defined.
-    DRAKE_ASSERT(geometry.is_defined());
+    // Slots freed by ReleaseGlGeometry() are undefined; skip them.
+    if (!geometry.is_defined()) continue;
     CreateVertexArray(&geometry);
   }
 }
