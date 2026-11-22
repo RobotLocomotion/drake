@@ -104,6 +104,7 @@ drake_py_library(
 drake_pybind_library(
     name = "lcm_py",
     cc_deps = [
+        ":lcm_type_hook_pybind",
         "//bindings/generated_docstrings:lcm",
         "//bindings/pydrake/common:ensure_callback_lifetime_pybind",
         "//bindings/pydrake/common:serialize_pybind",
@@ -114,6 +115,16 @@ drake_pybind_library(
         ":module_py",
     ],
     py_srcs = ["_lcm_extra.py"],
+)
+
+drake_cc_library(
+    name = "lcm_type_hook_pybind",
+    hdrs = ["lcm_type_hook_pybind.h"],
+    declare_installed_headers = False,
+    deps = [
+        ":pydrake_pybind",
+        "//:drake_shared_library",
+    ],
 )
 
 drake_cc_library(

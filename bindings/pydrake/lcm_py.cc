@@ -4,6 +4,7 @@
 #include "drake/bindings/generated_docstrings/lcm.h"
 #include "drake/bindings/pydrake/common/ensure_callback_lifetime_pybind.h"
 #include "drake/bindings/pydrake/common/serialize_pybind.h"
+#include "drake/bindings/pydrake/lcm_type_hook_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/lcm/drake_lcm_interface.h"
