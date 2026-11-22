@@ -3,12 +3,15 @@ Test bindings of LCM integration with the Systems framework.
 """
 
 import collections
+import gc
 import unittest
+import weakref
 
 import numpy as np
 
 import drake as drake_lcmtypes
 from drake import lcmt_header, lcmt_quaternion
+from pydrake.common import _binder
 from pydrake.common.value import Value
 from pydrake.lcm import DrakeLcm, DrakeLcmParams, Subscriber
 from pydrake.systems.analysis import Simulator
@@ -143,6 +146,56 @@ class TestSystemsLcm(unittest.TestCase):
         self.assertIsInstance(
             buses.Find("Config test", "foo"), mut.LcmInterfaceSystem
         )
+
+    # TODO(#25284) Remove this skip once the result of LcmBuses.Find() is usable
+    # with nanobind (the object it returns crashes when used).
+    @unittest.skipIf(_binder == "nanobind", "Find() result is not yet usable")
+    def test_bus_outlives_builder(self):
+        # A bus (and the LcmBuses it came from) keeps the builder, and thereby
+        # the memory that owns the bus, alive.
+        builder = DiagramBuilder()
+        buses = mut.ApplyLcmBusConfig(
+            {"foo": DrakeLcmParams(lcm_url="memq://1")}, builder
+        )
+        bus = buses.Find("Lifetime test", "foo")
+        del builder, buses
+        gc.collect()
+        self.assertEqual(bus.get_lcm_url(), "memq://1")
+
+    @unittest.skipIf(_binder == "nanobind", "Find() result is not yet usable")
+    def test_bus_outlives_diagram(self):
+        # Ditto, once the builder has built a diagram that took the buses.
+        builder = DiagramBuilder()
+        buses = mut.ApplyLcmBusConfig(
+            {"foo": DrakeLcmParams(lcm_url="memq://1")}, builder
+        )
+        bus = buses.Find("Lifetime test", "foo")
+        diagram = builder.Build()
+        del builder, buses, diagram
+        gc.collect()
+        self.assertEqual(bus.get_lcm_url(), "memq://1")
+
+    def test_bus_stored_in_system_is_collectable(self):
+        # A system that stores a bus must not be kept alive forever by the
+        # links that keep the bus's owner alive.
+        class StoresBus(LeafSystem):
+            def __init__(self, bus):
+                super().__init__()
+                self.bus = bus
+
+        refs = []
+        for _ in range(10):
+            builder = DiagramBuilder()
+            buses = mut.ApplyLcmBusConfig(
+                {"foo": DrakeLcmParams(lcm_url="memq://1")}, builder
+            )
+            system = StoresBus(buses.Find("Lifetime test", "foo"))
+            refs.append(weakref.ref(system))
+            builder.AddSystem(system)
+            builder.Build()
+            del system, buses, builder
+        gc.collect()
+        self.assertEqual([r() for r in refs], [None] * len(refs))
 
     def _process_event(self, dut):
         # Use a Simulator to invoke the update event on `dut`.  (Wouldn't it be

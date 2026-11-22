@@ -243,6 +243,7 @@ drake_pybind_library(
         ":lcm_pybind",
         "//bindings/generated_docstrings:lcm",
         "//bindings/generated_docstrings:systems_lcm",
+        "//bindings/pydrake/common:ref_cycle_pybind",
     ],
     cc_srcs = [
         "lcm_py.cc",

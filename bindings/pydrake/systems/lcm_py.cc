@@ -7,6 +7,7 @@
 
 #include "drake/bindings/generated_docstrings/lcm.h"
 #include "drake/bindings/generated_docstrings/systems_lcm.h"
+#include "drake/bindings/pydrake/common/ref_cycle_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/systems/lcm_py_bind_cpp_serializers.h"
 #include "drake/lcm/drake_lcm.h"
@@ -167,7 +168,7 @@ PYDRAKE_MODULE(lcm, m) {
   {
     using Class = LcmBuses;
     constexpr auto& cls_doc = doc.LcmBuses;
-    class_<Class> cls(m, "LcmBuses");
+    class_<Class> cls(m, "LcmBuses", py::dynamic_attr());
     cls  // BR
         .def_ro_static("kLcmUrlMemqNull", &Class::kLcmUrlMemqNull
             // TODO(jwnimmer-tri) The `cls_doc.kLcmUrlMemqNull.doc` docstring
@@ -177,8 +178,12 @@ PYDRAKE_MODULE(lcm, m) {
             )
         .def(py::init(), cls_doc.ctor.doc)
         .def("size", &Class::size, cls_doc.size.doc)
+        // The bus is owned by the builder (and later the diagram) that the
+        // LcmBuses aliases into, so keep the LcmBuses (and thereby the builder)
+        // alive for as long as the bus is. See ApplyLcmBusConfig, below.
         .def("Find", &Class::Find, py::arg("description_of_caller"),
-            py::arg("bus_name"), py_rvp::reference_internal, cls_doc.Find.doc)
+            py::arg("bus_name"), py_rvp::reference, internal::ref_cycle<0, 1>(),
+            cls_doc.Find.doc)
         .def("GetAllBusNames", &Class::GetAllBusNames,
             cls_doc.GetAllBusNames.doc)
         .def("Add", &Class::Add, py::arg("bus_name"), py::arg("bus"),
@@ -190,7 +195,12 @@ PYDRAKE_MODULE(lcm, m) {
       py::overload_cast<
           const std::map<std::string, std::optional<DrakeLcmParams>>&,
           systems::DiagramBuilder<double>*>(&ApplyLcmBusConfig),
-      py::arg("lcm_buses"), py::arg("builder"), doc.ApplyLcmBusConfig.doc);
+      py::arg("lcm_buses"), py::arg("builder"),
+      // The LcmBuses aliases into memory owned by the builder, so keep the
+      // builder alive for as long as the LcmBuses is. Unlike keep_alive, this
+      // cycle is visible to garbage collection, so a system that stores a bus
+      // and is added to the builder can still be collected.
+      internal::ref_cycle<0, 2>(), doc.ApplyLcmBusConfig.doc);
 
   {
     using Class = LcmPublisherSystem;
