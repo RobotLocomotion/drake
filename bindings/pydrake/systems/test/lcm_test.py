@@ -3,7 +3,9 @@ Test bindings of LCM integration with the Systems framework.
 """
 
 import collections
+import gc
 import unittest
+import weakref
 
 import numpy as np
 
@@ -140,6 +142,28 @@ class TestSystemsLcm(unittest.TestCase):
         self.assertIs(dut.Find("Basic test", "default"), lcm)
         self.assertEqual(len(dut.GetAllBusNames()), 1)
 
+    def test_added_bus_is_collectable(self):
+        # Control: Add() alone (no Find()) must not prevent collection.
+        buses = mut.LcmBuses()
+        lcm = DrakeLcm()
+        buses.Add("default", lcm)
+        refs = [weakref.ref(buses), weakref.ref(lcm)]
+        del buses, lcm
+        gc.collect()
+        self.assertEqual([r() for r in refs], [None, None])
+
+    def test_added_and_found_bus_is_collectable(self):
+        # Find() must not make an Add()ed bus uncollectable.
+        buses = mut.LcmBuses()
+        lcm = DrakeLcm()
+        buses.Add("default", lcm)
+        found = buses.Find("Lifetime test", "default")
+        self.assertIs(found, lcm)
+        refs = [weakref.ref(buses), weakref.ref(lcm)]
+        del buses, lcm, found
+        gc.collect()
+        self.assertEqual([r() for r in refs], [None, None])
+
     def test_bus_config(self):
         bus_config = {
             "foo": DrakeLcmParams(),
@@ -176,6 +200,87 @@ class TestSystemsLcm(unittest.TestCase):
         # A bus configured as None is a no-op bus.
         noop = buses.Find("Config test", "quux")
         self.assertEqual(noop.get_lcm_url(), mut.LcmBuses.kLcmUrlMemqNull)
+
+    def test_bus_keeps_builder_alive(self):
+        # A bus (and the LcmBuses it came from) keeps the builder alive. This
+        # checks the lifetime directly, without using the bus.
+        builder = DiagramBuilder()
+        buses = mut.ApplyLcmBusConfig(
+            {"foo": DrakeLcmParams(lcm_url="memq://1")}, builder
+        )
+        bus = buses.Find("Lifetime test", "foo")
+        builder_ref = weakref.ref(builder)
+        del builder, buses
+        gc.collect()
+        self.assertIsNotNone(builder_ref())
+        del bus
+        gc.collect()
+        self.assertIsNone(builder_ref())
+
+    def test_bus_keeps_diagram_alive(self):
+        # Ditto, once the builder has built a diagram that took the buses.
+        builder = DiagramBuilder()
+        buses = mut.ApplyLcmBusConfig(
+            {"foo": DrakeLcmParams(lcm_url="memq://1")}, builder
+        )
+        bus = buses.Find("Lifetime test", "foo")
+        diagram = builder.Build()
+        builder_ref = weakref.ref(builder)
+        diagram_ref = weakref.ref(diagram)
+        del builder, buses, diagram
+        gc.collect()
+        self.assertIsNotNone(builder_ref())
+        self.assertIsNotNone(diagram_ref())
+        del bus
+        gc.collect()
+        self.assertIsNone(builder_ref())
+        self.assertIsNone(diagram_ref())
+
+    def test_bus_outlives_builder(self):
+        # A bus (and the LcmBuses it came from) keeps the builder, and thereby
+        # the memory that owns the bus, alive.
+        builder = DiagramBuilder()
+        buses = mut.ApplyLcmBusConfig(
+            {"foo": DrakeLcmParams(lcm_url="memq://1")}, builder
+        )
+        bus = buses.Find("Lifetime test", "foo")
+        del builder, buses
+        gc.collect()
+        self.assertEqual(bus.get_lcm_url(), "memq://1")
+
+    def test_bus_outlives_diagram(self):
+        # Ditto, once the builder has built a diagram that took the buses.
+        builder = DiagramBuilder()
+        buses = mut.ApplyLcmBusConfig(
+            {"foo": DrakeLcmParams(lcm_url="memq://1")}, builder
+        )
+        bus = buses.Find("Lifetime test", "foo")
+        diagram = builder.Build()
+        del builder, buses, diagram
+        gc.collect()
+        self.assertEqual(bus.get_lcm_url(), "memq://1")
+
+    def test_bus_stored_in_system_is_collectable(self):
+        # A system that stores a bus must not be kept alive forever by the
+        # links that keep the bus's owner alive.
+        class StoresBus(LeafSystem):
+            def __init__(self, bus):
+                super().__init__()
+                self.bus = bus
+
+        refs = []
+        for _ in range(10):
+            builder = DiagramBuilder()
+            buses = mut.ApplyLcmBusConfig(
+                {"foo": DrakeLcmParams(lcm_url="memq://1")}, builder
+            )
+            system = StoresBus(buses.Find("Lifetime test", "foo"))
+            refs.append(weakref.ref(system))
+            builder.AddSystem(system)
+            builder.Build()
+            del system, buses, builder
+        gc.collect()
+        self.assertEqual([r() for r in refs], [None] * len(refs))
 
     def _process_event(self, dut):
         # Use a Simulator to invoke the update event on `dut`.  (Wouldn't it be
