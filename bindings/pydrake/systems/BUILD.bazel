@@ -175,6 +175,7 @@ drake_pybind_library(
     name = "sensors_py",
     cc_deps = [
         "//bindings/generated_docstrings:systems_sensors",
+        "//bindings/pydrake:lcm_type_hook_pybind",
         "//bindings/pydrake/common:cpp_template_pybind",
         "//bindings/pydrake/common:default_scalars_pybind",
         "//bindings/pydrake/common:deprecation_pybind",
@@ -243,6 +244,7 @@ drake_pybind_library(
         ":lcm_pybind",
         "//bindings/generated_docstrings:lcm",
         "//bindings/generated_docstrings:systems_lcm",
+        "//bindings/pydrake:lcm_type_hook_pybind",
     ],
     cc_srcs = [
         "lcm_py.cc",

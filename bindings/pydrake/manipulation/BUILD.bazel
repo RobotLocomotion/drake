@@ -27,6 +27,7 @@ drake_pybind_library(
         "//bindings/generated_docstrings:manipulation_kuka_iiwa",
         "//bindings/generated_docstrings:manipulation_schunk_wsg",
         "//bindings/generated_docstrings:manipulation_util",
+        "//bindings/pydrake:lcm_type_hook_pybind",
         "//bindings/pydrake/common:eigen_pybind",
         "//bindings/pydrake/common:ref_cycle_pybind",
         "//bindings/pydrake/common:serialize_pybind",

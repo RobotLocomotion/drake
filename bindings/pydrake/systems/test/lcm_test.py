@@ -9,8 +9,14 @@ import numpy as np
 
 import drake as drake_lcmtypes
 from drake import lcmt_header, lcmt_quaternion
+from pydrake.common import _binder
 from pydrake.common.value import Value
-from pydrake.lcm import DrakeLcm, DrakeLcmParams, Subscriber
+from pydrake.lcm import (
+    DrakeLcm,
+    DrakeLcmInterface,
+    DrakeLcmParams,
+    Subscriber,
+)
 from pydrake.systems.analysis import Simulator
 from pydrake.systems.framework import (
     DiagramBuilder,
@@ -125,7 +131,9 @@ class TestSystemsLcm(unittest.TestCase):
         dut = mut.LcmBuses()
         dut.Add("default", DrakeLcm())
         self.assertEqual(dut.size(), 1)
-        self.assertIsInstance(dut.Find("Basic test", "default"), DrakeLcm)
+        found = dut.Find("Basic test", "default")
+        self.assertIsInstance(found, DrakeLcm)
+        self.assertEqual(found.get_lcm_url(), DrakeLcm().get_lcm_url())
         self.assertEqual(len(dut.GetAllBusNames()), 1)
 
     def test_bus_config(self):
@@ -140,9 +148,30 @@ class TestSystemsLcm(unittest.TestCase):
         builder = DiagramBuilder()
         buses = mut.ApplyLcmBusConfig(bus_config, builder)
         self.assertEqual(buses.size(), 3)
-        self.assertIsInstance(
-            buses.Find("Config test", "foo"), mut.LcmInterfaceSystem
+        lcm = buses.Find("Config test", "foo")
+        # The result must be usable, not merely the right type.
+        self.assertEqual(lcm.get_lcm_url(), "memq://1")
+        mut.LcmSubscriberSystem.Make(
+            channel="TEST_CHANNEL", lcm_type=lcmt_quaternion, lcm=lcm
         )
+        if _binder == "nanobind":
+            # The result is a plain DrakeLcmInterface, so it is accepted
+            # anywhere that one is wanted.
+            self.assertIsInstance(lcm, DrakeLcmInterface)
+            source = builder.AddSystem(ConstantVectorSource(np.zeros(4)))
+            mut.LcmScopeSystem.AddToBuilder(
+                builder=builder,
+                lcm=lcm,
+                signal=source.get_output_port(0),
+                channel="TEST_CHANNEL",
+                publish_period=0.001,
+            )
+        else:
+            self.assertIsInstance(lcm, mut.LcmInterfaceSystem)
+
+        # A bus configured as None is a no-op bus.
+        noop = buses.Find("Config test", "quux")
+        self.assertEqual(noop.get_lcm_url(), mut.LcmBuses.kLcmUrlMemqNull)
 
     def _process_event(self, dut):
         # Use a Simulator to invoke the update event on `dut`.  (Wouldn't it be
