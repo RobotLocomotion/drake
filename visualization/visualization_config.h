@@ -40,7 +40,13 @@ struct VisualizationConfig {
   /** The duration (in seconds) between published LCM messages that update
   visualization. (To help avoid small simulation time steps, we use a default
   period that has an exact representation in binary floating point;
-  see drake#15021 for details.) */
+  see drake#15021 for details.)
+
+  If zero, the visualizers instead update on every simulator step. That does
+  not constrain the integrator's step size, so it does not change the
+  simulation (unlike a positive period). Updates are then as frequent as the
+  simulator's steps, including steps forced by discrete updates or other
+  events, which can be much more often than a typical period. */
   double publish_period{1 / 64.0};
 
   /** Whether to show illustration geometry. */
