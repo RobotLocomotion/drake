@@ -391,9 +391,10 @@ TEST_F(IcfExternalSystemsLinearizerTest, DesiredStateInput) {
 
   // Check that the desired state feedback came out as expected. Unfortunately
   // there's not much we can do here other than copy-paste the same formula as
-  // is performed inside the implementation.
+  // is performed inside the implementation. (CENIC's integrator tests check
+  // these terms independently, by simulating velocity and position servos.)
   Vector2d K_expected = Vector2d::Constant(Kp * h + Kd);
-  Vector2d b_expected = -Kp * (q0 - qd) - Kd * vd;
+  Vector2d b_expected = -Kp * (q0 - qd) + Kd * vd;
   EXPECT_TRUE(CompareMatrices(result.actuation_feedback->K, K_expected, 1e-8));
   EXPECT_TRUE(CompareMatrices(result.actuation_feedback->b, b_expected, 1e-8));
 
@@ -445,7 +446,7 @@ TEST_F(IcfExternalSystemsLinearizerTest, DesiredStateInputExplicit) {
   ASSERT_TRUE(result.actuation_feedback.has_value());
   EXPECT_FALSE(result.external_feedback.has_value());
   const Vector2d K_expected = Vector2d::Constant(Kp * h + Kd);
-  const Vector2d b_expected = -Kp * (q0 - qd) - Kd * vd + u;
+  const Vector2d b_expected = -Kp * (q0 - qd) + Kd * vd + u;
   EXPECT_TRUE(CompareMatrices(result.actuation_feedback->K, K_expected, 1e-14));
   EXPECT_TRUE(CompareMatrices(result.actuation_feedback->b, b_expected, 1e-14));
 }

@@ -233,7 +233,7 @@ std::tuple<bool, bool> IcfExternalSystemsLinearizer<T>::LinearizeExternalSystem(
       // Relating that to our chosen linearization τᵤ(v) ≈ clamp(-Kᵤ⋅v + bᵤ; e),
       // we can read out the terms:
       Ku[joint.velocity_start()] += h * Kp + Kd;
-      bu[joint.velocity_start()] += -Kp * (q0 - qd) - Kd * vd;
+      bu[joint.velocity_start()] += -Kp * (q0 - qd) + Kd * vd;
     }
   }
 
