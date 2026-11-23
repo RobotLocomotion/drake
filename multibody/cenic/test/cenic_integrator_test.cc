@@ -1440,45 +1440,82 @@ GTEST_TEST(CenicIntegrator, ExplicitExternalInputsWithErrorControl) {
                               MatrixCompareType::relative));
 }
 
-/* Checks that an actuator's PD controller drives its joint toward the desired
-velocity, not away from it. A pure velocity servo (Kp = 0) spinning a body on a
-pin must settle at the desired velocity vd, whether the external inputs are
-treated implicitly or explicitly. With the sign of the Kd⋅vd term flipped
-(#25289), it settled at -vd instead. */
+/* Makes a plant with a body spinning on a pin joint named "pin", driven by an
+actuator with PD gains Kp and Kd. The body's moment of inertia about the pin is
+I = 0.004 kg⋅m², and the pin is vertical, so gravity exerts no torque about it.
+*/
+std::unique_ptr<MultibodyPlant<double>> MakeServoedPin(double Kp, double Kd) {
+  auto plant = std::make_unique<MultibodyPlant<double>>(0.0);
+  const RigidBody<double>& body = plant->AddRigidBody(
+      "body", SpatialInertia<double>::SolidSphereWithMass(1.0, 0.1));
+  const auto& pin =
+      plant->AddJoint<RevoluteJoint>("pin", plant->world_body(), std::nullopt,
+                                     body, std::nullopt, Vector3d::UnitZ());
+  plant
+      ->get_mutable_joint_actuator(
+          plant->AddJointActuator("motor", pin).index())
+      .set_controller_gains({.p = Kp, .d = Kd});
+  plant->SetUseSampledOutputPorts(true);
+  plant->Finalize();
+  return plant;
+}
+
+/* Checks that an actuator's PD controller drives its joint to the desired
+velocity (#25289). A pure velocity servo (Kp = 0) with a constant feedforward
+torque u settles where the two balance, at vd + u/Kd. That holds whether the
+external inputs are treated implicitly or explicitly; the feedforward torque
+makes the two treatments take different paths there. */
 GTEST_TEST(CenicIntegrator, DesiredVelocity) {
+  const double Kd = 1.0;
+  const double vd = 1.0;
+  const double u = 0.5;
   for (const bool explicit_inputs : {false, true}) {
     SCOPED_TRACE(fmt::format("explicit_inputs = {}", explicit_inputs));
-    MultibodyPlant<double> plant(0.0);
-    const RigidBody<double>& body = plant.AddRigidBody(
-        "body", SpatialInertia<double>::SolidSphereWithMass(1.0, 0.1));
-    // The pin is vertical, so gravity exerts no torque about it.
-    const auto& pin =
-        plant.AddJoint<RevoluteJoint>("pin", plant.world_body(), std::nullopt,
-                                      body, std::nullopt, Vector3d::UnitZ());
-    plant
-        .get_mutable_joint_actuator(
-            plant.AddJointActuator("motor", pin).index())
-        .set_controller_gains({.p = 0.0, .d = 1.0});
-    plant.SetUseSampledOutputPorts(true);
-    plant.Finalize();
-
-    Simulator<double> simulator(plant);
+    const std::unique_ptr<MultibodyPlant<double>> plant =
+        MakeServoedPin(0.0, Kd);
+    const auto& pin = plant->GetJointByName<RevoluteJoint>("pin");
+    Simulator<double> simulator(*plant);
     Context<double>& context = simulator.get_mutable_context();
-    const double vd = 1.0;
-    plant.get_desired_state_input_port(default_model_instance())
+    plant->get_desired_state_input_port(default_model_instance())
         .FixValue(&context, Vector2d(0.0, vd));
+    plant->get_actuation_input_port().FixValue(&context, Vector1d(u));
     auto& integrator = simulator.reset_integrator<CenicIntegrator<double>>();
     integrator.set_maximum_step_size(0.01);
     CenicIntegratorParameters params = integrator.GetParameters();
     params.explicit_external_inputs = explicit_inputs;
     integrator.SetParameters(params);
 
-    // The servo's time constant is I/Kd = 0.004 s, so it has long since
-    // settled by t = 1 s, to within about 1e-5 of vd. The flipped sign put it
-    // 2⋅vd away.
+    // The servo's time constant is I/Kd = 0.004 s, so it has settled by
+    // t = 1 s. (The measured residual is 4e-6.)
     simulator.AdvanceTo(1.0);
-    EXPECT_NEAR(pin.get_angular_rate(context), vd, 1e-4);
+    EXPECT_NEAR(pin.get_angular_rate(context), vd + u / Kd, 1e-4);
   }
+}
+
+/* Checks that an actuator's PD controller drives its joint to the desired
+position: a position servo settles at qd. The fixed step is longer than the
+servo's natural period, so it settles only because CENIC's linearization treats
+the servo's stiffness implicitly (the h⋅Kp in Kᵤ); treated explicitly, the
+servo would oscillate with growing amplitude. */
+GTEST_TEST(CenicIntegrator, DesiredPosition) {
+  // The natural period is 2π⋅√(I/Kp) ≈ 0.04 s, and the damping ratio is
+  // Kd/(2⋅√(Kp⋅I)) ≈ 0.8.
+  const double Kp = 100.0;
+  const double Kd = 1.0;
+  const double qd = 0.5;
+  const std::unique_ptr<MultibodyPlant<double>> plant = MakeServoedPin(Kp, Kd);
+  const auto& pin = plant->GetJointByName<RevoluteJoint>("pin");
+  Simulator<double> simulator(*plant);
+  Context<double>& context = simulator.get_mutable_context();
+  plant->get_desired_state_input_port(default_model_instance())
+      .FixValue(&context, Vector2d(qd, 0.0));
+  auto& integrator = simulator.reset_integrator<CenicIntegrator<double>>();
+  integrator.set_maximum_step_size(0.05);
+  integrator.set_fixed_step_mode(true);
+
+  simulator.AdvanceTo(1.0);
+  EXPECT_NEAR(pin.get_angle(context), qd, 1e-6);
+  EXPECT_NEAR(pin.get_angular_rate(context), 0.0, 1e-6);
 }
 
 INSTANTIATE_TEST_SUITE_P(
