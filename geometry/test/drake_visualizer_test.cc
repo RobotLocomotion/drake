@@ -1,6 +1,7 @@
 #include "drake/geometry/drake_visualizer.h"
 
 #include <filesystem>
+#include <limits>
 #include <map>
 #include <memory>
 #include <string>
@@ -953,10 +954,11 @@ TYPED_TEST(DrakeVisualizerTest, AllRolesCanDefineDiffuse) {
 /* Confirms that the documented prerequisites do bad things.  */
 TYPED_TEST(DrakeVisualizerTest, BadParameters) {
   using T = TypeParam;
-  // Zero publish period.
+  // NaN publish period.
   EXPECT_THROW(DrakeVisualizer<T>(&(this->lcm_),
-                                  DrakeVisualizerParams{0, Role::kIllustration,
-                                                        Rgba{1, 1, 1, 1}}),
+                                  DrakeVisualizerParams{
+                                      std::numeric_limits<double>::quiet_NaN(),
+                                      Role::kIllustration, Rgba{1, 1, 1, 1}}),
                std::exception);
 
   // Negative publish period.
@@ -971,6 +973,41 @@ TYPED_TEST(DrakeVisualizerTest, BadParameters) {
                                   DrakeVisualizerParams{0.1, Role::kUnassigned,
                                                         Rgba{1, 1, 1, 1}}),
                std::exception);
+}
+
+/* A zero publish period means publishing on every step, not periodically.  */
+TYPED_TEST(DrakeVisualizerTest, PerStepPublish) {
+  using T = TypeParam;
+  for (const double period : {0.0, this->kPublishPeriod}) {
+    SCOPED_TRACE(fmt::format("publish_period = {}", period));
+    this->ConfigureDiagram({.publish_period = period});
+    auto context = this->diagram_->CreateDefaultContext();
+    const auto& visualizer_context =
+        this->visualizer_->GetMyContextFromRoot(*context);
+    std::unique_ptr<systems::CompositeEventCollection<T>> per_step_events =
+        this->visualizer_->AllocateCompositeEventCollection();
+    this->visualizer_->GetPerStepEvents(visualizer_context,
+                                        per_step_events.get());
+    EXPECT_EQ(per_step_events->HasPublishEvents(), period == 0.0);
+    EXPECT_EQ(this->visualizer_->MapPeriodicEventsByTiming().empty(),
+              period == 0.0);
+  }
+}
+
+/* A zero publish period publishes a draw message after every step the
+ simulator takes.  */
+TYPED_TEST(DrakeVisualizerTest, PerStepPublishMessages) {
+  using T = TypeParam;
+  this->ConfigureDiagram({.publish_period = 0.0});
+  Simulator<T> simulator(*(this->diagram_));
+
+  simulator.AdvanceTo(0.0);
+  this->ProcessMessages();  // Discard the load and initialization messages.
+  for (int i = 1; i <= 3; ++i) {
+    SCOPED_TRACE(fmt::format("AdvanceTo call {}", i));
+    simulator.AdvanceTo(0.1 * i);
+    EXPECT_TRUE(this->ExpectedMessageCount(0, 1));
+  }
 }
 
 /* This confirms that DrakeVisualizer will dispatch a new load message when it
