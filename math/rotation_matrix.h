@@ -767,7 +767,16 @@ class RotationMatrix {
   /// and the identity matrix I (i.e., checks if `‖R ⋅ Rᵀ - I‖∞ <= tolerance`).
   /// @returns `true` if R is a valid rotation matrix.
   static boolean<T> IsValid(const Matrix3<T>& R, double tolerance) {
-    return IsOrthonormal(R, tolerance) && R.determinant() > 0;
+    // Check finiteness explicitly: the orthonormality measure is not reliable
+    // for non-finite elements (Eigen's infinity norm can skip NaN; see #17356).
+    const boolean<T> all_finite =
+        R.unaryExpr([](const T& x) {
+           using std::isfinite;
+           return isfinite(x);
+         }).redux([](const boolean<T>& a, const boolean<T>& b) {
+          return a && b;
+        });
+    return all_finite && IsOrthonormal(R, tolerance) && R.determinant() > 0;
   }
 
   /// Tests if a generic Matrix3 is a proper orthonormal rotation matrix to
