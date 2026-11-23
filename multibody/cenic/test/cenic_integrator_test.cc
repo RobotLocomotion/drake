@@ -1440,6 +1440,47 @@ GTEST_TEST(CenicIntegrator, ExplicitExternalInputsWithErrorControl) {
                               MatrixCompareType::relative));
 }
 
+/* Checks that an actuator's PD controller drives its joint toward the desired
+velocity, not away from it. A pure velocity servo (Kp = 0) spinning a body on a
+pin must settle at the desired velocity vd, whether the external inputs are
+treated implicitly or explicitly. With the sign of the Kd⋅vd term flipped
+(#25289), it settled at -vd instead. */
+GTEST_TEST(CenicIntegrator, DesiredVelocity) {
+  for (const bool explicit_inputs : {false, true}) {
+    SCOPED_TRACE(fmt::format("explicit_inputs = {}", explicit_inputs));
+    MultibodyPlant<double> plant(0.0);
+    const RigidBody<double>& body = plant.AddRigidBody(
+        "body", SpatialInertia<double>::SolidSphereWithMass(1.0, 0.1));
+    // The pin is vertical, so gravity exerts no torque about it.
+    const auto& pin =
+        plant.AddJoint<RevoluteJoint>("pin", plant.world_body(), std::nullopt,
+                                      body, std::nullopt, Vector3d::UnitZ());
+    plant
+        .get_mutable_joint_actuator(
+            plant.AddJointActuator("motor", pin).index())
+        .set_controller_gains({.p = 0.0, .d = 1.0});
+    plant.SetUseSampledOutputPorts(true);
+    plant.Finalize();
+
+    Simulator<double> simulator(plant);
+    Context<double>& context = simulator.get_mutable_context();
+    const double vd = 1.0;
+    plant.get_desired_state_input_port(default_model_instance())
+        .FixValue(&context, Vector2d(0.0, vd));
+    auto& integrator = simulator.reset_integrator<CenicIntegrator<double>>();
+    integrator.set_maximum_step_size(0.01);
+    CenicIntegratorParameters params = integrator.GetParameters();
+    params.explicit_external_inputs = explicit_inputs;
+    integrator.SetParameters(params);
+
+    // The servo's time constant is I/Kd = 0.004 s, so it has long since
+    // settled by t = 1 s, to within about 1e-5 of vd. The flipped sign put it
+    // 2⋅vd away.
+    simulator.AdvanceTo(1.0);
+    EXPECT_NEAR(pin.get_angular_rate(context), vd, 1e-4);
+  }
+}
+
 INSTANTIATE_TEST_SUITE_P(
     AllParamsPendulum, DoublePendulum,
     testing::Combine(testing::Range(0, 3), testing::Range(0, 3),
