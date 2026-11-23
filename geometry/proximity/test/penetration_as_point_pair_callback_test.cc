@@ -14,6 +14,7 @@
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/geometry/proximity/fcl_backend.h"
 #include "drake/geometry/proximity/proximity_utilities.h"
 #include "drake/geometry/proximity/test/fcl_utilities.h"
 #include "drake/math/autodiff.h"
@@ -84,7 +85,7 @@ class PenetrationAsPointPairCallbackTest : public ::testing::Test {
   void SetUp() override {
     auto encode_data = [this](GeometryId id, CollisionObjectd* shape) {
       const EncodedData data(id, true);
-      data.write_to(shape);
+      data.write_to<FclBackend>(shape);
       this->collision_filter_.AddGeometry(data.id(), /* is_anchored = */ false);
     };
     encode_data(id_A_, &sphere_A_);
@@ -528,7 +529,7 @@ TEST_F(PenetrationAsPointPairCallbackTest, UnsupportedHalfSpaceHalfSpace) {
       make_shared<fcl::Halfspaced>(Vector3d{1, 0, 0}, 0));
   const GeometryId hs2_id = GeometryId::get_new_id();
   const EncodedData data(hs2_id, true);
-  data.write_to(&halfspace2);
+  data.write_to<FclBackend>(&halfspace2);
   this->collision_filter_.AddGeometry(data.id(), /* is_anchored = */ false);
   UnsupportedGeometry<double>(this->halfspace_, halfspace2, this->id_halfspace_,
                               hs2_id);

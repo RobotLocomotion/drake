@@ -6,6 +6,7 @@
 #include <fcl/fcl.h>
 #include <gtest/gtest.h>
 
+#include "drake/geometry/proximity/fcl_backend.h"
 #include "drake/geometry/proximity/proximity_utilities.h"
 
 namespace drake {
@@ -55,12 +56,12 @@ GTEST_TEST(CollisionsExistCallback, Exist) {
   collision_filter.AddGeometry(data_C.id(), /* is_anchored = */ false);
 
   CollisionObjectd box_A(make_shared<Boxd>(0.25, 0.3, 0.4));
-  data_A.write_to(&box_A);
+  data_A.write_to<FclBackend>(&box_A);
   CollisionObjectd box_B(make_shared<Boxd>(0.4, 0.3, 0.2));
-  data_B.write_to(&box_B);
+  data_B.write_to<FclBackend>(&box_B);
   CollisionObjectd box_C(make_shared<Boxd>(0.4, 0.3, 0.2));
   box_C.setTranslation(Vector3<double>(1., 1., 1.));
-  data_C.write_to(&box_C);
+  data_C.write_to<FclBackend>(&box_C);
 
   CallbackData data(&collision_filter);
   Callback(&box_A, &box_B, &data);
@@ -95,9 +96,9 @@ GTEST_TEST(CollisionsExistCallback, RespectsCollisionFilter) {
   collision_filter.AddGeometry(data_B.id(), /* is_anchored = */ false);
 
   CollisionObjectd box_A(make_shared<Boxd>(0.25, 0.3, 0.4));
-  data_A.write_to(&box_A);
+  data_A.write_to<FclBackend>(&box_A);
   CollisionObjectd box_B(make_shared<Boxd>(0.4, 0.3, 0.2));
-  data_B.write_to(&box_B);
+  data_B.write_to<FclBackend>(&box_B);
 
   // Make sure the pair collide.
   CallbackData data_before(&collision_filter);
