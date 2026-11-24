@@ -31,6 +31,7 @@ drake_cc_package_library(
         ":matrix_util",
         ":partial_permutation",
         ":quadratic_form",
+        ":real_roots",
         ":soft_min_max",
         ":vector3_util",
         ":wrap_to",
@@ -298,6 +299,15 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "real_roots",
+    srcs = ["real_roots.cc"],
+    hdrs = ["real_roots.h"],
+    deps = [
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
     name = "soft_min_max",
     srcs = ["soft_min_max.cc"],
     hdrs = ["soft_min_max.h"],
@@ -533,6 +543,14 @@ drake_cc_googletest(
     deps = [
         ":geometric_transform",
         "//common/symbolic:expression",
+    ],
+)
+
+drake_cc_googletest(
+    name = "real_roots_test",
+    deps = [
+        ":real_roots",
+        "@fmt",
     ],
 )
 

@@ -27,6 +27,7 @@
 #include "drake/math/quadratic_form.h"
 #include "drake/math/quaternion.h"
 #include "drake/math/random_rotation.h"
+#include "drake/math/real_roots.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/math/rotation_matrix.h"
@@ -657,6 +658,11 @@ void DoScalarIndependentDefinitions(py::module_ m) {
           doc.DiscreteAlgebraicRiccatiEquation.doc_5args)
       .def("RealDiscreteLyapunovEquation", &RealDiscreteLyapunovEquation,
           py::arg("A"), py::arg("Q"), doc.RealDiscreteLyapunovEquation.doc);
+
+  // Real roots of polynomials.
+  m  // BR
+      .def("FindQuadraticRealRoots", &FindQuadraticRealRoots, py::arg("a"),
+          py::arg("b"), py::arg("c"), doc.FindQuadraticRealRoots.doc);
 
   {
     using Class = NumericalGradientMethod;

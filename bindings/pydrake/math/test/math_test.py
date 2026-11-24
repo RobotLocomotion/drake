@@ -655,6 +655,13 @@ class TestMath(unittest.TestCase):
 
         mut.DiscreteAlgebraicRiccatiEquation(A=A, B=B, Q=Q, R=R)
 
+    def test_quadratic_real_roots(self):
+        # The roots come back in ascending order, padded with NaN.
+        roots = mut.FindQuadraticRealRoots(a=1.0, b=-5.0, c=6.0)
+        np.testing.assert_allclose(roots, [2.0, 3.0])
+        roots = mut.FindQuadraticRealRoots(a=1.0, b=0.0, c=1.0)
+        self.assertTrue(np.all(np.isnan(roots)))
+
     def test_compute_numerical_gradient(self):
         option = mut.NumericalGradientOption(
             method=mut.NumericalGradientMethod.kCentral, function_accuracy=1e-15
