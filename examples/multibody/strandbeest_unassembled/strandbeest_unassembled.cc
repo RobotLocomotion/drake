@@ -10,10 +10,11 @@ constraint. The default model, model/TwelveLegs.sdf.xacro, has twelve legs.
 
 The legs are then assembled by optimization: AssembleNearestConfiguration()
 finds the configuration nearest the unassembled one that satisfies every weld.
-That function is not specific to this example; you can copy it for your own
-models. Next, each leg's crank is turned to its phase on the crankshaft by a
-motor that the program adds for the purpose, in a simulation, and locked there.
-Finally, the crankshaft turns and the legs walk the machine along the ground. */
+That function, in assemble_nearest_configuration.h, is not specific to this
+example; you can copy it for your own models. Next, each leg's crank is turned
+to its phase on the crankshaft by a motor that the program adds for the
+purpose, in a simulation, and locked there. Finally, the crankshaft turns and
+the legs walk the machine along the ground. */
 
 #include <algorithm>
 #include <chrono>
@@ -30,16 +31,14 @@ Finally, the crankshaft turns and the legs walk the machine along the ground. */
 #include <gflags/gflags.h>
 
 #include "drake/common/trajectories/piecewise_polynomial.h"
+#include "drake/examples/multibody/strandbeest_unassembled/assemble_nearest_configuration.h"
 #include "drake/geometry/collision_filter_declaration.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/rotation_matrix.h"
-#include "drake/multibody/inverse_kinematics/position_constraint.h"
-#include "drake/multibody/inverse_kinematics/unit_quaternion_constraint.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/tree/revolute_joint.h"
-#include "drake/solvers/mathematical_program.h"
-#include "drake/solvers/solve.h"
+#include "drake/solvers/mathematical_program_result.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/analysis/simulator_gflags.h"
 #include "drake/systems/framework/diagram.h"
@@ -53,6 +52,7 @@ using Eigen::MatrixXd;
 using Eigen::Vector2d;
 using Eigen::Vector3d;
 using Eigen::VectorXd;
+using examples::strandbeest_unassembled::AssembleNearestConfiguration;
 using geometry::SceneGraph;
 using math::RigidTransformd;
 using multibody::AddMultibodyPlantSceneGraph;
@@ -66,11 +66,8 @@ using multibody::Link;
 using multibody::ModelInstanceIndex;
 using multibody::MultibodyPlant;
 using multibody::Parser;
-using multibody::PositionConstraint;
 using multibody::RevoluteJoint;
-using solvers::MathematicalProgram;
 using solvers::MathematicalProgramResult;
-using solvers::VectorXDecisionVariable;
 using systems::Context;
 using systems::Diagram;
 using systems::DiagramBuilder;
@@ -83,11 +80,12 @@ namespace {
 DEFINE_double(simulation_time, 10.0, "Duration of the simulation in seconds.");
 
 DEFINE_double(time_step, 5e-2,
-              "Discrete time step of the MultibodyPlant in seconds, or 0 for a "
-              "continuous plant. Closing the loops takes constraints, so this "
-              "needs a solver that supports them: discrete SAP, which is the "
-              "default here, or the continuous CENIC integrator, via "
-              "--time_step=0 --simulator_integration_scheme=cenic.");
+              "Discrete time step of the MultibodyPlant in seconds. Closing "
+              "the loops takes constraints, which the discrete plant's SAP "
+              "solver enforces. The faster the legs move, the smaller a step "
+              "it takes to keep the loops closed. (A continuous plant, 0, "
+              "would need the CENIC integrator, which is far too slow for the "
+              "larger models; see Drake issue #25293.)");
 
 DEFINE_string(model, "TwelveLegs",
               "Which model in this example's model directory to run: "
@@ -107,9 +105,11 @@ DEFINE_double(assembly_playback_time, 3.0,
               "--simulator_target_realtime_rate.");
 
 DEFINE_bool(interactive, true,
-            "Show the legs as defined and then again once they are assembled, "
-            "waiting for you to press Enter before going on each time. Set "
-            "--nointeractive to run start to finish without stopping.");
+            "Stop three times, waiting for you to press Enter before going on: "
+            "with the legs as defined, unassembled; once they are assembled "
+            "with their cranks lined up; and once the cranks are turned to "
+            "their phases. Set --nointeractive to run start to finish without "
+            "stopping.");
 
 constexpr char kModelDirectory[] =
     "package://drake/examples/multibody/strandbeest_unassembled/model/";
@@ -126,29 +126,6 @@ constexpr multibody::PdControllerGains kCrankMotorGains{.p = 1000.0, .d = 20.0};
 // walk. Then the motors have a while to settle.
 constexpr double kCrankTurningSpeed = 3.0;  // rad/s
 constexpr double kCrankSettlingTime = 0.1;  // seconds
-
-/* Assembles a model whose constraints are not yet satisfied, by moving the
-generalized positions q in `plant_context` to the nearest configuration (the
-smallest sum of squared changes to q) at which every active weld constraint in
-`plant` is satisfied. That includes the welds that Finalize() adds to close
-kinematic loops, as well as any you added yourself. Locked joints stay where
-they are, joints stay within their position limits, and quaternions stay unit
-length. The welds are satisfied to within about `tolerance` meters.
-
-A mechanism with kinematic loops can usually be assembled in more than one way.
-This function finds the way nearest the starting configuration, so describe
-your model so that it starts near the configuration you intend.
-
-Returns the solver's result. On failure, the positions in `plant_context` are
-left as they were.
-
-@throws std::exception if `plant` has constraints other than welds. Satisfying
-the other kinds too is future work.
-
-This is defined below the example's own code, in a section of its own. */
-MathematicalProgramResult AssembleNearestConfiguration(
-    const MultibodyPlant<double>& plant, Context<double>* plant_context,
-    double tolerance = 1.0e-6);
 
 /* Owns the shared state of this example. Run() comes first and is implemented
 in line so that you can begin with the example's story; implementation details
@@ -615,90 +592,15 @@ void StrandbeestUnassembledDemo::ShowMotionFrom(const VectorXd& q_start,
   strandbeest_->SetPositions(&context, q_end);
 }
 
-// =============================================================================
-// A reusable assembler. Nothing below is specific to this example.
-// =============================================================================
-
-MathematicalProgramResult AssembleNearestConfiguration(
-    const MultibodyPlant<double>& plant, Context<double>* plant_context,
-    double tolerance) {
-  if (plant.num_constraints() != plant.num_weld_constraints()) {
-    throw std::logic_error(
-        "AssembleNearestConfiguration() can satisfy only weld constraints.");
-  }
-  const VectorXd q_start = plant.GetPositions(*plant_context);
-  const int nq = plant.num_positions();
-
-  MathematicalProgram prog;
-  const VectorXDecisionVariable q = prog.NewContinuousVariables(nq, "q");
-
-  // Look for the assembled configuration nearest the starting one.
-  prog.AddQuadraticErrorCost(MatrixXd::Identity(nq, nq), q_start, q);
-
-  // Keep the joints within their limits and the locked joints where they are,
-  // and keep any quaternions unit length.
-  prog.AddBoundingBoxConstraint(plant.GetPositionLowerLimits(),
-                                plant.GetPositionUpperLimits(), q);
-  for (JointIndex index : plant.GetJointIndices()) {
-    const Joint<double>& joint = plant.get_joint(index);
-    if (joint.is_locked(*plant_context)) {
-      const int start = joint.position_start();
-      const int count = joint.num_positions();
-      prog.AddBoundingBoxConstraint(q_start.segment(start, count),
-                                    q_start.segment(start, count),
-                                    q.segment(start, count));
-    }
-  }
-  multibody::AddUnitQuaternionConstraintOnPlant(plant, q, &prog);
-
-  // A weld constraint holds frame P, fixed on body A, coincident with frame Q,
-  // fixed on body B. We impose that by requiring three points R to coincide,
-  // each at the same coordinates r in both P and Q: the frames' origins, and
-  // points a meter along their x and y axes. When three points that are not
-  // in a line coincide, so do the frames.
-  //
-  // Each point's coordinates are held within `tolerance` rather than exactly.
-  // A weld amounts to six conditions, but in a planar mechanism three of them
-  // hold automatically, so stating them all as equalities would be redundant.
-  // Some solvers (IPOPT, for one) give up on a problem with more equalities
-  // than unknowns; narrow inequalities like these don't trouble them.
-  //
-  // N.B. MultibodyPlant does not yet offer a public way to ask for the frames
-  // of its weld constraints, so this uses get_weld_constraint_specs(), which is
-  // marked "(Internal use only)".
-  const Vector3d slack = Vector3d::Constant(tolerance);
-  for (const auto& [id, weld] : plant.get_weld_constraint_specs()) {
-    if (!plant.GetConstraintActiveStatus(*plant_context, id)) continue;
-    const Frame<double>& A = plant.get_body(weld.body_A).body_frame();
-    const Frame<double>& B = plant.get_body(weld.body_B).body_frame();
-    for (const Vector3d& r :
-         {Vector3d(0, 0, 0), Vector3d(1, 0, 0), Vector3d(0, 1, 0)}) {
-      const Vector3d p_AR = weld.X_AP * r;  // Where R should be on body A.
-      const Vector3d p_BR = weld.X_BQ * r;  // Where R is on body B.
-      prog.AddConstraint(
-          std::make_shared<PositionConstraint>(
-              &plant, A, p_AR - slack, p_AR + slack, B, p_BR, plant_context),
-          q);
-    }
-  }
-
-  const MathematicalProgramResult result = solvers::Solve(prog, q_start);
-  // The constraints were evaluated using `plant_context`, so it holds whatever
-  // positions were tried last. Set them explicitly either way.
-  plant.SetPositions(plant_context,
-                     result.is_success() ? result.GetSolution(q) : q_start);
-  return result;
-}
-
 }  // namespace
 }  // namespace drake
 
 int main(int argc, char* argv[]) {
   gflags::SetUsageMessage(
-      "A Strandbeest leg demo demonstrating MultibodyPlant's automatic "
-      "modeling of closed kinematic loops, with assembly, for a model file "
-      "that describes the leg as unassembled parts. Open the indicated URL to "
-      "see the Meshcat visualization.");
+      "A Strandbeest demo demonstrating MultibodyPlant's automatic modeling "
+      "of closed kinematic loops, with assembly, for model files that "
+      "describe the legs as unassembled parts. Use --model to choose how many "
+      "legs. Open the indicated URL to see the Meshcat visualization.");
   // Changes the default realtime rate to 1X, so the visualization looks
   // realistic. Otherwise, it finishes too fast. Users can still change it on
   // command line, e.g., "--simulator_target_realtime_rate=0.5" to slow it down.
