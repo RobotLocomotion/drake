@@ -31,6 +31,7 @@ primary link two shadows. */
 #include <utility>
 #include <vector>
 
+#include <fmt/format.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/autodiff.h"
@@ -1267,6 +1268,51 @@ GTEST_TEST(ClosedTopologyTest, ShadowFrameKeepsItsModelInstanceWhenCloned) {
   EXPECT_EQ(
       plant_ad->GetFrameByName(shadow_frame.name(), rocker_instance).index(),
       shadow_frame.index());
+}
+
+// A shadow frame stands in for the user's frame on the primary link, so it
+// reports that frame's implementation-detail flag, also after cloning.
+GTEST_TEST(ClosedTopologyTest, ShadowFrameReportsItsSourceFramesFlag) {
+  for (const bool flagged : {false, true}) {
+    SCOPED_TRACE(fmt::format("flagged = {}", flagged));
+    MultibodyPlant<double> plant(0.0 /* continuous */);
+    const SpatialInertia<double> M = SpatialInertia<double>::SolidCubeWithMass(
+        1.0 /* mass */, 0.1 /* length */);
+    const Link<double>& driver = plant.AddRigidBody("driver", M);
+    const Link<double>& coupler = plant.AddRigidBody("coupler", M);
+    const Link<double>& rocker = plant.AddRigidBody("rocker", M);
+    const Vector3<double> axis = Vector3<double>::UnitY();
+    plant.AddJoint<RevoluteJoint>("world_driver", plant.world_body(), {},
+                                  driver, {}, axis);
+    plant.AddJoint<RevoluteJoint>("world_rocker", plant.world_body(), {},
+                                  rocker, {}, axis);
+    plant.AddJoint<RevoluteJoint>("driver_coupler", driver, {}, coupler, {},
+                                  axis);
+    auto frame_on_coupler = std::make_unique<FixedOffsetFrame<double>>(
+        "loop_frame", coupler.body_frame(), math::RigidTransformd::Identity());
+    frame_on_coupler->set_is_implementation_detail(flagged);
+    const Frame<double>& loop_frame =
+        plant.AddFrame(std::move(frame_on_coupler));
+    plant.AddJoint(std::make_unique<RevoluteJoint<double>>(
+        "coupler_rocker", loop_frame, rocker.body_frame(), axis));
+    plant.Finalize();
+
+    const RetargetedJoint retargeted = GetSoleRetargetedJoint(plant);
+    ASSERT_NE(retargeted.joint, nullptr);
+    ASSERT_TRUE(retargeted.moved_parent);
+    const Frame<double>& shadow_frame =
+        retargeted.joint->effective_frame_on_parent();
+    ASSERT_NE(&shadow_frame, &loop_frame);
+    EXPECT_EQ(shadow_frame.is_implementation_detail(), flagged);
+    EXPECT_EQ(shadow_frame.ShallowClone()->is_implementation_detail(), flagged);
+
+    std::unique_ptr<MultibodyPlant<AutoDiffXd>> plant_ad =
+        systems::System<double>::ToAutoDiffXd(plant);
+    EXPECT_EQ(plant_ad->GetJointByName("coupler_rocker")
+                  .effective_frame_on_parent()
+                  .is_implementation_detail(),
+              flagged);
+  }
 }
 
 /* Returns the sole ephemeral weld constraint spec in `plant`, i.e. the one

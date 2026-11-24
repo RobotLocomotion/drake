@@ -656,6 +656,7 @@ class TestPlant(unittest.TestCase):
 
         self.assertIsInstance(frame, Frame)
         self._test_multibody_tree_element_mixin(T, frame)
+        self.assertFalse(frame.is_implementation_detail())
 
         self.assertIsInstance(frame.body(), RigidBody_[T])
         self.assertIsInstance(frame.is_world_frame(), bool)

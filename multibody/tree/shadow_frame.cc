@@ -14,8 +14,12 @@ template <typename T>
 ShadowFrame<T>::ShadowFrame(const std::string& name, const Link<T>& shadow_link,
                             const Frame<T>& source_frame,
                             std::optional<ModelInstanceIndex> model_instance)
-    : Frame<T>(name, shadow_link, model_instance),
-      source_frame_(source_frame) {}
+    : Frame<T>(name, shadow_link, model_instance), source_frame_(source_frame) {
+  // A shadow frame stands in for its source frame, so it is an implementation
+  // detail exactly when the source frame is. Clones get this from their
+  // (already cloned) source frame.
+  this->set_is_implementation_detail(source_frame.is_implementation_detail());
+}
 
 template <typename T>
 ShadowFrame<T>::~ShadowFrame() = default;

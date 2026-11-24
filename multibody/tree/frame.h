@@ -5,6 +5,7 @@
 #include <string>
 
 #include "drake/common/autodiff.h"
+#include "drake/common/drake_throw.h"
 #include "drake/common/nice_type_name.h"
 #include "drake/multibody/tree/frame_body_pose_cache.h"
 #include "drake/multibody/tree/multibody_element.h"
@@ -97,6 +98,15 @@ class Frame : public MultibodyElement<T> {
 
   /// Returns the name of this frame. The name will never be empty.
   const std::string& name() const { return name_; }
+
+  /// Returns true if the code that created this frame marked it as an
+  /// implementation detail of the model (for example, a parser's offset frame
+  /// for a joint) rather than something the user authored. Consumers can use
+  /// the flag to keep such frames out of user-facing views of the model. The
+  /// value is fixed before the frame is added to a MultibodyTree. It is
+  /// unrelated to is_ephemeral(), which marks elements added during
+  /// Finalize(). A ShadowFrame reports the value of the frame it stands in for.
+  bool is_implementation_detail() const { return is_implementation_detail_; }
 
   /// Returns scoped name of this frame. Neither of the two pieces of the name
   /// will be empty (the scope name and the element name).
@@ -598,6 +608,16 @@ class Frame : public MultibodyElement<T> {
         name_(internal::DeprecateWhenEmptyName(name, "Frame")),
         link_(link) {}
 
+  /// (Internal use only) Sets the value reported by
+  /// is_implementation_detail(). A derived class that supports the flag must
+  /// also copy it when it is cloned.
+  /// @throws std::exception if this frame has already been added to a
+  /// MultibodyTree.
+  void set_is_implementation_detail(bool value) {
+    DRAKE_THROW_UNLESS(!this->has_parent_tree());
+    is_implementation_detail_ = value;
+  }
+
   /// Called by DoDeclareParameters(). Derived classes may choose to override
   /// to declare their sub-class specific parameters.
   virtual void DoDeclareFrameParameters(internal::MultibodyTreeSystem<T>*) {}
@@ -681,6 +701,10 @@ class Frame : public MultibodyElement<T> {
 
   // The link to which this frame is attached.
   const Link<T>& link_;
+
+  // Set only by the code that creates the frame, before it is added to a tree.
+  // Subclasses that support it copy it when cloned.
+  bool is_implementation_detail_{false};
 };
 
 }  // namespace multibody

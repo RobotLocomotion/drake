@@ -2899,6 +2899,19 @@ See also:
 R"""(Returns true if ``this`` is the RigidBodyFrame (LinkFrame) of the
 associated RigidBody (Link). This is a synonym for is_link_frame().)""";
         } is_body_frame;
+        // Symbol: drake::multibody::Frame::is_implementation_detail
+        struct /* is_implementation_detail */ {
+          // Source: drake/multibody/tree/frame.h
+          const char* doc =
+R"""(Returns true if the code that created this frame marked it as an
+implementation detail of the model (for example, a parser's offset
+frame for a joint) rather than something the user authored. Consumers
+can use the flag to keep such frames out of user-facing views of the
+model. The value is fixed before the frame is added to a
+MultibodyTree. It is unrelated to is_ephemeral(), which marks elements
+added during Finalize(). A ShadowFrame reports the value of the frame
+it stands in for.)""";
+        } is_implementation_detail;
         // Symbol: drake::multibody::Frame::is_link_frame
         struct /* is_link_frame */ {
           // Source: drake/multibody/tree/frame.h
@@ -2936,6 +2949,18 @@ Raises:
     RuntimeError if this element is not associated with a
     MultibodyPlant.)""";
         } scoped_name;
+        // Symbol: drake::multibody::Frame::set_is_implementation_detail
+        struct /* set_is_implementation_detail */ {
+          // Source: drake/multibody/tree/frame.h
+          const char* doc =
+R"""((Internal use only) Sets the value reported by
+is_implementation_detail(). A derived class that supports the flag
+must also copy it when it is cloned.
+
+Raises:
+    RuntimeError if this frame has already been added to a
+    MultibodyTree.)""";
+        } set_is_implementation_detail;
       } Frame;
       // Symbol: drake::multibody::FrameIndex
       struct /* FrameIndex */ {
