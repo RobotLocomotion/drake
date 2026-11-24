@@ -1,4 +1,6 @@
+import gc
 import unittest
+import weakref
 
 import numpy as np
 
@@ -88,3 +90,58 @@ class TestProjectedGradientDescentSolver(unittest.TestCase):
         self.assertIsInstance(PGDS.kDefaultBacktrackingTau, float)
         self.assertIsInstance(PGDS.kDefaultBacktrackingAlpha0, float)
         self.assertIsInstance(PGDS.kDefaultMaxLineSearchSteps, int)
+
+    def test_projection_solver_interface_lifetime(self):
+        """The solver must keep its projection solver interface alive, even
+        when the caller drops every other reference to it, and must release
+        the interface when it is replaced or cleared.
+        """
+        prog = MathematicalProgram()
+        x = prog.NewContinuousVariables(2, "x")
+        prog.AddLinearConstraint([1, 1], 1, 1, x)
+        prog.AddBoundingBoxConstraint(0, 1, x[1])
+        prog.AddLinearCost(x[0])
+
+        def make_spy(solver):
+            projection_solver = ClarabelSolver()
+            spy = weakref.ref(projection_solver)
+            solver.SetProjectionSolverInterface(projection_solver)
+            return spy
+
+        def collect():
+            for _ in range(3):
+                gc.collect()
+
+        def check_solve(solver):
+            result = solver.Solve(prog, None, None)
+            self.assertTrue(result.is_success())
+            numpy_compare.assert_float_allclose(
+                result.GetSolution(x), [0.0, 1.0], atol=1e-7
+            )
+
+        solver = ProjectedGradientDescentSolver()
+        spy = make_spy(solver)
+        collect()
+        self.assertIsNotNone(spy())
+        check_solve(solver)
+
+        # Replacing the interface releases the old one.
+        replacement_spy = make_spy(solver)
+        collect()
+        self.assertIsNone(spy())
+        self.assertIsNotNone(replacement_spy())
+        check_solve(solver)
+
+        # Clearing the interface releases it.
+        solver.SetProjectionSolverInterface(None)
+        collect()
+        self.assertIsNone(replacement_spy())
+        check_solve(solver)
+
+        # The solver and its interface are freed together.
+        solver_spy = weakref.ref(solver)
+        spy = make_spy(solver)
+        del solver
+        collect()
+        self.assertIsNone(solver_spy())
+        self.assertIsNone(spy())
