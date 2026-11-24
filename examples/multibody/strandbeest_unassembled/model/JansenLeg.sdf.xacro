@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<!--
+A single leg of Theo Jansen's Strandbeest, described as UNASSEMBLED parts. See
+JansenParts.xacro for the parts, and strandbeest_unassembled.cc, which
+assembles and runs this model.
+
+The chassis floats free, but one leg can't hold it up, so the program keeps it
+locked where it starts, with the foot just clear of the ground, and the leg
+walks in place as the crankshaft turns. The leg's four bars and two triangles
+form three kinematic loops, which MultibodyPlant breaks automatically by
+splitting a part of each loop in two.
+-->
+<sdf version="1.9" xmlns:xacro="http://ros.org/wiki/xacro"
+     xmlns:drake="http://drake.mit.edu">
+  <xacro:include filename="JansenParts.xacro"/>
+  <model name="jansen_leg">
+    <xacro:ground/>
+    <xacro:chassis_and_crankshaft width="0.1"/>
+    <xacro:positioned_leg prefix="leg1_" y="0" phase="0"/>
+  </model>
+</sdf>

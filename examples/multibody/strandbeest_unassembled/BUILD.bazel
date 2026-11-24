@@ -1,0 +1,59 @@
+load("//tools/lint:lint.bzl", "add_lint_tests")
+load(
+    "//tools/skylark:drake_cc.bzl",
+    "drake_cc_binary",
+)
+load("//tools/workspace/ros_xacro_internal:defs.bzl", "xacro_filegroup")
+
+package(default_visibility = ["//visibility:private"])
+
+xacro_filegroup(
+    name = "models",
+    srcs = [
+        "model/EightLegs.sdf.xacro",
+        "model/FourLegs.sdf.xacro",
+        "model/JansenLeg.sdf.xacro",
+        "model/SixteenLegs.sdf.xacro",
+        "model/TwelveLegs.sdf.xacro",
+        "model/TwentyLegs.sdf.xacro",
+        "model/TwoLegs.sdf.xacro",
+    ],
+    data = [
+        "model/JansenParts.xacro",
+    ],
+)
+
+drake_cc_binary(
+    name = "strandbeest_unassembled",
+    srcs = ["strandbeest_unassembled.cc"],
+    data = [":models"],
+    deps = [
+        "//common:essential",
+        "//common/trajectories:piecewise_polynomial",
+        "//geometry:collision_filter_declaration",
+        "//geometry:scene_graph",
+        "//math:geometric_transform",
+        "//multibody/inverse_kinematics",
+        "//multibody/parsing",
+        "//multibody/plant",
+        "//multibody/tree",
+        "//solvers:mathematical_program",
+        "//solvers:solve",
+        "//systems/analysis:simulator",
+        "//systems/analysis:simulator_gflags",
+        "//systems/framework:diagram",
+        "//systems/primitives:trajectory_source",
+        "//visualization:visualization_config_functions",
+        "@fmt",
+        "@gflags",
+    ],
+    add_test_rule = True,
+    test_rule_args = [
+        "--simulation_time=0.1",
+        "--nointeractive",
+        # Long enough to exercise the replay, short enough not to slow the test.
+        "--assembly_playback_time=0.2",
+    ],
+)
+
+add_lint_tests()

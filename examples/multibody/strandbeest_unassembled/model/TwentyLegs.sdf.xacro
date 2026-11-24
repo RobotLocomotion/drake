@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+<!--
+Twenty legs of Theo Jansen's Strandbeest, described as UNASSEMBLED parts: ten
+pairs of mirror-image legs along the crankshaft, with their cranks a tenth of a
+turn apart. Neighboring pairs are three tenths of a turn apart, so that the
+legs stepping at any moment are spread along the crankshaft. See
+JansenParts.xacro for the parts, and strandbeest_unassembled.cc, which
+assembles and runs this model.
+
+The chassis floats free, held up only by its legs, and the crankshaft turns on
+it, so that the legs walk it along the ground. Each leg's four bars and two
+triangles form three kinematic loops, which MultibodyPlant breaks automatically
+by splitting a part of each loop in two.
+-->
+<sdf version="1.9" xmlns:xacro="http://ros.org/wiki/xacro"
+     xmlns:drake="http://drake.mit.edu">
+  <xacro:include filename="JansenParts.xacro"/>
+  <model name="twenty_legs">
+    <xacro:ground/>
+    <xacro:chassis_and_crankshaft width="2.3"/>
+    <xacro:leg_pair prefix="pair1_" y="1.08" phase="0"/>
+    <xacro:leg_pair prefix="pair2_" y="0.84" phase="${3*pi/5}"/>
+    <xacro:leg_pair prefix="pair3_" y="0.6" phase="${6*pi/5}"/>
+    <xacro:leg_pair prefix="pair4_" y="0.36" phase="${9*pi/5}"/>
+    <xacro:leg_pair prefix="pair5_" y="0.12" phase="${2*pi/5}"/>
+    <xacro:leg_pair prefix="pair6_" y="-0.12" phase="${pi}"/>
+    <xacro:leg_pair prefix="pair7_" y="-0.36" phase="${8*pi/5}"/>
+    <xacro:leg_pair prefix="pair8_" y="-0.6" phase="${pi/5}"/>
+    <xacro:leg_pair prefix="pair9_" y="-0.84" phase="${4*pi/5}"/>
+    <xacro:leg_pair prefix="pair10_" y="-1.08" phase="${7*pi/5}"/>
+  </model>
+</sdf>
