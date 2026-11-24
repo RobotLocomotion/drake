@@ -41,6 +41,7 @@ drake_pybind_library(
         "//bindings/generated_docstrings:geometry_render_gl",
         "//bindings/generated_docstrings:geometry_render_gltf_client",
         "//bindings/generated_docstrings:geometry_render_vtk",
+        "//bindings/pydrake:lcm_type_hook_pybind",
         "//bindings/pydrake:polynomial_types_pybind",
         "//bindings/pydrake/common:default_scalars_pybind",
         "//bindings/pydrake/common:deprecation_pybind",

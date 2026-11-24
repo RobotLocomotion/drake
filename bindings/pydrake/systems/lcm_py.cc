@@ -7,6 +7,7 @@
 
 #include "drake/bindings/generated_docstrings/lcm.h"
 #include "drake/bindings/generated_docstrings/systems_lcm.h"
+#include "drake/bindings/pydrake/lcm_type_hook_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/systems/lcm_py_bind_cpp_serializers.h"
 #include "drake/lcm/drake_lcm.h"
@@ -82,18 +83,30 @@ class PySerializerInterface : public SerializerInterface {
   }
 };
 
-// Define warning related to lack of multiple inheritance with our fork of
-// pybind11. This will be sufficient for workflows in pure Python, but will
-// not readily support intermingling of C++-constructed LcmInterfaceSystem
-// classes which are then passed to Python.
+// Define warning related to lack of multiple inheritance (not supported by
+// nanobind, nor by our fork of pybind11). This will be sufficient for workflows
+// in pure Python, but will not readily support intermingling of
+// C++-constructed LcmInterfaceSystem classes which are then passed to Python.
 constexpr char kLcmInterfaceSystemClassWarning[] = R"""(
 
 Warning:
     In C++, this class inherits both LeafSystem and DrakeLcmInterface. However,
-    in Python, this only inherits from LeafSystem since our fork of pybind11
-    does not support multiple inheritance. Additionally, it only exposes the
+    in Python, this only inherits from LeafSystem since multiple inheritance
+    is not supported by our binding libraries. Additionally, it only exposes the
     constructor accepting a DrakeLcmInterface, so that it can still be used in
-    interface code.
+    interface code. When using nanobind, a bus returned by LcmBuses.Find() is
+    presented as a plain DrakeLcmInterface (not an LcmInterfaceSystem, and not a
+    LeafSystem), so that it can be passed to any function that accepts a
+    DrakeLcmInterface, but not to any function that accepts a LeafSystem. When
+    using pybind11, it is presented as an LcmInterfaceSystem.
+)""";
+
+constexpr char kLcmBusesFindNote[] = R"""(
+
+Note:
+    When using nanobind, a configured bus is returned as a plain
+    DrakeLcmInterface rather than an LcmInterfaceSystem; see the warning on
+    LcmInterfaceSystem. When using pybind11, it is an LcmInterfaceSystem.
 )""";
 
 }  // namespace
@@ -178,7 +191,8 @@ PYDRAKE_MODULE(lcm, m) {
         .def(py::init(), cls_doc.ctor.doc)
         .def("size", &Class::size, cls_doc.size.doc)
         .def("Find", &Class::Find, py::arg("description_of_caller"),
-            py::arg("bus_name"), py_rvp::reference_internal, cls_doc.Find.doc)
+            py::arg("bus_name"), py_rvp::reference_internal,
+            (std::string(cls_doc.Find.doc) + kLcmBusesFindNote).c_str())
         .def("GetAllBusNames", &Class::GetAllBusNames,
             cls_doc.GetAllBusNames.doc)
         .def("Add", &Class::Add, py::arg("bus_name"), py::arg("bus"),
