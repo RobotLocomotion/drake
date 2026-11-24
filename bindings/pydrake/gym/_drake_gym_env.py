@@ -37,7 +37,7 @@ class DrakeGymEnv(gym.Env):
     # gym.make() reads this class-level list before it constructs the env, to
     # decide whether to apply wrappers such as RenderCollection. Each instance
     # narrows it in __init__ to the modes it actually supports.
-    metadata: ClassVar[dict] = {"render_modes": ["human", "ansi", "rgb_array"]}
+    metadata: ClassVar[dict] = {"render_modes": list(_RENDER_MODES)}
 
     def __init__(
         self,
@@ -175,24 +175,33 @@ class DrakeGymEnv(gym.Env):
 
         # Make a per-instance copy of the metadata; DrakeGymEnv.metadata is a
         # class attribute shared by every instance, so we must not edit it in
-        # place.
-        self.metadata = {**self.metadata, "render_modes": ["human", "ansi"]}
+        # place. The modes come from _RENDER_MODES; "rgb_array" needs a port.
+        self.metadata = {
+            **self.metadata,
+            "render_modes": [
+                mode
+                for mode in _RENDER_MODES
+                if mode != "rgb_array" or render_rgb_port_id
+            ],
+        }
 
         # Setup rendering.
-        if render_mode is not None and render_mode not in _RENDER_MODES:
+        if render_mode == "rgb_array" and not render_rgb_port_id:
+            raise ValueError(
+                "render_mode 'rgb_array' requires render_rgb_port_id"
+            )
+        if (
+            render_mode is not None
+            and render_mode not in self.metadata["render_modes"]
+        ):
             raise ValueError(
                 f"Unsupported render_mode {render_mode!r}; "
-                f"supported modes are {list(_RENDER_MODES)}"
+                f"supported modes are {self.metadata['render_modes']}"
             )
         self.render_mode = render_mode
         if render_rgb_port_id:
             assert isinstance(render_rgb_port_id, (OutputPortIndex, str))
             self.render_mode = "rgb_array"
-            self.metadata["render_modes"].append("rgb_array")
-        elif render_mode == "rgb_array":
-            raise ValueError(
-                "render_mode 'rgb_array' requires render_rgb_port_id"
-            )
         self.render_rgb_port_id = render_rgb_port_id
         self.render_rgb_port = None
 

@@ -79,10 +79,17 @@ class DrakeGymTest(unittest.TestCase):
         """An unsupported render_mode is rejected by the constructor."""
         with self.assertRaisesRegex(
             ValueError,
-            r"Unsupported render_mode 'rgb'.*\['human', 'ansi', "
-            r"'rgb_array'\]",
+            r"Unsupported render_mode 'rgb'.*\['human', 'ansi'\]$",
         ):
             self._make_pass_through_env(render_mode="rgb")
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Unsupported render_mode 'rgb'.*\['human', 'ansi', "
+            r"'rgb_array'\]$",
+        ):
+            self._make_pass_through_env(
+                render_mode="rgb", render_rgb_port_id="image"
+            )
         # A port id does not hide an invalid mode.
         with self.assertRaisesRegex(ValueError, "Unsupported render_mode"):
             self._make_pass_through_env(
