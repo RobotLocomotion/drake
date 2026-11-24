@@ -1272,7 +1272,7 @@ Parameter ``params``:
     The set of parameters to control this system's behavior.
 
 Raises:
-    RuntimeError if ``params.publish_period <= 0``.
+    RuntimeError if ``params.publish_period`` is negative or NaN.
 
 Raises:
     RuntimeError if ``params.role == Role∷kUnassigned``.)""";
@@ -1319,7 +1319,14 @@ R"""(The color to apply to any geometry that hasn't defined one.)""";
 R"""(The duration (in seconds) between published LCM messages that update
 the poses of the scene's geometry. (To help avoid small simulation
 time steps, we use a default period that has an exact representation
-in binary floating point; see drake#15021 for details.))""";
+in binary floating point; see drake#15021 for details.)
+
+If zero, the visualizer instead updates on every simulator step. That
+does not constrain the integrator's step size, so it does not change
+the simulation (unlike a positive period). Updates are then as
+frequent as the simulator's steps, including steps forced by discrete
+updates or other events, which can be much more often than a typical
+period.)""";
         } publish_period;
         // Symbol: drake::geometry::DrakeVisualizerParams::role
         struct /* role */ {
@@ -5620,7 +5627,7 @@ Parameter ``surface_data``:
     velocity will not be visualized.
 
 Raises:
-    RuntimeError if ``params.publish_period <= 0``.
+    RuntimeError if ``params.publish_period`` is negative or NaN.
 
 Raises:
     RuntimeError if ``params.role == Role∷kUnassigned``.)""";
@@ -5643,8 +5650,8 @@ documentation.)""";
           const char* doc =
 R"""(Convenience function that calls Meshcat∷StartRecording on the
 underlying Meshcat object, with ``frames_per_second = 1 /
-publish_period``; refer to Meshcat∷StartRecording for full
-documentation.)""";
+publish_period`` (or the default period if ``publish_period`` is
+zero); refer to Meshcat∷StartRecording for full documentation.)""";
         } StartRecording;
         // Symbol: drake::geometry::MeshcatVisualizer::StopRecording
         struct /* StopRecording */ {
@@ -5759,7 +5766,14 @@ based on the standard path semantics in Meshcat. See meshcat_path
 R"""(The duration (in simulation seconds) between attempts to update poses
 in the visualizer. (To help avoid small simulation time steps, we use
 a default period that has an exact representation in binary floating
-point; see drake#15021 for details.))""";
+point; see drake#15021 for details.)
+
+If zero, the visualizer instead updates on every simulator step. That
+does not constrain the integrator's step size, so it does not change
+the simulation (unlike a positive period). Updates are then as
+frequent as the simulator's steps, including steps forced by discrete
+updates or other events, which can be much more often than a typical
+period.)""";
         } publish_period;
         // Symbol: drake::geometry::MeshcatVisualizerParams::role
         struct /* role */ {

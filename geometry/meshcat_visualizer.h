@@ -112,7 +112,7 @@ class MeshcatVisualizer final : public systems::LeafSystem<T> {
                        surface velocity but its corresponding SceneGraph FrameId
                        is not in this map, the surface velocity will not be
                        visualized.
-   @throws std::exception if `params.publish_period <= 0`.
+   @throws std::exception if `params.publish_period` is negative or NaN.
    @throws std::exception if `params.role == Role::kUnassigned`. */
   explicit MeshcatVisualizer(
       std::shared_ptr<Meshcat> meshcat, MeshcatVisualizerParams params = {},
@@ -136,7 +136,8 @@ class MeshcatVisualizer final : public systems::LeafSystem<T> {
   void Delete() const;
 
   /** Convenience function that calls Meshcat::StartRecording on the underlying
-   Meshcat object, with `frames_per_second = 1 / publish_period`; refer to
+   Meshcat object, with `frames_per_second = 1 / publish_period` (or the
+   default period if `publish_period` is zero); refer to
    Meshcat::StartRecording for full documentation. */
   MeshcatAnimation* StartRecording(bool set_transforms_while_recording = true);
 
