@@ -10,6 +10,7 @@
 #include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/render/light_parameter.h"
 #include "drake/geometry/render/render_camera.h"
+#include "drake/geometry/render/render_material.h"
 #include "drake/geometry/render_gl/internal_opengl_includes.h"
 #include "drake/geometry/render_gl/internal_shader_program_data.h"
 #include "drake/geometry/rgba.h"
@@ -117,19 +118,27 @@ class ShaderProgram {
   void LoadFromFiles(const std::string& vertex_shader_file,
                      const std::string& fragment_shader_file);
 
-  /* Each %ShaderProgram can examine a set of properties and determine if it
-   the properties are sufficient to apply this shader to the geometry with the
-   given `properties`. This data will be used by the shader at render time to
-   configure the per-instance shader parameters.
+  /* Each %ShaderProgram can examine a geometry's properties and resolved
+   material and determine if they are sufficient to apply this shader to the
+   geometry. This data will be used by the shader at render time to configure
+   the per-instance shader parameters.
+
+   The `material` is the authoritative definition of the geometry's appearance
+   (e.g., as produced by DefineMaterial()). Shaders should derive appearance
+   (diffuse color, diffuse map, etc.) from it and *not* from any material
+   properties in `properties`. The `properties` remain available for
+   non-material data (e.g., the render label).
 
    The derived classes define the details in DoCreateProgramData.
 
    @returns The validated and packaged shader program properties, `nullopt` if
-            `this` shader program cannot be applied for the given properties.
+            `this` shader program cannot be applied for the given properties
+            and material.
    @pre The OpenGl context to which this program belongs has been bound. */
   std::optional<ShaderProgramData> CreateProgramData(
-      const PerceptionProperties& properties) const {
-    return DoCreateProgramData(properties);
+      const PerceptionProperties& properties,
+      const geometry::internal::RenderMaterial& material) const {
+    return DoCreateProgramData(properties, material);
   }
 
   /* Allows derived shaders to extract data from the given instance to populate
@@ -240,11 +249,12 @@ class ShaderProgram {
   /* Derived classes should clone themselves.  */
   virtual std::unique_ptr<ShaderProgram> DoClone() const = 0;
 
-  /* Derived classes define if the properties support the use of this shader.
-   Not supported is communicated with a nullopt. Support is given by a defined
-   ShaderProgramData (even if it's data *value* is nullptr).  */
+  /* Derived classes define if the properties and material support the use of
+   this shader. Not supported is communicated with a nullopt. Support is given
+   by a defined ShaderProgramData (even if it's data *value* is nullptr).  */
   virtual std::optional<ShaderProgramData> DoCreateProgramData(
-      const PerceptionProperties& /* properties */) const {
+      const PerceptionProperties& /* properties */,
+      const geometry::internal::RenderMaterial& /* material */) const {
     return std::nullopt;
   }
 

@@ -12,6 +12,7 @@ def tinygltf_internal_repository(
         build_file = ":package.BUILD.bazel",
         patches = [
             ":patches/never_destroyed.patch",
+            ":patches/require_position_bounds.patch",
         ],
         mirrors = mirrors,
     )

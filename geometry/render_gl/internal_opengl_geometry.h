@@ -174,6 +174,15 @@ struct OpenGlGeometry {
   // points, etc.)
   GLenum mode{};
 
+  /* An axis-aligned bound on the vertex positions, measured and expressed in
+   frame N. This CPU-side copy is used to fit shadow cameras without reading
+   vertex buffers back from OpenGL. Its default value (min > max) means any
+   geometry whose bound isn't set, is excluded from shadow-camera fitting. */
+  Eigen::Vector3f p_N_min{
+      Eigen::Vector3f::Constant(std::numeric_limits<float>::infinity())};
+  Eigen::Vector3f p_N_max{
+      Eigen::Vector3f::Constant(-std::numeric_limits<float>::infinity())};
+
   /* The transform mapping vertex position to the model frame intrinsic to the
    geometry definition. */
   Eigen::Matrix4f T_MN{Eigen::Matrix4f::Identity()};
@@ -206,24 +215,30 @@ struct OpenGlGeometry {
 struct OpenGlInstance {
   /* Constructs an instance from a geometry definition, transforms for the
    geometry's vertex position and normals, and the instance's shader data for
-   depth and label shaders.
+   color, depth, and label shaders.
 
-   @param g_in             The index of the geometry `this` instantiates.
-   @param scale            The scale to apply to the underlying model geometry
-                           to create the drake geometry: S_GM.
-   @param geo              The geometry this is an instance of.
-   @param color_data       The shader data this instance uses for color images.
-   @param depth_data       The shader data this instance uses for depth images.
-   @param label_data       The shader data this instance uses for label images.
-   @param casts_shadow_in  If `true`, this instance will cast shadows.
+   @param g_in                 The index of the geometry `this` instantiates.
+   @param scale                The scale to apply to the underlying model
+                               geometry to create the drake geometry: S_GM.
+   @param geo                  The geometry this is an instance of.
+   @param color_data           The color shader data for this instance.
+   @param depth_data           The depth shader data for this instance.
+   @param label_data           The label shader data for this instance.
+   @param receives_shadows_in  If `true`, this instance can receive shadows
+                               (i.e., alpha > 0, so it contributes visible
+                               color pixels for a shadow to fall on).
+   @param casts_shadows_in     If `true`, this instance will cast shadows
+                               (i.e., alpha = 1).
 
    @pre g_in indexes into the geometry referenced by `geo`.
    @pre The shader program data has valid shader ids.  */
   OpenGlInstance(int g_in, const Eigen::Vector3f& scale,
                  const OpenGlGeometry& geo, ShaderProgramData color_data,
                  ShaderProgramData depth_data, ShaderProgramData label_data,
-                 bool casts_shadows_in)
-      : geometry(g_in), casts_shadows(casts_shadows_in) {
+                 bool receives_shadows_in, bool casts_shadows_in)
+      : geometry(g_in),
+        receives_shadows(receives_shadows_in),
+        casts_shadows(casts_shadows_in) {
     const Eigen::DiagonalMatrix<float, 4> S_GM(
         Eigen::Vector4f(scale.x(), scale.y(), scale.z(), 1.0));
     T_GN = S_GM * geo.T_MN;
@@ -257,6 +272,12 @@ struct OpenGlInstance {
   Eigen::Matrix3f N_WN{Eigen::Matrix3f::Identity()};
 
   std::array<ShaderProgramData, RenderType::kTypeCount> shader_data;
+
+  /* True when the material's alpha is > 0, so this instance contributes
+   visible color pixels and can therefore act as a shadow-map receiver.
+   Contrast with casts_shadows below: geometry with alpha in (0, 1) receives
+   shadows but does not cast them. */
+  bool receives_shadows{false};
 
   /* True when this instance participates in shadow-map depth passes. Instances
    with transparency do not cast shadows. */

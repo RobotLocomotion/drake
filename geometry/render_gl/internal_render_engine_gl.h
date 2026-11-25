@@ -211,6 +211,12 @@ class RenderEngineGl final : public render::RenderEngine, private ShapeReifier {
   // user data (e.g., GeometryId, perception properties). The instance is added
   // to visuals_.
   //
+  // The given `material` is the authoritative appearance of the instance. It
+  // derives from and supersedes any material properties in the user data's
+  // perception properties: the shaders are selected and configured from it, and
+  // the instance's shadow-casting and shadow-receiving behavior are derived
+  // from it.
+  //
   // @param geometry_index   The index into geometries_ of the geometry used by
   //                         this instance.
   // @param user_data        The type-erased RegistrationData pointer containing
@@ -218,8 +224,16 @@ class RenderEngineGl final : public render::RenderEngine, private ShapeReifier {
   // @param scale            The quantity for scaling the geometry *model* data
   //                         to the Drake geometry frame G. Used to construct
   //                         S_GM.
+  // @param material         The resolved material for the instance.
   void AddGeometryInstance(int geometry_index, void* user_data,
-                           const Vector3<double>& scale);
+                           const Vector3<double>& scale,
+                           const geometry::internal::RenderMaterial& material);
+
+  // Adds an instance of a primitive shape (i.e., one whose material is defined
+  // purely by its perception properties) with its material resolved by
+  // DefineMaterial().
+  void AddPrimitiveInstance(int geometry_index, void* user_data,
+                            const Vector3<double>& scale);
 
   // The set of all geometries. These are the geometries that have the
   // identifiers for the OpenGl geometries on the GPU.
@@ -312,13 +326,15 @@ class RenderEngineGl final : public render::RenderEngine, private ShapeReifier {
   ShaderId AddShader(std::unique_ptr<ShaderProgram> program,
                      RenderType render_type);
 
-  // Given the render type and a set of perception properties, finds the
-  // "most preferred" shader that supports the given properties. In this case,
-  // we exploit the behind-the-scenes knowledge that Identifiers are
+  // Given the render type, a set of perception properties, and the resolved
+  // material, finds the "most preferred" shader that supports them. In this
+  // case, we exploit the behind-the-scenes knowledge that Identifiers are
   // monotonically increasing. So, the shader that is added last implicitly is
   // more preferred than the earlier shader.
-  ShaderProgramData GetShaderProgram(const PerceptionProperties& properties,
-                                     RenderType render_type) const;
+  ShaderProgramData GetShaderProgram(
+      const PerceptionProperties& properties,
+      const geometry::internal::RenderMaterial& material,
+      RenderType render_type) const;
 
   const std::vector<render::LightParameter>& active_lights() const {
     if (active_lights_ == nullptr) {
@@ -336,7 +352,9 @@ class RenderEngineGl final : public render::RenderEngine, private ShapeReifier {
   const std::vector<int>& shadow_light_indices() const;
 
   // Renders one depth map for every shadow-casting light and returns the
-  // world-to-light-device (T_DlightW) matrix for each depth map.
+  // world-to-light-device (T_DlightW) matrix for each depth map. If nothing the
+  // camera can see can receive a light's shadows, that light's depth map is
+  // cleared but nothing is drawn into it (every lookup reports "lit").
   std::vector<Eigen::Matrix4f> RenderShadowMaps(
       const render::ColorRenderCamera& camera) const;
 
