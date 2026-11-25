@@ -9,9 +9,9 @@ loop that a four-bar forms:
   constraint that `Finalize()` adds.
 * `four_bar_unassembled` models the linkage the same way, but its model file
   describes it in an *unassembled* configuration (much simpler to specify)
-  using a Drake extension that gives each joint two independent frames. It
-  visualizes the machinery Drake used to break the loop so that you can watch
-  it work.
+  using a Drake extension that gives each joint two independent frames, and
+  assembles it by optimization. It visualizes the machinery Drake used to break
+  the loop so that you can watch it work.
 * `four_bar_with_bushing` leaves one of the four joints out and replaces it
   with a compliant bushing, so the remaining joints form a tree.
 
@@ -91,13 +91,17 @@ assembled before it can be simulated. The example shows:
   `Finalize()` breaks the loop by adding a "shadow" split off one of the links,
   retargeting one joint onto the shadow, and adding a weld constraint that
   holds the shadow to the link it was split from.
-* That the system can be defined in an unassembled configuration. The solver
-  assembles it within a few milliseconds, with the input joint locked to
-  hold it at the angle it was defined with.
+* That the system can be defined in an unassembled configuration, and then
+  assembled by optimization. `AssembleNearestConfiguration()`, in
+  `assemble_nearest_configuration.h`, finds the configuration nearest the
+  unassembled one that satisfies the weld, with the input joint locked to hold
+  it at the angle it was defined with. Nothing in it is specific to this
+  example, so you can copy it for your own models.
 
-Assembly is over long before a single visualizer frame would be drawn, so the
-configurations the linkage passes through on the way are recorded and replayed;
-see `--assembly_playback_time` below.
+The optimizer reports only where the linkage ends up, not how it gets there,
+so the example shows the linkage moving from its defined configuration to its
+assembled one by interpolating between the two; see `--assembly_playback_time`
+below.
 
 Closing the loop takes a constraint, so this model needs a solver that can
 enforce one. It runs in discrete mode with SAP by default, or continuous
@@ -184,13 +188,13 @@ assembled by construction in a joint coordinate code like Drake.)
 
 Then the linkage swings under gravity and the actuation torque if specified
 (the default is zero torque). Along the way it reports the loop it modeled
-and how the loop closure error was reduced:
+and how far the loop is from closed before and after assembly:
 
 ```
 Modeled 1 kinematic loop(s) with 1 constraint(s).
   shadow link 'coupler$1' was added to break a loop.
 Loop closure error as defined: 1.2806 m
-Loop closure error after assembling for 0.0110 s: 0.000586 m
+Loop closure error after assembling: 3.97e-06 m
 ```
 
 To run the same model continuously with the CENIC integrator instead of the
@@ -201,9 +205,8 @@ bazel run //examples/multibody/four_bar:four_bar_unassembled -- \
     --time_step=0 --simulator_integration_scheme=cenic
 ```
 
-Both start from the same 1.2806 m of loop closure error and reach the same
-assembled configuration; CENIC takes many more steps to get there but far less
-simulated time.
+Assembly doesn't simulate anything, so it comes out the same either way; only
+the swinging that follows is simulated by CENIC rather than SAP.
 
 To hold the driver at a different angle (in radians) while the rest of the
 linkage assembles around it:
@@ -213,8 +216,8 @@ bazel run //examples/multibody/four_bar:four_bar_unassembled -- \
     --driver_angle=0.5
 ```
 
-To stretch the replay of the assembly out over ten seconds of wall clock time,
-or to skip the replay entirely (though you still have to hit ENTER):
+To stretch the assembly's playback out over ten seconds of wall clock time, or
+to skip it entirely (though you still have to hit ENTER):
 
 ```
 bazel run //examples/multibody/four_bar:four_bar_unassembled -- \

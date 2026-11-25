@@ -4,12 +4,15 @@ closed kinematic loops, applied to an unassembled model parsed from an SDFormat
 file. The linkage and its geometry are described in four_bar_unassembled.sdf,
 which uses Drake's <drake:independent_frames/> joint extension to give each
 joint two independent frames; without it, a model parsed from a file is always
-assembled. The linkage is assembled using an existing solver, and then
-simulated. For pedagogical purposes, the example also visualizes the
-shadow link and weld constraint that Drake creates to model the loop; a shadow
-does not exist until the model is finalized, so it cannot be drawn by the model
-file. Refer to README.md for more details and comparisons with the other
-four-bar examples. */
+assembled. The linkage is assembled by optimization and then simulated. The
+assembly uses AssembleNearestConfiguration(), in
+assemble_nearest_configuration.h, which finds the configuration nearest the
+unassembled one that satisfies the weld constraint that closes the loop. That
+function is not specific to this example; you can copy it for your own models.
+For pedagogical purposes, the example also visualizes the shadow link and weld
+constraint that Drake creates to model the loop; a shadow does not exist until
+the model is finalized, so it cannot be drawn by the model file. Refer to
+README.md for more details and comparisons with the other four-bar examples. */
 
 #include <algorithm>
 #include <chrono>
@@ -20,11 +23,11 @@ four-bar examples. */
 #include <string>
 #include <thread>
 #include <utility>
-#include <vector>
 
 #include <fmt/format.h>
 #include <gflags/gflags.h>
 
+#include "drake/examples/multibody/four_bar/assemble_nearest_configuration.h"
 #include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/scene_graph.h"
@@ -33,6 +36,7 @@ four-bar examples. */
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/tree/revolute_joint.h"
+#include "drake/solvers/mathematical_program_result.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/analysis/simulator_gflags.h"
 #include "drake/systems/analysis/simulator_print_stats.h"
@@ -45,6 +49,7 @@ namespace drake {
 using Eigen::Vector3d;
 using Eigen::Vector4d;
 using Eigen::VectorXd;
+using examples::multibody::four_bar::AssembleNearestConfiguration;
 using geometry::Box;
 using geometry::Cylinder;
 using geometry::FrameId;
@@ -61,10 +66,10 @@ using multibody::Link;
 using multibody::MultibodyPlant;
 using multibody::Parser;
 using multibody::RevoluteJoint;
+using solvers::MathematicalProgramResult;
 using systems::Context;
 using systems::Diagram;
 using systems::DiagramBuilder;
-using systems::EventStatus;
 using systems::Simulator;
 
 namespace {
@@ -87,10 +92,11 @@ DEFINE_double(driver_angle, 0.0,
               "around it.");
 
 DEFINE_double(assembly_playback_time, 3.0,
-              "Seconds to spend replaying the assembly in the visualizer, so "
-              "that it can be watched rather than being over within a single "
-              "frame. Set to 0 to skip the replay. This is wall clock time and "
-              "is unrelated to --simulator_target_realtime_rate.");
+              "Seconds to spend showing the linkage move from its defined "
+              "configuration to its assembled one, so that it can be watched "
+              "rather than being over within a single frame. Set to 0 to skip "
+              "it. This is wall clock time and is unrelated to "
+              "--simulator_target_realtime_rate.");
 
 DEFINE_bool(interactive, true,
             "Show the linkage as defined and then again once it is assembled, "
@@ -158,26 +164,19 @@ class FourBarUnassembledDemo final {
     std::cout << fmt::format("Loop closure error as defined: {:.4f} m\n",
                              initial_error);
     ShowAndWait(
-        "The linkage is unassembled: the coupler and its pale shadow are "
-        "apart, so the weld constraint holding the two halves of the split "
-        "link together is not satisfied yet. Every joint already is -- look "
-        "for each one's two pins sitting together. ",
+        "The linkage is unassembled: the coupler and its pale shadow are\n"
+        "apart, so the weld constraint holding the two halves of the split\n"
+        "link together is not satisfied yet. Every joint already is -- look\n"
+        "for each one's two pins sitting together.",
         "assemble the linkage");
 
-    const AssemblyResult assembly = Assemble(FLAGS_driver_angle);
-    std::cout << fmt::format(
-        "Loop closure error after assembling for {:.4f} s: {:.3g} m\n",
-        assembly.simulation_time, CalcLoopClosureError(plant_context()));
-    std::cout << fmt::format(
-        "Assembly took {} steps; replaying them over {} s.\n",
-        std::ssize(assembly.path) - 1, FLAGS_assembly_playback_time);
-
-    // Rewind and replay, so that the assembly can actually be seen happening.
-    ReplayAssembly(assembly.path, FLAGS_assembly_playback_time);
+    Assemble(FLAGS_driver_angle);
+    std::cout << fmt::format("Loop closure error after assembling: {:.3g} m\n",
+                             CalcLoopClosureError(plant_context()));
     ShowAndWait(
-        "The linkage is assembled: the shadow now lies on top of the coupler "
-        "it was split from, together reconstituting the original link's "
-        "properties.",
+        "The linkage is assembled: the shadow now lies on top of the\n"
+        "coupler it was split from, together reconstituting the original\n"
+        "link's properties.",
         "simulate");
 
     // Simulate the assembled mechanism swinging under gravity.
@@ -190,26 +189,16 @@ class FourBarUnassembledDemo final {
   }
 
  private:
-  struct AssemblyStep {
-    VectorXd q;
-    double error{};
-  };
-
-  struct AssemblyResult {
-    double simulation_time{};
-    std::vector<AssemblyStep> path;
-  };
-
   // Assembly.
   const Context<double>& plant_context() const;
   Context<double>& mutable_plant_context();
   double CalcLoopClosureError(const Context<double>& context) const;
-  AssemblyResult Assemble(double driver_angle);
+  void Assemble(double driver_angle);
 
   // Presentation.
   void ReportAndIllustrateModeledLoops();
   void ShowAndWait(const std::string& message, const std::string& next);
-  void ReplayAssembly(const std::vector<AssemblyStep>& path, double duration);
+  void ShowMotionFrom(const VectorXd& q_start, double duration);
 
   // Low-level illustration support.
   static Vector4d WeldFrameColor();
@@ -252,53 +241,27 @@ double FourBarUnassembledDemo::CalcLoopClosureError(
       .norm();
 }
 
-/* Assembles the linkage with the driver held at `driver_angle`. Nothing here
-solves the loop closure equations; the solver pulls the two halves of the split
-link together, and this function merely steps until they have arrived. On
-return, the linkage is assembled and at rest, the driver is released, and the
-simulator clock is reset to zero. */
-FourBarUnassembledDemo::AssemblyResult FourBarUnassembledDemo::Assemble(
-    double driver_angle) {
+/* Assembles the linkage with the driver held at `driver_angle`, and shows it
+moving there from its defined configuration. The driver is locked while the
+optimizer assembles the linkage around it, so that it stays where it was put,
+and then released. Nothing is simulated, so the linkage is still at rest at
+time zero. */
+void FourBarUnassembledDemo::Assemble(double driver_angle) {
   Context<double>& context = mutable_plant_context();
+  const VectorXd q_unassembled = four_bar_->GetPositions(context);
   const RevoluteJoint<double>& driver_joint =
       four_bar_->GetJointByName<RevoluteJoint>("world_driver");
   driver_joint.set_angle(&context, driver_angle);
   driver_joint.Lock(&context);
-
-  AssemblyResult result;
-  // The monitor below runs after each step, so record the starting point here.
-  result.path.push_back(
-      {four_bar_->GetPositions(context), CalcLoopClosureError(context)});
-
-  const double kAssemblyDeadline = 0.5;  // seconds
-  simulator_->set_monitor([this, &result](const Context<double>& root_context) {
-    const Context<double>& plant_context =
-        four_bar_->GetMyContextFromRoot(root_context);
-    const double error = CalcLoopClosureError(plant_context);
-    result.path.push_back({four_bar_->GetPositions(plant_context), error});
-    if (error < kAssembledTolerance) {
-      return EventStatus::ReachedTermination(diagram_.get(), "loop closed");
-    }
-    return EventStatus::Succeeded();
-  });
-  simulator_->AdvanceTo(kAssemblyDeadline);
-  simulator_->clear_monitor();
-  result.simulation_time = simulator_->get_context().get_time();
-  const double final_error = CalcLoopClosureError(context);
-  if (!(final_error < kAssembledTolerance)) {
+  const MathematicalProgramResult result =
+      AssembleNearestConfiguration(*four_bar_, &context);
+  if (!result.is_success()) {
     throw std::runtime_error(fmt::format(
-        "Failed to assemble the linkage within {} s; its loop closure error "
-        "is {} m.",
-        kAssemblyDeadline, final_error));
+        "Failed to assemble the linkage: {} reported {}.",
+        result.get_solver_id().name(), result.get_solution_result()));
   }
-
-  // Release the driver and hand back a clean assembled initial condition.
   driver_joint.Unlock(&context);
-  four_bar_->SetVelocities(&context,
-                           VectorXd::Zero(four_bar_->num_velocities()));
-  simulator_->get_mutable_context().SetTime(0.0);
-  simulator_->Initialize();
-  return result;
+  ShowMotionFrom(q_unassembled, FLAGS_assembly_playback_time);
 }
 
 // The rest of the file supports the pedagogical visualization. None of it is
@@ -420,37 +383,26 @@ void FourBarUnassembledDemo::ShowAndWait(const std::string& message,
   simulator_->ResetStatistics();
 }
 
-/* Replays the recorded assembly in the visualizer over `duration` seconds of
-wall time, then restores the assembled configuration. Frames are selected by
-remaining loop closure error, so playback does not depend on solver step size.
-*/
-void FourBarUnassembledDemo::ReplayAssembly(
-    const std::vector<AssemblyStep>& path, double duration) {
-  if (duration <= 0.0 || std::ssize(path) < 2) return;
-
+/* Shows the linkage moving from `q_start` to its current configuration over
+`duration` seconds of wall time, then leaves it there. The optimizer reports
+only where a solve ends up, not how it gets there, so this simply interpolates
+the positions; the coupler and its shadow close in on each other as it goes. */
+void FourBarUnassembledDemo::ShowMotionFrom(const VectorXd& q_start,
+                                            double duration) {
   Context<double>& context = mutable_plant_context();
-  const VectorXd q_assembled = four_bar_->GetPositions(context);
-  const double error_start = path.front().error;
-  const int num_frames = std::max(2, static_cast<int>(duration * kPlaybackFps));
-  const auto frame_period = std::chrono::duration<double>(1.0 / kPlaybackFps);
-
-  for (int frame = 0; frame < num_frames; ++frame) {
-    const double error =
-        error_start * (1.0 - static_cast<double>(frame) / (num_frames - 1));
-    int i = 0;
-    while (i + 2 < std::ssize(path) && path[i + 1].error > error) ++i;
-    const double e0 = path[i].error;
-    const double e1 = path[i + 1].error;
-    const double w =
-        e0 > e1 ? std::clamp((e0 - error) / (e0 - e1), 0.0, 1.0) : 1.0;
-    four_bar_->SetPositions(&context,
-                            path[i].q + w * (path[i + 1].q - path[i].q));
-
-    diagram_->ForcedPublish(simulator_->get_context());
-    std::this_thread::sleep_for(frame_period);
+  const VectorXd q_end = four_bar_->GetPositions(context);
+  if (duration > 0.0) {
+    const int num_frames =
+        std::max(2, static_cast<int>(duration * kPlaybackFps));
+    const auto frame_period = std::chrono::duration<double>(1.0 / kPlaybackFps);
+    for (int frame = 0; frame < num_frames; ++frame) {
+      const double s = static_cast<double>(frame) / (num_frames - 1);
+      four_bar_->SetPositions(&context, q_start + s * (q_end - q_start));
+      diagram_->ForcedPublish(simulator_->get_context());
+      std::this_thread::sleep_for(frame_period);
+    }
   }
-
-  four_bar_->SetPositions(&context, q_assembled);
+  four_bar_->SetPositions(&context, q_end);
 }
 
 }  // namespace
