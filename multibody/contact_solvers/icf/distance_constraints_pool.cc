@@ -62,13 +62,12 @@ void DistanceConstraintsPool<T>::CalcSpatialImpulses(
 }
 
 template <typename T>
-void DistanceConstraintsPool<T>::CalcHessianBlocks(int k, const T& R_inv,
-                                                   Matrix6<T>* G_Bp,
+void DistanceConstraintsPool<T>::CalcHessianBlocks(int k, Matrix6<T>* G_Bp,
                                                    Matrix6<T>* G_Ap,
                                                    Matrix6<T>* G_cross) const {
-  // G = diag(0, Gt) with Gt = R⁻¹⋅p̂⋅p̂ᵀ.
+  // G = diag(0, Gt) with Gt = p̂⋅p̂ᵀ (for R = 1).
   const Vector3<T>& p_hat_W = p_hat_W_[k];
-  const Matrix3<T> Gt = R_inv * (p_hat_W * p_hat_W.transpose());
+  const Matrix3<T> Gt = p_hat_W * p_hat_W.transpose();
   const Matrix3<T> px_B = VectorToSkewSymmetric(p_BQ_W_[k]);
   // Compute G_Bp = Φ(p_BoBm)ᵀ⋅G⋅Φ(p_BoBm) where Φ(p) = [𝕀₃, 0; -pₓ, 𝕀₃] and
   // G = diag(0, Gt).

@@ -79,12 +79,11 @@ void BallConstraintsPool<T>::CalcSpatialImpulses(int k, const Vector3<T>& gamma,
 }
 
 template <typename T>
-void BallConstraintsPool<T>::CalcHessianBlocks(int k, const T& R_inv,
-                                               Matrix6<T>* G_Bp,
+void BallConstraintsPool<T>::CalcHessianBlocks(int k, Matrix6<T>* G_Bp,
                                                Matrix6<T>* G_Ap,
                                                Matrix6<T>* G_cross) const {
-  // G = diag(0, Gt) with Gt = R⁻¹.
-  const Matrix3<T> Gt = R_inv * Matrix3<T>::Identity();
+  // G = diag(0, Gt) with Gt = I (for R = 1).
+  const Matrix3<T> Gt = Matrix3<T>::Identity();
   const Vector3<T>& p_PQ_W = this->p_PQ_W()[k];
   const Vector3<T> p_BoBm_W = p_BQ_W_[k] - 0.5 * p_PQ_W;
 
