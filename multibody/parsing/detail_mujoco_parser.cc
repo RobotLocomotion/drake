@@ -481,7 +481,9 @@ class MujocoParser {
                     "supported for free bodies.",
                     name));
       }
-      if (frictionloss != 0.0) {
+      if (ValidateJointDryFriction(diagnostic_.MakePolicyForNode(node),
+                                   frictionloss, name) &&
+          frictionloss != 0.0) {
         Warning(*node, fmt::format("Friction loss was specified for the 'free' "
                                    "joint {}, but is not supported for free "
                                    "bodies.",

@@ -516,16 +516,25 @@ SpatialInertia<double> ParseSpatialInertia(const DiagnosticPolicy& diagnostic,
   DRAKE_UNREACHABLE();
 }
 
+bool ValidateJointDryFriction(const DiagnosticPolicy& diagnostic,
+                              double dry_friction,
+                              const std::string& joint_name) {
+  if (std::isfinite(dry_friction) && dry_friction >= 0.0) {
+    return true;
+  }
+  diagnostic.Error(fmt::format(
+      "Joint '{}' has an invalid dry friction of {}. Joint dry friction must "
+      "be non-negative and finite.",
+      joint_name, dry_friction));
+  return false;
+}
+
 void SetDefaultJointDryFriction(const DiagnosticPolicy& diagnostic,
                                 double dry_friction, JointIndex joint_index,
                                 MultibodyPlant<double>* plant) {
   DRAKE_DEMAND(plant != nullptr);
   Joint<double>& joint = plant->get_mutable_joint(joint_index);
-  if (!(std::isfinite(dry_friction) && dry_friction >= 0.0)) {
-    diagnostic.Error(fmt::format(
-        "Joint '{}' has an invalid dry friction of {}. Joint dry friction must "
-        "be non-negative and finite.",
-        joint.name(), dry_friction));
+  if (!ValidateJointDryFriction(diagnostic, dry_friction, joint.name())) {
     return;
   }
   if (dry_friction == 0.0) {

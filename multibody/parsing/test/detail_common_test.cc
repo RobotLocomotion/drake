@@ -478,6 +478,19 @@ class SetDefaultJointDryFrictionTest : public test::DiagnosticPolicyTestBase {
   JointIndex ball_;
 };
 
+// Only non-negative finite values are valid; an invalid one is an error.
+TEST_F(SetDefaultJointDryFrictionTest, ValidateJointDryFriction) {
+  EXPECT_TRUE(ValidateJointDryFriction(diagnostic_policy_, 0.0, "a"));
+  EXPECT_TRUE(ValidateJointDryFriction(diagnostic_policy_, 0.5, "a"));
+  for (const double dry_friction :
+       {-1.0, std::numeric_limits<double>::infinity(),
+        std::numeric_limits<double>::quiet_NaN()}) {
+    EXPECT_FALSE(
+        ValidateJointDryFriction(diagnostic_policy_, dry_friction, "a"));
+    EXPECT_THAT(TakeError(), MatchesRegex(".*'a'.*invalid dry friction.*"));
+  }
+}
+
 // A joint with one degree of freedom in a discrete plant takes the value.
 TEST_F(SetDefaultJointDryFrictionTest, SetsDryFriction) {
   MakePlant(0.01);

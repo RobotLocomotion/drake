@@ -2609,6 +2609,40 @@ TEST_F(SdfParserTest, DryFrictionIgnoredOnUniversalJoint) {
               MatchesRegex(".*'jerry'.*one degree of freedom.*ignored.*"));
 }
 
+// Every axis is validated, so an invalid value on the second axis is an error
+// even though the first axis has a valid one.
+TEST_F(SdfParserTest, InvalidDryFrictionOnSecondAxis) {
+  ParseTestString(R"""(
+<model name="molly">
+  <link name="larry" />
+  <joint name="jerry" type="universal">
+    <parent>world</parent>
+    <child>larry</child>
+    <axis>
+      <xyz>1 0 0</xyz>
+      <dynamics>
+        <friction>0.3</friction>
+      </dynamics>
+      <limit>
+        <effort>0</effort>
+      </limit>
+    </axis>
+    <axis2>
+      <xyz>0 1 0</xyz>
+      <dynamics>
+        <friction>-1</friction>
+      </dynamics>
+      <limit>
+        <effort>0</effort>
+      </limit>
+    </axis2>
+  </joint>
+</model>)""");
+  EXPECT_THAT(TakeError(), MatchesRegex(".*'jerry'.*invalid dry friction.*"));
+  EXPECT_THAT(TakeWarning(),
+              MatchesRegex(".*'jerry'.*one degree of freedom.*ignored.*"));
+}
+
 TEST_F(SdfParserTest, IncludeTags) {
   const std::string full_name = FindResourceOrThrow(
       "drake/multibody/parsing/test/sdf_parser_test/"

@@ -391,18 +391,36 @@ double ParseJointDamping(const SDFormatDiagnostic& diagnostic,
   return damping;
 }
 
-// Returns the dry friction, //axis/dynamics/friction, of `joint_spec`, or zero
-// if no axis specifies one. For a joint with two axes, the first non-zero value
-// is returned; MultibodyPlant does not support dry friction for such a joint,
-// so the caller warns and ignores it either way.
-double GetJointDryFriction(const sdf::Joint& joint_spec) {
+// Validates the dry friction, //axis/dynamics/friction, of each axis of
+// `joint_spec`, and returns the first valid non-zero value together with the
+// element that specifies it, so that diagnostics point at that element. If no
+// axis specifies a valid non-zero value, returns zero and the joint element.
+// For a joint with two axes, the first valid non-zero value is returned;
+// MultibodyPlant does not support dry friction for such a joint, so the caller
+// warns and ignores it either way.
+std::pair<double, const sdf::Element*> GetJointDryFriction(
+    const SDFormatDiagnostic& diagnostic, const sdf::Joint& joint_spec) {
+  double dry_friction = 0.0;
+  const sdf::Element* element = joint_spec.Element().get();
   for (const unsigned int axis_index : {0u, 1u}) {
     const sdf::JointAxis* axis = joint_spec.Axis(axis_index);
-    if (axis != nullptr && axis->Friction() != 0.0) {
-      return axis->Friction();
+    if (axis == nullptr || axis->Element() == nullptr) {
+      continue;
+    }
+    const sdf::ElementPtr dynamics = axis->Element()->FindElement("dynamics");
+    const sdf::Element* axis_element =
+        dynamics != nullptr ? dynamics.get() : axis->Element().get();
+    const double axis_dry_friction = axis->Friction();
+    if (!ValidateJointDryFriction(diagnostic.MakePolicyForNode(*axis_element),
+                                  axis_dry_friction, joint_spec.Name())) {
+      continue;
+    }
+    if (dry_friction == 0.0 && axis_dry_friction != 0.0) {
+      dry_friction = axis_dry_friction;
+      element = axis_element;
     }
   }
-  return 0.0;
+  return {dry_friction, element};
 }
 
 // We interpret a value of exactly zero to specify un-actuated joints. Thus, the
@@ -1095,9 +1113,10 @@ bool AddJointFromSpecification(
   }
 
   auto set_dry_friction = [&](const Joint<double>& joint) {
-    SetDefaultJointDryFriction(
-        diagnostic.MakePolicyForNode(*joint_spec.Element()),
-        GetJointDryFriction(joint_spec), joint.index(), plant);
+    const auto [dry_friction, element] =
+        GetJointDryFriction(diagnostic, joint_spec);
+    SetDefaultJointDryFriction(diagnostic.MakePolicyForNode(*element),
+                               dry_friction, joint.index(), plant);
   };
 
   // These will only be populated for prismatic and revolute joints.

@@ -784,8 +784,12 @@ void UrdfParser::ParseJoint(JointEffortLimits* joint_effort_limits,
   }
 
   if (index.has_value()) {
-    SetDefaultJointDryFriction(diagnostic_.MakePolicyForNode(node),
-                               dry_friction, *index, plant);
+    // Point diagnostics at the <dynamics> element that holds the friction.
+    XMLElement* dynamics_node = node->FirstChildElement("dynamics");
+    SetDefaultJointDryFriction(
+        diagnostic_.MakePolicyForNode(dynamics_node != nullptr ? dynamics_node
+                                                               : node),
+        dry_friction, *index, plant);
   }
 
   joint_effort_limits->emplace(name, effort);

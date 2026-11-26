@@ -418,15 +418,26 @@ SpatialInertia<double> ParseSpatialInertia(
     const math::RigidTransformd& X_BBi, double mass,
     const InertiaInputs& inertia_Bi_Bi);
 
+// Returns true if `dry_friction`, parsed from a model file for the joint named
+// `joint_name`, is a valid joint dry friction: non-negative and finite.
+// Otherwise reports an error on `diagnostic` and returns false. A value is
+// validated whether or not the plant ends up using it, so that whether a model
+// file is valid does not depend on the plant that loads it.
+bool ValidateJointDryFriction(
+    const drake::internal::DiagnosticPolicy& diagnostic, double dry_friction,
+    const std::string& joint_name);
+
 // Sets `dry_friction`, parsed from a model file, as the default dry friction of
 // the joint with index `joint_index` in `plant`, see
 // Joint::default_dry_friction(). A non-zero value is ignored with a warning
 // when MultibodyPlant does not support dry friction for the joint: when the
 // joint does not have exactly one degree of freedom, or when `plant` is
-// continuous.
+// continuous. The parsers don't call this for fixed joints, which don't read
+// joint dynamics at all.
 //
 // @param diagnostic   The error-reporting channel. A negative, infinite or NaN
-//                     `dry_friction` is reported as an error.
+//                     `dry_friction` is reported as an error, see
+//                     ValidateJointDryFriction().
 // @param dry_friction The parsed dry friction.
 // @param joint_index  The index of the joint that the model file specifies
 //                     `dry_friction` for.

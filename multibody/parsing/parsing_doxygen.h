@@ -115,10 +115,15 @@ future, we intend to update this documentation to itemize what isn't supported.
 
 The `//joint/axis/dynamics/friction` element sets the dry friction of a joint
 with one degree of freedom, see drake::multibody::Joint::default_dry_friction().
-For a joint with another number of degrees of freedom, or in a continuous
+For a joint with more than one degree of freedom, or in a continuous
 MultibodyPlant model, a non-zero value provokes a warning that the value is
-being ignored. The URDF attribute `/robot/joint/dynamics/@friction` and the
-MJCF attribute `//joint/@frictionloss` get the same treatment.
+being ignored. Fixed joints don't read joint dynamics, so their friction is not
+parsed. A negative, infinite or NaN value is an error, whether or not the value
+would be used. A MultibodyPlant with any non-zero joint dry friction does not
+support scalar conversion to symbolic::Expression.
+
+The URDF attribute `/robot/joint/dynamics/@friction` and the MJCF attribute
+`//joint/@frictionloss` get the same treatment.
 
 @subsection model_composition SDFormat model composition
 
@@ -227,6 +232,11 @@ Drake supports URDF files as described here: http://wiki.ros.org/urdf/XML.
 For Drake extensions to URDF format files, see
 @ref multibody_parsing_drake_extensions.
 
+@subsection urdf_joint_dry_friction Joint dry friction
+
+The `/robot/joint/dynamics/@friction` attribute sets the dry friction of a
+joint, with the same rules as for SDFormat; see @ref sdf_joint_dry_friction.
+
 @subsection multibody_parsing_urdf_unsupported URDF not supported by Drake
 
 Drake's parser does not implement all of the features of URDF. Here is a list
@@ -261,14 +271,8 @@ one of several treatments:
 
 @subsubsection urdf_ignored_special Tags given special treatment.
 
-- `/robot/joint/dynamics/@friction`
 - `/robot/transmission/actuator/mechanicalReduction`
 - `/robot/transmission/mechanicalReduction`
-
-The `friction` attribute sets the dry friction of a joint with one degree of
-freedom, see drake::multibody::Joint::default_dry_friction(). For a joint with
-another number of degrees of freedom, or in a continuous MultibodyPlant model, a
-non-zero value provokes a warning that the value is being ignored.
 
 Both versions of `mechanicalReduction` will be silently ignored if the supplied
 value is 1; otherwise the they will provoke a warning that the value is being

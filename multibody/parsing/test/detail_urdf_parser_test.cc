@@ -352,6 +352,46 @@ TEST_F(UrdfParserTest, DryFrictionIgnoredOnPlanarJoint) {
               MatchesRegex(".*'a'.*one degree of freedom.*ignored.*"));
 }
 
+// An invalid value is an error. The diagnostic points at the <dynamics>
+// element, on line 8.
+TEST_F(UrdfParserTest, InvalidDryFriction) {
+  EXPECT_NE(AddModelFromUrdfString(R"""(
+    <robot name='a'>
+      <link name='parent'/>
+      <link name='child'/>
+      <joint name='a' type='revolute'>
+        <parent link='parent'/>
+        <child link='child'/>
+        <dynamics friction='-1'/>
+      </joint>
+    </robot>)""",
+                                   ""),
+            std::nullopt);
+  EXPECT_THAT(TakeError(), MatchesRegex(".*:8: error: Joint 'a' has an "
+                                        "invalid dry friction of -1.*"));
+}
+
+// A continuous plant ignores the friction with a warning.
+TEST_F(UrdfParserTestContinuous, DryFrictionIgnoredInContinuousPlant) {
+  constexpr char kUrdf[] = R"""(
+    <robot name='a'>
+      <link name='parent'/>
+      <link name='child'/>
+      <joint name='a' type='revolute'>
+        <parent link='parent'/>
+        <child link='child'/>
+        <dynamics friction='10'/>
+      </joint>
+    </robot>)""";
+  const std::optional<ModelInstanceIndex> model =
+      AddModelFromUrdfString(kUrdf, "");
+  ASSERT_NE(model, std::nullopt);
+  EXPECT_THAT(TakeWarning(),
+              MatchesRegex(".*:8: warning: Joint 'a'.*only discrete.*"
+                           "ignored.*"));
+  EXPECT_EQ(plant_.GetJointByName("a", *model).default_dry_friction(), 0.0);
+}
+
 TEST_F(UrdfParserTest, DrakeCoulombWarning) {
   EXPECT_NE(AddModelFromUrdfString(R"""(
     <robot name='a'>

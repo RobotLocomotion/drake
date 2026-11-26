@@ -61,11 +61,6 @@ def _get_all_test_cases() -> Iterator[dict]:
         # TODO(#19992) for tracking these warnings.
         "package://drake_models/atlas/atlas_convex_hull.urdf",
         "package://drake_models/atlas/atlas_minimal_contact.urdf",
-        # We don't have any tracking issue for fixing the allegro models,
-        # because we don't use them for anything we care about. If someone
-        # wants to fix the warnings, be our guest.
-        "package://drake_models/allegro_hand_description/urdf/allegro_hand_description_left.urdf",  # noqa
-        "package://drake_models/allegro_hand_description/urdf/allegro_hand_description_right.urdf",  # noqa
         # TODO(jwnimmer-tri) Fix these warnings.
         "package://drake_models/jaco_description/urdf/j2n6s300_col.urdf",
     }

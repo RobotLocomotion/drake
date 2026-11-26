@@ -1693,6 +1693,23 @@ TEST_F(MujocoParserTest, JointErrors) {
   EXPECT_THAT(TakeError(), MatchesRegex(".*Unknown joint type.*"));
 }
 
+// A free joint adds no Joint, but an invalid friction loss is still an error,
+// as it is for every other joint type.
+TEST_F(MujocoParserTest, FreeJointInvalidFrictionLoss) {
+  std::string xml = R"""(
+<mujoco model="test">
+  <worldbody>
+    <body name="free" pos="1 2 3">
+      <joint type="free" name="free" frictionloss="-1"/>
+    </body>
+  </worldbody>
+</mujoco>
+)""";
+
+  AddModelFromString(xml, "test");
+  EXPECT_THAT(TakeError(), MatchesRegex(".*'free'.*invalid dry friction.*"));
+}
+
 std::string MakeAutoLimitsXML(bool auto_limits,
                               const std::string& motor_limit_prefix) {
   return fmt::format(R"""(
