@@ -28,6 +28,7 @@
 // #include "drake/multibody/inverse_kinematics/global_inverse_kinematics.h"
 // #include "drake/multibody/inverse_kinematics/inverse_kinematics.h"
 // #include "drake/multibody/inverse_kinematics/kinematic_evaluator_utilities.h"
+// #include "drake/multibody/inverse_kinematics/manipulability_cost.h"
 // #include "drake/multibody/inverse_kinematics/minimum_distance_lower_bound_constraint.h"
 // #include "drake/multibody/inverse_kinematics/minimum_distance_upper_bound_constraint.h"
 // #include "drake/multibody/inverse_kinematics/orientation_constraint.h"
@@ -955,7 +956,8 @@ optimization problem, consisting of: - one primary objective
 (JointCenteringCost) to resolve the nullspace within the primary
 objective, and - various optional constraints: -
 CartesianPositionLimitConstraint - CartesianVelocityLimitConstraint -
-CollisionConstraint - JointVelocityLimitConstraint
+CollisionConstraint - JointVelocityLimitConstraint -
+StaticStabilityConstraint
 
 In brief, we solve for ``v_next`` such that ``Jv_TGs * v_next`` is
 close to ``Vd_TGs`` subject to the constraints, where: - v_next is the
@@ -1781,6 +1783,127 @@ all of the ingredients in this recipe.)""";
             const char* doc = R"""()""";
           } num_ingredients;
         } Recipe;
+        // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::StaticStabilityConstraint
+        struct /* StaticStabilityConstraint */ {
+          // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
+          const char* doc =
+R"""(Constrains the center of mass of the selected model instances to
+remain statically stable, i.e., its projection along F's z axis
+(assumed parallel to gravity) stays inside a convex support region, at
+least a margin away from each of the region's bounding lines: ``∀i m ≤
+dᵢ + n̂ᵢᵀ ⋅ Jv_FScm_xy ⋅ v_next ⋅ Δt`` where: - F is the support
+frame, in whose xy plane the region is fixed (e.g., the body frame of
+a mobile base); - the support region is the 2D polyhedron {p : A p ≤
+b} in F's xy plane; - m is the margin; - n̂ᵢ = -aᵢ / |aᵢ| is the
+inward unit normal of the i'th row of A; - dᵢ = (bᵢ - aᵢᵀ ⋅ p_FScm_xy)
+/ |aᵢ| is the signed distance from the center of mass to the i'th
+bounding line (positive inside); - p_FScm_xy and Jv_FScm_xy are the xy
+components of the center of mass position and of its translational
+velocity Jacobian w.r.t. the active dofs, both measured and expressed
+in F.
+
+Because the Jacobian is measured in F, dofs that move F and all of the
+selected model instances together (e.g., the x, y, and yaw of a planar
+base carrying the whole robot) have zero columns.
+
+As with CollisionConstraint, a configuration already within the margin
+is required to return to it in a single step. If that is not possible,
+the program is infeasible and DifferentialInverseKinematicsSystem
+commands zero velocity.
+
+This is the differential analogue of ComInPolyhedronConstraint,
+specialized to a 2D region in F's xy plane.
+
+Warning:
+    This constraint assumes F's z axis is parallel to gravity (e.g., a
+    mobile base on flat, level ground in a plant whose gravity is
+    along -Wz); this is not checked.)""";
+          // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::StaticStabilityConstraint::AddToProgram
+          struct /* AddToProgram */ {
+            // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
+            const char* doc =
+R"""(Raises:
+    RuntimeError if ``support_frame`` or any of ``model_instances``
+    does not name an element of the plant, or if the selected model
+    instances are empty or have zero total mass.)""";
+          } AddToProgram;
+          // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::StaticStabilityConstraint::Config
+          struct /* Config */ {
+            // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
+            const char* doc = R"""()""";
+            // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::StaticStabilityConstraint::Config::Serialize
+            struct /* Serialize */ {
+              // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
+              const char* doc =
+R"""(Passes this object to an Archive. Refer to yaml_serialization "YAML
+Serialization" for background.)""";
+            } Serialize;
+            // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::StaticStabilityConstraint::Config::margin
+            struct /* margin */ {
+              // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
+              const char* doc =
+R"""("m" in the class overview (in meters). Must be finite. Positive values
+keep the center of mass inside the region; a negative value allows it
+up to |m| outside. If m is larger than the radius of the largest
+circle inscribed in the support region, no configuration satisfies the
+constraint, so the system always commands zero velocity.)""";
+            } margin;
+            // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::StaticStabilityConstraint::Config::model_instances
+            struct /* model_instances */ {
+              // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
+              const char* doc =
+R"""(The names of the model instances whose mass contributes to the center
+of mass. When empty, the collision checker's robot model instances are
+used; note that those might not include, e.g., an uncontrolled base.)""";
+            } model_instances;
+            // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::StaticStabilityConstraint::Config::support_frame
+            struct /* support_frame */ {
+              // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
+              const char* doc =
+R"""(The fully-scoped name of the support frame F.)""";
+            } support_frame;
+            // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::StaticStabilityConstraint::Config::support_region
+            struct /* support_region */ {
+              // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
+              const char* doc =
+R"""(The support region {p : A p ≤ b} in F's xy plane (in meters). Its
+ambient dimension must be 2, and A must be finite with no zero rows.
+To construct it from the vertices of a support polygon, use
+``HPolyhedron(VPolytope(vertices))``. A region with no rows adds no
+constraint. (In Python, yaml_dump_typed does not support this field.))""";
+            } support_region;
+            auto Serialize__fields() const {
+              return std::array{
+                std::make_pair("margin", margin.doc),
+                std::make_pair("model_instances", model_instances.doc),
+                std::make_pair("support_frame", support_frame.doc),
+                std::make_pair("support_region", support_region.doc),
+              };
+            }
+          } Config;
+          // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::StaticStabilityConstraint::GetConfig
+          struct /* GetConfig */ {
+            // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
+            const char* doc = R"""(Returns the current config.)""";
+          } GetConfig;
+          // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::StaticStabilityConstraint::SetConfig
+          struct /* SetConfig */ {
+            // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
+            const char* doc =
+R"""(Replaces the config set in the constructor.
+
+Raises:
+    RuntimeError if ``support_region`` or ``margin`` does not meet the
+    requirements in its Config documentation.)""";
+          } SetConfig;
+          // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::StaticStabilityConstraint::StaticStabilityConstraint
+          struct /* ctor */ {
+            // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
+            const char* doc =
+R"""(Raises:
+    RuntimeError if the config is invalid (see SetConfig).)""";
+          } ctor;
+        } StaticStabilityConstraint;
         // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::Vd_TG_limit
         struct /* Vd_TG_limit */ {
           // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
@@ -2532,7 +2655,10 @@ Parameter ``plant``:
 Parameter ``options``:
     The options to relax SO(3) constraint as mixed-integer convex
     constraints. Refer to MixedIntegerRotationConstraintGenerator for
-    more details on the parameters in options.)""";
+    more details on the parameters in options.
+
+Raises:
+    RuntimeError if ``plant`` contains any kinematic loops.)""";
         } ctor;
         // Symbol: drake::multibody::GlobalInverseKinematics::Options
         struct /* Options */ {
@@ -2837,6 +2963,30 @@ Precondition:
 Raises:
     RuntimeError if cone_half_angle is outside of the bound.)""";
         } AddGazeTargetConstraint;
+        // Symbol: drake::multibody::InverseKinematics::AddManipulabilityCost
+        struct /* AddManipulabilityCost */ {
+          // Source: drake/multibody/inverse_kinematics/inverse_kinematics.h
+          const char* doc =
+R"""(Adds a cost of the form ``-c * w(q)``, where ``w`` is Yoshikawa's
+manipulability index of frame B relative to frame A. See
+ManipulabilityCost for details.
+
+Parameter ``frameA``:
+    The frame in which frame B's motion is measured.
+
+Parameter ``frameB``:
+    The frame whose manipulability is measured.
+
+Parameter ``c``:
+    A positive, finite scalar cost weight.
+
+Raises:
+    RuntimeError if ``c`` is not positive and finite.
+
+Raises:
+    RuntimeError if fewer than six generalized velocities are on the
+    kinematic path between frame A and frame B.)""";
+        } AddManipulabilityCost;
         // Symbol: drake::multibody::InverseKinematics::AddMinimumDistanceLowerBoundConstraint
         struct /* AddMinimumDistanceLowerBoundConstraint */ {
           // Source: drake/multibody/inverse_kinematics/inverse_kinematics.h
@@ -3226,6 +3376,94 @@ R"""(Getter for q. q is the decision variable for the generalized positions
 of the robot.)""";
         } q;
       } InverseKinematics;
+      // Symbol: drake::multibody::ManipulabilityCost
+      struct /* ManipulabilityCost */ {
+        // Source: drake/multibody/inverse_kinematics/manipulability_cost.h
+        const char* doc =
+R"""(Implements a cost of the form ``-c * w(q)``, where ``w`` is
+Yoshikawa's manipulability index of frame B relative to frame A, so
+that minimizing the cost maximizes manipulability. With J the ``6 x
+n`` spatial velocity Jacobian of frame B measured in frame A, keeping
+only the columns of the n generalized velocities on the kinematic path
+between A and B,
+
+
+.. raw:: html
+
+    <details><summary>Click to expand C++ code...</summary>
+
+.. code-block:: c++
+
+    w(q) = √det(J Jᵀ).
+
+.. raw:: html
+
+    </details>
+
+J comes from the plant's kinematic tree alone, so constraints the
+plant holds (e.g. coupler, distance, ball or weld constraints) don't
+reduce it, and the index can overstate the manipulability of a
+constrained mechanism.
+
+The index depends only on the bodies of frames A and B, not on the
+frames' poses on those bodies, and swapping A and B leaves it
+unchanged. If a floating joint is on the path (e.g. A is the world
+frame and the robot's base floats), its six columns make J Jᵀ
+nonsingular everywhere; to measure an arm's manipulability, use the
+arm's base as frame A. The gradient is exact, computed from
+MultibodyPlant∷CalcHessianSpatialVelocity().
+
+At a singularity (det(J Jᵀ) = 0) the cost is zero. Where J has rank 4
+or less, its gradient is zero too, so a solver started there gets no
+push from this cost and may stop there. Many arms are singular at q =
+0, which is where most solvers start when no initial guess is set; set
+an initial guess away from singularities.
+
+The constructor requires at least six generalized velocities on the
+path between A and B, since with fewer det(J Jᵀ) is always zero. Six
+is necessary but not sufficient: if the path's joints can't move B in
+all six directions relative to A (e.g. a planar chain), the cost and
+its gradient are zero at every q.
+
+T. Yoshikawa, "Manipulability of Robotic Mechanisms," The
+International Journal of Robotics Research, 4(2), pp. 3-9, 1985.)""";
+        // Symbol: drake::multibody::ManipulabilityCost::ManipulabilityCost
+        struct /* ctor */ {
+          // Source: drake/multibody/inverse_kinematics/manipulability_cost.h
+          const char* doc =
+R"""(Constructs ManipulabilityCost object.
+
+Parameter ``plant``:
+    The MultibodyPlant on which the cost is implemented. ``plant``
+    should be alive during the lifetime of this cost.
+
+Parameter ``frameA``:
+    The frame in which frame B's motion is measured.
+
+Parameter ``frameB``:
+    The frame whose manipulability is measured.
+
+Parameter ``c``:
+    A positive, finite scalar cost weight.
+
+Parameter ``plant_context``:
+    A context for the ``plant``.
+
+Raises:
+    RuntimeError if ``plant`` is nullptr.
+
+Raises:
+    RuntimeError if ``plant_context`` is nullptr.
+
+Raises:
+    RuntimeError if ``c`` is not positive and finite.
+
+Raises:
+    RuntimeError if fewer than six generalized velocities are on the
+    kinematic path between frame A and frame B (det(J Jᵀ) would always
+    be zero).)""";
+        } ctor;
+      } ManipulabilityCost;
       // Symbol: drake::multibody::MinimumDistanceLowerBoundConstraint
       struct /* MinimumDistanceLowerBoundConstraint */ {
         // Source: drake/multibody/inverse_kinematics/minimum_distance_lower_bound_constraint.h

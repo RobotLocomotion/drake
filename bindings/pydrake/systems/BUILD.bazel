@@ -100,6 +100,7 @@ drake_pybind_library(
 drake_pybind_library(
     name = "analysis_py",
     cc_deps = [
+        "//bindings/generated_docstrings:multibody_cenic",
         "//bindings/generated_docstrings:systems_analysis",
         "//bindings/pydrake/common:cpp_template_pybind",
         "//bindings/pydrake/common:default_scalars_pybind",
@@ -115,6 +116,7 @@ drake_pybind_library(
         ":module_py",
         ":primitives_py",
         "//bindings/pydrake:trajectories_py",
+        "//bindings/pydrake/multibody:contact_solvers_py",
         "//bindings/pydrake/solvers",
     ],
 )
@@ -173,6 +175,7 @@ drake_pybind_library(
     name = "sensors_py",
     cc_deps = [
         "//bindings/generated_docstrings:systems_sensors",
+        "//bindings/pydrake:lcm_type_hook_pybind",
         "//bindings/pydrake/common:cpp_template_pybind",
         "//bindings/pydrake/common:default_scalars_pybind",
         "//bindings/pydrake/common:deprecation_pybind",
@@ -241,6 +244,8 @@ drake_pybind_library(
         ":lcm_pybind",
         "//bindings/generated_docstrings:lcm",
         "//bindings/generated_docstrings:systems_lcm",
+        "//bindings/pydrake:lcm_type_hook_pybind",
+        "//bindings/pydrake/common:ref_cycle_pybind",
     ],
     cc_srcs = [
         "lcm_py.cc",
@@ -440,6 +445,14 @@ drake_py_unittest(
         ":test_util_py",
         "//bindings/pydrake:trajectories_py",
         "//bindings/pydrake/common/test_utilities",
+        "//bindings/pydrake/multibody:cenic_py",
+    ],
+)
+
+drake_py_unittest(
+    name = "analysis_yaml_tag_test",
+    deps = [
+        ":analysis_py",
     ],
 )
 

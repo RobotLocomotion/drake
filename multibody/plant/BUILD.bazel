@@ -361,6 +361,7 @@ drake_cc_library(
     hdrs = ["multibody_plant_config.h"],
     deps = [
         "//common:name_value",
+        "//common/schema:unchanged",
     ],
 )
 
@@ -442,6 +443,8 @@ drake_cc_googletest(
         "//geometry:scene_graph",
         "//multibody/parsing",
         "//systems/analysis:simulator",
+        "//systems/analysis:simulator_config",
+        "//systems/analysis:simulator_config_functions",
     ],
 )
 
@@ -554,6 +557,15 @@ drake_cc_googletest(
         ":plant",
         "//common/test_utilities:eigen_matrix_compare",
         "//multibody/parsing",
+    ],
+)
+
+drake_cc_googletest(
+    name = "sap_driver_joint_friction_test",
+    deps = [
+        ":compliant_contact_manager_tester",
+        ":plant",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -872,6 +884,7 @@ drake_cc_googletest(
         "//multibody/plant:contact_results_to_lcm",
         "//systems/analysis:implicit_euler_integrator",
         "//systems/analysis:simulator",
+        "//systems/analysis:simulator_config_functions",
         "//systems/framework:diagram",
     ],
 )

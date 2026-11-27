@@ -6,7 +6,6 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
-#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/proximity/volume_mesh.h"
 #include "drake/geometry/proximity/volume_to_surface_mesh.h"
 

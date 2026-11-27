@@ -1,19 +1,25 @@
 #pragma once
 
 #include <memory>
+#include <optional>
 #include <vector>
 
+#include "drake/common/drake_deprecated.h"
+#include "drake/multibody/cenic/cenic_integrator_parameters.h"
 #include "drake/multibody/contact_solvers/icf/icf_builder.h"
 #include "drake/multibody/contact_solvers/icf/icf_external_systems_linearizer.h"
 #include "drake/multibody/contact_solvers/icf/icf_model.h"
 #include "drake/multibody/contact_solvers/icf/icf_solver.h"
 #include "drake/multibody/contact_solvers/icf/icf_solver_parameters.h"
+#include "drake/multibody/plant/discrete_step_memory.h"
 #include "drake/multibody/plant/multibody_plant.h"
+#include "drake/multibody/tree/multibody_forces.h"
 #include "drake/systems/analysis/integrator_base.h"
 
 namespace drake {
 namespace multibody {
 namespace internal {
+
 /* A sequence of subsystem indices that allows finding an arbitrary
 nested-diagram asset from the root. */
 using SubsystemPath = std::vector<systems::SubsystemIndex>;
@@ -61,7 +67,8 @@ Benefits of CENIC include:
   arbitrary stiff controllers (e.g., a custom `LeafSystem`) to the
   `MultibodyPlant` and have them treated implicitly in CENIC's convex
   formulation. This allows for larger time steps, leading to faster and more
-  stable simulations.
+  stable simulations. (This is the default; see @ref
+  cenic_explicit_external_inputs "Explicit external inputs" for the opt-out.)
 
 - **Principled static/dynamic friction modeling**. Unlike discrete solvers,
   CENIC can simulate frictional contact with different static and dynamic
@@ -83,6 +90,125 @@ MultibodyPlant subsystem, at any level of Diagram nesting.
 
 Running CENIC in fixed-step mode (with error-control disabled) recovers the
 "Lagged" variant of discrete-time ICF simulation from [Castro et al., 2023].
+
+**Force reporting.** CENIC does not integrate the plant's own continuous
+contact dynamics, so by default the plant's dynamics output ports (e.g.,
+`reaction_forces`, `contact_results`, `generalized_acceleration`) report the
+plant's compliant contact model, which is inconsistent with the simulated
+trajectory. To report the ICF contact and constraint forces instead, set
+`use_sampled_output_ports: true` in the plant's MultibodyPlantConfig (the
+preferred spelling), or call MultibodyPlant::SetUseSampledOutputPorts(true) on
+the (continuous-time) plant before finalizing it. CENIC then records, at every
+step, a sample of the dynamics of the convex problem that produced the new
+state: the constraint impulses γ divided by that step's time step δt (for
+error-controlled steps, the second half-step), together with the resulting
+accelerations, joint reaction forces, contact results, and net actuation. The
+plant's dynamics output ports report that sample until the next step. Before the
+first step the sample is empty (zero forces and accelerations, no contacts). As
+with discrete-time plants, the sample's kinematics (e.g., contact points and the
+frames of the reaction forces) are those at the start of the solved step. For an
+error-controlled step that is the configuration at the midpoint t + h/2, not at
+the end of the step t + h, so it can lag the Context's body poses by up to half
+a step. See
+@ref output_port_sampling "Output port sampling" for details.
+
+Sampling requires steps. If the whole system has no continuous state (e.g.,
+every body is welded to the world and nothing else has state), the Simulator
+never asks the integrator to step, so nothing could ever be sampled.
+Initialize() throws in that case when the plant has sampled output ports.
+
+**Deprecation.** Using CenicIntegrator with a plant that does not have sampled
+output ports is deprecated, with removal on or after 2027-03-01: Initialize()
+logs a deprecation warning (once per process for each scalar type), and a future
+version of Drake will refuse such a plant, as it does a plant with the wrong
+time step. Set the `DRAKE_DEPRECATION_RUNTIME_SEVERITY=error` environment
+variable to see that behavior now.
+
+Initialize() replaces the plant's sample with an empty one, so the sampled ports
+report zeros until the first step; this includes re-initializing a Context that
+CENIC has already stepped. The sample lives in the Context, so it outlives
+CENIC: if CENIC is replaced by an integrator that does not record samples (or
+its Context is cloned for one), the sampled ports keep reporting CENIC's last
+sample while the state moves on. Evaluating a sampled port before any
+integrator has initialized the Context throws.
+
+The reported reaction forces use external spatial forces (the plant's
+`applied_spatial_force` input port) evaluated at the start of the solved step,
+whereas, by default, the solve itself is implicit in their linearization. For
+strongly velocity-dependent external forces the reported reaction forces can
+therefore be inconsistent with the step's acceleration, by roughly the force's
+velocity gradient times the step's change in velocity. Actuation and contact are
+not affected. With @ref cenic_explicit_external_inputs "explicit external
+inputs" the solve also holds those forces at their start-of-step values, so in
+fixed-step mode the reported reaction forces are consistent with the solve. With
+error control, the reported solve is the second half-step, and the forces are
+evaluated at its start (the midpoint of the step) while the solve still holds
+the start-of-step values, so they can differ by the forces' change over half a
+step.
+
+@anchor cenic_explicit_external_inputs
+### Explicit external inputs
+
+By default, CENIC linearizes the MultibodyPlant's external inputs (actuation and
+external forces) with finite differences so that it can treat them implicitly.
+That re-evaluates all upstream systems several times per step, which is
+expensive when the inputs come from complicated external systems. Alternatively,
+CENIC can hold those inputs fixed over each step (i.e., treat them explicitly),
+so that linearizing them evaluates the upstream systems only once per step,
+which is up to about `nv + 2` times fewer upstream evaluations for a plant with
+`nv` generalized velocities. (Other work, such as advancing the continuous state
+of other systems, is unchanged.) See
+CenicIntegratorParameters::explicit_external_inputs.
+
+This choice does not depend on whether error control is enabled: explicit inputs
+can be used in both fixed-step and error-controlled modes. Explicit inputs give
+up the implicit treatment of stiff controllers, so if a controller is stiff
+relative to the step size, use a smaller step or leave explicit inputs off. With
+error control, note that both half-steps used to estimate the error hold the
+same start-of-step inputs as the full step, so the error estimate does not see
+the error from holding the inputs fixed. Error control alone therefore does not
+protect against a step size that is too large for a stiff controller.
+(Joint-level PD controllers set through the plant's desired-state input ports
+are analytic, so they stay implicit either way.)
+
+@anchor cenic_discrete_like_mode
+### Discrete-like mode
+
+ICF is not (yet) available as a discrete-time MultibodyPlant solver. One way to
+get discrete-like behavior (a fixed time step, and no repeated evaluation of the
+other systems in the diagram to linearize their inputs) is to combine a
+continuous-time plant, fixed-step CENIC, and explicit external inputs. With YAML
+configuration, that looks like:
+
+@code{.yaml}
+# MultibodyPlantConfig
+time_step: 0.0
+# SimulatorConfig
+integration_scheme: cenic
+max_step_size: 0.001  # The fixed step size.
+use_error_control: false
+integrator_params: !CenicIntegratorParameters
+  explicit_external_inputs: true
+@endcode
+
+In C++, the equivalent calls are `set_fixed_step_mode(true)` and
+`SetParameters()` with `explicit_external_inputs = true`.
+
+Each setting does its own job, and they can be mixed freely:
+
+- `time_step: 0.0` makes the plant continuous, so that CENIC integrates it.
+- `use_error_control: false` takes fixed steps of size `max_step_size`.
+- `explicit_external_inputs: true` (within `integrator_params`) treats external
+  inputs explicitly (see above).
+
+Caveats:
+
+- CENIC advances the continuous state of any other system in the diagram with
+  explicit Euler, in both fixed-step and error-controlled modes. Error control
+  does not currently account for that state (see the warning below), so in
+  either mode nothing catches a step size that makes that update unstable.
+- Explicit external inputs reduce the cost of evaluating the upstream systems,
+  but do not change the cost of integrating other systems' continuous state.
 
 Implementation notes:
 
@@ -136,13 +262,24 @@ class CenicIntegrator final : public systems::IntegratorBase<T> {
   optimization problem. */
   const MultibodyPlant<T>& plant() const { return *structure_.plant; }
 
-  /** Gets the current convex solver tolerances and iteration limits. */
+  /** Gets the current CENIC and ICF solver parameters. */
+  CenicIntegratorParameters GetParameters() const {
+    return {.explicit_external_inputs = explicit_external_inputs_,
+            .icf_solver = solver_.get_parameters()};
+  }
+
+  /** Sets the CENIC and ICF solver parameters. See
+  CenicIntegratorParameters for the meaning of each setting. */
+  void SetParameters(const CenicIntegratorParameters& parameters);
+
+  DRAKE_DEPRECATED("2027-03-01", "Use GetParameters().icf_solver instead.")
   const contact_solvers::icf::IcfSolverParameters& get_solver_parameters()
       const {
     return solver_.get_parameters();
   }
 
-  /** Sets the convex solver tolerances and iteration limits. */
+  DRAKE_DEPRECATED("2027-03-01",
+                   "Use GetParameters() and SetParameters() instead.")
   void SetSolverParameters(
       const contact_solvers::icf::IcfSolverParameters& parameters);
 
@@ -162,6 +299,23 @@ class CenicIntegrator final : public systems::IntegratorBase<T> {
     here. */
     VectorX<T> v_guess;
     VectorX<T> q;
+
+    /* Storage for recording output port samples; see RecordStepMemory(). */
+    contact_solvers::icf::internal::IcfData<T> report_data;
+    /* Same, for the reduced model when joint locking reduced the problem. */
+    contact_solvers::icf::internal::IcfData<T> reduced_report_data;
+    /* For each patch of the full model, its index in the reduced model, or -1
+    if reduction dropped it. */
+    std::vector<int> reduced_patch_of;
+    std::unique_ptr<MultibodyForces<T>> applied_forces;
+    VectorX<T> vdot;
+    VectorX<T> generalized_forces;
+    VectorX<T> tau_contact;
+    VectorX<T> net_actuation;
+    /* The velocity index actuated by each actuation input; i.e., the
+    nonzero row of each column of the plant's actuation matrix, which is a
+    selection of dofs. */
+    std::vector<int> actuated_dofs;
 
     /* Linearized external system gains (sized to the plant's num_velocities):
     Torque-limited actuation, τᵤ(v) ≈ clamp(-Kᵤ⋅v + bᵤ, e). */
@@ -215,6 +369,23 @@ class CenicIntegrator final : public systems::IntegratorBase<T> {
       const contact_solvers::icf::internal::IcfModel<T>& model,
       const VectorX<T>& v_guess, systems::ContinuousState<T>* x_next);
 
+  /* Records a sample of the dynamics of the step just solved into the plant's
+  step memory (abstract state), for use by the plant's sampled output ports.
+  See MultibodyPlant::SetUseSampledOutputPorts().
+
+  @param model The ICF model of the solve that produced the accepted next state
+               (its time step is used to convert impulses to forces).
+  @param has_actuation_forces Whether `model` includes actuation gain
+                              constraints.
+  @param has_external_forces Whether `model` includes external force gain
+                             constraints.
+  @pre this->get_context() still holds the state (q₀, v₀) from which `model`
+       was built, and data_ holds the solution of that model.
+  @pre plant().has_sampled_output_ports(). */
+  void RecordStepMemory(
+      const contact_solvers::icf::internal::IcfModel<T>& model,
+      bool has_actuation_forces, bool has_external_forces);
+
   /* Advances the plant's generalized positions, q = q₀ + h N(q₀) v, taking care
   to handle quaternion DoFs properly.
 
@@ -235,6 +406,9 @@ class CenicIntegrator final : public systems::IntegratorBase<T> {
   const contact_solvers::icf::internal::IcfExternalSystemsLinearizer<T>
       external_systems_linearizer_;
 
+  /* Whether external inputs are held fixed over each step. */
+  bool explicit_external_inputs_{false};
+
   /* ICF integrator state and storage. */
   std::unique_ptr<contact_solvers::icf::internal::IcfBuilder<T>> builder_;
   contact_solvers::icf::internal::IcfSolver solver_;
@@ -251,6 +425,15 @@ class CenicIntegrator final : public systems::IntegratorBase<T> {
   /* Track whether solves are initialized at the same time as a previous
   rejected step, to enable model (e.g., constraints, geometry) reuse. */
   T time_at_last_solve_{NAN};
+
+  /* The sampled output port memory (see RecordStepMemory()) as of the start of
+  the most recent fresh (not retried) step, i.e., the last accepted sample.
+  IntegratorBase restores only time and continuous state when it rejects a
+  step, so DoStep() puts this back before retrying; otherwise the retry's
+  external systems would see the rejected trial's sample. Empty unless the
+  plant has sampled output ports. (An optional, rather than a unique_ptr, so
+  that remembering the sample for each fresh step doesn't allocate.) */
+  std::optional<internal::DiscreteStepMemory> last_accepted_memory_;
 
   /* Preallocated scratch space for intermediate calculations. */
   Scratch scratch_;

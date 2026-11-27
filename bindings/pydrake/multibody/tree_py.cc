@@ -340,6 +340,8 @@ void DoScalarDependentDefinitions(py::module_ m, T) {
         .def("scoped_name", &Class::scoped_name, cls_doc.scoped_name.doc)
         .def("body_frame", &Class::body_frame, py_rvp::reference_internal,
             cls_doc.body_frame.doc)
+        .def("primary_link", &Class::primary_link, py_rvp::reference_internal,
+            cls_doc.primary_link.doc)
         .def("is_floating_base_body", &Class::is_floating_base_body,
             cls_doc.is_floating_base_body.doc)
         .def("has_quaternion_dofs", &Class::has_quaternion_dofs,
@@ -498,7 +500,15 @@ void DoScalarDependentDefinitions(py::module_ m, T) {
             py::keep_alive<0, 2>(), return_value_policy_for_scalar_type<T>(),
             cls_doc.GetDampingVector.doc)
         .def("SetDampingVector", &Class::SetDampingVector, py::arg("context"),
-            py::arg("damping"), cls_doc.SetDampingVector.doc);
+            py::arg("damping"), cls_doc.SetDampingVector.doc)
+        .def("default_dry_friction", &Class::default_dry_friction,
+            cls_doc.default_dry_friction.doc)
+        .def("set_default_dry_friction", &Class::set_default_dry_friction,
+            py::arg("dry_friction"), cls_doc.set_default_dry_friction.doc)
+        .def("GetDryFriction", &Class::GetDryFriction, py::arg("context"),
+            cls_doc.GetDryFriction.doc)
+        .def("SetDryFriction", &Class::SetDryFriction, py::arg("context"),
+            py::arg("dry_friction"), cls_doc.SetDryFriction.doc);
   }
 
   // BallRpyJoint

@@ -36,6 +36,56 @@ class _SchemaLoader(yaml.loader.SafeLoader):
         result.update({"_tag": tag})
         return result
 
+    def compose_node(self, parent, index):
+        """Overrides PyYAML's compose_node so that an alias (``*name``) yields
+        a copy of the anchored node, instead of the very same node.
+
+        By default PyYAML would return a single Python object that appears at
+        multiple places in the loaded document (including via merge keys,
+        ``<<: *name``), so that mutating one place silently mutates the
+        others. Drake's C++ yaml loading yields independent copies, so we do
+        the same here, by copying at the node level (like C++'s
+        ConvertJbederYamlNodeToDrakeYamlNode) before any merge keys are
+        flattened or objects are constructed.
+        """
+        is_alias = self.check_event(yaml.events.AliasEvent)
+        node = super().compose_node(parent, index)
+        if not is_alias:
+            return node
+        if node.end_mark is None:
+            raise yaml.composer.ComposerError(
+                context=None,
+                context_mark=None,
+                problem=(
+                    "found an alias to an anchor that is not yet complete "
+                    "(recursive aliases are not supported by Drake's "
+                    "yaml_load conventions)"
+                ),
+                problem_mark=node.start_mark,
+            )
+        return self._copy_node(node)
+
+    @staticmethod
+    def _copy_node(node):
+        # Scalar nodes (and marks) are never mutated, so they can be shared.
+        if isinstance(node, yaml.ScalarNode):
+            return node
+        if isinstance(node, yaml.SequenceNode):
+            value = [_SchemaLoader._copy_node(x) for x in node.value]
+        else:
+            assert isinstance(node, yaml.MappingNode)
+            value = [
+                (_SchemaLoader._copy_node(k), _SchemaLoader._copy_node(v))
+                for k, v in node.value
+            ]
+        return type(node)(
+            tag=node.tag,
+            value=value,
+            start_mark=node.start_mark,
+            end_mark=node.end_mark,
+            flow_style=node.flow_style,
+        )
+
 
 _SchemaLoader.add_multi_constructor("", _SchemaLoader._handle_multi_variant)
 
@@ -51,6 +101,11 @@ def yaml_load_data(data, *, private=False):
     that yaml anchors and templates are invisibly easy to use.  Callers that
     wish to receive the private data may pass `private=True`.
 
+    Every yaml alias (``*name``, including within merge keys ``<<: *name``)
+    is expanded into an independent copy of its anchored node, so the
+    returned objects never share any aliased sub-objects; mutating one place
+    in the result never changes another place.
+
     This function returns the raw, untyped data (dict, list, str, float, etc.)
     without any schema checking nor default values. To load with respect to
     a schema with defaults, see ``yaml_load_typed()``.
@@ -62,14 +117,16 @@ def yaml_load_data(data, *, private=False):
         except AttributeError:
             all_keys = []
         for key in all_keys:
-            if key.startswith("_"):
+            if isinstance(key, str) and key.startswith("_"):
                 del result[key]
     return result
 
 
 def yaml_load_file(filename, *, private=False):
     """Loads and returns the given `filename` as a yaml object, while also
-    accounting for variant-like type tags.
+    accounting for variant-like type tags.  Every yaml alias is expanded into
+    an independent copy of its anchored node, so the returned objects never
+    share any aliased sub-objects.
 
     See yaml_load_data for full details; this function differs only by reading
     the yaml data from a file instead of memory.
@@ -255,18 +312,11 @@ def _is_union(generic_base):
     return generic_base in [typing.Union, types.UnionType]
 
 
-def _get_nested_optional_type(schema):
-    """If the given schema (i.e., type) is equivalent to an Optional[Foo], then
-    returns Foo. Otherwise, returns None.
-    """
-    generic_base = typing.get_origin(schema)
-    if _is_union(generic_base):
-        generic_args = typing.get_args(schema)
-        NoneType = type(None)
-        if len(generic_args) == 2 and generic_args[-1] == NoneType:
-            (nested_type, _) = generic_args
-            return nested_type
-    return None
+def _is_nullable(schema):
+    """Returns True iff the given schema is a Union that allows None."""
+    if _is_union(typing.get_origin(schema)):
+        return type(None) in typing.get_args(schema)
+    return False
 
 
 def _create_from_schema(*, schema, forthcoming_value):
@@ -373,31 +423,6 @@ def _merge_yaml_dict_item_into_target(
         setter(new_value)
         return
 
-    # Handle nullable types (std::optional<T> or typing.Optional[T]).
-    nested_optional_type = _get_nested_optional_type(value_schema)
-    if nested_optional_type is not None:
-        # If the yaml was null, the Python field will be None.
-        if yaml_value is None:
-            setter(None)
-            return
-        # Create a non-null default value, if necessary.
-        old_value = getter()
-        if old_value is None:
-            setter(
-                _create_from_schema(
-                    schema=nested_optional_type, forthcoming_value=yaml_value
-                )
-            )
-        # Now we can parse Optional[Foo] like a plain Foo.
-        _merge_yaml_dict_item_into_target(
-            options=options,
-            name=name,
-            yaml_value=yaml_value,
-            target=target,
-            value_schema=nested_optional_type,
-        )
-        return
-
     # Handle pathlib.Path.
     if value_schema == Path:
         if not isinstance(yaml_value, str):
@@ -476,7 +501,9 @@ def _merge_yaml_dict_item_into_target(
         setter(new_value)
         return
 
-    # Handle schema sum types (std::variant<...> or typing.Union[...]).
+    # Handle schema sum types (std::variant<...> or typing.Union[...]). This
+    # also covers nullable types (std::optional<T> or typing.Optional[T]),
+    # which are just a sum type that includes None.
     if _is_union(generic_base):
         # The YAML data might be a scalar value (as opposed to a mapping).
         yaml_value_type = type(yaml_value)
@@ -589,9 +616,9 @@ def _merge_yaml_dict_into_target(*, options, yaml_dict, target, target_schema):
     static_field_map = _enumerate_field_types(target_schema)
     schema_names = list(static_field_map.keys())
     schema_optionals = {
-            name
-            for name, sub_schema in static_field_map.items()
-            if _get_nested_optional_type(sub_schema) is not None
+        name
+        for name, sub_schema in static_field_map.items()
+        if _is_nullable(sub_schema)
     }
     yaml_names = list(yaml_dict.keys())
     extra_yaml_names = [name for name in yaml_names if name not in schema_names]
@@ -793,14 +820,9 @@ def _yaml_dump_typed_item(*, obj, schema):
             result[key] = value_plain
         return result
 
-    # Handle nullable types (std::optional<T> or typing.Optional[T]).
-    optional_schema = _get_nested_optional_type(schema)
-    if optional_schema is not None:
-        if obj is None:
-            return None
-        return _yaml_dump_typed_item(obj=obj, schema=optional_schema)
-
-    # Handle schema sum types (std::variant<...> or typing.Union[...]).
+    # Handle schema sum types (std::variant<...> or typing.Union[...]). This
+    # also covers nullable types (std::optional<T> or typing.Optional[T]),
+    # which are just a sum type that includes None.
     if _is_union(generic_base):
         if obj is None:
             if type(None) in generic_args:
@@ -858,9 +880,10 @@ def _yaml_dump_typed_item(*, obj, schema):
         item_obj = _yaml_dump_get_attribute(obj=obj, name=name)
         item_plain = _yaml_dump_typed_item(obj=item_obj, schema=item_schema)
         if item_plain is None:
-            if _get_nested_optional_type(item_schema) is not None:
-                # When an Optional member field is set to None, then don't emit
-                # "{name}: null"; instead, just skip it entirely.
+            if _is_nullable(item_schema):
+                # When an Optional (or other nullable Union) member field is
+                # set to None, then don't emit "{name}: null"; instead, just
+                # skip it entirely.
                 continue
         result[name] = item_plain
     return result

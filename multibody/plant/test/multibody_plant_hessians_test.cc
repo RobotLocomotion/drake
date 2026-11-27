@@ -782,6 +782,10 @@ GTEST_TEST(BranchingTreeTest, AutoDiffScalarType) {
   std::unique_ptr<Context<AutoDiffXd>> context_autodiff =
       plant_autodiff->CreateDefaultContext();
   context_autodiff->SetTimeStateAndParametersFrom(*tree.context);
+  const VectorXd q = plant.GetPositions(*tree.context);
+  const int nq = q.size();
+  plant_autodiff->SetPositions(context_autodiff.get(),
+                               math::InitializeAutoDiff(q));
   std::vector<Matrix6X<AutoDiffXd>> H_autodiff;
   plant_autodiff->CalcHessianSpatialVelocity(
       *context_autodiff, JacobianWrtVariable::kV,
@@ -790,9 +794,35 @@ GTEST_TEST(BranchingTreeTest, AutoDiffScalarType) {
       plant_autodiff->get_frame(tree.frame_E->index()),
       plant_autodiff->get_frame(tree.frame_A->index()), &H_autodiff);
   ASSERT_EQ(ssize(H_autodiff), ssize(H));
+
+  // The derivatives with respect to q match central differences.
+  std::unique_ptr<Context<double>> context = tree.context->Clone();
+  auto calc_H = [&](const VectorXd& q_perturbed) {
+    plant.SetPositions(context.get(), q_perturbed);
+    std::vector<Matrix6Xd> result;
+    plant.CalcHessianSpatialVelocity(*context, JacobianWrtVariable::kV,
+                                     *tree.frame_B, kArbitraryPoint,
+                                     *tree.frame_E, *tree.frame_A, &result);
+    return result;
+  };
+  const double step = 1e-6;
+  const double fd_tolerance = 1e-7;
+  std::vector<MatrixXd> dH_dq(ssize(H), MatrixXd(6 * H[0].cols(), nq));
+  for (int k = 0; k < nq; ++k) {
+    const std::vector<Matrix6Xd> H_plus =
+        calc_H(q + step * VectorXd::Unit(nq, k));
+    const std::vector<Matrix6Xd> H_minus =
+        calc_H(q - step * VectorXd::Unit(nq, k));
+    for (int i = 0; i < ssize(H); ++i) {
+      const Matrix6Xd dH = (H_plus[i] - H_minus[i]) / (2 * step);
+      dH_dq[i].col(k) = dH.reshaped();
+    }
+  }
   for (int i = 0; i < ssize(H); ++i) {
     EXPECT_TRUE(CompareMatrices(math::ExtractValue(H_autodiff[i]), H[i],
                                 kTolerance, MatrixCompareType::relative));
+    EXPECT_TRUE(CompareMatrices(math::ExtractGradient(H_autodiff[i], nq),
+                                dH_dq[i], fd_tolerance));
   }
 }
 

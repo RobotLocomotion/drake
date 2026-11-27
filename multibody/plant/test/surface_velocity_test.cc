@@ -846,6 +846,13 @@ INSTANTIATE_TEST_SUITE_P(
       continuous_hydro.time_step = 0.0;
       continuous_hydro.contact_model = "hydroelastic_with_fallback";
 
+      // CENIC requires a plant with sampled output ports.
+      MultibodyPlantConfig cenic_point = continuous_point;
+      cenic_point.use_sampled_output_ports = true;
+
+      MultibodyPlantConfig cenic_hydro = continuous_hydro;
+      cenic_hydro.use_sampled_output_ports = true;
+
       MultibodyPlantConfig discrete_point_sap;
       discrete_point_sap.time_step = 1e-3;
       discrete_point_sap.contact_model = "point";
@@ -875,9 +882,9 @@ INSTANTIATE_TEST_SUITE_P(
           // terrifyingly slow.
           {"continuous_point", continuous_point},
           {"continuous_hydro", continuous_hydro},
-          {"continuous_point_cenic", continuous_point,
+          {"continuous_point_cenic", cenic_point,
            /* use_deformable = */ false, /* use_cenic = */ true},
-          {"continuous_hydro_cenic", continuous_hydro,
+          {"continuous_hydro_cenic", cenic_hydro,
            /* use_deformable = */ false, /* use_cenic = */ true},
           {"discrete_point_sap", discrete_point_sap},
           {"discrete_hydro_sap", discrete_hydro_sap},

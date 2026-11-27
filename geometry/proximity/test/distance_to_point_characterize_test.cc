@@ -9,6 +9,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/geometry/proximity/distance_to_point_callback.h"
+#include "drake/geometry/proximity/fcl_backend.h"
 #include "drake/geometry/proximity/make_box_mesh.h"
 #include "drake/geometry/proximity/test/characterization_utilities.h"
 #include "drake/geometry/query_results/signed_distance_to_point.h"
@@ -62,7 +63,7 @@ class PointDistanceCallback : public DistanceCallback<T> {
                   X_WGs) override {
     // We treat the first sphere as representing the query point.
     DRAKE_DEMAND(obj_A->collisionGeometry()->getNodeType() == fcl::GEOM_SPHERE);
-    const GeometryId point_id = EncodedData(*obj_A).id();
+    const GeometryId point_id = EncodedData::read_from<FclBackend>(*obj_A).id();
     const Vector3<T> p_WQ = X_WGs->at(point_id).translation();
     MeshDistanceBoundaryCache mesh_distance_boundary_cache;
     // Both drake::Convex and drake::Mesh are represented as fcl::GEOM_CONVEX.
@@ -76,7 +77,8 @@ class PointDistanceCallback : public DistanceCallback<T> {
       const std::string obj_contents = MakeConvexObj(convex);
       Mesh mesh(InMemoryMesh{
           .mesh_file = MemoryFile(obj_contents, ".obj", "test_box.obj")});
-      mesh_distance_boundary_cache.Register(EncodedData(*obj_B).id(), mesh);
+      mesh_distance_boundary_cache.Register(
+          EncodedData::read_from<FclBackend>(*obj_B).id(), mesh);
     }
     mesh_distance_boundary_cache.ComputeAll();
     CallbackData<T> data(obj_A, std::numeric_limits<double>::infinity(), p_WQ,

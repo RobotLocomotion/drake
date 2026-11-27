@@ -1,11 +1,14 @@
 #include "drake/geometry/proximity/distance_to_point_callback.h"
 
+#include <algorithm>
+#include <limits>
 #include <string>
 #include <variant>
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_bool.h"
 #include "drake/geometry/proximity/calc_signed_distance_to_surface_mesh.h"
+#include "drake/geometry/proximity/fcl_backend.h"
 
 namespace drake {
 namespace geometry {
@@ -520,7 +523,7 @@ bool Callback(fcl::CollisionObjectd* object_A_ptr,
   const fcl::CollisionObjectd* geometry_object =
       (&data.query_point == object_A_ptr) ? object_B_ptr : object_A_ptr;
 
-  const EncodedData encoding(*geometry_object);
+  const auto encoding = EncodedData::read_from<FclBackend>(*geometry_object);
   GeometryId geometry_id = encoding.id();
 
   const fcl::CollisionGeometryd* collision_geometry =

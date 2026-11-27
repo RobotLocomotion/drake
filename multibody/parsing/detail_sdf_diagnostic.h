@@ -82,10 +82,6 @@ void CheckSupportedElementValue(const SDFormatDiagnostic& diagnostic,
                                 const std::string& element_name,
                                 const std::string& expected);
 
-// Move-appends all `input_errors` onto `output_errors`.
-// Returns true if `input_errors` contains any error.
-bool PropagateErrors(sdf::Errors&& input_errors, sdf::Errors* output_errors);
-
 // Returns true iff the given report indicates an error, or false
 // for warnings.
 bool IsError(const sdf::Error& report);

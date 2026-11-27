@@ -4,7 +4,7 @@
 #include <map>
 #include <memory>
 #include <stack>
-#include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -14,22 +14,18 @@
 #include <libqhullcpp/QhullFacet.h>
 #include <libqhullcpp/QhullVertexSet.h>
 #include <vtkGLTFDocumentLoader.h>  // vtkIOGeometry
-#include <vtkMapper.h>              // vtkCommonCore
 #include <vtkMatrix4x4.h>           // vtkCommonMath
 #include <vtkPolyData.h>            // vtkCommonDataModel
-#include <vtkRenderer.h>            // vtkRenderingCore
 
 #include "drake/common/diagnostic_policy.h"
-#include "drake/common/find_resource.h"
-#include "drake/common/fmt_eigen.h"
 #include "drake/geometry/proximity/volume_mesh.h"
 #include "drake/geometry/proximity/vtk_to_volume_mesh.h"
-#include "drake/geometry/read_gltf_to_memory.h"
 #include "drake/geometry/read_obj.h"
 #include "drake/geometry/vtk_gltf_uri_loader.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/systems/sensors/vtk_diagnostic_event_observer.h"
+#include "drake/tools/workspace/vtk_internal/vtk_opengl_init.h"
 
 namespace drake {
 namespace geometry {
@@ -150,6 +146,10 @@ Vector3d VtkMultiply(vtkMatrix4x4* T_BA, const Vector3d& p_AQ) {
  @pre `gltf_source.is_path()` is `true`. */
 std::vector<Vector3d> ReadGltfVertices(const MeshSource& gltf_source,
                                        const Vector3d& scale) {
+  // VTK's glTF parsing depends on its OpenGL object factory, so this must
+  // happen before we create the loader.
+  drake::internal::VtkOpenGlInit();
+
   vtkNew<vtkGLTFDocumentLoader> loader;
   loader->SetLoadAnimation(false);
   loader->SetLoadImages(false);

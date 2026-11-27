@@ -156,11 +156,32 @@ methods.)""";
 R"""(Constructs an Affine system with a fixed set of coefficient matrices
 ``A``, `B`,``C``, and ``D`` as well as fixed initial velocity offset
 ``xDot0`` and output offset ``y0``. The coefficient matrices must obey
-the following dimensions : | Matrix | Num Rows | Num Columns |
-|:-------:|:-----------:|:-----------:| | A | num states | num states
-| | B | num states | num inputs | | f0 | num_states | 1 | | C | num
-outputs | num states | | D | num outputs | num inputs | | y0 |
-num_outputs | 1 |
+the following dimensions :
+
+.. list-table::
+   :header-rows: 1
+
+   * - Matrix
+     - Num Rows
+     - Num Columns
+   * - A
+     - num states
+     - num states
+   * - B
+     - num states
+     - num inputs
+   * - f0
+     - num_states
+     - 1
+   * - C
+     - num outputs
+     - num states
+   * - D
+     - num outputs
+     - num inputs
+   * - y0
+     - num_outputs
+     - 1
 
 Empty matrices are treated as zero matrices with the appropriate
 number of rows and columns.
@@ -1187,10 +1208,26 @@ See also:
           const char* doc_5args =
 R"""(Constructs a LinearSystem with a fixed set of coefficient matrices
 ``A``, `B`,``C``, and ``D``. The coefficient matrices must obey the
-following dimensions: | Matrix | Num Rows | Num Columns |
-|:-------:|:-----------:|:-----------:| | A | num states | num states
-| | B | num states | num inputs | | C | num outputs | num states | | D
-| num outputs | num inputs |
+following dimensions:
+
+.. list-table::
+   :header-rows: 1
+
+   * - Matrix
+     - Num Rows
+     - Num Columns
+   * - A
+     - num states
+     - num states
+   * - B
+     - num states
+     - num inputs
+   * - C
+     - num outputs
+     - num states
+   * - D
+     - num outputs
+     - num inputs
 
 Empty matrices are treated as zero matrices with the appropriate
 number of rows and columns.

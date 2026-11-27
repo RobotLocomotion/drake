@@ -2042,10 +2042,24 @@ This trait implicitly encodes the logic: if either B or T are
 AutoDiffXd, return AutoDiffXd. The logic is illustrated with this
 truth table:
 
-| T | U | Result | | :----------: | :----------: | :----------: | |
-AutoDiffXd | AutoDiffXd | AutoDiffXd | | double | AutoDiffXd |
-AutoDiffXd | | AutoDiffXd | double | AutoDiffXd | | double | double |
-double |
+.. list-table::
+   :header-rows: 1
+
+   * - T
+     - U
+     - Result
+   * - AutoDiffXd
+     - AutoDiffXd
+     - AutoDiffXd
+   * - double
+     - AutoDiffXd
+     - AutoDiffXd
+   * - AutoDiffXd
+     - double
+     - AutoDiffXd
+   * - double
+     - double
+     - double
 
 This also includes the helper type:
 

@@ -2,6 +2,7 @@ from pydrake.multibody import inverse_kinematics as ik  # ruff: isort: skip
 
 from collections import namedtuple
 from functools import partial, wraps
+import gc
 import math
 import textwrap
 import unittest
@@ -245,6 +246,14 @@ class TestInverseKinematics(unittest.TestCase):
             R_AbarA=RotationMatrix(),
             frameBbar=self.body2_frame,
             R_BbarB=RotationMatrix(),
+            c=1.0,
+        )
+        self.assertIsInstance(binding, mp.Binding[mp.Cost])
+
+    def test_AddManipulabilityCost(self):
+        binding = self.ik_two_bodies.AddManipulabilityCost(
+            frameA=self.body1_frame,
+            frameB=self.body2_frame,
             c=1.0,
         )
         self.assertIsInstance(binding, mp.Binding[mp.Cost])
@@ -835,6 +844,79 @@ class TestConstraints(unittest.TestCase):
         )
         self.assertIsInstance(constraint_upper, mp.Constraint)
 
+    def test_minimum_distance_penalty_function_lifetime(self):
+        """The constraints borrow their penalty functions (see #24162), so a
+        program that holds one must keep the functions alive, even when they
+        refer back to the constraint in a cycle.
+        """
+        calls = []
+
+        def make_program():
+            robot, index = self._make_robot_diagram()
+            checker = SceneGraphCollisionChecker(
+                model=robot,
+                robot_model_instances=[index],
+                configuration_distance_function=lambda q1, q2: np.linalg.norm(
+                    q1 - q2
+                ),
+                edge_step_size=0.125,
+            )
+            context = checker.MakeStandaloneModelContext()
+            holder = []
+
+            def penalty(x, compute_grad):
+                calls.append(holder is not None)  # Captures `holder`.
+                value = max(0.0, 1.0 - x)
+                if compute_grad:
+                    return (value**2, -2 * value)
+                return (value**2, None)
+
+            constraints = [
+                ik.MinimumDistanceLowerBoundConstraint(
+                    collision_checker=checker,
+                    bound=0.01,
+                    collision_checker_context=context,
+                    penalty_function=penalty,
+                    influence_distance_offset=0.1,
+                ),
+                ik.MinimumDistanceUpperBoundConstraint(
+                    collision_checker=checker,
+                    bound=0.1,
+                    collision_checker_context=context,
+                    influence_distance_offset=0.2,
+                    penalty_function=penalty,
+                ),
+            ]
+            holder.extend(constraints)
+            prog = mp.MathematicalProgram()
+            x = prog.NewContinuousVariables(constraints[0].num_vars())
+            bindings = [prog.AddConstraint(c, x) for c in constraints]
+            # Move the bindings to a different program.
+            prog2 = mp.MathematicalProgram()
+            prog2.AddDecisionVariables(x)
+            for binding in bindings:
+                prog2.AddConstraint(binding)
+            return prog2, checker
+
+        prog, checker = make_program()
+        gc.collect()
+        # The second program records that it keeps each constraint's Python
+        # object alive, because those objects borrow their penalty functions.
+        # (The first program's bindings also keep those objects alive for now,
+        # which masks the effect of the second program's links on lifetime, so
+        # this checks for the links directly.)
+        self.assertEqual(len(prog._pydrake_internal_ref_cycle_peers), 2)
+        context = checker.MakeStandaloneModelContext()
+        q = checker.plant().GetPositions(context.plant_context())
+        # N.B. The constructors already call the penalty function, so `calls`
+        # is not empty yet. Each constraint must call the borrowed function
+        # again, now that garbage collection has run.
+        for binding in prog.GetAllConstraints():
+            num_calls = len(calls)
+            values = binding.evaluator().Eval(q)
+            self.assertTrue(np.all(np.isfinite(values)))
+            self.assertGreater(len(calls), num_calls)
+
     @check_type_variables
     def test_position_constraint(self, variables):
         constraint = ik.PositionConstraint(
@@ -895,6 +977,28 @@ class TestConstraints(unittest.TestCase):
             plant_context=variables.plant_context,
         )
         self.assertIsInstance(cost, mp.Cost)
+
+    def test_manipulability_cost(self):
+        # Double plant only: the gradient uses CalcHessianSpatialVelocity.
+        variables = self.variables_f
+        q = variables.plant.GetPositions(variables.plant_context)
+        cost = ik.ManipulabilityCost(
+            plant=variables.plant,
+            frameA=variables.body1_frame,
+            frameB=variables.body2_frame,
+            c=1.0,
+            plant_context=variables.plant_context,
+        )
+        self.assertIsInstance(cost, mp.Cost)
+        weighted = ik.ManipulabilityCost(
+            plant=variables.plant,
+            frameA=variables.body1_frame,
+            frameB=variables.body2_frame,
+            c=2.0,
+            plant_context=variables.plant_context,
+        )
+        self.assertLess(cost.Eval(q)[0], 0)
+        self.assertAlmostEqual(weighted.Eval(q)[0], 2 * cost.Eval(q)[0])
 
     @check_type_variables
     def test_com_position_constraint(self, variables):

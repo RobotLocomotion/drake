@@ -127,9 +127,10 @@ TEST_F(ProximityEngineHydroelasticTest, ReplaceProperties) {
   using enum HydroelasticType;
 
   const double radius = 0.5;
-  InternalGeometry sphere(SourceId::get_new_id(), make_unique<Sphere>(radius),
-                          FrameId::get_new_id(), GeometryId::get_new_id(),
-                          "sphere", RigidTransformd());
+  InternalGeometry sphere(
+      SourceId::get_new_id(), make_unique<Sphere>(radius),
+      FrameId::get_new_id(), /* frame_is_anchored = */ false,
+      GeometryId::get_new_id(), "sphere", RigidTransformd());
 
   // Note: The order of these tests matter; one builds on the next. Re-ordering
   // *may* break the test.
@@ -187,14 +188,14 @@ TEST_F(ProximityEngineHydroelasticTest, ReplaceProperties) {
     DRAKE_EXPECT_THROWS_MESSAGE(
         engine_.UpdateRepresentationForNewProperties(sphere,
                                                      bad_props_no_elasticity),
-        "Cannot create compliant Sphere; missing the .+ property");
+        "Cannot create compliant Sphere; missing the .+ property.*");
 
     ProximityProperties bad_props_no_length(hydro_trigger);
     bad_props_no_length.AddProperty(kHydroGroup, kElastic, 5e8);
     DRAKE_EXPECT_THROWS_MESSAGE(
         engine_.UpdateRepresentationForNewProperties(sphere,
                                                      bad_props_no_length),
-        "Cannot create compliant Sphere; missing the .+ property");
+        "Cannot create compliant Sphere; missing the .+ property.*");
   }
 }
 

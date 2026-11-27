@@ -7,6 +7,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/nice_type_name.h"
 #include "drake/geometry/proximity/distance_to_point_callback.h"
+#include "drake/geometry/proximity/fcl_backend.h"
 #include "drake/geometry/query_results/signed_distance_to_point.h"
 
 namespace drake {
@@ -155,7 +156,8 @@ void CalcDistanceFallback(const fcl::CollisionObjectd& a,
       "for scalar type {}. See the documentation for "
       "QueryObject::ComputePointPairPenetration() for the full status of "
       "supported geometries.",
-      GetGeometryName(a), GetGeometryName(b), NiceTypeName::Get<T>()));
+      GetGeometryName<FclBackend>(a), GetGeometryName<FclBackend>(b),
+      NiceTypeName::Get<T>()));
 }
 
 /* For the double scalar, computes the signed distance between the two objects.
@@ -203,8 +205,8 @@ void CalcDistanceFallback<double>(const fcl::CollisionObjectd& a,
   pair_data->p_WCb =
       contact.pos + 0.5 * pair_data->depth * pair_data->nhat_BA_W;
 
-  pair_data->id_A = EncodedData(a).id();
-  pair_data->id_B = EncodedData(b).id();
+  pair_data->id_A = EncodedData::read_from<FclBackend>(a).id();
+  pair_data->id_B = EncodedData::read_from<FclBackend>(b).id();
 }
 
 //@}
@@ -251,8 +253,8 @@ void ComputeNarrowPhasePenetration(const fcl::CollisionObjectd& a,
   const fcl::CollisionGeometryd* o_geometry = o.collisionGeometry().get();
   const math::RigidTransform<T>& X_WS(a_is_sphere ? X_WA : X_WB);
   const math::RigidTransform<T>& X_WO(a_is_sphere ? X_WB : X_WA);
-  const auto id_S = EncodedData(s).id();
-  const auto id_O = EncodedData(o).id();
+  const auto id_S = EncodedData::read_from<FclBackend>(s).id();
+  const auto id_O = EncodedData::read_from<FclBackend>(o).id();
   PenetrationPairFunctor<T> calc_penetration_pair(id_S, id_O, X_WS, X_WO);
   const auto& sphere_S = *static_cast<const fcl::Sphered*>(s_geometry);
   switch (o_geometry->getNodeType()) {
@@ -373,8 +375,8 @@ bool Callback(fcl::CollisionObjectd* fcl_object_A_ptr,
   // Extract the collision filter keys from the fcl collision objects. These
   // keys will also be used to map the fcl collision object back to the Drake
   // GeometryId for colliding geometries.
-  EncodedData encoding_A(*fcl_object_A_ptr);
-  EncodedData encoding_B(*fcl_object_B_ptr);
+  auto encoding_A = EncodedData::read_from<FclBackend>(*fcl_object_A_ptr);
+  auto encoding_B = EncodedData::read_from<FclBackend>(*fcl_object_B_ptr);
 
   // Guarantee for geometries A and B, we always evaluate the collision between
   // them in a fixed order (e.g., the first geometry gets transformed into the
@@ -407,8 +409,8 @@ std::optional<PenetrationAsPointPair<T>> MaybeMakePointPair(
   // Extract the collision filter keys from the fcl collision objects. These
   // keys will also be used to map the fcl collision object back to the Drake
   // GeometryId for colliding geometries.
-  EncodedData encoding_A(*fcl_object_A_ptr);
-  EncodedData encoding_B(*fcl_object_B_ptr);
+  auto encoding_A = EncodedData::read_from<FclBackend>(*fcl_object_A_ptr);
+  auto encoding_B = EncodedData::read_from<FclBackend>(*fcl_object_B_ptr);
 
   // Guarantee for geometries A and B, we always evaluate the collision between
   // them in a fixed order (e.g., the first geometry gets transformed into the
@@ -447,7 +449,8 @@ std::optional<PenetrationAsPointPair<T>> MaybeMakePointPair(
         "are not supported for scalar type {}. See the documentation for "
         "QueryObject::ComputePointPairPenetration() for the full status of "
         "supported geometries.",
-        GetGeometryName(*fcl_object_A_ptr), GetGeometryName(*fcl_object_B_ptr),
+        GetGeometryName<FclBackend>(*fcl_object_A_ptr),
+        GetGeometryName<FclBackend>(*fcl_object_B_ptr),
         NiceTypeName::Get<T>()));
   }
   return {};

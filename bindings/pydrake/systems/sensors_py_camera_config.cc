@@ -1,5 +1,6 @@
 #include "drake/bindings/generated_docstrings/systems_sensors.h"
 #include "drake/bindings/pydrake/common/serialize_pybind.h"
+#include "drake/bindings/pydrake/lcm_type_hook_pybind.h"
 #include "drake/bindings/pydrake/systems/sensors_py.h"
 #include "drake/common/overloaded.h"
 #include "drake/systems/lcm/lcm_interface_system.h"

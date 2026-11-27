@@ -1,6 +1,7 @@
 #include "drake/multibody/parsing/detail_mujoco_parser.h"
 
 #include <algorithm>
+#include <cmath>
 #include <filesystem>
 #include <limits>
 #include <map>
@@ -14,6 +15,7 @@
 #include <fmt/format.h>
 #include <tinyxml2.h>
 
+#include "drake/common/fmt_eigen.h"
 #include "drake/common/text_logging.h"
 #include "drake/geometry/proximity/obb.h"
 #include "drake/geometry/proximity/obj_to_surface_mesh.h"
@@ -865,6 +867,19 @@ class MujocoParser {
       }
       if (mesh_.contains(mesh)) {
         geom.shape = mesh_.at(mesh)->Clone();
+        // A note on frames:
+        //  - The mesh defines the geometry in its own local frame G.
+        //  - MuJoCo expresses the geom's vertices in a reference frame R (its
+        //    pose specified relative to G via refpos/refquat).
+        //  - geom.X_BG, as given up to this point, is actually X_BR; R = G for
+        //    all geometry types except for, potentially, meshes.
+        if (X_GRs_.contains(mesh)) {
+          // As noted: for meshes, geom.X_BG is actually X_BR.
+          const RigidTransformd X_BR = geom.X_BG;
+          // The reference frame is posed relative to the geometry frame.
+          const RigidTransformd& X_GR = X_GRs_.at(mesh);
+          geom.X_BG = X_BR * X_GR.inverse();
+        }
       } else {
         Warning(
             *node,
@@ -1392,8 +1407,6 @@ class MujocoParser {
       WarnUnsupportedAttribute(*mesh_node, "vertex");
       // Note: "normal", "face", and "texcoord" are not supported either, but
       // that lack of support is implied by us not supporting "vertex".
-      WarnUnsupportedAttribute(*mesh_node, "refpos");
-      WarnUnsupportedAttribute(*mesh_node, "refquat");
       WarnUnsupportedElement(*mesh_node, "plugin");
 
       std::string file;
@@ -1457,7 +1470,64 @@ class MujocoParser {
                          ::tolower);
           // TODO(russt): Support .vtk files.
           if (extension == ".obj") {
+            Vector3d refpos{0, 0, 0};
+            ParseVectorAttribute(mesh_node, "refpos", &refpos);
+            // The attribute parser rejects non-finite text like "inf", but a
+            // finite refpos can still overflow when multiplied by scale.
+            const Vector3d p_GR_scaled = scale.cwiseProduct(refpos);
+            if (!p_GR_scaled.allFinite()) {
+              Error(*mesh_node,
+                    fmt::format("The mesh asset refpos must be finite after "
+                                "applying the mesh scale; got refpos {} and "
+                                "scale {}.",
+                                fmt_eigen(refpos), fmt_eigen(scale)));
+              continue;
+            }
+            // MuJoCo refquat is w, x, y, z.
+            Vector4d refquat{1, 0, 0, 0};
+            ParseVectorAttribute(mesh_node, "refquat", &refquat);
+            const Eigen::Quaternion<double> q_GR(refquat[0], refquat[1],
+                                                 refquat[2], refquat[3]);
+            // MuJoCo normalizes refquat, so only its direction matters; but a
+            // zero quaternion has no direction. (A non-finite quaternion has a
+            // non-finite norm.)
+            const double refquat_norm = q_GR.norm();
+            if (!(std::isfinite(refquat_norm) && refquat_norm >= 1e-10)) {
+              Error(*mesh_node,
+                    fmt::format("The mesh asset refquat must be finite and "
+                                "have non-zero norm; got {}.",
+                                fmt_eigen(refquat)));
+              continue;
+            }
+            const Eigen::Quaternion<double> q_GR_unit = q_GR.normalized();
+            const RotationMatrixd R_GR(q_GR_unit);
+            // Mujoco maps file vertices as: scale * R_GR⁻¹ * (p_GV - p_GR).
+            // Drake would map file vertices as: R_GR⁻¹ * scale * (p_GV - p_GR).
+            // These are not generally equivalent, but Drake can support every
+            // specification where scale * R_GR⁻¹ is commutative. That is
+            // satisfied when:
+            //   1. Scale is uniform across all axes, or
+            //   2. R_GR = I.
+            //   3. Other weirder cases that are probably not worth considering.
+            // So, if we don't satisfy (1) or (2), we'll warn.
+            if (const bool is_uniform =
+                    scale[0] == scale[1] && scale[1] == scale[2];
+                !(is_uniform ||
+                  std::abs(std::abs(q_GR_unit.w()) - 1.0) < 1e-12)) {
+              Warning(*mesh_node,
+                      fmt::format(
+                          "Mesh asset uses a refquat {} together with a "
+                          "non-uniform scale {}; Drake cannot represent that "
+                          "exactly, so the mesh vertex placement will not "
+                          "match MuJoCo.",
+                          fmt_eigen(refquat), fmt_eigen(scale)));
+            }
+            // Technically, Drake really maps vertices as X_RG * scale * p_GV.
+            // So, p_GR needs to be refactored into X_RG by pre-scaling it.
+            // In parsing code, we store X_GR instead of X_RG.
+            const RigidTransformd X_GR(R_GR, p_GR_scaled);
             mesh_[name] = std::make_unique<geometry::Mesh>(filename, scale);
+            X_GRs_[name] = X_GR;
           } else {
             Error(
                 *node,
@@ -2146,6 +2216,10 @@ class MujocoParser {
   std::optional<std::filesystem::path> meshdir_{};
   std::string eulerseq_{"xyz"};
   std::map<std::string, std::unique_ptr<geometry::Mesh>> mesh_{};
+  // X_GR for each mesh asset, from MuJoCo refpos/refquat: the pose of the
+  // reference frame R in the mesh's local frame G (with refpos pre-scaled by
+  // the mesh scale).
+  std::map<std::string, RigidTransformd> X_GRs_{};
   // Spatial inertia of mesh assets assuming density = 1.
   std::map<std::string, SpatialInertia<double>> mesh_inertia_{};
   std::map<JointIndex, double> armature_{};

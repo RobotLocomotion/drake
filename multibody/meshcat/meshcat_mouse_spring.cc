@@ -129,9 +129,13 @@ MeshcatMouseSpring::CalcAppliedSpatialForceFromDrag(
   const Vector3d a_W = stiffness_ * d_W - std::sqrt(stiffness_) * v_WBq;
 
   // Note that we're using default_mass() because getting access to the current
-  // parameterized mass is more trouble than it's worth.
+  // parameterized mass is more trouble than it's worth. For links that have
+  // been split into a primary and shadows, we use the full user-specified mass
+  // of the original link for both the primary and its shadows.
+  // That's because we expect the primary and shadows to be welded together,
+  // so they move together and will feel like the original link.
   // TODO(vincekurtz): consider using composite mass instead of body mass.
-  const double mass = plant_.get_body(body_index).default_mass();
+  const double mass = plant_.get_body(body_index).primary_link().default_mass();
   const Vector3d f_W = mass * a_W;
 
   ExternallyAppliedSpatialForce<double> force;

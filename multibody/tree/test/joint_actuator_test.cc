@@ -248,6 +248,17 @@ GTEST_TEST(JointActuatorTest, RemoveJointActuatorTest) {
   EXPECT_EQ(tree.GetJointActuatorByName("act3").effort_limit(),
             2 * kPositiveEffortLimit);
 
+  // The per-model-instance queries also work pre-finalize, and agree with the
+  // post-finalize results below.
+  EXPECT_THAT(tree.GetJointActuatorIndices(model_instance1),
+              testing::ElementsAre(actuator2_index, new_actuator3_index));
+  EXPECT_THAT(tree.GetJointActuatorIndices(model_instance2),
+              testing::ElementsAre(actuator4_index));
+  EXPECT_THAT(tree.GetActuatedJointIndices(model_instance1),
+              testing::ElementsAre(body2_body1.index(), body3_body2.index()));
+  EXPECT_THAT(tree.GetActuatedJointIndices(model_instance2),
+              testing::ElementsAre(body4_world.index()));
+
   tree.Finalize();
 
   EXPECT_EQ(actuator2.input_start(), 0);

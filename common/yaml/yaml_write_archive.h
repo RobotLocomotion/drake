@@ -67,8 +67,9 @@ class YamlWriteArchive final {
   std::string EmitString(const std::string& root_name = "root") const;
 
   // Returns the JSON string for whatever Serializable was most recently passed
-  // into Accept. A std::optional<T> value that is set to std::nullopt will be
-  // entirely omitted from the result, not serialized as "null".
+  // into Accept. A std::optional<T> value that is set to std::nullopt (or a
+  // std::variant that holds std::monostate) will be entirely omitted from the
+  // result, not serialized as "null".
   std::string ToJson() const;
 
   // Removes from this archive any map entries that are identical to an entry
@@ -295,6 +296,12 @@ class YamlWriteArchive final {
     this->visit_order_.pop_back();
   }
 
+  // Returns true iff the variant's alternatives include std::monostate.
+  template <typename... Types>
+  static constexpr bool HasMonostate(const std::variant<Types...>*) {
+    return (std::is_same_v<Types, std::monostate> || ...);
+  }
+
   // This is used for std::variant or similar.
   template <typename NVP>
   void VisitVariant(const NVP& nvp) {
@@ -302,25 +309,45 @@ class YamlWriteArchive final {
     // setting a YAML type tag iff required.
     const char* const name = nvp.name();
     auto& variant = *nvp.value();
+    using Variant = std::remove_cvref_t<decltype(variant)>;
+
+    // Bail out if the variant holds std::monostate (i.e., is unset). Like an
+    // unset std::optional, it writes nothing at all (not even the key name).
+    if constexpr (HasMonostate(static_cast<const Variant*>(nullptr))) {
+      if (std::holds_alternative<std::monostate>(variant)) {
+        // Since we are not going to add ourselves to root_, we should not list
+        // our name in the visit_order either.  This undoes the addition of our
+        // name that was performed by the Visit() call on the variant<...>
+        // value.
+        this->visit_order_.pop_back();
+        return;
+      }
+    }
+
     const bool needs_tag = variant.index() > 0;
     std::visit(
         [this, name, needs_tag](auto&& unwrapped) {
-          this->Visit(drake::MakeNameValue(name, &unwrapped));
-          if (needs_tag) {
-            using T = std::remove_cvref_t<decltype(unwrapped)>;
-            Node& node = root_.At(name);
-            if constexpr (std::is_same_v<T, bool>) {
-              node.SetTag(JsonSchemaTag::kBool, /* important = */ true);
-            } else if constexpr (std::is_integral_v<T>) {
-              node.SetTag(JsonSchemaTag::kInt, /* important = */ true);
-            } else if constexpr (std::is_floating_point_v<T>) {
-              node.SetTag(JsonSchemaTag::kFloat, /* important = */ true);
-            } else if constexpr (std::is_same_v<T, std::string>) {
-              node.SetTag(JsonSchemaTag::kStr, /* important = */ true);
-            } else if constexpr (std::is_same_v<T, std::vector<std::byte>>) {
-              node.SetTag(std::string(internal::Node::kTagBinary));
-            } else {
-              node.SetTag(YamlWriteArchive::GetVariantTag<T>());
+          using T = std::remove_cvref_t<decltype(unwrapped)>;
+          if constexpr (std::is_same_v<T, std::monostate>) {
+            // This was already handled above.
+            DRAKE_UNREACHABLE();
+          } else {
+            this->Visit(drake::MakeNameValue(name, &unwrapped));
+            if (needs_tag) {
+              Node& node = root_.At(name);
+              if constexpr (std::is_same_v<T, bool>) {
+                node.SetTag(JsonSchemaTag::kBool, /* important = */ true);
+              } else if constexpr (std::is_integral_v<T>) {
+                node.SetTag(JsonSchemaTag::kInt, /* important = */ true);
+              } else if constexpr (std::is_floating_point_v<T>) {
+                node.SetTag(JsonSchemaTag::kFloat, /* important = */ true);
+              } else if constexpr (std::is_same_v<T, std::string>) {
+                node.SetTag(JsonSchemaTag::kStr, /* important = */ true);
+              } else if constexpr (std::is_same_v<T, std::vector<std::byte>>) {
+                node.SetTag(std::string(internal::Node::kTagBinary));
+              } else {
+                node.SetTag(YamlWriteArchive::GetVariantTag<T>());
+              }
             }
           }
         },

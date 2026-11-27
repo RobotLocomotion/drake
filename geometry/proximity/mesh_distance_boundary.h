@@ -1,7 +1,6 @@
 #pragma once
 
 #include <string>
-#include <utility>
 #include <variant>
 
 #include "drake/common/eigen_types.h"

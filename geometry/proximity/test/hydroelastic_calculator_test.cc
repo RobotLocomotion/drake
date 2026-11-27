@@ -2,15 +2,13 @@
 
 #include <memory>
 #include <unordered_map>
-#include <utility>
 #include <vector>
 
 #include <fcl/fcl.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
-#include "drake/common/test_utilities/expect_no_throw.h"
-#include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/geometry/proximity/fcl_backend.h"
 #include "drake/geometry/proximity/proximity_utilities.h"
 #include "drake/geometry/proximity_properties.h"
 #include "drake/math/autodiff.h"
@@ -141,7 +139,7 @@ class TestScene {
         MakeHydroelastic(id, type, Sphere(kTinyRadius));
         break;
     }
-    data->write_to(shape.get());
+    data->write_to<FclBackend>(shape.get());
     return shape;
   }
 

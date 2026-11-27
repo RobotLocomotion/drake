@@ -13,6 +13,7 @@
 #endif
 
 // #include "drake/multibody/cenic/cenic_integrator.h"
+// #include "drake/multibody/cenic/cenic_integrator_parameters.h"
 // #include "drake/multibody/cenic/make_cenic_integrator.h"
 
 // Symbol: pydrake_doc_multibody_cenic
@@ -52,7 +53,7 @@ simulations.
 arbitrary stiff controllers (e.g., a custom ``LeafSystem``) to the
 ``MultibodyPlant`` and have them treated implicitly in CENIC's convex
 formulation. This allows for larger time steps, leading to faster and more
-stable simulations.
+stable simulations. (This is the default; see cenic_explicit_external_inputs "Explicit external inputs" for the opt-out.)
 
 - **Principled static/dynamic friction modeling**. Unlike discrete solvers,
 CENIC can simulate frictional contact with different static and dynamic
@@ -75,6 +76,135 @@ contains a MultibodyPlant subsystem, at any level of Diagram nesting.
 Running CENIC in fixed-step mode (with error-control disabled)
 recovers the "Lagged" variant of discrete-time ICF simulation from
 [Castro et al., 2023].
+
+*Force reporting.** CENIC does not integrate the plant's own
+continuous contact dynamics, so by default the plant's dynamics output
+ports (e.g., ``reaction_forces``, `contact_results`,
+``generalized_acceleration``) report the plant's compliant contact
+model, which is inconsistent with the simulated trajectory. To report
+the ICF contact and constraint forces instead, set
+``use_sampled_output_ports: true`` in the plant's MultibodyPlantConfig
+(the preferred spelling), or call
+MultibodyPlant∷SetUseSampledOutputPorts(true) on the (continuous-time)
+plant before finalizing it. CENIC then records, at every step, a
+sample of the dynamics of the convex problem that produced the new
+state: the constraint impulses γ divided by that step's time step δt
+(for error-controlled steps, the second half-step), together with the
+resulting accelerations, joint reaction forces, contact results, and
+net actuation. The plant's dynamics output ports report that sample
+until the next step. Before the first step the sample is empty (zero
+forces and accelerations, no contacts). As with discrete-time plants,
+the sample's kinematics (e.g., contact points and the frames of the
+reaction forces) are those at the start of the solved step. For an
+error-controlled step that is the configuration at the midpoint t +
+h/2, not at the end of the step t + h, so it can lag the Context's
+body poses by up to half a step. See output_port_sampling "Output port
+sampling" for details.
+
+Sampling requires steps. If the whole system has no continuous state
+(e.g., every body is welded to the world and nothing else has state),
+the Simulator never asks the integrator to step, so nothing could ever
+be sampled. Initialize() throws in that case when the plant has
+sampled output ports.
+
+*Deprecation.** Using CenicIntegrator with a plant that does not have
+sampled output ports is deprecated, with removal on or after
+2027-03-01: Initialize() logs a deprecation warning (once per process
+for each scalar type), and a future version of Drake will refuse such
+a plant, as it does a plant with the wrong time step. Set the
+``DRAKE_DEPRECATION_RUNTIME_SEVERITY=error`` environment variable to
+see that behavior now.
+
+Initialize() replaces the plant's sample with an empty one, so the
+sampled ports report zeros until the first step; this includes
+re-initializing a Context that CENIC has already stepped. The sample
+lives in the Context, so it outlives CENIC: if CENIC is replaced by an
+integrator that does not record samples (or its Context is cloned for
+one), the sampled ports keep reporting CENIC's last sample while the
+state moves on. Evaluating a sampled port before any integrator has
+initialized the Context throws.
+
+The reported reaction forces use external spatial forces (the plant's
+``applied_spatial_force`` input port) evaluated at the start of the
+solved step, whereas, by default, the solve itself is implicit in
+their linearization. For strongly velocity-dependent external forces
+the reported reaction forces can therefore be inconsistent with the
+step's acceleration, by roughly the force's velocity gradient times
+the step's change in velocity. Actuation and contact are not affected.
+With cenic_explicit_external_inputs "explicit external inputs" the
+solve also holds those forces at their start-of-step values, so in
+fixed-step mode the reported reaction forces are consistent with the
+solve. With error control, the reported solve is the second half-step,
+and the forces are evaluated at its start (the midpoint of the step)
+while the solve still holds the start-of-step values, so they can
+differ by the forces' change over half a step.
+
+**** Explicit external inputs
+
+By default, CENIC linearizes the MultibodyPlant's external inputs
+(actuation and external forces) with finite differences so that it can
+treat them implicitly. That re-evaluates all upstream systems several
+times per step, which is expensive when the inputs come from
+complicated external systems. Alternatively, CENIC can hold those
+inputs fixed over each step (i.e., treat them explicitly), so that
+linearizing them evaluates the upstream systems only once per step,
+which is up to about ``nv + 2`` times fewer upstream evaluations for a
+plant with ``nv`` generalized velocities. (Other work, such as
+advancing the continuous state of other systems, is unchanged.) See
+CenicIntegratorParameters∷explicit_external_inputs.
+
+This choice does not depend on whether error control is enabled:
+explicit inputs can be used in both fixed-step and error-controlled
+modes. Explicit inputs give up the implicit treatment of stiff
+controllers, so if a controller is stiff relative to the step size,
+use a smaller step or leave explicit inputs off. With error control,
+note that both half-steps used to estimate the error hold the same
+start-of-step inputs as the full step, so the error estimate does not
+see the error from holding the inputs fixed. Error control alone
+therefore does not protect against a step size that is too large for a
+stiff controller. (Joint-level PD controllers set through the plant's
+desired-state input ports are analytic, so they stay implicit either
+way.)
+
+**** Discrete-like mode
+
+ICF is not (yet) available as a discrete-time MultibodyPlant solver.
+One way to get discrete-like behavior (a fixed time step, and no
+repeated evaluation of the other systems in the diagram to linearize
+their inputs) is to combine a continuous-time plant, fixed-step CENIC,
+and explicit external inputs. With YAML configuration, that looks
+like:
+
+
+.. code-block:: yaml
+
+    # MultibodyPlantConfig
+    time_step: 0.0
+    # SimulatorConfig
+    integration_scheme: cenic
+    max_step_size: 0.001  # The fixed step size.
+    use_error_control: false
+    integrator_params: !CenicIntegratorParameters
+    explicit_external_inputs: true
+
+In C++, the equivalent calls are ``set_fixed_step_mode(true)`` and
+``SetParameters()`` with ``explicit_external_inputs = true``.
+
+Each setting does its own job, and they can be mixed freely:
+
+- ``time_step: 0.0`` makes the plant continuous, so that CENIC integrates it.
+- ``use_error_control: false`` takes fixed steps of size ``max_step_size``.
+- `explicit_external_inputs: true` (within ``integrator_params``) treats external
+inputs explicitly (see above).
+
+Caveats:
+
+- CENIC advances the continuous state of any other system in the diagram with
+explicit Euler, in both fixed-step and error-controlled modes. Error control
+does not currently account for that state (see the warning below), so in
+either mode nothing catches a step size that makes that update unstable.
+- Explicit external inputs reduce the cost of evaluating the upstream systems,
+but do not change the cost of integrating other systems' continuous state.
 
 Implementation notes:
 
@@ -119,11 +249,28 @@ Parameter ``system``:
 Parameter ``context``:
     context for the overall system.)""";
         } ctor;
+        // Symbol: drake::multibody::CenicIntegrator::GetParameters
+        struct /* GetParameters */ {
+          // Source: drake/multibody/cenic/cenic_integrator.h
+          const char* doc =
+R"""(Gets the current CENIC and ICF solver parameters.)""";
+        } GetParameters;
+        // Symbol: drake::multibody::CenicIntegrator::SetParameters
+        struct /* SetParameters */ {
+          // Source: drake/multibody/cenic/cenic_integrator.h
+          const char* doc =
+R"""(Sets the CENIC and ICF solver parameters. See
+CenicIntegratorParameters for the meaning of each setting.)""";
+        } SetParameters;
         // Symbol: drake::multibody::CenicIntegrator::SetSolverParameters
         struct /* SetSolverParameters */ {
           // Source: drake/multibody/cenic/cenic_integrator.h
-          const char* doc =
-R"""(Sets the convex solver tolerances and iteration limits.)""";
+          const char* doc_deprecated =
+R"""((Deprecated.)
+
+Deprecated:
+    Use GetParameters() and SetParameters() instead. This will be
+    removed from Drake on or after 2027-03-01.)""";
         } SetSolverParameters;
         // Symbol: drake::multibody::CenicIntegrator::get_error_estimate_order
         struct /* get_error_estimate_order */ {
@@ -133,8 +280,12 @@ R"""(Sets the convex solver tolerances and iteration limits.)""";
         // Symbol: drake::multibody::CenicIntegrator::get_solver_parameters
         struct /* get_solver_parameters */ {
           // Source: drake/multibody/cenic/cenic_integrator.h
-          const char* doc =
-R"""(Gets the current convex solver tolerances and iteration limits.)""";
+          const char* doc_deprecated =
+R"""((Deprecated.)
+
+Deprecated:
+    Use GetParameters().icf_solver instead. This will be removed from
+    Drake on or after 2027-03-01.)""";
         } get_solver_parameters;
         // Symbol: drake::multibody::CenicIntegrator::plant
         struct /* plant */ {
@@ -149,6 +300,62 @@ optimization problem.)""";
           const char* doc = R"""()""";
         } supports_error_estimation;
       } CenicIntegrator;
+      // Symbol: drake::multibody::CenicIntegratorParameters
+      struct /* CenicIntegratorParameters */ {
+        // Source: drake/multibody/cenic/cenic_integrator_parameters.h
+        const char* doc =
+R"""((Advanced) Parameters to configure a CenicIntegrator.
+
+These are the CENIC-specific settings that can be given to a Simulator
+via drake∷systems∷SimulatorConfig∷integrator_params. In YAML, they are
+selected with the ``!CenicIntegratorParameters`` tag. For example:
+
+
+.. code-block:: yaml
+
+    integration_scheme: cenic
+    integrator_params: !CenicIntegratorParameters
+    explicit_external_inputs: true
+    icf_solver:
+    min_tolerance: 1e-6
+
+These are the settings that belong to CENIC itself, as opposed to the
+ICF solver it uses (which are in ``icf_solver``).)""";
+        // Symbol: drake::multibody::CenicIntegratorParameters::Serialize
+        struct /* Serialize */ {
+          // Source: drake/multibody/cenic/cenic_integrator_parameters.h
+          const char* doc =
+R"""(Passes this object to an Archive. Refer to yaml_serialization "YAML
+Serialization" for background.)""";
+        } Serialize;
+        // Symbol: drake::multibody::CenicIntegratorParameters::explicit_external_inputs
+        struct /* explicit_external_inputs */ {
+          // Source: drake/multibody/cenic/cenic_integrator_parameters.h
+          const char* doc =
+R"""(Whether to treat the plant's external inputs (actuation and external
+forces) explicitly, i.e., hold them fixed at their values at the start
+of the step. When false (the default), they are linearized with
+respect to velocity using finite differences so that they can be
+treated implicitly, which requires re-evaluating all upstream systems
+several times per step. Setting this to true skips that work, which is
+useful when the inputs come from expensive external systems, at the
+cost of reduced stability for stiff feedback controllers. This option
+can be used with or without error control. See also
+cenic_explicit_external_inputs "Explicit external inputs".)""";
+        } explicit_external_inputs;
+        // Symbol: drake::multibody::CenicIntegratorParameters::icf_solver
+        struct /* icf_solver */ {
+          // Source: drake/multibody/cenic/cenic_integrator_parameters.h
+          const char* doc =
+R"""(Parameters for the ICF convex solver used by CENIC.)""";
+        } icf_solver;
+        auto Serialize__fields() const {
+          return std::array{
+            std::make_pair("explicit_external_inputs", explicit_external_inputs.doc),
+            std::make_pair("icf_solver", icf_solver.doc),
+          };
+        }
+      } CenicIntegratorParameters;
       // Symbol: drake::multibody::MakeCenicIntegrator
       struct /* MakeCenicIntegrator */ {
         // Source: drake/multibody/cenic/make_cenic_integrator.h

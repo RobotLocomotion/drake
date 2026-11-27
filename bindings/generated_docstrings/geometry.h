@@ -75,21 +75,22 @@ Parameter ``resolution_hint``:
     guides the level of mesh refinement. It has length units (in
     meters) and roughly corresponds to a typical edge length in the
     resulting mesh. See hug_properties. This will be ignored for
-    geometry types that don't require tessellation.
+    geometry types that don't require tessellation. Must satisfy 0 <
+    ``resolution_hint`` < ∞.
 
 Parameter ``hydroelastic_modulus``:
     A multiplier that maps penetration to pressure. See
-    hug_properties.
+    hug_properties. Must be > 0 (+∞ allowed; NaN rejected).
 
 Parameter ``properties``:
     The properties will be added to this property set.
 
 Raises:
-    RuntimeError If ``properties`` already has properties with the
+    RuntimeError If ``resolution_hint`` or ``hydroelastic_modulus`` is
+    invalid, or if ``properties`` already has properties with the
     names that this function would need to add.
 
 Precondition:
-    0 < ``resolution_hint`` < ∞, 0 < ``hydroelastic_modulus``, and
     ``properties`` is not nullptr.)""";
       } AddCompliantHydroelasticProperties;
       // Symbol: drake::geometry::AddCompliantHydroelasticPropertiesForHalfSpace
@@ -102,21 +103,22 @@ thickness. This variant is required for hydroelastic half spaces.
 
 Parameter ``slab_thickness``:
     The distance from the half space boundary to its rigid core (this
-    helps define the extent field of the half space).
+    helps define the extent field of the half space). Must satisfy 0 <
+    ``slab_thickness`` < ∞.
 
 Parameter ``hydroelastic_modulus``:
     A multiplier that maps penetration to pressure. See
-    hug_properties.
+    hug_properties. Must be > 0 (+∞ allowed).
 
 Parameter ``properties``:
     The properties will be added to this property set.
 
 Raises:
-    RuntimeError If ``properties`` already has properties with the
+    RuntimeError If ``slab_thickness`` or ``hydroelastic_modulus`` is
+    invalid, or if ``properties`` already has properties with the
     names that this function would need to add.
 
 Precondition:
-    0 < ``slab_thickness`` < ∞, 0 < ``hydroelastic_modulus``, and
     ``properties`` is not nullptr.)""";
       } AddCompliantHydroelasticPropertiesForHalfSpace;
       // Symbol: drake::geometry::AddContactMaterial
@@ -132,8 +134,9 @@ default values will be provided. Downstream consumers of the contact
 materials can optionally provide defaults for missing properties.
 
 Raises:
-    RuntimeError if ``dissipation`` is negative, ``point_stiffness``
-    is not positive, of any of the contact material properties have
+    RuntimeError if ``dissipation`` is present but not ≥ 0 (+∞ is
+    allowed), if ``point_stiffness`` is present but not > 0 (+∞ is
+    allowed), or if any of the contact material properties have
     already been defined in ``properties``.
 
 Precondition:
@@ -152,17 +155,19 @@ Parameter ``resolution_hint``:
     guides the level of mesh refinement. It has length units (in
     meters) and roughly corresponds to a typical edge length in the
     resulting mesh. See hug_properties. This will be ignored for
-    geometry types that don't require tessellation.
+    geometry types that don't require tessellation. Must satisfy 0 <
+    ``resolution_hint`` < ∞.
 
 Parameter ``properties``:
     The properties will be added to this property set.
 
 Raises:
-    RuntimeError If ``properties`` already has properties with the
-    names that this function would need to add.
+    RuntimeError If ``resolution_hint`` is invalid or if
+    ``properties`` already has properties with the names that this
+    function would need to add.
 
 Precondition:
-    0 < ``resolution_hint`` < ∞ and ``properties`` is not nullptr.)""";
+    ``properties`` is not nullptr.)""";
         // Source: drake/geometry/proximity_properties.h
         const char* doc_1args =
 R"""(Overload, intended for shapes that don't get tessellated in their
@@ -388,12 +393,17 @@ A SceneGraph instance contains the set of geometries with assigned
 proximity properties ``G = R ⋃ V ⋃ A = {g₀, g₁, ..., gₙ}``, where R is
 the set of dynamic rigid geometries, V is the set of deformable
 geometries, and A is the set of anchored rigid geometries. These three
-sets are pairwise disjoint. Many proximity queries operate on pairs of
-geometries (e.g., (gᵢ, gⱼ)). Those queries operate on a theoretical
-set of *candidate pairs*, ``C ⊂ G × G``. C lacks many geometry pairs
-that have been excluded from consideration. CollisionFilterManager
-excludes many pairs intrinsically and provides mechanisms for the
-users to exclude even more pairs.
+sets are pairwise disjoint. An anchored geometry is a rigid geometry
+whose pose in the world frame does not depend on state (although it
+may change if parameters change); this includes all rigid geometries
+registered directly on the world frame or affixed to geometry frames
+that have themselves been marked as anchored. A dynamic rigid geometry
+is any rigid geometry that is not anchored. Many proximity queries
+operate on pairs of geometries (e.g., (gᵢ, gⱼ)). Those queries operate
+on a theoretical set of *candidate pairs*, ``C ⊂ G × G``. C lacks many
+geometry pairs that have been excluded from consideration.
+CollisionFilterManager excludes many pairs intrinsically and provides
+mechanisms for the users to exclude even more pairs.
 
 Intrinsic Exclusions
 
@@ -492,17 +502,38 @@ on C. We define C's initial configuration as ``C = {P₁, P₂, ..., Pₙ}``
 (for ``n`` geometry pairs). Each action is described as either
 persistent or transient.
 
-| Line | C | Action | | :--: | :------------------ |
-:-------------------------------------------------- | | 1 | ``{P₁, P₂,
-..., Pₙ}`` | Initial condition of the persistent base | | 2 | ``{P₂,
-..., Pₙ}`` | Remove P₁ from the persistent base | | 3 | ``{P₂, ...,
-Pₙ₋₁}`` | Remove Pₙ from the persistent base | | 4 | ``{P₂}`` | Remove
-all pairs except P₂ from the persistent base | | 5 | ``{P₂, P₄, P₅}``
-| Transient declaration #1 puts P₄ and P₅ into C | | 6 | ``{P₂, P₃,
-P₄, P₅}`` | Transient declaration #2 puts P₃ and P₄ into C | | 7 |
-``{P₂, P₃, P₄}`` | Remove declaration #1. | | 8 | ``{P₂, P₃, P₄}`` |
-Configuration flattened; #2 no longer exists | **Table 1**: An example
-sequence of operations on collision filters.
+.. list-table::
+   :header-rows: 1
+
+   * - Line
+     - C
+     - Action
+   * - 1
+     - ``{P₁, P₂, ..., Pₙ}``
+     - Initial condition of the persistent base
+   * - 2
+     - ``{P₂, ..., Pₙ}``
+     - Remove P₁ from the persistent base
+   * - 3
+     - ``{P₂, ..., Pₙ₋₁}``
+     - Remove Pₙ from the persistent base
+   * - 4
+     - ``{P₂}``
+     - Remove all pairs except P₂ from the persistent base
+   * - 5
+     - ``{P₂, P₄, P₅}``
+     - Transient declaration #1 puts P₄ and P₅ into C
+   * - 6
+     - ``{P₂, P₃, P₄, P₅}``
+     - Transient declaration #2 puts P₃ and P₄ into C
+   * - 7
+     - ``{P₂, P₃, P₄}``
+     - Remove declaration #1.
+   * - 8
+     - ``{P₂, P₃, P₄}``
+     - Configuration flattened; #2 no longer exists
+
+**Table 1**: An example sequence of operations on collision filters.
 
 Notes: - lines 2 - 4 represent a series of *persistent* operations,
 filtering pairs of geometry (aka removing them from C by calling
@@ -895,17 +926,12 @@ Serialization" for background.)""";
           const char* doc =
 R"""(@name Hydroelastic Contact Properties
 
-These properties affect hydroelastic contact only. For more detail,
-including limits of the numeric parameters,
+These properties affect hydroelastic contact only.
 
 See also:
     geometry∷AddRigidHydroelasticProperties,
     geometry∷AddCompliantHydroelasticProperties,
-    geometry∷AddCompliantHydroelasticPropertiesForHalfSpace.
-
-For more context,
-
-See also:
+    geometry∷AddCompliantHydroelasticPropertiesForHalfSpace,
     hug_properties. There are three valid options for
     ``compliance_type``: - "undefined": hydroelastic contact will not
     be used. - "rigid": the default hydroelastic compliance type will
@@ -921,22 +947,28 @@ See also:
           const char* doc =
 R"""(@name General Contact Properties
 
-These properties affect contact in general. For more detail, including
-limits of the numeric parameters,
+These properties affect contact in general.
 
 See also:
     geometry∷AddContactMaterial, multibody∷CoulombFriction,
-    mbp_contact_modeling, mbp_dissipation_model. To be valid, either
-    both friction values must be populated, or neither. Friction
-    quantities are unitless.)""";
+    mbp_contact_modeling, mbp_dissipation_model. Dynamic Coulomb
+    friction coefficient (unitless).
+
+To be valid, either both friction values must be populated, or
+neither. When present, the value must satisfy ``dynamic_friction ≥
+0``. +∞ is allowed. Additional relationship constraints with
+``static_friction`` are enforced by multibody∷CoulombFriction.)""";
         } dynamic_friction;
         // Symbol: drake::geometry::DefaultProximityProperties::hunt_crossley_dissipation
         struct /* hunt_crossley_dissipation */ {
           // Source: drake/geometry/scene_graph_config.h
           const char* doc =
 R"""(Controls energy dissipation from contact, for contact approximations
-other than* multibody∷DiscreteContactApproximation∷kSap. Units are
+*other than* multibody∷DiscreteContactApproximation∷kSap. Units are
 seconds per meter.
+
+When present, the value must satisfy ``hunt_crossley_dissipation ≥
+0``. +∞ is allowed.
 
 If a non-deformable geometry is missing a value for dissipation,
 MultibodyPlant will generate a default value (based on
@@ -954,7 +986,10 @@ parameters specific to your model.)""";
         struct /* hydroelastic_modulus */ {
           // Source: drake/geometry/scene_graph_config.h
           const char* doc =
-R"""(A measure of material stiffness, in units of Pascals.)""";
+R"""(A measure of material stiffness, in units of Pascals.
+
+When present, the value must satisfy ``hydroelastic_modulus > 0``. +∞
+is allowed (it is mathematically equivalent to a rigid object).)""";
         } hydroelastic_modulus;
         // Symbol: drake::geometry::DefaultProximityProperties::margin
         struct /* margin */ {
@@ -965,6 +1000,8 @@ around each geometry. Two bodies with margins δ₁ and δ₂ are considered
 for contact resolution whenever their distance is within δ₁ + δ₂. That
 is, (speculative) contact constraints are added for objects at a
 distance smaller than δ₁+δ₂.
+
+When present, the value must satisfy ``0 ≤ margin < ∞``.
 
 Refer to hydro_margin for further details, including theory, examples,
 recommended margin values and limitations.
@@ -1001,6 +1038,9 @@ Note:
           const char* doc =
 R"""(A measure of material stiffness, in units of Newtons per meter.
 
+When present, the value must satisfy ``point_stiffness > 0``. +∞ is
+allowed.
+
 If a non-deformable geometry is missing a value for stiffness,
 MultibodyPlant will generate a default value (based on
 multibody∷MultibodyPlantConfig∷penetration_allowance). However, this
@@ -1017,7 +1057,9 @@ parameters specific to your model.)""";
           // Source: drake/geometry/scene_graph_config.h
           const char* doc =
 R"""(Controls energy damping from contact, *only for*
-multibody∷DiscreteContactApproximation∷kSap. Units are seconds.)""";
+multibody∷DiscreteContactApproximation∷kSap. Units are seconds.
+
+When present, the value must satisfy ``0 ≤ relaxation_time < ∞``.)""";
         } relaxation_time;
         // Symbol: drake::geometry::DefaultProximityProperties::resolution_hint
         struct /* resolution_hint */ {
@@ -1025,6 +1067,8 @@ multibody∷DiscreteContactApproximation∷kSap. Units are seconds.)""";
           const char* doc =
 R"""(Controls how finely primitive geometries are tessellated, units of
 meters.
+
+When present, the value must satisfy ``0 < resolution_hint < ∞``.
 
 While no single value is universally appropriate, this value was
 selected based on the following idea. We're attempting to make
@@ -1038,13 +1082,17 @@ appropriate for contact with a compliant gripper.)""";
           // Source: drake/geometry/scene_graph_config.h
           const char* doc =
 R"""(For a halfspace, the thickness of compliant material to model, in
-units of meters.)""";
+units of meters.
+
+When present, the value must satisfy ``0 < slab_thickness < ∞``.)""";
         } slab_thickness;
         // Symbol: drake::geometry::DefaultProximityProperties::static_friction
         struct /* static_friction */ {
           // Source: drake/geometry/scene_graph_config.h
           const char* doc =
-R"""(See also:
+R"""(Static Coulomb friction coefficient (unitless).
+
+See also:
     dynamic_friction.)""";
         } static_friction;
         auto Serialize__fields() const {
@@ -1120,10 +1168,19 @@ role.
 - Otherwise, the configured default color will be applied (see
 DrakeVisualizerParams).
 
-| Group name | Required | Property Name | Property Type | Property
-Description | | :--------: | :------: | :-----------: |
-:-------------: | :------------------- | | phong | no | diffuse | Rgba
-| The rgba value of the object surface. |
+.. list-table::
+   :header-rows: 1
+
+   * - Group name
+     - Required
+     - Property Name
+     - Property Type
+     - Property Description
+   * - phong
+     - no
+     - diffuse
+     - Rgba
+     - The rgba value of the object surface.
 
 *Appearance of OBJ files for non-deformable geometries*
 
@@ -1215,7 +1272,7 @@ Parameter ``params``:
     The set of parameters to control this system's behavior.
 
 Raises:
-    RuntimeError if ``params.publish_period <= 0``.
+    RuntimeError if ``params.publish_period`` is negative or NaN.
 
 Raises:
     RuntimeError if ``params.role == Role∷kUnassigned``.)""";
@@ -1262,7 +1319,14 @@ R"""(The color to apply to any geometry that hasn't defined one.)""";
 R"""(The duration (in seconds) between published LCM messages that update
 the poses of the scene's geometry. (To help avoid small simulation
 time steps, we use a default period that has an exact representation
-in binary floating point; see drake#15021 for details.))""";
+in binary floating point; see drake#15021 for details.)
+
+If zero, the visualizer instead updates on every simulator step. That
+does not constrain the integrator's step size, so it does not change
+the simulation (unlike a positive period). Updates are then as
+frequent as the simulator's steps, including steps forced by discrete
+updates or other events, which can be much more often than a typical
+period.)""";
         } publish_period;
         // Symbol: drake::geometry::DrakeVisualizerParams::role
         struct /* role */ {
@@ -2314,6 +2378,48 @@ Note:
           const char* doc =
 R"""(Implementation of SceneGraph∷AddRenderer().)""";
         } AddRenderer;
+        // Symbol: drake::geometry::GeometryState::AnchorFrames
+        struct /* AnchorFrames */ {
+          // Source: drake/geometry/geometry_state.h
+          const char* doc =
+R"""(Marks the given frames as *anchored*: their world poses are a function
+of parameters alone, never of state (q, v, or time). Geometry on an
+anchored frame becomes anchored geometry, with all the consequences
+that already carries -- it is no longer re-posed and re-fit every
+step, and it can no longer collide with other anchored geometry --
+while continuing to report its true parent frame.
+
+"Anchored" does not mean "immutable". A frame welded to the world
+through a parameterized offset moves when that parameter changes, and
+SceneGraph notices and refreshes. What an anchored frame may not do is
+move as a function of state; that is what makes a single, batch
+invalidation the right granularity.
+
+A frame may be anchored only if its parent is anchored. The world
+frame is anchored by construction, which gives that rule its base
+case. Every frame in ``frame_ids`` must therefore have a parent that
+is either already anchored or is itself in ``frame_ids``; order within
+``frame_ids`` does not matter. Note that children of an anchored frame
+are *not* anchored automatically -- anchoring is opt-in per frame,
+with the parent as a precondition.
+
+Frames already anchored are a no-op, so a caller may include the world
+frame (as the world-welded subgraph of a MultibodyPlant does) without
+filtering.
+
+Anchoring a frame is irreversible.
+
+Raises:
+    RuntimeError if any id in ``frame_ids`` is not a registered frame.
+
+Raises:
+    RuntimeError if any frame's parent is neither anchored nor a
+    member of ``frame_ids``.
+
+Raises:
+    RuntimeError if there are any active, transient collision filter
+    declarations.)""";
+        } AnchorFrames;
         // Symbol: drake::geometry::GeometryState::ApplyProximityDefaults
         struct /* ApplyProximityDefaults */ {
           // Source: drake/geometry/geometry_state.h
@@ -3162,13 +3268,18 @@ containing library. No other values for KinematicsValue are supported.
 Currently, the following data types with the following scalar types
 are supported:
 
-Alias | Instantiation | Scalar types
--------------------------------------|--------------------------------------------------|-------------
-FramePoseVector<Scalar> |
-KinematicsVector<FrameId,RigidTransform<Scalar>> |
-double/AutoDiffXd/Expression GeometryConfigurationVector<Scalar> |
-KinematicsVector<GeometryId, VectorX<Scalar>> |
-double/AutoDiffXd/Expression)""";
+.. list-table::
+   :header-rows: 1
+
+   * - Alias
+     - Instantiation
+     - Scalar types
+   * - FramePoseVector<Scalar>
+     - KinematicsVector<FrameId,RigidTransform<Scalar>>
+     - double/AutoDiffXd/Expression
+   * - GeometryConfigurationVector<Scalar>
+     - KinematicsVector<GeometryId, VectorX<Scalar>>
+     - double/AutoDiffXd/Expression)""";
         // Symbol: drake::geometry::KinematicsVector::IsFinite
         struct /* IsFinite */ {
           // Source: drake/geometry/kinematics_vector.h
@@ -4155,8 +4266,9 @@ Precondition:
           const char* doc =
 R"""(Sends the recording to Meshcat as an animation. The published
 animation only includes transforms and properties; the objects that
-they modify must be sent to the visualizer separately (e.g. by calling
-Publish()).)""";
+they modify must be sent to the visualizer separately by calling
+SetObject() (meshcat animations do not support SetObject; see
+StartRecording()).)""";
         } PublishRecording;
         // Symbol: drake::geometry::Meshcat::ResetRenderMode
         struct /* ResetRenderMode */ {
@@ -5515,7 +5627,7 @@ Parameter ``surface_data``:
     velocity will not be visualized.
 
 Raises:
-    RuntimeError if ``params.publish_period <= 0``.
+    RuntimeError if ``params.publish_period`` is negative or NaN.
 
 Raises:
     RuntimeError if ``params.role == Role∷kUnassigned``.)""";
@@ -5538,8 +5650,8 @@ documentation.)""";
           const char* doc =
 R"""(Convenience function that calls Meshcat∷StartRecording on the
 underlying Meshcat object, with ``frames_per_second = 1 /
-publish_period``; refer to Meshcat∷StartRecording for full
-documentation.)""";
+publish_period`` (or the default period if ``publish_period`` is
+zero); refer to Meshcat∷StartRecording for full documentation.)""";
         } StartRecording;
         // Symbol: drake::geometry::MeshcatVisualizer::StopRecording
         struct /* StopRecording */ {
@@ -5654,7 +5766,14 @@ based on the standard path semantics in Meshcat. See meshcat_path
 R"""(The duration (in simulation seconds) between attempts to update poses
 in the visualizer. (To help avoid small simulation time steps, we use
 a default period that has an exact representation in binary floating
-point; see drake#15021 for details.))""";
+point; see drake#15021 for details.)
+
+If zero, the visualizer instead updates on every simulator step. That
+does not constrain the integrator's step size, so it does not change
+the simulation (unlike a positive period). Updates are then as
+frequent as the simulator's steps, including steps forced by discrete
+updates or other events, which can be much more often than a typical
+period.)""";
         } publish_period;
         // Symbol: drake::geometry::MeshcatVisualizerParams::role
         struct /* role */ {
@@ -5895,10 +6014,36 @@ implementation. That has several implications, as described below:
 - This table shows which shapes can be declared for use in hydroelastic
 contact, and what compliance can be assigned.
 
-| Shape | Compliant | Rigid | | :-------: | :-------: | :---: | |
-Sphere | yes | yes | | Cylinder | yes | yes | | Box | yes | yes | |
-Capsule | yes | yes | | Ellipsoid | yes | yes | | HalfSpace | yes |
-yes | | Mesh | yesᵃ | yesᵇ | | Convex | yesᶜ | yesᶜ |
+.. list-table::
+   :header-rows: 1
+
+   * - Shape
+     - Compliant
+     - Rigid
+   * - Sphere
+     - yes
+     - yes
+   * - Cylinder
+     - yes
+     - yes
+   * - Box
+     - yes
+     - yes
+   * - Capsule
+     - yes
+     - yes
+   * - Ellipsoid
+     - yes
+     - yes
+   * - HalfSpace
+     - yes
+     - yes
+   * - Mesh
+     - yesᵃ
+     - yesᵇ
+   * - Convex
+     - yesᶜ
+     - yesᶜ
 
 - ᵃ The exact representation of a compliant mesh depends on the type of
 mesh file it references:
@@ -6067,50 +6212,269 @@ symmetric with respect to shape *ordering*, the pair (ShapeA, ShapeB)
 will be the same as (ShapeB, ShapeA), so we only fill in half of each
 table.
 
-| | Box | Capsule | Convex | Cylinder | Ellipsoid | HalfSpace | Mesh |
-Sphere | | --------: | :-----: | :------: | :-----: | :-------: |
-:--------: | :--------: | :-----: | :-----: | | Box | 2e-15 | ░░░░░░ |
-░░░░░ | ░░░░░░░ | ░░░░░░ | ░░░░░░ | ░░░░░ | ░░░░░ | | Capsule | 3e-5ᶜ
-| 2e-5ᶜ | ░░░░░ | ░░░░░░░ | ░░░░░░ | ░░░░░░ | ░░░░░ | ░░░░░ | | Convex
-| 2e-15ᶜ | 3e-5ᶜ | 2e-15ᶜ | ░░░░░░░ | ░░░░░░ | ░░░░░░ | ░░░░░ | ░░░░░
-| | Cylinder | 1e-3ᶜ | 4e-5ᶜ | 1e-3ᶜ | 2e-3ᶜ | ░░░░░░ | ░░░░░░ | ░░░░░
-| ░░░░░ | | Ellipsoid | 4e-4ᶜ | 2e-4ᶜ | 4e-4ᶜ | 2e-3ᶜ | 5e-4ᶜ | ░░░░░░
-| ░░░░░ | ░░░░░ | | HalfSpace | 6e-15 | 4e-15 | 3e-15ᶜ | 4e-15 | 3e-15
-| throwsᵃ | ░░░░░ | ░░░░░ | | Mesh | ᵇ | ᵇ | ᵇ | ᵇ | ᵇ | ᵇ | ᵇ | ░░░░░
-| | Sphere | 4e-15 | 5e-15 | 3e-5ᶜ | 5e-15 | 2e-4ᶜ | 3e-15 | ᵇ | 5e-15
-| ***Table 1***: Worst observed error (in m) for 2mm penetration
-between geometries approximately 20cm in size for ``T`` = ``double``.
+.. list-table::
+   :header-rows: 1
 
-| | Box | Capsule | Convex | Cylinder | Ellipsoid | HalfSpace | Mesh |
-Sphere | | --------: | :-----: | :------: | :-----: | :-------: |
-:--------: | :--------: | :-----: | :-----: | | Box | throwsᵈ | ░░░░░░
-| ░░░░░ | ░░░░░░░ | ░░░░░░ | ░░░░░░ | ░░░░░ | ░░░░░ | | Capsule |
-throwsᵈ | throwsᵈ | ░░░░░ | ░░░░░░░ | ░░░░░░ | ░░░░░░ | ░░░░░ | ░░░░░
-| | Convex | throwsᵈ | throwsᵈ | throwsᵈ | ░░░░░░░ | ░░░░░░ | ░░░░░░ |
-░░░░░ | ░░░░░ | | Cylinder | throwsᵈ | throwsᵈ | throwsᵈ | throwsᵈ |
-░░░░░░ | ░░░░░░ | ░░░░░ | ░░░░░ | | Ellipsoid | throwsᵈ | throwsᵈ |
-throwsᵈ | throwsᵈ | throwsᵈ | ░░░░░░ | ░░░░░ | ░░░░░ | | HalfSpace |
-throwsᵈ | throwsᵈ | throwsᵈ | throwsᵈ | throwsᵈ | throwsᵃ | ░░░░░ |
-░░░░░ | | Mesh | ᵇ | ᵇ | ᵇ | ᵇ | ᵇ | ᵇ | ᵇ | ░░░░░ | | Sphere | 2e-15
-| 5e-15 | throwsᵈ | 2e-15 | throwsᵈ | 2e-15 | ᵇ | 5e-15 | ***Table
-2***: Worst observed error (in m) for 2mm penetration between
+   * -
+     - Box
+     - Capsule
+     - Convex
+     - Cylinder
+     - Ellipsoid
+     - HalfSpace
+     - Mesh
+     - Sphere
+   * - Box
+     - 2e-15
+     - ░░░░░░
+     - ░░░░░
+     - ░░░░░░░
+     - ░░░░░░
+     - ░░░░░░
+     - ░░░░░
+     - ░░░░░
+   * - Capsule
+     - 3e-5ᶜ
+     - 2e-5ᶜ
+     - ░░░░░
+     - ░░░░░░░
+     - ░░░░░░
+     - ░░░░░░
+     - ░░░░░
+     - ░░░░░
+   * - Convex
+     - 2e-15ᶜ
+     - 3e-5ᶜ
+     - 2e-15ᶜ
+     - ░░░░░░░
+     - ░░░░░░
+     - ░░░░░░
+     - ░░░░░
+     - ░░░░░
+   * - Cylinder
+     - 1e-3ᶜ
+     - 4e-5ᶜ
+     - 1e-3ᶜ
+     - 2e-3ᶜ
+     - ░░░░░░
+     - ░░░░░░
+     - ░░░░░
+     - ░░░░░
+   * - Ellipsoid
+     - 4e-4ᶜ
+     - 2e-4ᶜ
+     - 4e-4ᶜ
+     - 2e-3ᶜ
+     - 5e-4ᶜ
+     - ░░░░░░
+     - ░░░░░
+     - ░░░░░
+   * - HalfSpace
+     - 6e-15
+     - 4e-15
+     - 3e-15ᶜ
+     - 4e-15
+     - 3e-15
+     - throwsᵃ
+     - ░░░░░
+     - ░░░░░
+   * - Mesh
+     - ᵇ
+     - ᵇ
+     - ᵇ
+     - ᵇ
+     - ᵇ
+     - ᵇ
+     - ᵇ
+     - ░░░░░
+   * - Sphere
+     - 4e-15
+     - 5e-15
+     - 3e-5ᶜ
+     - 5e-15
+     - 2e-4ᶜ
+     - 3e-15
+     - ᵇ
+     - 5e-15
+
+***Table 1***: Worst observed error (in m) for 2mm penetration between
+geometries approximately 20cm in size for ``T`` = ``double``.
+
+.. list-table::
+   :header-rows: 1
+
+   * -
+     - Box
+     - Capsule
+     - Convex
+     - Cylinder
+     - Ellipsoid
+     - HalfSpace
+     - Mesh
+     - Sphere
+   * - Box
+     - throwsᵈ
+     - ░░░░░░
+     - ░░░░░
+     - ░░░░░░░
+     - ░░░░░░
+     - ░░░░░░
+     - ░░░░░
+     - ░░░░░
+   * - Capsule
+     - throwsᵈ
+     - throwsᵈ
+     - ░░░░░
+     - ░░░░░░░
+     - ░░░░░░
+     - ░░░░░░
+     - ░░░░░
+     - ░░░░░
+   * - Convex
+     - throwsᵈ
+     - throwsᵈ
+     - throwsᵈ
+     - ░░░░░░░
+     - ░░░░░░
+     - ░░░░░░
+     - ░░░░░
+     - ░░░░░
+   * - Cylinder
+     - throwsᵈ
+     - throwsᵈ
+     - throwsᵈ
+     - throwsᵈ
+     - ░░░░░░
+     - ░░░░░░
+     - ░░░░░
+     - ░░░░░
+   * - Ellipsoid
+     - throwsᵈ
+     - throwsᵈ
+     - throwsᵈ
+     - throwsᵈ
+     - throwsᵈ
+     - ░░░░░░
+     - ░░░░░
+     - ░░░░░
+   * - HalfSpace
+     - throwsᵈ
+     - throwsᵈ
+     - throwsᵈ
+     - throwsᵈ
+     - throwsᵈ
+     - throwsᵃ
+     - ░░░░░
+     - ░░░░░
+   * - Mesh
+     - ᵇ
+     - ᵇ
+     - ᵇ
+     - ᵇ
+     - ᵇ
+     - ᵇ
+     - ᵇ
+     - ░░░░░
+   * - Sphere
+     - 2e-15
+     - 5e-15
+     - throwsᵈ
+     - 2e-15
+     - throwsᵈ
+     - 2e-15
+     - ᵇ
+     - 5e-15
+
+***Table 2***: Worst observed error (in m) for 2mm penetration between
 geometries approximately 20cm in size for ``T`` = drake∷AutoDiffXd
 "AutoDiffXd".
 
-| | Box | Capsule | Convex | Cylinder | Ellipsoid | HalfSpace | Mesh |
-Sphere | | --------: | :-----: | :------: | :-----: | :-------: |
-:--------: | :--------: | :-----: | :-----: | | Box | throwsᵉ | ░░░░░░
-| ░░░░░ | ░░░░░░░ | ░░░░░░ | ░░░░░░ | ░░░░░ | ░░░░░ | | Capsule |
-throwsᵉ | throwsᵉ | ░░░░░ | ░░░░░░░ | ░░░░░░ | ░░░░░░ | ░░░░░ | ░░░░░
-| | Convex | throwsᵉ | throwsᵉ | throwsᵉ | ░░░░░░░ | ░░░░░░ | ░░░░░░ |
-░░░░░ | ░░░░░ | | Cylinder | throwsᵉ | throwsᵉ | throwsᵉ | throwsᵉ |
-░░░░░░ | ░░░░░░ | ░░░░░ | ░░░░░ | | Ellipsoid | throwsᵉ | throwsᵉ |
-throwsᵉ | throwsᵉ | throwsᵉ | ░░░░░░ | ░░░░░ | ░░░░░ | | HalfSpace |
-throwsᵉ | throwsᵉ | throwsᵉ | throwsᵉ | throwsᵉ | throwsᵃ | ░░░░░ |
-░░░░░ | | Mesh | ᵇ | ᵇ | ᵇ | ᵇ | ᵇ | ᵇ | ᵇ | ░░░░░ | | Sphere |
-throwsᵉ | throwsᵉ | throwsᵉ | throwsᵉ | throwsᵉ | throwsᵉ | ᵇ |
-throwsᵉ | ***Table 3***: Support for ``T`` =
-drake∷symbolic∷Expression.
+.. list-table::
+   :header-rows: 1
+
+   * -
+     - Box
+     - Capsule
+     - Convex
+     - Cylinder
+     - Ellipsoid
+     - HalfSpace
+     - Mesh
+     - Sphere
+   * - Box
+     - throwsᵉ
+     - ░░░░░░
+     - ░░░░░
+     - ░░░░░░░
+     - ░░░░░░
+     - ░░░░░░
+     - ░░░░░
+     - ░░░░░
+   * - Capsule
+     - throwsᵉ
+     - throwsᵉ
+     - ░░░░░
+     - ░░░░░░░
+     - ░░░░░░
+     - ░░░░░░
+     - ░░░░░
+     - ░░░░░
+   * - Convex
+     - throwsᵉ
+     - throwsᵉ
+     - throwsᵉ
+     - ░░░░░░░
+     - ░░░░░░
+     - ░░░░░░
+     - ░░░░░
+     - ░░░░░
+   * - Cylinder
+     - throwsᵉ
+     - throwsᵉ
+     - throwsᵉ
+     - throwsᵉ
+     - ░░░░░░
+     - ░░░░░░
+     - ░░░░░
+     - ░░░░░
+   * - Ellipsoid
+     - throwsᵉ
+     - throwsᵉ
+     - throwsᵉ
+     - throwsᵉ
+     - throwsᵉ
+     - ░░░░░░
+     - ░░░░░
+     - ░░░░░
+   * - HalfSpace
+     - throwsᵉ
+     - throwsᵉ
+     - throwsᵉ
+     - throwsᵉ
+     - throwsᵉ
+     - throwsᵃ
+     - ░░░░░
+     - ░░░░░
+   * - Mesh
+     - ᵇ
+     - ᵇ
+     - ᵇ
+     - ᵇ
+     - ᵇ
+     - ᵇ
+     - ᵇ
+     - ░░░░░
+   * - Sphere
+     - throwsᵉ
+     - throwsᵉ
+     - throwsᵉ
+     - throwsᵉ
+     - throwsᵉ
+     - throwsᵉ
+     - ᵇ
+     - throwsᵉ
+
+***Table 3***: Support for ``T`` = drake∷symbolic∷Expression.
 
 - ᵃ Penetration depth between two HalfSpace instances has no meaning; either
 they don't intersect, or they have infinite penetration.
@@ -6273,51 +6637,270 @@ symmetric with respect to shape *ordering*, the pair (ShapeA, ShapeB)
 will be the same as (ShapeB, ShapeA), so we only fill in half the
 table.
 
-| | Box | Capsule | Convex | Cylinder | Ellipsoid | HalfSpace | Mesh |
-Sphere | | --------: | :-----: | :------: | :-----: | :-------: |
-:--------: | :--------: | :-----: | :-----: | | Box | 4e-15 | ░░░░░░ |
-░░░░░ | ░░░░░░░ | ░░░░░░ | ░░░░░░ | ░░░░░ | ░░░░░ | | Capsule | 3e-6 |
-2e-5 | ░░░░░ | ░░░░░░░ | ░░░░░░ | ░░░░░░ | ░░░░░ | ░░░░░ | | Convex |
-3e-15 | 2e-5 | 3e-15 | ░░░░░░░ | ░░░░░░ | ░░░░░░ | ░░░░░ | ░░░░░ | |
-Cylinder | 6e-6 | 1e-5 | 6e-6 | 2e-5 | ░░░░░░ | ░░░░░░ | ░░░░░ | ░░░░░
-| | Ellipsoid | 9e-6 | 5e-6 | 9e-6 | 5e-5 | 2e-5 | ░░░░░░ | ░░░░░ |
-░░░░░ | | HalfSpace | throwsᵃ | throwsᵃ | throwsᵃ | throwsᵃ | throwsᵃ
-| throwsᵃ | ░░░░░ | ░░░░░ | | Mesh | ᶜ | ᶜ | ᶜ | ᶜ | ᶜ | throwsᵃ | ᶜ |
-░░░░░ | | Sphere | 4e-15 | 6e-15 | 3e-6 | 5e-15 | 4e-5 | 3e-15 | ᶜ |
-6e-15 | ***Table 4***: Worst observed error (in m) for 2mm
+.. list-table::
+   :header-rows: 1
+
+   * -
+     - Box
+     - Capsule
+     - Convex
+     - Cylinder
+     - Ellipsoid
+     - HalfSpace
+     - Mesh
+     - Sphere
+   * - Box
+     - 4e-15
+     - ░░░░░░
+     - ░░░░░
+     - ░░░░░░░
+     - ░░░░░░
+     - ░░░░░░
+     - ░░░░░
+     - ░░░░░
+   * - Capsule
+     - 3e-6
+     - 2e-5
+     - ░░░░░
+     - ░░░░░░░
+     - ░░░░░░
+     - ░░░░░░
+     - ░░░░░
+     - ░░░░░
+   * - Convex
+     - 3e-15
+     - 2e-5
+     - 3e-15
+     - ░░░░░░░
+     - ░░░░░░
+     - ░░░░░░
+     - ░░░░░
+     - ░░░░░
+   * - Cylinder
+     - 6e-6
+     - 1e-5
+     - 6e-6
+     - 2e-5
+     - ░░░░░░
+     - ░░░░░░
+     - ░░░░░
+     - ░░░░░
+   * - Ellipsoid
+     - 9e-6
+     - 5e-6
+     - 9e-6
+     - 5e-5
+     - 2e-5
+     - ░░░░░░
+     - ░░░░░
+     - ░░░░░
+   * - HalfSpace
+     - throwsᵃ
+     - throwsᵃ
+     - throwsᵃ
+     - throwsᵃ
+     - throwsᵃ
+     - throwsᵃ
+     - ░░░░░
+     - ░░░░░
+   * - Mesh
+     - ᶜ
+     - ᶜ
+     - ᶜ
+     - ᶜ
+     - ᶜ
+     - throwsᵃ
+     - ᶜ
+     - ░░░░░
+   * - Sphere
+     - 4e-15
+     - 6e-15
+     - 3e-6
+     - 5e-15
+     - 4e-5
+     - 3e-15
+     - ᶜ
+     - 6e-15
+
+***Table 4***: Worst observed error (in m) for 2mm
 penetration/separation between geometries approximately 20cm in size
 for ``T`` = ``double``.
 
-| | Box | Capsule | Convex | Cylinder | Ellipsoid | HalfSpace | Mesh |
-Sphere | | --------: | :-----: | :------: | :-----: | :-------: |
-:--------: | :--------: | :-----: | :-----: | | Box | throwsᵇ | ░░░░░░
-| ░░░░░ | ░░░░░░░ | ░░░░░░ | ░░░░░░ | ░░░░░ | ░░░░░ | | Capsule |
-throwsᵇ | throwsᵇ | ░░░░░ | ░░░░░░░ | ░░░░░░ | ░░░░░░ | ░░░░░ | ░░░░░
-| | Convex | throwsᵇ | throwsᵇ | throwsᵇ | ░░░░░░░ | ░░░░░░ | ░░░░░░ |
-░░░░░ | ░░░░░ | | Cylinder | throwsᵇ | throwsᵇ | throwsᵇ | throwsᵇ |
-░░░░░░ | ░░░░░░ | ░░░░░ | ░░░░░ | | Ellipsoid | throwsᵇ | throwsᵇ |
-throwsᵇ | throwsᵇ | throwsᵇ | ░░░░░░ | ░░░░░ | ░░░░░ | | HalfSpace |
-throwsᵃ | throwsᵃ | throwsᵃ | throwsᵃ | throwsᵃ | throwsᵃ | ░░░░░ |
-░░░░░ | | Mesh | ᶜ | ᶜ | ᶜ | ᶜ | ᶜ | throwsᵃ | ᶜ | ░░░░░ | | Sphere |
-2e-15 | throwsᵇ | throwsᵇ | throwsᵇ | throwsᵇ | 2e-15 | ᶜ | 5e-15 |
+.. list-table::
+   :header-rows: 1
+
+   * -
+     - Box
+     - Capsule
+     - Convex
+     - Cylinder
+     - Ellipsoid
+     - HalfSpace
+     - Mesh
+     - Sphere
+   * - Box
+     - throwsᵇ
+     - ░░░░░░
+     - ░░░░░
+     - ░░░░░░░
+     - ░░░░░░
+     - ░░░░░░
+     - ░░░░░
+     - ░░░░░
+   * - Capsule
+     - throwsᵇ
+     - throwsᵇ
+     - ░░░░░
+     - ░░░░░░░
+     - ░░░░░░
+     - ░░░░░░
+     - ░░░░░
+     - ░░░░░
+   * - Convex
+     - throwsᵇ
+     - throwsᵇ
+     - throwsᵇ
+     - ░░░░░░░
+     - ░░░░░░
+     - ░░░░░░
+     - ░░░░░
+     - ░░░░░
+   * - Cylinder
+     - throwsᵇ
+     - throwsᵇ
+     - throwsᵇ
+     - throwsᵇ
+     - ░░░░░░
+     - ░░░░░░
+     - ░░░░░
+     - ░░░░░
+   * - Ellipsoid
+     - throwsᵇ
+     - throwsᵇ
+     - throwsᵇ
+     - throwsᵇ
+     - throwsᵇ
+     - ░░░░░░
+     - ░░░░░
+     - ░░░░░
+   * - HalfSpace
+     - throwsᵃ
+     - throwsᵃ
+     - throwsᵃ
+     - throwsᵃ
+     - throwsᵃ
+     - throwsᵃ
+     - ░░░░░
+     - ░░░░░
+   * - Mesh
+     - ᶜ
+     - ᶜ
+     - ᶜ
+     - ᶜ
+     - ᶜ
+     - throwsᵃ
+     - ᶜ
+     - ░░░░░
+   * - Sphere
+     - 2e-15
+     - throwsᵇ
+     - throwsᵇ
+     - throwsᵇ
+     - throwsᵇ
+     - 2e-15
+     - ᶜ
+     - 5e-15
+
 ***Table 5***: Worst observed error (in m) for 2mm
 penetration/separation between geometries approximately 20cm in size
 for ``T`` = drake∷AutoDiffXd "AutoDiffXd".
 
-| | Box | Capsule | Convex | Cylinder | Ellipsoid | HalfSpace | Mesh |
-Sphere | | --------: | :-----: | :------: | :-----: | :-------: |
-:--------: | :--------: | :-----: | :-----: | | Box | throwsᵈ | ░░░░░░
-| ░░░░░ | ░░░░░░░ | ░░░░░░ | ░░░░░░ | ░░░░░ | ░░░░░ | | Capsule |
-throwsᵈ | throwsᵈ | ░░░░░ | ░░░░░░░ | ░░░░░░ | ░░░░░░ | ░░░░░ | ░░░░░
-| | Convex | throwsᵈ | throwsᵈ | throwsᵈ | ░░░░░░░ | ░░░░░░ | ░░░░░░ |
-░░░░░ | ░░░░░ | | Cylinder | throwsᵈ | throwsᵈ | throwsᵈ | throwsᵈ |
-░░░░░░ | ░░░░░░ | ░░░░░ | ░░░░░ | | Ellipsoid | throwsᵈ | throwsᵈ |
-throwsᵈ | throwsᵈ | throwsᵈ | ░░░░░░ | ░░░░░ | ░░░░░ | | HalfSpace |
-throwsᵃ | throwsᵃ | throwsᵃ | throwsᵃ | throwsᵃ | throwsᵃ | ░░░░░ |
-░░░░░ | | Mesh | ᶜ | ᶜ | ᶜ | ᶜ | ᶜ | throwsᵃ | ᶜ | ░░░░░ | | Sphere |
-throwsᵈ | throwsᵈ | throwsᵈ | throwsᵈ | throwsᵈ | throwsᵈ | ᶜ |
-throwsᵈ | ***Table 6***: Support for ``T`` =
-drake∷symbolic∷Expression.
+.. list-table::
+   :header-rows: 1
+
+   * -
+     - Box
+     - Capsule
+     - Convex
+     - Cylinder
+     - Ellipsoid
+     - HalfSpace
+     - Mesh
+     - Sphere
+   * - Box
+     - throwsᵈ
+     - ░░░░░░
+     - ░░░░░
+     - ░░░░░░░
+     - ░░░░░░
+     - ░░░░░░
+     - ░░░░░
+     - ░░░░░
+   * - Capsule
+     - throwsᵈ
+     - throwsᵈ
+     - ░░░░░
+     - ░░░░░░░
+     - ░░░░░░
+     - ░░░░░░
+     - ░░░░░
+     - ░░░░░
+   * - Convex
+     - throwsᵈ
+     - throwsᵈ
+     - throwsᵈ
+     - ░░░░░░░
+     - ░░░░░░
+     - ░░░░░░
+     - ░░░░░
+     - ░░░░░
+   * - Cylinder
+     - throwsᵈ
+     - throwsᵈ
+     - throwsᵈ
+     - throwsᵈ
+     - ░░░░░░
+     - ░░░░░░
+     - ░░░░░
+     - ░░░░░
+   * - Ellipsoid
+     - throwsᵈ
+     - throwsᵈ
+     - throwsᵈ
+     - throwsᵈ
+     - throwsᵈ
+     - ░░░░░░
+     - ░░░░░
+     - ░░░░░
+   * - HalfSpace
+     - throwsᵃ
+     - throwsᵃ
+     - throwsᵃ
+     - throwsᵃ
+     - throwsᵃ
+     - throwsᵃ
+     - ░░░░░
+     - ░░░░░
+   * - Mesh
+     - ᶜ
+     - ᶜ
+     - ᶜ
+     - ᶜ
+     - ᶜ
+     - throwsᵃ
+     - ᶜ
+     - ░░░░░
+   * - Sphere
+     - throwsᵈ
+     - throwsᵈ
+     - throwsᵈ
+     - throwsᵈ
+     - throwsᵈ
+     - throwsᵈ
+     - ᶜ
+     - throwsᵈ
+
+***Table 6***: Support for ``T`` = drake∷symbolic∷Expression.
 
 - ᵃ We don't currently support queries between HalfSpace and any other shape
 (except for Sphere).
@@ -6344,18 +6927,93 @@ unique solution. For example, any direction is qualified to be the
 gradient for two concentric spheres. Or two boxes touching at their
 vertices can pick a gradient from a continuous family of directions.
 
-| | Box | Capsule | Convex | Cylinder | Ellipsoid | HalfSpace | Mesh |
-Sphere | | --------: | :--: | :------: | :-----: | :-------: |
-:--------: | :--------: | :-----: | :-----: | | Box | Ok | ░░░░░░ |
-░░░░░ | ░░░░░░░ | ░░░░░░ | ░░░░░░ | ░░░░░ | ░░░░░ | | Capsule | NaN |
-NaN | ░░░░░ | ░░░░░░░ | ░░░░░░ | ░░░░░░ | ░░░░░ | ░░░░░ | | Convex |
-NaN | NaN | NaN | ░░░░░░░ | ░░░░░░ | ░░░░░░ | ░░░░░ | ░░░░░ | |
-Cylinder | NaN | NaN | NaN | NaN | ░░░░░░ | ░░░░░░ | ░░░░░ | ░░░░░ | |
-Ellipsoid | NaN | NaN | NaN | NaN | NaN | ░░░░░░ | ░░░░░ | ░░░░░ | |
-HalfSpace | NaN | NaN | NaN | NaN | NaN | NaN | ░░░░░ | ░░░░░ | | Mesh
-| NaN | NaN | NaN | NaN | NaN | NaN | NaN | ░░░░░ | | Sphere | Ok | Ok
-| Okᵃ | Ok | Okᵃ | Ok | Okᵃ | Ok | ***Table 7***: Support for
-signed-distance gradients when two geometries touch at zero distance.
+.. list-table::
+   :header-rows: 1
+
+   * -
+     - Box
+     - Capsule
+     - Convex
+     - Cylinder
+     - Ellipsoid
+     - HalfSpace
+     - Mesh
+     - Sphere
+   * - Box
+     - Ok
+     - ░░░░░░
+     - ░░░░░
+     - ░░░░░░░
+     - ░░░░░░
+     - ░░░░░░
+     - ░░░░░
+     - ░░░░░
+   * - Capsule
+     - NaN
+     - NaN
+     - ░░░░░
+     - ░░░░░░░
+     - ░░░░░░
+     - ░░░░░░
+     - ░░░░░
+     - ░░░░░
+   * - Convex
+     - NaN
+     - NaN
+     - NaN
+     - ░░░░░░░
+     - ░░░░░░
+     - ░░░░░░
+     - ░░░░░
+     - ░░░░░
+   * - Cylinder
+     - NaN
+     - NaN
+     - NaN
+     - NaN
+     - ░░░░░░
+     - ░░░░░░
+     - ░░░░░
+     - ░░░░░
+   * - Ellipsoid
+     - NaN
+     - NaN
+     - NaN
+     - NaN
+     - NaN
+     - ░░░░░░
+     - ░░░░░
+     - ░░░░░
+   * - HalfSpace
+     - NaN
+     - NaN
+     - NaN
+     - NaN
+     - NaN
+     - NaN
+     - ░░░░░
+     - ░░░░░
+   * - Mesh
+     - NaN
+     - NaN
+     - NaN
+     - NaN
+     - NaN
+     - NaN
+     - NaN
+     - ░░░░░
+   * - Sphere
+     - Ok
+     - Ok
+     - Okᵃ
+     - Ok
+     - Okᵃ
+     - Ok
+     - Okᵃ
+     - Ok
+
+***Table 7***: Support for signed-distance gradients when two
+geometries touch at zero distance.
 
 - ᵃ Return the gradient as a Vector3d of NaN if the sphere has zero radius.
 
@@ -6415,14 +7073,49 @@ matrix of shape pairs, but a list of shapes. Otherwise, the
 methodology is the same as described, with the point being represented
 as a zero-radius sphere.
 
-| Scalar | Box | Capsule | Convex | Cylinder | Ellipsoid | HalfSpace |
-Mesh | Sphere | | :--------: | :-----: | :------: | :-----: |
-:-------: | :--------: | :--------: | :-----: | :-----: | | double |
-2e-15 | 5e-15 | 6e-15 | 3e-15 | 3e-5ᵇ | 5e-15 | 6e-15ᶜ | 4e-15 | |
-AutoDiffXd | 1e-15 | 7e-15 | ᵃ | ᵃ | ᵃ | 5e-15 | ᵃ | 4e-15 | |
-Expression | ᵃ | ᵃ | ᵃ | ᵃ | ᵃ | ᵃ | ᵃ | ᵃ | ***Table 8***: Worst
-observed error (in m) for 2mm penetration/separation between geometry
-approximately 20cm in size and a point.
+.. list-table::
+   :header-rows: 1
+
+   * - Scalar
+     - Box
+     - Capsule
+     - Convex
+     - Cylinder
+     - Ellipsoid
+     - HalfSpace
+     - Mesh
+     - Sphere
+   * - double
+     - 2e-15
+     - 5e-15
+     - 6e-15
+     - 3e-15
+     - 3e-5ᵇ
+     - 5e-15
+     - 6e-15ᶜ
+     - 4e-15
+   * - AutoDiffXd
+     - 1e-15
+     - 7e-15
+     - ᵃ
+     - ᵃ
+     - ᵃ
+     - 5e-15
+     - ᵃ
+     - 4e-15
+   * - Expression
+     - ᵃ
+     - ᵃ
+     - ᵃ
+     - ᵃ
+     - ᵃ
+     - ᵃ
+     - ᵃ
+     - ᵃ
+
+***Table 8***: Worst observed error (in m) for 2mm
+penetration/separation between geometry approximately 20cm in size and
+a point.
 
 - ᵃ Unsupported geometry/scalar combinations are simply ignored; no results
 are reported for that geometry.
@@ -7042,44 +7735,55 @@ through which the producer's identity is validated.
 SceneGraph cannot know what geometry *should* be part of the shared
 world. Other systems are responsible for introducing geometry into the
 world. This process (defining geometry and informing SceneGraph) is
-called *registering* the geometry. Geometry can be registered as
-*anchored* or *dynamic*, and is always registered to (associated with)
-a SourceId.
+called *registering* the geometry. Geometry is either *anchored* or
+*dynamic*, and is always registered to (associated with) a SourceId.
 
 Dynamic geometry can move; more specifically, its kinematics (e.g.,
-pose) depends on a system's Context. Particularly, a non-deformable
+pose) depends on a system's state. Particularly, a non-deformable
 dynamic geometry is *fixed* to a *frame* whose kinematics values
-depend on a context. As the frame moves, the geometries fixed to it
-move with it. On the other hand, a deformable dynamic geometry has a
-mesh representation whose vertices' positions can change and are
-expressed in the frame it is registered in. Therefore, to register
-dynamic geometry a frame must be registered first. These registered
-frames serve as the basis for repositioning geometry in the shared
-world. The geometry source is responsible for providing up-to-date
-kinematics values for those registered frames upon request (via an
-appropriate output port on the source LeafSystem connecting to the
-appropriate input port on SceneGraph). The geometry source that
-registers deformable geometry is also responsible to provide the
-positions of the mesh vertices of the deformable geometry in the
-registered-in frame. The work flow is as follows: 1. A LeafSystem
-registers itself as a geometry source, acquiring a SourceId
-(RegisterSource()). 2. The source registers a frame
-(GeometrySource∷RegisterFrame()). - A frame always has a "parent"
-frame. It can implicitly be the world frame, *or* another frame
-registered by the source. 3. Register one or more non-deformable
-geometries to a frame (RegisterGeometry()), and/or one or more
-deformable geometries to a frame (RegisterDeformableGeometry()). - A
-non-deformable geometry's pose is relative to the frame to which the
-geometry is fixed. For deformable geometries, the positions of their
-mesh vertices are expressed in the registered-in frame. - Rigid
-geometries can also be posed relative to another registered geometry.
-It will be affixed to *that* geometry's frame.
+depend on state. As the frame moves, the geometries fixed to it move
+with it. On the other hand, a deformable dynamic geometry has a mesh
+representation whose vertices' positions can change and are expressed
+in the frame it is registered in. Therefore, to register dynamic
+geometry a frame must be registered first. These registered frames
+serve as the basis for repositioning geometry in the shared world. The
+geometry source is responsible for providing up-to-date kinematics
+values for those registered frames upon request (via an appropriate
+output port on the source LeafSystem connecting to the appropriate
+input port on SceneGraph). The geometry source that registers
+deformable geometry is also responsible to provide the positions of
+the mesh vertices of the deformable geometry in the registered-in
+frame. The work flow is as follows: 1. A LeafSystem registers itself
+as a geometry source, acquiring a SourceId (RegisterSource()). 2. The
+source registers a frame (GeometrySource∷RegisterFrame()). - A frame
+always has a "parent" frame. It can implicitly be the world frame,
+*or* another frame registered by the source. 3. Register one or more
+non-deformable geometries to a frame (RegisterGeometry()), and/or one
+or more deformable geometries to a frame
+(RegisterDeformableGeometry()). - A non-deformable geometry's pose is
+relative to the frame to which the geometry is fixed. For deformable
+geometries, the positions of their mesh vertices are expressed in the
+registered-in frame. - Rigid geometries can also be posed relative to
+another registered geometry. It will be affixed to *that* geometry's
+frame.
 
-Anchored geometry is *independent* of the context (i.e., it doesn't
-move). Anchored geometries are always affixed to the immobile world
-frame. As such, registering a frame is *not* required for registering
-anchored geometry (see GeometrySource∷RegisterAnchoredGeometry()).
-However, the source still "owns" the anchored geometry.
+Anchored geometries are rigid geometries whose poses do not depend on
+the system's state. SceneGraph exploits this for performance, and
+never tests two anchored geometries against each other (see
+CollisionFilterManager).
+
+First, the geometry is affixed directly to the immobile world frame.
+Registering a frame is *not* required for registering such geometry
+(see GeometrySource∷RegisterAnchoredGeometry()). However, the source
+still "owns" the anchored geometry.
+
+Second, the parent frame of a dynamic geometry is declared anchored
+after registration. All geometries affixed to that frame are treated
+as anchored. The pose of such a frame can still change, but only based
+on system parameters. Only Drake code can declare a frame anchored; it
+is not available to general geometry sources. For example,
+MultibodyPlant anchors the frames of bodies welded (directly or
+indirectly) to the world.
 
 *Updating Kinematics*
 
@@ -7263,6 +7967,11 @@ R"""(systems∷Context-modifying variant of AddRenderer(). Rather than
 modifying SceneGraph's model, it modifies the copy of the model stored
 in the provided context.)""";
         } AddRenderer;
+        // Symbol: drake::geometry::SceneGraph::AnchorFrames
+        struct /* AnchorFrames */ {
+          // Source: drake/geometry/scene_graph.h
+          const char* doc = R"""()""";
+        } AnchorFrames;
         // Symbol: drake::geometry::SceneGraph::AssignRole
         struct /* AssignRole */ {
           // Source: drake/geometry/scene_graph.h
@@ -8426,9 +9135,12 @@ Raises:
         struct /* NumAnchoredGeometries */ {
           // Source: drake/geometry/scene_graph_inspector.h
           const char* doc =
-R"""(Reports the total number of *anchored* non-deformable geometries. This
-should provide the same answer as calling NumGeometriesForFrame() with
-the world frame id.)""";
+R"""(Reports the total number of *anchored* geometries in the scene graph.
+Anchored geometries are rigid geometries whose poses in the world
+frame do not depend on state; this includes all rigid geometries
+registered directly on the world frame. An anchored geometry's pose
+can still change if parameters change. Deformable geometries are never
+anchored.)""";
         } NumAnchoredGeometries;
         // Symbol: drake::geometry::SceneGraphInspector::NumDeformableGeometriesWithRole
         struct /* NumDeformableGeometriesWithRole */ {
@@ -8442,7 +9154,10 @@ graph with the indicated role.)""";
           // Source: drake/geometry/scene_graph_inspector.h
           const char* doc =
 R"""(Reports the total number of *dynamic* geometries in the scene graph.
-This include all deformable geometries.)""";
+Dynamic geometries are those whose poses (or, for deformable
+geometries, configurations) depend on state. This includes all
+deformable geometries. Every geometry is either dynamic or anchored
+(see NumAnchoredGeometries()).)""";
         } NumDynamicGeometries;
         // Symbol: drake::geometry::SceneGraphInspector::NumFramesForSource
         struct /* NumFramesForSource */ {

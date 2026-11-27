@@ -199,6 +199,19 @@ class InverseKinematics {
       const Frame<double>& frameBbar,
       const math::RotationMatrix<double>& R_BbarB, double c);
 
+  /** Adds a cost of the form `-c * w(q)`, where `w` is Yoshikawa's
+   * manipulability index of frame B relative to frame A. See
+   * ManipulabilityCost for details.
+   * @param frameA The frame in which frame B's motion is measured.
+   * @param frameB The frame whose manipulability is measured.
+   * @param c A positive, finite scalar cost weight.
+   * @throws std::exception if `c` is not positive and finite.
+   * @throws std::exception if fewer than six generalized velocities are on the
+   *   kinematic path between frame A and frame B.
+   */
+  solvers::Binding<solvers::Cost> AddManipulabilityCost(
+      const Frame<double>& frameA, const Frame<double>& frameB, double c);
+
   /**
    * Constrains a target point T to be within a cone K. The point T ("T" stands
    * for "target") is fixed in a frame B, with position p_BT. The cone

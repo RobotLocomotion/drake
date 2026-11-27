@@ -233,7 +233,12 @@ Parameter ``config``:
 
 Parameter ``simulator``:
     On input, a valid pointer to a Simulator. On output the integrator
-    for ``simulator`` is reset according to the given ``config``.)""";
+    for ``simulator`` is reset according to the given ``config``.
+
+Raises:
+    RuntimeError if ``config.integrator_params`` holds parameters for
+    an integrator other than the one selected by
+    ``config.integration_scheme``.)""";
       } ApplySimulatorConfig;
       // Symbol: drake::systems::BatchEvalTimeDerivatives
       struct /* BatchEvalTimeDerivatives */ {
@@ -420,16 +425,18 @@ Parameter ``system``:
 
 Parameter ``integrator_config``:
     Configuration to be used. Only values relevant to the integrator
-    (integration_scheme, max_step_size, use_error_control, accuracy)
-    are applied.
+    (integration_scheme, max_step_size, use_error_control, accuracy,
+    integrator_params) are applied.
 
 Precondition:
     ``system != nullptr``.
 
 Raises:
     RuntimeError if the integration scheme does not match any of
-    GetIntegrationSchemes(), or if the integration scheme does not
-    support the scalar type T.)""";
+    GetIntegrationSchemes(), if the integration scheme does not
+    support the scalar type T, or if
+    ``integrator_config.integrator_params`` holds parameters for an
+    integrator other than the one selected by the integration scheme.)""";
       } CreateIntegratorFromConfig;
       // Symbol: drake::systems::DenseOutput
       struct /* DenseOutput */ {
@@ -750,7 +757,10 @@ R"""(Explicit Euler integrator does not support error estimation.)""";
         const char* doc =
 R"""(Reports the simulator's current configuration, including the
 configuration of the integrator. The start_time of the extracted
-config is set to the current time of the simulator context.
+config is set to the current time of the simulator context. If the
+integrator has integrator-specific parameters (e.g., CENIC), they are
+reported in ``integrator_params``; otherwise it is left unset
+(std∷monostate).
 
 Parameter ``simulator``:
     The Simulator to extract the configuration from. $Note:
@@ -4876,6 +4886,20 @@ IntegratorBase.)""";
           // Source: drake/systems/analysis/simulator_config.h
           const char* doc = R"""()""";
         } integration_scheme;
+        // Symbol: drake::systems::SimulatorConfig::integrator_params
+        struct /* integrator_params */ {
+          // Source: drake/systems/analysis/simulator_config.h
+          const char* doc =
+R"""((Advanced) Integrator-specific parameters, beyond the generic ones
+above. The default (std∷monostate, or ``null`` in YAML) leaves the
+integrator's own default parameters in place. Otherwise, the
+alternative must match ``integration_scheme``; currently the only
+choice is multibody∷CenicIntegratorParameters (with
+``integration_scheme: cenic``), which is selected in YAML with the
+``!CenicIntegratorParameters`` tag. It is an error to provide
+parameters for a different integration scheme. See, e.g., the
+"Explicit external inputs" section of drake∷multibody∷CenicIntegrator.)""";
+        } integrator_params;
         // Symbol: drake::systems::SimulatorConfig::max_step_size
         struct /* max_step_size */ {
           // Source: drake/systems/analysis/simulator_config.h
@@ -4902,6 +4926,7 @@ R"""(Starting time of the simulation. We will set the context time to
           return std::array{
             std::make_pair("accuracy", accuracy.doc),
             std::make_pair("integration_scheme", integration_scheme.doc),
+            std::make_pair("integrator_params", integrator_params.doc),
             std::make_pair("max_step_size", max_step_size.doc),
             std::make_pair("start_time", start_time.doc),
             std::make_pair("target_realtime_rate", target_realtime_rate.doc),

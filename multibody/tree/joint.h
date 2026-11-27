@@ -7,6 +7,7 @@
 #include <utility>
 #include <vector>
 
+#include "drake/common/drake_bool.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/multibody/tree/fixed_offset_frame.h"
 #include "drake/multibody/tree/mobilizer.h"
@@ -774,6 +775,84 @@ class Joint : public MultibodyElement<T> {
         .set_value(damping);
   }
 
+  /// Returns the default dry friction bound of this joint. The default is zero.
+  /// Only joints with a single degree of freedom model dry friction. If v is
+  /// the generalized velocity of this joint, dry (Coulomb) friction models a
+  /// generalized force τ at the joint with |τ| ≤ f, where f is the bound
+  /// returned by this function. When the joint moves, τ opposes the motion with
+  /// τ = −f⋅sign(v). The bound does not depend on the load on the joint. The
+  /// units of the bound depend on the joint type. For instance, the bound is in
+  /// N⋅m for a revolute joint and in N for a prismatic joint.
+  ///
+  /// @note Only discrete MultibodyPlant models support dry friction.
+  /// @note Dry friction is not supported for T = symbolic::Expression. A
+  ///   MultibodyPlant with a joint with non-zero default dry friction cannot be
+  ///   converted to symbolic::Expression.
+  /// @throws std::exception if the joint does not have a single degree of
+  ///   freedom.
+  double default_dry_friction() const {
+    DRAKE_THROW_UNLESS(num_velocities() == 1);
+    return dry_friction_;
+  }
+
+  /// Returns the Context dependent dry friction bound stored as a parameter in
+  /// `context`. Refer to default_dry_friction() for details.
+  /// @param[in] context The context storing the state and parameters for the
+  /// model to which `this` joint belongs.
+  /// @throws std::exception if the joint does not have a single degree of
+  ///   freedom.
+  const T& GetDryFriction(const systems::Context<T>& context) const {
+    DRAKE_THROW_UNLESS(num_velocities() == 1);
+    return context.get_numeric_parameter(dry_friction_parameter_index_)[0];
+  }
+
+  /// Sets the default value of the dry friction bound for this joint. Refer to
+  /// default_dry_friction() for details.
+  /// @throws std::exception if the joint does not have a single degree of
+  ///   freedom.
+  /// @throws std::exception if dry_friction is negative, infinite or NaN.
+  /// @throws std::exception if this element is not associated with a
+  ///   MultibodyPlant.
+  /// @throws std::exception if T is symbolic::Expression, since joint dry
+  ///   friction is not supported for symbolic scalars.
+  /// @pre the MultibodyPlant must not be finalized.
+  void set_default_dry_friction(double dry_friction) {
+    DRAKE_THROW_UNLESS(num_velocities() == 1);
+    if constexpr (!scalar_predicate<T>::is_bool) {
+      throw std::logic_error(
+          "set_default_dry_friction(): not supported for T = "
+          "symbolic::Expression.");
+    }
+    DRAKE_THROW_UNLESS(dry_friction >= 0);
+    DRAKE_THROW_UNLESS(dry_friction < std::numeric_limits<double>::infinity());
+    DRAKE_THROW_UNLESS(this->has_parent_tree());
+    DRAKE_DEMAND(!this->get_parent_tree().is_finalized());
+    dry_friction_ = dry_friction;
+  }
+
+  /// Sets the value of the dry friction bound for this joint, stored as a
+  /// parameter in `context`. Refer to default_dry_friction() for details.
+  /// @param[out] context The context storing the state and parameters for the
+  /// model to which `this` joint belongs.
+  /// @param[in] dry_friction The dry friction bound.
+  /// @throws std::exception if the joint does not have a single degree of
+  ///   freedom.
+  /// @throws std::exception if dry_friction is negative, infinite or NaN.
+  /// @throws std::exception if T is symbolic::Expression, since joint dry
+  ///   friction is not supported for symbolic scalars.
+  void SetDryFriction(systems::Context<T>* context,
+                      const T& dry_friction) const {
+    DRAKE_THROW_UNLESS(num_velocities() == 1);
+    if constexpr (!scalar_predicate<T>::is_bool) {
+      throw std::logic_error(
+          "SetDryFriction(): not supported for T = symbolic::Expression.");
+    }
+    DRAKE_THROW_UNLESS(dry_friction >= 0);
+    DRAKE_THROW_UNLESS(dry_friction < std::numeric_limits<double>::infinity());
+    context->get_mutable_numeric_parameter(dry_friction_parameter_index_)
+        .SetAtIndex(0, dry_friction);
+  }
+
   // Hide the following section from Doxygen.
 #ifndef DRAKE_DOXYGEN_CXX
   // (Internal use only) Model this joint using the appropriate Mobilizer.
@@ -811,10 +890,23 @@ class Joint : public MultibodyElement<T> {
   // NVI to DoCloneToScalar() templated on the scalar type of the new clone to
   // be created. This method is intended to be called by
   // MultibodyTree::CloneToScalar().
+  // @throws std::exception if ToScalar is symbolic::Expression and this joint
+  //   has non-zero default dry friction.
   template <typename ToScalar>
   std::unique_ptr<Joint<ToScalar>> CloneToScalar(
       internal::MultibodyTree<ToScalar>* tree_clone) const {
+    if constexpr (!scalar_predicate<ToScalar>::is_bool) {
+      if (dry_friction_ != 0.0) {
+        throw std::logic_error(fmt::format(
+            "Joint '{}' has non-zero dry friction, which is not supported for "
+            "T = symbolic::Expression.",
+            name()));
+      }
+    }
     std::unique_ptr<Joint<ToScalar>> joint_clone = DoCloneToScalar(*tree_clone);
+    // Dry friction is not a constructor argument of concrete joints, so it is
+    // copied here rather than in each DoCloneToScalar() implementation.
+    joint_clone->dry_friction_ = dry_friction_;
     joint_clone->mobilizer_ =
         (mobilizer_ == nullptr) ? nullptr
                                 : &tree_clone->get_mutable_variant(*mobilizer_);
@@ -1072,6 +1164,12 @@ class Joint : public MultibodyElement<T> {
     // Declare a parameter for damping.
     damping_parameter_index_ = this->DeclareNumericParameter(
         tree_system, systems::BasicVector<T>(damping_.size()));
+    // Declare a parameter for dry friction, only modeled by joints with a
+    // single degree of freedom.
+    if (num_velocities() == 1) {
+      dry_friction_parameter_index_ = this->DeclareNumericParameter(
+          tree_system, systems::BasicVector<T>(1));
+    }
   }
 
   // Implementation for MultibodyElement::DoSetDefaultParameters().
@@ -1080,6 +1178,11 @@ class Joint : public MultibodyElement<T> {
     systems::BasicVector<T>& damping_parameter =
         parameters->get_mutable_numeric_parameter(damping_parameter_index_);
     damping_parameter.set_value(VectorX<T>(damping_));
+    // Set default dry friction.
+    if (num_velocities() == 1) {
+      parameters->get_mutable_numeric_parameter(dry_friction_parameter_index_)
+          .SetAtIndex(0, dry_friction_);
+    }
   }
 
   void SetPosePairImpl(systems::Context<T>* context, const Quaternion<T>& q_FM,
@@ -1100,6 +1203,9 @@ class Joint : public MultibodyElement<T> {
   const Frame<T>* effective_frame_on_child_{nullptr};
 
   VectorX<double> damping_;
+
+  // Dry friction bound. Only used by joints with a single degree of freedom.
+  double dry_friction_{0.0};
 
   // Joint position limits. These vectors have zero size for joints with no
   // such limits.
@@ -1124,6 +1230,7 @@ class Joint : public MultibodyElement<T> {
 
   // System parameter indices.
   systems::NumericParameterIndex damping_parameter_index_;
+  systems::NumericParameterIndex dry_friction_parameter_index_;
 };
 
 }  // namespace multibody

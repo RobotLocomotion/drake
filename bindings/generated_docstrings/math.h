@@ -1549,10 +1549,27 @@ http://web.mit.edu/hyperbook/Patrikalakis-Maekawa-Cho/node17.html)""";
         // Source: drake/math/linear_solve.h
         const char* doc =
 R"""(Solves a linear system of equations A*x=b. Depending on the scalar
-types of A and b, the scalar type of x is summarized in this table. |
-b ＼ A | double | ADS | Expr | |--------|--------|-----|----- | |
-double | double | ADS | NA | | ADS | ADS | ADS | NA | | Expr | NA | NA
-| Expr |
+types of A and b, the scalar type of x is summarized in this table.
+
+.. list-table::
+   :header-rows: 1
+
+   * - b ＼ A
+     - double
+     - ADS
+     - Expr
+   * - double
+     - double
+     - ADS
+     - NA
+   * - ADS
+     - ADS
+     - ADS
+     - NA
+   * - Expr
+     - NA
+     - NA
+     - Expr
 
 where ADS stands for Eigen∷AutoDiffScalar, and Expr stands for
 symbolic∷Expression.
@@ -1616,9 +1633,19 @@ R"""(Solves system A*x = b. Return type is as described in the table above.)""";
           const char* doc =
 R"""(Getter for the Eigen linear solver. The scalar type in the Eigen
 linear solver depends on the scalar type in A matrix, as shown in this
-table | A | double | ADS | Expr |
-|--------------|--------|--------|----- | |linear_solver | double |
-double | Expr |
+table
+
+.. list-table::
+   :header-rows: 1
+
+   * - A
+     - double
+     - ADS
+     - Expr
+   * - linear_solver
+     - double
+     - double
+     - Expr
 
 where ADS stands for Eigen∷AutoDiffScalar, Expr stands for
 symbolic∷Expression.

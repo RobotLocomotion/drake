@@ -284,12 +284,24 @@ class YamlReadArchive final {
                 VisitShouldMemorizeType::kNo);
   }
 
+  // Returns true iff the variant's alternatives include std::monostate.
+  template <typename... Types>
+  static constexpr bool HasMonostate(const std::variant<Types...>*) {
+    return (std::is_same_v<Types, std::monostate> || ...);
+  }
+
   template <typename NVP>
   void VisitVariant(const NVP& nvp) {
     const internal::Node* sub_node = MaybeGetSubNode(nvp.name());
     if (sub_node == nullptr) {
       if (!options_.allow_cpp_with_no_yaml) {
-        ReportError("is missing");
+        // Like a missing std::optional, a missing std::monostate is unset.
+        if constexpr (HasMonostate(static_cast<const typename NVP::value_type*>(
+                          nullptr))) {
+          *nvp.value() = std::monostate{};
+        } else {
+          ReportError("is missing");
+        }
       }
       return;
     }
@@ -303,15 +315,20 @@ class YamlReadArchive final {
   void VariantHelper(std::string_view tag, const char* name,
                      Variant<Types...>* storage) {
     if (tag == internal::Node::kTagNull) {
-      // Our variant parsing does not yet support nulls.  When the tag indicates
-      // null, don't try to match it to a variant type; instead, just parse into
-      // the first variant type in order to generate a useful error message.
-      // TODO(jwnimmer-tri) Allow for std::monostate as one of the Types...,
-      // in case the user wants to permit nullable variants.
-      using T = std::variant_alternative_t<0, Variant<Types...>>;
-      T& typed_storage = storage->template emplace<0>();
-      this->Visit(drake::MakeNameValue(name, &typed_storage));
-      return;
+      if constexpr ((std::is_same_v<Types, std::monostate> || ...)) {
+        // A null node selects std::monostate, when the variant permits it.
+        storage->template emplace<std::monostate>();
+        return;
+      } else {
+        // Otherwise, our variant parsing does not support nulls. When the tag
+        // indicates null, don't try to match it to a variant type; instead,
+        // just parse into the first variant type in order to generate a useful
+        // error message.
+        using T = std::variant_alternative_t<0, Variant<Types...>>;
+        T& typed_storage = storage->template emplace<0>();
+        this->Visit(drake::MakeNameValue(name, &typed_storage));
+        return;
+      }
     }
     VariantHelperImpl<0, Variant<Types...>, Types...>(tag, name, storage);
   }
@@ -323,12 +340,17 @@ class YamlReadArchive final {
                          Variant* storage) {
     // For the first type declared in the variant<> (I == 0), the tag can be
     // absent; otherwise, the tag must match one of the variant's types.
-    if (((I == 0) && (tag.empty() || (tag == "?") || (tag == "!"))) ||
-        IsTagMatch<T>(tag)) {
-      T& typed_storage = storage->index() == I ? std::get<I>(*storage)
-                                               : storage->template emplace<I>();
-      this->Visit(drake::MakeNameValue(name, &typed_storage));
-      return;
+    // N.B. The std::monostate type is only ever selected by a null node (see
+    // above); it never matches a non-null node, tagged or not.
+    if constexpr (!std::is_same_v<T, std::monostate>) {
+      if (((I == 0) && (tag.empty() || (tag == "?") || (tag == "!"))) ||
+          IsTagMatch<T>(tag)) {
+        T& typed_storage = storage->index() == I
+                               ? std::get<I>(*storage)
+                               : storage->template emplace<I>();
+        this->Visit(drake::MakeNameValue(name, &typed_storage));
+        return;
+      }
     }
     VariantHelperImpl<I + 1, Variant, Remaining...>(tag, name, storage);
   }

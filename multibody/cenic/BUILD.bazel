@@ -13,7 +13,17 @@ drake_cc_package_library(
     visibility = ["//visibility:public"],
     deps = [
         ":cenic_integrator",
+        ":cenic_integrator_parameters",
         ":make_cenic_integrator",
+    ],
+)
+
+drake_cc_library(
+    name = "cenic_integrator_parameters",
+    hdrs = ["cenic_integrator_parameters.h"],
+    deps = [
+        "//common:name_value",
+        "//multibody/contact_solvers/icf:icf_solver_parameters",
     ],
 )
 
@@ -22,9 +32,12 @@ drake_cc_library(
     srcs = ["cenic_integrator.cc"],
     hdrs = ["cenic_integrator.h"],
     deps = [
+        ":cenic_integrator_parameters",
+        "//common:essential",
         "//multibody/contact_solvers/icf:icf_builder",
         "//multibody/contact_solvers/icf:icf_external_systems_linearizer",
         "//multibody/contact_solvers/icf:icf_solver",
+        "//multibody/plant",
         "//systems/analysis:integrator_base",
     ],
 )
@@ -51,10 +64,28 @@ drake_cc_googletest(
         ":cenic_integrator",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
+        "//common/yaml",
         "//multibody/parsing",
+        "//multibody/plant:multibody_plant_config_functions",
+        "//systems/analysis:runge_kutta3_integrator",
         "//systems/analysis:simulator",
         "//systems/analysis:simulator_config_functions",
         "//systems/analysis/test_utilities",
+        "//systems/primitives:gain",
+    ],
+)
+
+# Remove on 2027-03-01 along with deprecation of CenicIntegrator with a plant
+# that lacks sampled output ports.
+# The deprecation warning fires once per process per scalar type (and, at
+# "error" severity, throws on every attempt), so this test needs its own process.
+drake_cc_googletest(
+    name = "cenic_unsampled_deprecation_test",
+    env = {"DRAKE_DEPRECATION_RUNTIME_SEVERITY": "error"},
+    deps = [
+        ":cenic_integrator",
+        "//common/test_utilities:expect_throws_message",
+        "//systems/analysis:simulator",
     ],
 )
 

@@ -36,6 +36,7 @@
 
 import re
 import textwrap
+import unicodedata
 
 from doc.doxygen_cxx.system_doxygen import process_doxygen_to_sphinx
 
@@ -56,6 +57,11 @@ def process_comment(comment):
     # avoid visual artifacts in the documentation. If this is removed in the
     # future, that part can be removed too.
     s = s.replace("::", "∷")
+
+    # Tables are set aside here and put back at the very end, so that none of
+    # the passes below can break up a table.
+    tables = []
+    s = replace_tables(s, tables)
 
     # Markdown to reStructuredText (but don't process literal blocks).
     in_code_segment = False
@@ -85,6 +91,8 @@ def process_comment(comment):
 
     # Reflow text where appropriate.
     s = reflow(s)
+
+    s = restore_tables(s, tables)
 
     return s
 
@@ -119,6 +127,370 @@ def remove_cpp_comment_syntax(s):
 
 def remove_html_comments(s):
     return re.sub(r"<!--(.*?)-->", r"", s, flags=re.DOTALL)
+
+
+_TABLE_PLACEHOLDER = "MKDOCTABLEPLACEHOLDER{}END"
+_TABLE_PLACEHOLDER_LINE = re.compile(
+    r"^( *)MKDOCTABLEPLACEHOLDER([0-9]+)END$", re.MULTILINE
+)
+
+# Regions of text in which tables must not be converted.
+_VERBATIM_REGIONS = re.compile(
+    r"(```.*?```"
+    r"|[@\\]code.*?[@\\]endcode"
+    r"|<pre>.*?</pre>"
+    r"|[@\\]verbatim.*?[@\\]endverbatim)",
+    re.DOTALL | re.IGNORECASE,
+)
+
+_LIST_ITEM = re.compile(r"^( *)([-*+]|[0-9]+[.)]) ")
+
+
+def _process_table_cell(cell):
+    """Converts the text of one table cell to a single line of RST inline
+    markup. Cells are processed on their own (instead of as part of the
+    comment) so that nothing downstream can split a table row apart.
+    """
+    # A lone ^ means "merge with the cell above". _replace_tables_in_text()
+    # turns those into row spans, so one only reaches here when there is no
+    # cell above to merge into (e.g., in the header row); leave it blank.
+    if cell.strip() == "^":
+        return ""
+    cell = " " + cell + " "
+    cell = re.sub(r"</?(?:ul|ol)[^>]*>", " ", cell, flags=re.IGNORECASE)
+    cell = re.sub(r"<li[^>]*>", " • ", cell, flags=re.IGNORECASE)
+    cell = re.sub(r"</li>", " ", cell, flags=re.IGNORECASE)
+    cell = markdown_to_restructuredtext(cell)
+    cell = replace_html_tags(cell)
+    cell = cell.replace("``true``", "``True``")
+    cell = cell.replace("``false``", "``False``")
+    cell = replace_exceptions(cell)
+    cell = process_doxygen_commands(cell)
+    cell = re.sub(r"\s+", " ", cell).strip()
+    # A bare pipe would start an RST substitution reference. Pipes inside
+    # inline literals are left alone, since escapes are not interpreted there.
+    parts = re.split(r"(``.*?``)", cell)
+    cell = "".join(
+        part if i % 2 == 1 else part.replace("|", "\\|")
+        for i, part in enumerate(parts)
+    )
+    # Escape text that would otherwise be read as a list marker or comment.
+    if re.match(r"^([-*+]|\.\.|[0-9]+[.)]|[A-Za-z][.)])(\s|$)", cell):
+        cell = "\\" + cell
+    return cell
+
+
+def _display_width(text):
+    """Returns the number of terminal columns taken by text, which is how
+    docutils measures the alignment of a grid table.
+    """
+    width = 0
+    for ch in text:
+        if unicodedata.combining(ch):
+            continue
+        width += 2 if unicodedata.east_asian_width(ch) in ("W", "F") else 1
+    return width
+
+
+def _grid_table_to_rst(cells, nrows, ncols, header_rows):
+    """Formats cells as an RST grid table, which (unlike a list-table) can
+    express cells that span rows or columns. Each cell is a tuple of
+    (row, col, rowspan, colspan, text), where text is already processed.
+    """
+    # owner[r][c] is the index of the cell that covers position (r, c).
+    owner = [[None] * ncols for _ in range(nrows)]
+    for index, (r, c, rs, cs, _) in enumerate(cells):
+        for dr in range(rs):
+            for dc in range(cs):
+                owner[r + dr][c + dc] = index
+
+    # Choose column widths wide enough for every cell.
+    widths = [3] * ncols
+    for _, c, _, cs, text in cells:
+        if cs == 1:
+            widths[c] = max(widths[c], _display_width(text) + 2)
+    for _, c, _, cs, text in cells:
+        if cs > 1:
+            have = sum(widths[c : c + cs]) + (cs - 1)
+            need = _display_width(text) + 2
+            if have < need:
+                widths[c + cs - 1] += need - have
+
+    # hline[line][c]: is there a horizontal edge above row `line` at column c?
+    # vline[r][x]: is there a vertical edge left of column x in row r?
+    hline = [
+        [
+            line in (0, nrows) or owner[line - 1][c] != owner[line][c]
+            for c in range(ncols)
+        ]
+        for line in range(nrows + 1)
+    ]
+    vline = [
+        [
+            x in (0, ncols) or owner[r][x - 1] != owner[r][x]
+            for x in range(ncols + 1)
+        ]
+        for r in range(nrows)
+    ]
+
+    def border(line):
+        fill = "=" if line == header_rows and 0 < header_rows else "-"
+        out = ""
+        for x in range(ncols + 1):
+            up = line > 0 and vline[line - 1][x]
+            down = line < nrows and vline[line][x]
+            left = x > 0 and hline[line][x - 1]
+            right = x < ncols and hline[line][x]
+            if (up or down) and (left or right):
+                out += "+"
+            elif left or right:
+                out += fill
+            elif up or down:
+                out += "|"
+            else:
+                out += " "
+            if x < ncols:
+                out += (fill if hline[line][x] else " ") * widths[x]
+        return out
+
+    def row_line(r):
+        out = ""
+        c = 0
+        while c < ncols:
+            index = owner[r][c]
+            top, _, _, cs, text = cells[index]
+            width = sum(widths[c : c + cs]) + (cs - 1)
+            if r != top:
+                text = ""
+            padding = " " * (width - 1 - _display_width(text))
+            out += "|" + (" " + text + padding if text else " " * width)
+            c += cs
+        return out + "|"
+
+    lines = []
+    for r in range(nrows):
+        lines.append(border(r))
+        lines.append(row_line(r))
+    lines.append(border(nrows))
+    return "\n".join(lines)
+
+
+def _table_to_rst(cells, nrows, ncols, header_rows, caption=None):
+    """Formats a table as RST, with no surrounding blank lines. `cells` is a
+    list of (row, col, rowspan, colspan, text) tuples with unprocessed text.
+    Uses a list-table unless some cell spans rows or columns.
+    """
+    cells = [
+        (r, c, rs, cs, _process_table_cell(text))
+        for r, c, rs, cs, text in cells
+    ]
+    # A span across the header boundary can't be drawn, so drop the header.
+    for r, _, rs, _, _ in cells:
+        if r < header_rows < r + rs:
+            header_rows = 0
+    # The directive requires at least one body row.
+    if not 0 < header_rows < nrows:
+        header_rows = 0
+
+    if all(rs == 1 and cs == 1 for _, _, rs, cs, _ in cells):
+        grid = [[""] * ncols for _ in range(nrows)]
+        for r, c, _, _, text in cells:
+            grid[r][c] = text
+        lines = [".. list-table::"]
+        if header_rows:
+            lines.append(f"   :header-rows: {header_rows}")
+        lines.append("")
+        for row in grid:
+            for i, text in enumerate(row):
+                prefix = "   * -" if i == 0 else "     -"
+                lines.append(f"{prefix} {text}".rstrip())
+        body = "\n".join(lines)
+        if caption:
+            title = _process_table_cell(caption)
+            body = body.replace(
+                ".. list-table::", f".. list-table:: {title}", 1
+            )
+        return body
+
+    grid = _grid_table_to_rst(cells, nrows, ncols, header_rows)
+    if not caption:
+        return grid
+    title = _process_table_cell(caption)
+    indented = "\n".join("   " + line for line in grid.split("\n"))
+    return f".. table:: {title}\n\n{indented}"
+
+
+# A separator row must contain a pipe; otherwise any line containing a pipe
+# followed by a horizontal rule would be mistaken for a table header.
+_MARKDOWN_TABLE_SEPARATOR = re.compile(
+    r"^\s*\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)+\|?\s*$"
+    r"|^\s*\|\s*:?-+:?\s*\|?\s*$"
+    r"|^\s*:?-+:?\s*\|\s*$"
+)
+
+
+def _split_markdown_row(line):
+    line = line.strip()
+    line = line.removeprefix("|")
+    if line.endswith("|") and not line.endswith("\\|"):
+        line = line[:-1]
+    cells = re.split(r"(?<!\\)\|", line)
+    return [cell.replace("\\|", "|") for cell in cells]
+
+
+def _replace_tables_in_text(s, tables):
+    def stash(rst, extra_indent=0):
+        tables.append((rst, extra_indent))
+        token = _TABLE_PLACEHOLDER.format(len(tables) - 1)
+        return f"\n\n{token}\n\n"
+
+    # HTML tables.
+    def html_table(match):
+        body = match.group(1)
+        if re.search(r"<table", body, re.IGNORECASE):
+            return match.group(0)  # Nested tables are not supported.
+        caption = None
+        caption_match = re.search(
+            r"<caption[^>]*>(.*?)</caption\s*>", body, re.DOTALL | re.IGNORECASE
+        )
+        if caption_match:
+            caption = caption_match.group(1)
+        cells = []
+        occupied = set()
+        header_rows = 0
+        still_header = True
+        r = 0
+        for row_match in re.finditer(
+            r"<tr(?:\s[^>]*)?>(.*?)</tr\s*>", body, re.DOTALL | re.IGNORECASE
+        ):
+            found = re.findall(
+                r"<(t[hd])((?:\s[^>]*)?)>(.*?)</t[hd]\s*>",
+                row_match.group(1),
+                re.DOTALL | re.IGNORECASE,
+            )
+            if not found:
+                continue
+            c = 0
+            for _, attrs, text in found:
+                while (r, c) in occupied:
+                    c += 1
+                spans = []
+                for name in ("rowspan", "colspan"):
+                    m = re.search(
+                        name + r"\s*=\s*[\"']?([0-9]+)", attrs, re.IGNORECASE
+                    )
+                    spans.append(max(1, int(m.group(1))) if m else 1)
+                rs, cs = spans
+                cells.append((r, c, rs, cs, text))
+                for dr in range(rs):
+                    for dc in range(cs):
+                        occupied.add((r + dr, c + dc))
+                c += cs
+            tags = [tag.lower() for tag, _, _ in found]
+            if still_header and all(tag == "th" for tag in tags):
+                header_rows += 1
+            else:
+                still_header = False
+            r += 1
+        if not cells:
+            return match.group(0)
+        nrows = r
+        ncols = max(c + cs for _, c, _, cs, _ in cells)
+        # Don't let a rowspan run off the bottom of the table.
+        cells = [
+            (r, c, min(rs, nrows - r), cs, text) for r, c, rs, cs, text in cells
+        ]
+        return stash(_table_to_rst(cells, nrows, ncols, header_rows, caption))
+
+    s = re.sub(
+        r"<table(?:\s[^>]*)?>(.*?)</table\s*>",
+        html_table,
+        s,
+        flags=re.DOTALL | re.IGNORECASE,
+    )
+
+    # Markdown pipe tables: a header row, a separator row, then body rows.
+    lines = s.split("\n")
+    result = []
+    i = 0
+    while i < len(lines):
+        if (
+            "|" in lines[i]
+            and i + 1 < len(lines)
+            and _MARKDOWN_TABLE_SEPARATOR.match(lines[i + 1])
+            and len(_split_markdown_row(lines[i]))
+            == len(_split_markdown_row(lines[i + 1]))
+        ):
+            header = _split_markdown_row(lines[i])
+            rows = [header]
+            first = i
+            i += 2
+            # Body rows must have the same number of cells as the header, so
+            # that prose which happens to contain a pipe ends the table.
+            while (
+                i < len(lines)
+                and "|" in lines[i]
+                and len(_split_markdown_row(lines[i])) == len(header)
+            ):
+                rows.append(_split_markdown_row(lines[i]))
+                i += 1
+            # If the table sits inside a list item, indent it to match.
+            indent = len(lines[first]) - len(lines[first].lstrip())
+            extra_indent = 0
+            for j in range(first - 1, -1, -1):
+                if not lines[j].strip():
+                    break
+                item = _LIST_ITEM.match(lines[j])
+                if item and len(item.group(1)) < indent:
+                    extra_indent = len(item.group(2)) + 1
+                    break
+            # A lone ^ merges a cell into the one above it.
+            cells = []
+            owner = {}
+            for r, row in enumerate(rows):
+                for c, text in enumerate(row):
+                    if text.strip() == "^" and (r - 1, c) in owner:
+                        index = owner[(r - 1, c)]
+                        r0, c0, rs, cs, text0 = cells[index]
+                        cells[index] = (r0, c0, rs + 1, cs, text0)
+                        owner[(r, c)] = index
+                    else:
+                        cells.append((r, c, 1, 1, text))
+                        owner[(r, c)] = len(cells) - 1
+            table = _table_to_rst(cells, len(rows), len(header), header_rows=1)
+            result.append(stash(table, extra_indent))
+        else:
+            result.append(lines[i])
+            i += 1
+    return "\n".join(result)
+
+
+def replace_tables(s, tables):
+    """Converts Doxygen tables (both Markdown pipe tables and HTML <table>
+    elements) into reStructuredText list-table directives, or grid tables
+    when a cell spans rows or columns. Each table is stashed in `tables` and
+    replaced by a placeholder paragraph, so that the later passes (HTML tags,
+    Doxygen commands, reflow) cannot disturb it. Call restore_tables() once
+    those passes are done. Tables within verbatim regions (code blocks,
+    <pre>, etc.) are left alone.
+    """
+    parts = _VERBATIM_REGIONS.split(s)
+    for i in range(0, len(parts), 2):
+        parts[i] = _replace_tables_in_text(parts[i], tables)
+    return "".join(parts)
+
+
+def restore_tables(s, tables):
+    """Substitutes the placeholders left by replace_tables()."""
+
+    def restore(match):
+        rst, extra_indent = tables[int(match.group(2))]
+        indent = " " * (len(match.group(1)) + extra_indent)
+        return "\n".join(
+            (indent + line) if line else line for line in rst.split("\n")
+        )
+
+    return _TABLE_PLACEHOLDER_LINE.sub(restore, s)
 
 
 def markdown_to_restructuredtext(s):

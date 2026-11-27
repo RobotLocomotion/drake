@@ -1,8 +1,9 @@
 #include "drake/geometry/proximity/make_mesh_from_vtk.h"
 
-#include <string>
 #include <utility>
 #include <vector>
+
+#include <fmt/format.h>
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/eigen_types.h"

@@ -55,6 +55,7 @@ drake_pybind_library(
         "//bindings/generated_docstrings:multibody_cenic",
         "//bindings/pydrake/common:cpp_template_pybind",
         "//bindings/pydrake/common:default_scalars_pybind",
+        "//bindings/pydrake/common:deprecation_pybind",
     ],
     cc_srcs = ["cenic_py.cc"],
     package_info = PACKAGE_INFO,
@@ -158,6 +159,7 @@ drake_pybind_library(
     cc_deps = [
         "//bindings/generated_docstrings:multibody_plant",
         "//bindings/generated_docstrings:multibody_tree",
+        "//bindings/pydrake:lcm_type_hook_pybind",
         "//bindings/pydrake/common:cpp_template_pybind",
         "//bindings/pydrake/common:default_scalars_pybind",
         "//bindings/pydrake/common:deprecation_pybind",
@@ -224,6 +226,7 @@ drake_pybind_library(
         "//bindings/generated_docstrings:solvers",
         "//bindings/pydrake/common:default_scalars_pybind",
         "//bindings/pydrake/common:deprecation_pybind",
+        "//bindings/pydrake/common:ensure_callback_lifetime_pybind",
         "//bindings/pydrake/common:ref_cycle_pybind",
         "//bindings/pydrake/common:serialize_pybind",
         "//bindings/pydrake/common:sorted_pair_pybind",
@@ -237,6 +240,7 @@ drake_pybind_library(
     py_deps = [
         ":module_py",
         ":plant_py",
+        "//bindings/pydrake/geometry",
         "//bindings/pydrake/planning",
         "//bindings/pydrake/solvers",
     ],

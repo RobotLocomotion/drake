@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <array>
 #include <unordered_set>
+#include <utility>
 
 #include "drake/common/default_scalars.h"
 #include "drake/geometry/proximity/proximity_utilities.h"

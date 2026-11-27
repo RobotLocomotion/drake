@@ -6,14 +6,14 @@ MultibodyPlant-based scene out of numerous `.sdf` and `.urdf` files.  For
 instance in the TRI dish-loading demo we have individual SDFormat files for
 the counter, sink, cameras, pedestal, arm, gripper, and each manipuland.  A
 single SDFormat for this would be unwieldy and difficult to maintain and
-collaborate on, but SDFormat's file inclusion mechanisms have not yet proven
+collaborate on, but SDFormat's file inclusion mechanisms have not proven
 adequate to this task.
 
-We expect that this mechanism will be temporary and will be removed
-[when SDFormat adds similar functionality](#conditions-for-deprecation).
-Users should be aware that this library will be deprecated if/when sdformat
-reaches feature parity with it.
-
+At one point we had hoped to deprecate model directives in favor of SDFormat's
+include feature, but it ended up not being a viable replacement, so we plan to
+support model directives indefinitely. See [Relationship to
+SDFormat](#relationship-to-sdformat) for some differences between model
+directives and SDFormat.
 
 ## Syntax
 
@@ -25,8 +25,18 @@ Within this group are a series of directives, which are described in detail in
 `model_directives.h`.  These directives can add model instances and add frames
 to them and welds between them.
 
-
 ## Use
+
+Model directives files can be processed directly by Drake's multibody parser, or
+(for more detailed control) by the ModelDirectives API.
+
+### Parser
+
+Drake's multibody::parsing::Parser recognizes Model Directives files by the file
+extension "dmd.yaml". See Parser documentation and the unit test parser_test.cc
+for usage.
+
+### ModelDirectives API
 
 The easiest use reference is the unit test `process_model_directives_test.cc`.
 
@@ -54,7 +64,6 @@ Or, if you are connecting a scene graph:
 
 This loads the model directives from that filename, constructs a plant, and
 uses the model directives to populate the plant.
-
 
 ## Scoping
 
@@ -92,27 +101,21 @@ no model instance is present, however, `add_frame` will check the associated
 `X_PF.base_frame` for a model instance prefix and, if it is present, use it
 as the prefix for the `name` element.
 
-
 ## Units
 
 We use SI units plus radians for all physical quantities.
 
-## Conditions for deprecation
+## Relationship to SDFormat
 
-We expect and hope to deprecate this mechanism when either:
+Replacing model directives with SDFormat was explored (see Drake issue #15948)
+and is not currently planned. Deprecation would require, at minimum:
 
-SDFormat properly specifies, and Drake supports, the following:
+ * Merge-including models into a `<world>` without introducing an extra model
+   scope.
+ * A way to weld models together using joints (or an equivalent) external to
+   the models, at world level.
+ * A story for the "leaky" scoping that directives allow but SDFormat's
+   encapsulation forbids.
 
- * What `<include/>` statements should *really* do (e.g. namespacing models,
-   joints, etc.) without kludging Drake's parsing
-   * See <http://sdformat.org/tutorials?tut=composition_proposal&cat=pose_semantics_docs&> for the progress of the proposed formal semantics.
- * How to weld models together with joints external to the models
-
-
-OR if we find a mechanism whereby xacro could accomplish the same thing:
-
- * Drake's `package://` / `model://` mechanism were mature and correct, and
-   `sdformat` didn't use singletons for search paths.
- * It was easier for one xacro to locate other xacros (possibly via a
-   workaround using a wrapper script to inject the appropriate drake source
-   or resource path)
+See <http://sdformat.org/tutorials?tut=composition_proposal&cat=pose_semantics_docs&>
+for the proposed formal include semantics.

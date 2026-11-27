@@ -422,6 +422,58 @@ GTEST_TEST(MultibodyPlantTest, AddJointActuator) {
       ".*3 degrees of freedom.*");
 }
 
+// Per-model-instance actuator queries work pre-finalize (see #21547), and give
+// the same answers pre- and post-finalize, including after an actuator has been
+// removed.
+GTEST_TEST(MultibodyPlantTest, PerInstanceActuatorQueriesPreFinalize) {
+  MultibodyPlant<double> plant(0.0);
+  const ModelInstanceIndex instance_a = plant.AddModelInstance("a");
+  const ModelInstanceIndex instance_b = plant.AddModelInstance("b");
+  const auto M_B = SpatialInertia<double>::MakeUnitary();
+  // Adds a body welded to the world by a revolute joint in `instance`, and
+  // returns that joint.
+  auto add_pin = [&](const std::string& name, ModelInstanceIndex instance) {
+    const RigidBody<double>& body = plant.AddRigidBody(name, instance, M_B);
+    return &plant.AddJoint<RevoluteJoint>(name, plant.world_body(),
+                                          std::nullopt, body, std::nullopt,
+                                          Vector3d::UnitZ());
+  };
+  const auto* joint_a0 = add_pin("a0", instance_a);
+  const auto* joint_b0 = add_pin("b0", instance_b);
+  const auto* joint_a1 = add_pin("a1", instance_a);
+  const auto* joint_a2 = add_pin("a2", instance_a);
+  const JointActuatorIndex actuator_a0 =
+      plant.AddJointActuator("a0", *joint_a0).index();
+  const JointActuatorIndex actuator_b0 =
+      plant.AddJointActuator("b0", *joint_b0).index();
+  const JointActuator<double>& doomed = plant.AddJointActuator("a1", *joint_a1);
+  const JointActuatorIndex actuator_a2 =
+      plant.AddJointActuator("a2", *joint_a2).index();
+  plant.RemoveJointActuator(doomed);
+
+  auto check = [&]() {
+    EXPECT_THAT(plant.GetJointActuatorIndices(instance_a),
+                testing::ElementsAre(actuator_a0, actuator_a2));
+    EXPECT_THAT(plant.GetActuatedJointIndices(instance_a),
+                testing::ElementsAre(joint_a0->index(), joint_a2->index()));
+    EXPECT_THAT(plant.GetJointActuatorIndices(instance_b),
+                testing::ElementsAre(actuator_b0));
+    EXPECT_THAT(plant.GetActuatedJointIndices(instance_b),
+                testing::ElementsAre(joint_b0->index()));
+    EXPECT_TRUE(plant.GetJointActuatorIndices(world_model_instance()).empty());
+    EXPECT_TRUE(plant.GetActuatedJointIndices(world_model_instance()).empty());
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        plant.GetJointActuatorIndices(ModelInstanceIndex(99)),
+        ".*has_element.*");
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        plant.GetActuatedJointIndices(ModelInstanceIndex(99)),
+        ".*has_element.*");
+  };
+  check();
+  plant.Finalize();
+  check();
+}
+
 GTEST_TEST(MultibodyPlantTest, AddMultibodyPlantSceneGraph) {
   systems::DiagramBuilder<double> builder;
   auto pair = AddMultibodyPlantSceneGraph(&builder, 0.0);
@@ -1629,6 +1681,135 @@ GTEST_TEST(MultibodyPlantTest, FilterWorldWelds) {
   ASSERT_EQ(contacts.size(), 0);
 }
 
+// Finalize() anchors the SceneGraph frames of bodies welded to the world.
+// Anchored geometry isn't re-posed every step, but it must still follow its
+// body when a parameter changes the body's pose -- here, the pose of the
+// FixedOffsetFrame the body is welded to. We detect geometry that was left
+// behind with a contact query: the broadphase culls on the proximity engine's
+// own copy of each geometry's pose, so stale anchored geometry misses a contact
+// it should report. (Distance queries aren't sufficient; they compute from
+// SceneGraph's current poses, not the engine's copy.)
+GTEST_TEST(MultibodyPlantTest, WorldWeldedGeometryFollowsParameters) {
+  DiagramBuilder<double> builder;
+  auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.0);
+  const double kRadius = 1.0;
+  const auto M = SpatialInertia<double>::SolidSphereWithMass(1.0, kRadius);
+  const auto& frame_F =
+      plant.AddFrame(std::make_unique<FixedOffsetFrame<double>>(
+          "F", plant.world_frame(), RigidTransformd(Vector3d(5, 0, 0))));
+  const RigidBody<double>& welded = plant.AddRigidBody("welded", M);
+  plant.WeldFrames(frame_F, welded.body_frame());
+  plant.RegisterCollisionGeometry(welded, RigidTransformd(),
+                                  geometry::Sphere(kRadius), "welded",
+                                  CoulombFriction<double>());
+  // A free body; its pose is set below.
+  const RigidBody<double>& free = plant.AddRigidBody("free", M);
+  plant.RegisterCollisionGeometry(free, RigidTransformd(),
+                                  geometry::Sphere(kRadius), "free",
+                                  CoulombFriction<double>());
+  plant.Finalize();
+  // Confirm we're exercising anchored geometry.
+  ASSERT_EQ(scene_graph.model_inspector().NumAnchoredGeometries(), 1);
+
+  auto diagram = builder.Build();
+  auto context = diagram->CreateDefaultContext();
+  Context<double>& plant_context =
+      plant.GetMyMutableContextFromRoot(context.get());
+  const Context<double>& sg_context =
+      scene_graph.GetMyContextFromRoot(*context);
+  auto num_contacts = [&]() {
+    const auto& query_object =
+        scene_graph.get_query_output_port().Eval<QueryObject<double>>(
+            sg_context);
+    return query_object.ComputePointPairPenetration().size();
+  };
+
+  // The welded sphere's engine object starts at its registration-time pose
+  // (the origin). The free sphere overlaps the welded sphere's true pose but
+  // not that placeholder; a missed initial refresh misses the contact.
+  plant.SetFreeBodyPose(&plant_context, free,
+                        RigidTransformd(Vector3d(5.5, 0, 0)));
+  EXPECT_EQ(num_contacts(), 1);
+
+  // Move both: the welded sphere via the parameter, the free sphere via state.
+  // They overlap again, but only at the new location; a missed refresh would
+  // leave the welded sphere's engine object at x = 5, too far to contact.
+  frame_F.SetPoseInParentFrame(&plant_context,
+                               RigidTransformd(Vector3d(10, 0, 0)));
+  plant.SetFreeBodyPose(&plant_context, free,
+                        RigidTransformd(Vector3d(10.5, 0, 0)));
+  EXPECT_EQ(num_contacts(), 1);
+}
+
+// The geometries of bodies welded to the world are anchored, so they can't
+// collide with each other even when collisions are explicitly allowed, nor
+// with anchored geometry registered by another source. They still collide with
+// dynamic geometry.
+GTEST_TEST(MultibodyPlantTest, WorldWeldedGeometryIsAnchored) {
+  using geometry::CollisionFilterDeclaration;
+  using geometry::GeometrySet;
+
+  DiagramBuilder<double> builder;
+  auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.0);
+  const double kRadius = 1.0;
+  const auto M = SpatialInertia<double>::SolidSphereWithMass(1.0, kRadius);
+  // All of the geometries below sit at the origin, so every pair that is a
+  // collision candidate is in contact.
+  auto add_body = [&](const std::string& name) {
+    const RigidBody<double>& body = plant.AddRigidBody(name, M);
+    return plant.RegisterCollisionGeometry(body, RigidTransformd(),
+                                           geometry::Sphere(kRadius), name,
+                                           CoulombFriction<double>());
+  };
+  const GeometryId welded_a = add_body("welded_a");
+  const GeometryId welded_b = add_body("welded_b");
+  const GeometryId free = add_body("free");
+  plant.WeldFrames(plant.world_frame(),
+                   plant.GetBodyByName("welded_a").body_frame());
+  plant.WeldFrames(plant.world_frame(),
+                   plant.GetBodyByName("welded_b").body_frame());
+
+  const geometry::SourceId other_source = scene_graph.RegisterSource("other");
+  auto ground_instance = std::make_unique<GeometryInstance>(
+      RigidTransformd(), geometry::Sphere(kRadius), "ground");
+  ground_instance->set_proximity_properties(geometry::ProximityProperties());
+  const GeometryId ground = scene_graph.RegisterAnchoredGeometry(
+      other_source, std::move(ground_instance));
+  plant.Finalize();
+
+  auto diagram = builder.Build();
+  auto context = diagram->CreateDefaultContext();
+  Context<double>& sg_context =
+      scene_graph.GetMyMutableContextFromRoot(context.get());
+
+  using Pair = std::pair<GeometryId, GeometryId>;
+  auto contact_pairs = [&]() {
+    const auto& query_object =
+        scene_graph.get_query_output_port().Eval<QueryObject<double>>(
+            sg_context);
+    std::vector<Pair> pairs;
+    for (const auto& contact : query_object.ComputePointPairPenetration()) {
+      pairs.emplace_back(std::min(contact.id_A, contact.id_B),
+                         std::max(contact.id_A, contact.id_B));
+    }
+    return pairs;
+  };
+  auto sorted = [](GeometryId a, GeometryId b) {
+    return Pair(std::min(a, b), std::max(a, b));
+  };
+  using ::testing::UnorderedElementsAre;
+  const auto expected = UnorderedElementsAre(
+      sorted(free, welded_a), sorted(free, welded_b), sorted(free, ground));
+  EXPECT_THAT(contact_pairs(), expected);
+
+  // Explicitly allowing collisions among the anchored geometries changes
+  // nothing.
+  scene_graph.collision_filter_manager(&sg_context)
+      .Apply(CollisionFilterDeclaration().AllowWithin(
+          GeometrySet({welded_a, welded_b, ground})));
+  EXPECT_THAT(contact_pairs(), expected);
+}
+
 // Ensure that all welded subgraphs are collision filtered.
 GTEST_TEST(MultibodyPlantTest, FilterWeldedSubgraphs) {
   // Build a chain with two welded subgraphs; a chain of 3, followed later by a
@@ -2216,10 +2397,12 @@ GTEST_TEST(MultibodyPlantTest, WeldOfNonBaseBody) {
   EXPECT_NO_THROW(bad_double_weld.Finalize());
 }
 
-// Currently we don't support automatic modeling of systems where the links
-// and joints form topological loops. Make sure we reject those for now.
+// Automatic modeling of systems where the links and joints form kinematic
+// loops is enabled by default, but can be disabled. Make sure that once it is
+// disabled we reject such systems.
 GTEST_TEST(MultibodyPlantTest, UnsupportedTopologicalLoop) {
   MultibodyPlant<double> plant(0.0);
+  plant.SetEnableLoopTopology(false);
 
   // Create a loop with two bodies:
   //   World->body1->body2<-World
@@ -2236,7 +2419,8 @@ GTEST_TEST(MultibodyPlantTest, UnsupportedTopologicalLoop) {
 
   DRAKE_EXPECT_THROWS_MESSAGE(
       plant.Finalize(),
-      "The bodies and joints of this system form one or more loops.*");
+      "This model contains kinematic loops, but automatic loop modeling "
+      "is disabled.*");
 }
 
 // Position kinematics attempts to optimize for cases when X_PF or X_MB are
@@ -2376,6 +2560,75 @@ bool VerifyFeedthroughPorts(const MultibodyPlant<double>& plant) {
   // Compare and return.
   EXPECT_THAT(actual_feedthrough, testing::ContainerEq(expected_feedthrough));
   return actual_feedthrough == expected_feedthrough;
+}
+
+// A continuous-time plant may opt in to sampled output ports. Until an
+// integrator that understands the step memory (e.g., CenicIntegrator) records a
+// sample, the dynamics output ports throw, while the kinematic ports remain
+// live.
+GTEST_TEST(MultibodyPlantTest, ContinuousSampledOutputPorts) {
+  DiagramBuilder<double> builder;
+  MultibodyPlant<double>& plant = AddMultibodyPlantSceneGraph(&builder, 0.0);
+  Parser(&plant).AddModelsFromUrl(
+      "package://drake/multibody/benchmarks/acrobot/acrobot.sdf");
+  EXPECT_FALSE(plant.has_sampled_output_ports());
+  plant.SetUseSampledOutputPorts(true);
+  EXPECT_TRUE(plant.has_sampled_output_ports());
+  plant.Finalize();
+  EXPECT_THROW(plant.SetUseSampledOutputPorts(false), std::exception);
+
+  // The sampled dynamics ports are not feedthrough.
+  EXPECT_TRUE(VerifyFeedthroughPorts(plant));
+
+  auto diagram = builder.Build();
+  auto diagram_context = diagram->CreateDefaultContext();
+  Context<double>& context =
+      plant.GetMyMutableContextFromRoot(diagram_context.get());
+  plant.get_actuation_input_port().FixValue(&context, 1.0);
+
+  // The Context carries the step memory as abstract state.
+  EXPECT_EQ(context.num_abstract_states(), 1);
+  EXPECT_EQ(context.num_continuous_states(), 4);
+
+  // Set a state with nonzero velocity and configuration. Kinematic ports are
+  // live; dynamics ports have no sample.
+  plant.SetPositionsAndVelocities(&context,
+                                  Eigen::Vector4d(0.3, -0.5, 1.0, 2.0));
+  const auto& poses =
+      plant.get_body_poses_output_port().Eval<std::vector<RigidTransformd>>(
+          context);
+  EXPECT_EQ(std::ssize(poses), plant.num_bodies());
+  EXPECT_FALSE(poses[1].IsExactlyIdentity());
+
+  // Nothing has recorded a sample yet, so there is nothing for the dynamics
+  // ports to report, and they throw. (A discrete-time plant reports zeros
+  // before its first step. CenicIntegrator's tests cover the empty sample that
+  // it writes when initialized.)
+  const char* kNoSample = ".*no integrator has recorded a sample.*";
+  const ModelInstanceIndex acrobot = plant.GetModelInstanceByName("acrobot");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant.get_generalized_acceleration_output_port().Eval(context),
+      kNoSample);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant.get_net_actuation_output_port().Eval(context), kNoSample);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant.get_reaction_forces_output_port()
+          .Eval<std::vector<SpatialForce<double>>>(context),
+      kNoSample);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant.get_body_spatial_accelerations_output_port()
+          .Eval<std::vector<SpatialAcceleration<double>>>(context),
+      kNoSample);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant.get_contact_results_output_port().Eval<ContactResults<double>>(
+          context),
+      kNoSample);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant.get_generalized_contact_forces_output_port(acrobot).Eval(context),
+      kNoSample);
+
+  // Direct API calls are always live, regardless of output port sampling.
+  EXPECT_FALSE(plant.EvalForwardDynamics(context).get_vdot().isZero());
 }
 
 // Verifies the process of collision geometry registration with a
@@ -4893,25 +5146,28 @@ GTEST_TEST(MultibodyPlantTest, BaseBodyJointChoice) {
 }
 
 // Verify that SetEnableLoopTopology() properly sets its setting and that it
-// cannot be used post-Finalize(). Verify that when enabled, there is proper
-// scalar conversion (which clones the underlying MultibodyTree).
+// cannot be used post-Finalize(). Verify that the setting survives scalar
+// conversion (which clones the underlying MultibodyTree).
 GTEST_TEST(MultibodyPlantTest, EnableLoopTopologyOption) {
   MultibodyPlant<double> plant(0.0);
 
-  // Verify the default setting is disabled (for now).
-  EXPECT_FALSE(plant.GetEnableLoopTopology());
-
-  // Verify that pre-Finalize(), the setting can be enabled and/or disabled.
-  plant.SetEnableLoopTopology(true);
+  // Verify the default setting is enabled, matching MultibodyPlantConfig.
+  EXPECT_TRUE(MultibodyPlantConfig{}.enable_loop_topology);
   EXPECT_TRUE(plant.GetEnableLoopTopology());
+
+  // Verify that pre-Finalize(), the setting can be disabled and/or enabled.
   plant.SetEnableLoopTopology(false);
   EXPECT_FALSE(plant.GetEnableLoopTopology());
-
-  // Leave it enabled and finalize a simple (loop-free) model.
   plant.SetEnableLoopTopology(true);
+  EXPECT_TRUE(plant.GetEnableLoopTopology());
+
+  // Leave it disabled and finalize a simple model with no kinematic loops.
+  // Using the non-default setting lets the scalar conversion check below tell a
+  // copied setting from a defaulted one.
+  plant.SetEnableLoopTopology(false);
   plant.AddRigidBody("body", SpatialInertia<double>::MakeUnitary());
   plant.Finalize();
-  EXPECT_TRUE(plant.GetEnableLoopTopology());
+  EXPECT_FALSE(plant.GetEnableLoopTopology());
 
   // Verify that post-Finalize(), cannot _call_ SetEnableLoopTopology().
   DRAKE_EXPECT_THROWS_MESSAGE(plant.SetEnableLoopTopology(false),
@@ -4922,7 +5178,7 @@ GTEST_TEST(MultibodyPlantTest, EnableLoopTopologyOption) {
   // The setting survives scalar conversion, which clones the tree.
   std::unique_ptr<MultibodyPlant<AutoDiffXd>> ad_plant =
       systems::System<double>::ToAutoDiffXd(plant);
-  EXPECT_TRUE(ad_plant->GetEnableLoopTopology());
+  EXPECT_FALSE(ad_plant->GetEnableLoopTopology());
 }
 
 GTEST_TEST(SetRandomTest, QuaternionFloatingBody) {
@@ -6447,6 +6703,90 @@ INSTANTIATE_TEST_SUITE_P(ContinousAndDiscreteRemodeling,
 INSTANTIATE_TEST_SUITE_P(ContinousAndDiscreteConstraints,
                          MultibodyPlantConstraintTestTimeStepParam,
                          ::testing::Values(0.0, 0.1));
+
+// A continuous plant with joint dry friction can be finalized, so that it can
+// still be used for kinematics or control. Evaluating its dynamics throws,
+// both for a default dry friction and for one set in the context.
+GTEST_TEST(MultibodyPlantTest, ContinuousDynamicsRejectJointDryFriction) {
+  MultibodyPlant<double> plant(0.0);
+  const RigidBody<double>& body =
+      plant.AddRigidBody("body", SpatialInertia<double>::MakeUnitary());
+  const RevoluteJoint<double>& joint =
+      plant.AddJoint<RevoluteJoint>("joint", plant.world_body(), std::nullopt,
+                                    body, std::nullopt, Vector3d::UnitZ());
+  plant.get_mutable_joint(joint.index()).set_default_dry_friction(0.5);
+  EXPECT_NO_THROW(plant.Finalize());
+  auto context = plant.CreateDefaultContext();
+  const std::string expected_message =
+      ".*continuous-time dynamics do not support joint dry friction.*"
+      "non-zero for joint 'joint'\\..*";
+  DRAKE_EXPECT_THROWS_MESSAGE(plant.EvalTimeDerivatives(*context),
+                              expected_message);
+
+  joint.SetDryFriction(context.get(), 0.0);
+  EXPECT_NO_THROW(plant.EvalTimeDerivatives(*context));
+
+  joint.SetDryFriction(context.get(), 0.5);
+  DRAKE_EXPECT_THROWS_MESSAGE(plant.EvalTimeDerivatives(*context),
+                              expected_message);
+}
+
+// Adds a body to `plant` and connects it to the world with a revolute joint
+// named "joint".
+template <typename T>
+const RevoluteJoint<T>& AddRevoluteJoint(MultibodyPlant<T>* plant) {
+  const RigidBody<T>& body =
+      plant->AddRigidBody("body", SpatialInertia<double>::MakeUnitary());
+  return plant->template AddJoint<RevoluteJoint>(
+      "joint", plant->world_body(), std::nullopt, body, std::nullopt,
+      Vector3d::UnitZ());
+}
+
+// Joint dry friction is not supported for T = symbolic::Expression.
+GTEST_TEST(MultibodyPlantTest, JointDryFrictionUnsupportedForSymbolic) {
+  // A plant with non-zero default dry friction cannot be converted to
+  // symbolic::Expression, while the conversion to AutoDiffXd is unaffected.
+  MultibodyPlant<double> plant(0.0);
+  const RevoluteJoint<double>& joint = AddRevoluteJoint(&plant);
+  plant.get_mutable_joint(joint.index()).set_default_dry_friction(0.5);
+  plant.Finalize();
+  const std::string reason =
+      ".*because joint 'joint' has non-zero dry friction.*";
+  DRAKE_EXPECT_THROWS_MESSAGE(plant.ToSymbolic(),
+                              ".*symbolic::Expression" + reason);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      MultibodyPlant<symbolic::Expression>(plant),
+      "Joint 'joint' has non-zero dry friction, which is not supported for "
+      "T = symbolic::Expression\\.");
+  std::unique_ptr<MultibodyPlant<AutoDiffXd>> plant_ad =
+      systems::System<double>::ToAutoDiffXd(plant);
+  DRAKE_EXPECT_THROWS_MESSAGE(plant_ad->ToSymbolic(), reason);
+
+  // Without dry friction, the plant converts to symbolic::Expression, but dry
+  // friction cannot be set in the symbolic plant's context.
+  MultibodyPlant<double> plant_without_friction(0.0);
+  AddRevoluteJoint(&plant_without_friction);
+  plant_without_friction.Finalize();
+  std::unique_ptr<MultibodyPlant<symbolic::Expression>> plant_sym =
+      systems::System<double>::ToSymbolic(plant_without_friction);
+  const RevoluteJoint<symbolic::Expression>& joint_sym =
+      plant_sym->GetJointByName<RevoluteJoint>("joint");
+  auto context = plant_sym->CreateDefaultContext();
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      joint_sym.SetDryFriction(context.get(), 0.5),
+      "SetDryFriction\\(\\): not supported for T = symbolic::Expression\\.");
+  EXPECT_NO_THROW(plant_sym->EvalTimeDerivatives(*context));
+
+  // Nor can the default dry friction be set on a symbolic plant.
+  MultibodyPlant<symbolic::Expression> symbolic_plant(0.0);
+  const RevoluteJoint<symbolic::Expression>& symbolic_joint =
+      AddRevoluteJoint(&symbolic_plant);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      symbolic_plant.get_mutable_joint(symbolic_joint.index())
+          .set_default_dry_friction(0.5),
+      "set_default_dry_friction\\(\\): not supported for "
+      "T = symbolic::Expression\\.");
+}
 
 }  // namespace
 }  // namespace multibody

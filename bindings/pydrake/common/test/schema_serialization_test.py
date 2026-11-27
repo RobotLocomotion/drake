@@ -183,3 +183,32 @@ class TestTransformSerialization(BaseTest):
         assert_allclose(x.rotation.value.axis.min, [1, 2, 3])
         assert_allclose(x.rotation.value.axis.max, [4, 5, 6])
         self._check_yaml_semantic_equality(yaml_dump_typed(x), data)
+
+
+@dc.dataclass
+class HasUnchanged:
+    value: int | mut.Unchanged = 0
+
+
+class TestUnchangedSerialization(BaseTest):
+    """Serialization tests related to schema/unchanged.h"""
+
+    def test_standalone(self):
+        data = "{}"
+        x = yaml_load_typed(schema=mut.Unchanged, data=data)
+        self._check_yaml_semantic_equality(yaml_dump_typed(x), data)
+
+    def test_nested(self):
+        data = dedent("""
+        value: 22
+        """)
+        x = yaml_load_typed(schema=HasUnchanged, data=data)
+        self.assertEqual(x.value, 22)
+        self._check_yaml_semantic_equality(yaml_dump_typed(x), data)
+
+        data = dedent("""
+        value: !Unchanged {}
+        """)
+        x = yaml_load_typed(schema=HasUnchanged, data=data)
+        self.assertIsInstance(x.value, mut.Unchanged)
+        self._check_yaml_semantic_equality(yaml_dump_typed(x), data)

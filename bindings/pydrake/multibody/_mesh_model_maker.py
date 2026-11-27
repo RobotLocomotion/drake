@@ -25,7 +25,7 @@ _PACKAGE_TEMPLATE = """
   <maintainer email="nobody@example.com">Nobody</maintainer>
   <license>unknown</license>
 </package>
-"""
+""".lstrip()
 
 _SDF_TEMPLATE = """<?xml version='1.0'?>
 <sdf xmlns:drake="http://drake.mit.edu" version="1.8">
@@ -334,7 +334,12 @@ class MeshModelMaker:
         Reads the ROS package manifest file at the given path, returning the
         value of the name tag.
         """
-        root = xml.etree.ElementTree.parse(package_path).getroot()
+        # Package files written by older versions of mesh_to_model start with
+        # whitespace before the XML declaration, which the parser rejects.
+        # Strip the raw bytes, not decoded text, so that the parser still
+        # honors the file's declared encoding.
+        data = Path(package_path).read_bytes().lstrip()
+        root = xml.etree.ElementTree.fromstring(data)
         name_element = root.find("name")
         if name_element is None:
             raise ValueError(

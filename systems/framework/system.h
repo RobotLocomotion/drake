@@ -37,6 +37,9 @@ namespace systems {
 /** Base class for all System functionality that is dependent on the templatized
 scalar type T for input, state, parameters, and outputs.
 
+@see @ref system_multithreading for guidance on sharing a %System across
+threads.
+
 @tparam_default_scalar */
 template <typename T>
 class System : public SystemBase {

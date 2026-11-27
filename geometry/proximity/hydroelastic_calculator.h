@@ -3,8 +3,6 @@
 #include <memory>
 #include <unordered_map>
 
-#include <fcl/fcl.h>
-
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/proximity/hydroelastic_internal.h"
 #include "drake/geometry/query_results/contact_surface.h"

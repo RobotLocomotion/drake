@@ -1,3 +1,4 @@
+import copy
 import unittest
 
 import gymnasium as gym
@@ -9,6 +10,7 @@ from pydrake.gym import DrakeGymEnv
 from pydrake.systems.analysis import Simulator
 from pydrake.systems.framework import DiagramBuilder
 from pydrake.systems.primitives import PassThrough
+from pydrake.systems.sensors import ImageRgba8U
 
 
 class DrakeGymTest(unittest.TestCase):
@@ -139,3 +141,127 @@ class DrakeGymTest(unittest.TestCase):
                 action_port_id="actions",
                 observation_port_id="observations",
             )
+
+    def _make_pass_through_env(self, **kwargs):
+        builder = DiagramBuilder()
+        pass_through = builder.AddSystem(PassThrough(vector_size=1))
+        builder.ExportInput(pass_through.get_input_port(), "actions")
+        builder.ExportOutput(pass_through.get_output_port(), "observations")
+        simulator = Simulator(builder.Build())
+        return DrakeGymEnv(
+            simulator=simulator,
+            time_step=0.1,
+            action_space=None,
+            observation_space=None,
+            reward=lambda system, context: 0.0,
+            **kwargs,
+        )
+
+    def test_info_handler(self):
+        """A user-provided info_handler is used by reset() and step()."""
+
+        def info_handler(simulator):
+            return {"time": simulator.get_context().get_time()}
+
+        dut = self._make_pass_through_env(info_handler=info_handler)
+        _, info = dut.reset(seed=0)
+        self.assertEqual(info, {"time": 0.0})
+        _, _, _, _, info = dut.step(np.array([0.5]))
+        self.assertAlmostEqual(info["time"], 0.1)
+
+    def test_info_handler_default(self):
+        """Without an info_handler, the info is an empty dict."""
+        dut = self._make_pass_through_env()
+        _, info = dut.reset(seed=0)
+        self.assertEqual(info, {})
+        _, _, _, _, info = dut.step(np.array([0.5]))
+        self.assertEqual(info, {})
+
+    def test_info_handler_not_callable(self):
+        with self.assertRaisesRegex(ValueError, "info_handler is not callable"):
+            self._make_pass_through_env(info_handler="not callable")
+
+    def test_metadata_is_per_instance(self):
+        """Constructing an env must not edit gym.Env.metadata (a class
+        attribute shared by every Env), nor the metadata of any other env.
+        """
+        shared_before = copy.deepcopy(gym.Env.metadata)
+
+        builder = DiagramBuilder()
+        pass_through = builder.AddSystem(PassThrough(vector_size=1))
+        builder.ExportInput(pass_through.get_input_port(), "actions")
+        builder.ExportOutput(pass_through.get_output_port(), "observations")
+        image = builder.AddSystem(
+            PassThrough(abstract_model_value=Value(ImageRgba8U(4, 3)))
+        )
+        builder.ExportInput(image.get_input_port(), "image_in")
+        builder.ExportOutput(image.get_output_port(), "color_image")
+        with_rgb = DrakeGymEnv(
+            simulator=Simulator(builder.Build()),
+            time_step=0.1,
+            action_space=None,
+            observation_space=None,
+            reward=lambda system, context: 0.0,
+            render_rgb_port_id="color_image",
+        )
+        self.assertEqual(
+            with_rgb.metadata["render_modes"], ["human", "ansi", "rgb_array"]
+        )
+
+        # Building another env leaves the first env's metadata alone.
+        without_rgb = self._make_pass_through_env()
+        self.assertEqual(
+            without_rgb.metadata["render_modes"], ["human", "ansi"]
+        )
+        self.assertIn("rgb_array", with_rgb.metadata["render_modes"])
+
+        # The metadata shared by all gymnasium envs is unchanged.
+        self.assertEqual(gym.Env.metadata, shared_before)
+
+        # Nor is the class-level list that gym.make() reads.
+        self.assertEqual(
+            DrakeGymEnv.metadata["render_modes"], ["human", "ansi", "rgb_array"]
+        )
+
+    def test_make_by_class_applies_render_collection(self):
+        """gym.make() reads the class-level metadata before it constructs an
+        env, so a class-registered env with a camera must get RenderCollection
+        for "rgb_array_list" even if no other env was built first.
+        """
+
+        class _CameraEnv(DrakeGymEnv):
+            def __init__(self, **kwargs):
+                builder = DiagramBuilder()
+                actions = builder.AddSystem(PassThrough(vector_size=1))
+                builder.ExportInput(actions.get_input_port(), "actions")
+                builder.ExportOutput(actions.get_output_port(), "observations")
+                image = builder.AddSystem(
+                    PassThrough(abstract_model_value=Value(ImageRgba8U(4, 3)))
+                )
+                builder.ExportInput(image.get_input_port(), "image_in")
+                builder.ExportOutput(image.get_output_port(), "color_image")
+                super().__init__(
+                    simulator=Simulator(builder.Build()),
+                    time_step=0.1,
+                    action_space=None,
+                    observation_space=None,
+                    reward=lambda system, context: 0.0,
+                    render_rgb_port_id="color_image",
+                    **kwargs,
+                )
+
+        env_id = "DrakeCameraByClass-v0"
+        gym.envs.register(id=env_id, entry_point=_CameraEnv)
+        try:
+            dut = gym.make(env_id, render_mode="rgb_array_list")
+        finally:
+            del gym.envs.registry[env_id]
+        self.assertIsInstance(dut, gym.wrappers.RenderCollection)
+        self.assertEqual(dut.render_mode, "rgb_array_list")
+        self.assertIn("rgb_array", dut.unwrapped.metadata["render_modes"])
+
+        # An env without a camera still narrows its own list.
+        self.assertEqual(
+            self._make_pass_through_env().metadata["render_modes"],
+            ["human", "ansi"],
+        )

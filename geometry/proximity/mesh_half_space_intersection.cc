@@ -1,8 +1,6 @@
 #include "drake/geometry/proximity/mesh_half_space_intersection.h"
 
-#include <array>
 #include <cmath>
-#include <limits>
 #include <utility>
 
 #include "drake/common/default_scalars.h"

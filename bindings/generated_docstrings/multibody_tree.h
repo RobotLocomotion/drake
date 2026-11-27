@@ -3270,6 +3270,21 @@ Raises:
 See also:
     GetDefaultPose())""";
         } GetDefaultPosePair;
+        // Symbol: drake::multibody::Joint::GetDryFriction
+        struct /* GetDryFriction */ {
+          // Source: drake/multibody/tree/joint.h
+          const char* doc =
+R"""(Returns the Context dependent dry friction bound stored as a parameter
+in ``context``. Refer to default_dry_friction() for details.
+
+Parameter ``context``:
+    The context storing the state and parameters for the model to
+    which ``this`` joint belongs.
+
+Raises:
+    RuntimeError if the joint does not have a single degree of
+    freedom.)""";
+        } GetDryFriction;
         // Symbol: drake::multibody::Joint::GetMobilizerInUse
         struct /* GetMobilizerInUse */ {
           // Source: drake/multibody/tree/joint.h
@@ -3545,6 +3560,31 @@ Raises:
 See also:
     SetDefaultPose())""";
         } SetDefaultPosePair;
+        // Symbol: drake::multibody::Joint::SetDryFriction
+        struct /* SetDryFriction */ {
+          // Source: drake/multibody/tree/joint.h
+          const char* doc =
+R"""(Sets the value of the dry friction bound for this joint, stored as a
+parameter in ``context``. Refer to default_dry_friction() for details.
+
+Parameter ``context``:
+    The context storing the state and parameters for the model to
+    which ``this`` joint belongs.
+
+Parameter ``dry_friction``:
+    The dry friction bound.
+
+Raises:
+    RuntimeError if the joint does not have a single degree of
+    freedom.
+
+Raises:
+    RuntimeError if dry_friction is negative, infinite or NaN.
+
+Raises:
+    RuntimeError if T is symbolic∷Expression, since joint dry friction
+    is not supported for symbolic scalars.)""";
+        } SetDryFriction;
         // Symbol: drake::multibody::Joint::SetPose
         struct /* SetPose */ {
           // Source: drake/multibody/tree/joint.h
@@ -3748,6 +3788,32 @@ units of rad/s and tau having units of N⋅m, the coefficient of viscous
 damping has units of N⋅m⋅s. Refer to each joint's documentation for
 further details.)""";
         } default_damping_vector;
+        // Symbol: drake::multibody::Joint::default_dry_friction
+        struct /* default_dry_friction */ {
+          // Source: drake/multibody/tree/joint.h
+          const char* doc =
+R"""(Returns the default dry friction bound of this joint. The default is
+zero. Only joints with a single degree of freedom model dry friction.
+If v is the generalized velocity of this joint, dry (Coulomb) friction
+models a generalized force τ at the joint with |τ| ≤ f, where f is the
+bound returned by this function. When the joint moves, τ opposes the
+motion with τ = −f⋅sign(v). The bound does not depend on the load on
+the joint. The units of the bound depend on the joint type. For
+instance, the bound is in N⋅m for a revolute joint and in N for a
+prismatic joint.
+
+Note:
+    Only discrete MultibodyPlant models support dry friction.
+
+Note:
+    Dry friction is not supported for T = symbolic∷Expression. A
+    MultibodyPlant with a joint with non-zero default dry friction
+    cannot be converted to symbolic∷Expression.
+
+Raises:
+    RuntimeError if the joint does not have a single degree of
+    freedom.)""";
+        } default_dry_friction;
         // Symbol: drake::multibody::Joint::default_positions
         struct /* default_positions */ {
           // Source: drake/multibody/tree/joint.h
@@ -3962,6 +4028,31 @@ Raises:
 Precondition:
     the MultibodyPlant must not be finalized.)""";
         } set_default_damping_vector;
+        // Symbol: drake::multibody::Joint::set_default_dry_friction
+        struct /* set_default_dry_friction */ {
+          // Source: drake/multibody/tree/joint.h
+          const char* doc =
+R"""(Sets the default value of the dry friction bound for this joint. Refer
+to default_dry_friction() for details.
+
+Raises:
+    RuntimeError if the joint does not have a single degree of
+    freedom.
+
+Raises:
+    RuntimeError if dry_friction is negative, infinite or NaN.
+
+Raises:
+    RuntimeError if this element is not associated with a
+    MultibodyPlant.
+
+Raises:
+    RuntimeError if T is symbolic∷Expression, since joint dry friction
+    is not supported for symbolic scalars.
+
+Precondition:
+    the MultibodyPlant must not be finalized.)""";
+        } set_default_dry_friction;
         // Symbol: drake::multibody::Joint::set_default_positions
         struct /* set_default_positions */ {
           // Source: drake/multibody/tree/joint.h
@@ -4507,15 +4598,25 @@ demonstrate how to model various joints that have a flexible (e.g.,
 rubber) mount. The damping values below with ? may be set to 0 or a
 reasonable positive number.
 
-Bushing type | torque constants | force constants
---------------------------------|:--------------------|:------------------
-z-axis revolute joint | k₀₁₂ = ``[k₀ k₁ 0]`` | kxyz = ``[kx ky kz]`` ^
-| d₀₁₂ = ``[d₀ d₁ ?]`` | dxyz = ``[dx dy dz]`` x-axis prismatic joint
-| k₀₁₂ = ``[k₀ k₁ k₂]`` | kxyz = ``[0 ky kz]`` ^ | d₀₁₂ = ``[d₀ d₁
-d₂]`` | dxyz = ``[? dy dz]`` Ball and socket joint | k₀₁₂ = ``[0 0
-0]`` | kxyz = ``[kx ky kz]`` ^ | d₀₁₂ = ``[? ? ?]`` | dxyz = ``[dx dy
-dz]`` Weld/fixed joint | k₀₁₂ = ``[k₀ k₁ k₂]`` | kxyz = ``[kx ky kz]``
-^ | d₀₁₂ = ``[d₀ d₁ d₂]`` | dxyz = ``[dx dy dz]``
++------------------------+-----------------------+-----------------------+
+| Bushing type           | torque constants      | force constants       |
++========================+=======================+=======================+
+| z-axis revolute joint  | k₀₁₂ = ``[k₀ k₁ 0]``  | kxyz = ``[kx ky kz]`` |
+|                        +-----------------------+-----------------------+
+|                        | d₀₁₂ = ``[d₀ d₁ ?]``  | dxyz = ``[dx dy dz]`` |
++------------------------+-----------------------+-----------------------+
+| x-axis prismatic joint | k₀₁₂ = ``[k₀ k₁ k₂]`` | kxyz = ``[0 ky kz]``  |
+|                        +-----------------------+-----------------------+
+|                        | d₀₁₂ = ``[d₀ d₁ d₂]`` | dxyz = ``[? dy dz]``  |
++------------------------+-----------------------+-----------------------+
+| Ball and socket joint  | k₀₁₂ = ``[0 0 0]``    | kxyz = ``[kx ky kz]`` |
+|                        +-----------------------+-----------------------+
+|                        | d₀₁₂ = ``[? ? ?]``    | dxyz = ``[dx dy dz]`` |
++------------------------+-----------------------+-----------------------+
+| Weld/fixed joint       | k₀₁₂ = ``[k₀ k₁ k₂]`` | kxyz = ``[kx ky kz]`` |
+|                        +-----------------------+-----------------------+
+|                        | d₀₁₂ = ``[d₀ d₁ d₂]`` | dxyz = ``[dx dy dz]`` |
++------------------------+-----------------------+-----------------------+
 
 Angles q₀, q₁, q₂ are calculated from frame C's orientation relative
 to frame A, with ``[−π < q₀ ≤ π, −π/2 ≤ q₁ ≤ π/2, −π < q₂ ≤ π]``,
@@ -4718,9 +4819,23 @@ a photovoltaic application". Another reference is
 https://courses.grainger.illinois.edu/ece486/sp2020/laboratory/docs/lab2/estimates.html
 - When ζ ≈ 1 (critically damped), ωₙ is determined by choosing a
 settling ratio and then solving for (ωₙ tₛ) via the nonlinear
-algebraic equation (1 + ωₙ tₛ)*exp(-ωₙ tₛ) = settling_ratio. Settling
-ratio | ωₙ -------------- | ------------- 0.01 | 6.64 / tₛ 0.02 | 5.83
-/ tₛ 0.05 | 4.74 / tₛ 0.10 | 3.89 / tₛ See
+algebraic equation (1 + ωₙ tₛ)*exp(-ωₙ tₛ) = settling_ratio.
+
+  .. list-table::
+     :header-rows: 1
+
+     * - Settling ratio
+       - ωₙ
+     * - 0.01
+       - 6.64 / tₛ
+     * - 0.02
+       - 5.83 / tₛ
+     * - 0.05
+       - 4.74 / tₛ
+     * - 0.10
+       - 3.89 / tₛ
+
+See
 https://electronics.stackexchange.com/questions/296567/over-and-critically-damped-systems-settling-time
 - When ζ ≥ 1.01 (overdamped), ωₙ ≈ -ln(2 settling_ratio sz/s₂) / (s₁
 tₛ) where sz = √(ζ² - 1), s₁ = ζ - sz, s₂ = ζ + sz. The derivation and
@@ -4786,14 +4901,43 @@ exp(p₂ t) ≈ 0 (which is why p₁ is called the "dominant pole"). Next,
 The table below shows that there is little error in this approximate
 formula for various settling ratios and ζ, particularly for ζ ≥ 1.1.
 For 1.0 ≤ ζ < 1.1, the critical damping estimates of ωₙ work well.
-Settling ratio | ζ = 1.01 | ζ = 1.1 | ζ = 1.2 | ζ = 1.3 | ζ = 1.5
--------------- | -------- | ------- | ------- | ------- | --------
-0.01 | 1.98% | 0.005% | 2.9E-5% | 1.6E-7% | 2.4E-12% 0.02 | 2.91% |
-0.016% | 1.8E-4% | 2.1E-6% | 1.6E-10% 0.05 | 5.10% | 0.076% | 2.3E-3%
-| 7.0E-5% | 4.4E-8% 0.10 | 8.28% | 0.258% | 1.6E-2% | 1.0E-3% |
-3.3E-6% Note: There is a related derivation in the reference below,
-however, it needlessly makes the oversimplified approximation k/(k -
-1) ≈ 1.
+
+.. list-table::
+   :header-rows: 1
+
+   * - Settling ratio
+     - ζ = 1.01
+     - ζ = 1.1
+     - ζ = 1.2
+     - ζ = 1.3
+     - ζ = 1.5
+   * - 0.01
+     - 1.98%
+     - 0.005%
+     - 2.9E-5%
+     - 1.6E-7%
+     - 2.4E-12%
+   * - 0.02
+     - 2.91%
+     - 0.016%
+     - 1.8E-4%
+     - 2.1E-6%
+     - 1.6E-10%
+   * - 0.05
+     - 5.10%
+     - 0.076%
+     - 2.3E-3%
+     - 7.0E-5%
+     - 4.4E-8%
+   * - 0.10
+     - 8.28%
+     - 0.258%
+     - 1.6E-2%
+     - 1.0E-3%
+     - 3.3E-6%
+
+Note: There is a related derivation in the reference below, however,
+it needlessly makes the oversimplified approximation k/(k - 1) ≈ 1.
 https://electronics.stackexchange.com/questions/296567/over-and-critically-damped-systems-settling-time
 
 Note:
@@ -5228,7 +5372,8 @@ of the user-specified model. These are called "ephemeral" elements and
 can be identified using the ``is_ephemeral()`` function here. Examples
 include - free joints added to connect lone bodies or free-floating
 trees to World - fixed offset frames added when joints are modeled by
-mobilizers - all mobilizers.)""";
+mobilizers - shadow bodies, and their body frames, added to break
+kinematic loops - all mobilizers.)""";
         // Symbol: drake::multibody::MultibodyElement::DeclareAbstractParameter
         struct /* DeclareAbstractParameter */ {
           // Source: drake/multibody/tree/multibody_element.h
@@ -7123,7 +7268,11 @@ Returns:
     (B's center of mass), expressed in B.
 
 Precondition:
-    the context makes sense for use by this RigidBody.)""";
+    the context makes sense for use by this RigidBody.
+
+Raises:
+    RuntimeError if this is a shadow link, which has no mass
+    properties of its own; ask its primary_link() instead.)""";
         } CalcCenterOfMassInBodyFrame;
         // Symbol: drake::multibody::RigidBody::CalcCenterOfMassTranslationalAccelerationInWorld
         struct /* CalcCenterOfMassTranslationalAccelerationInWorld */ {
@@ -7143,7 +7292,11 @@ Note:
     When cached values are out of sync with the state stored in
     context, this method performs an expensive forward dynamics
     computation, whereas once evaluated, successive calls to this
-    method are inexpensive.)""";
+    method are inexpensive.
+
+Raises:
+    RuntimeError if this is a shadow link, which has no mass
+    properties of its own; ask its primary_link() instead.)""";
         } CalcCenterOfMassTranslationalAccelerationInWorld;
         // Symbol: drake::multibody::RigidBody::CalcCenterOfMassTranslationalVelocityInWorld
         struct /* CalcCenterOfMassTranslationalVelocityInWorld */ {
@@ -7157,7 +7310,11 @@ Parameter ``context``:
 
 Returns ``v_WBcm_W``:
     The translational velocity of Bcm (this body's center of mass) in
-    the world frame W, expressed in W.)""";
+    the world frame W, expressed in W.
+
+Raises:
+    RuntimeError if this is a shadow link, which has no mass
+    properties of its own; ask its primary_link() instead.)""";
         } CalcCenterOfMassTranslationalVelocityInWorld;
         // Symbol: drake::multibody::RigidBody::CalcSpatialInertiaInBodyFrame
         struct /* CalcSpatialInertiaInBodyFrame */ {
@@ -7176,13 +7333,12 @@ Returns:
     and G_BBo_B (B's unit inertia about Bo expressed in B).
 
 Precondition:
-    the context makes sense for use by this RigidBody.)""";
+    the context makes sense for use by this RigidBody.
+
+Raises:
+    RuntimeError if this is a shadow link, which has no mass
+    properties of its own; ask its primary_link() instead.)""";
         } CalcSpatialInertiaInBodyFrame;
-        // Symbol: drake::multibody::RigidBody::CalcSpatialInertiaInBodyFrameFromParameters
-        struct /* CalcSpatialInertiaInBodyFrameFromParameters */ {
-          // Source: drake/multibody/tree/rigid_body.h
-          const char* doc = R"""()""";
-        } CalcSpatialInertiaInBodyFrameFromParameters;
         // Symbol: drake::multibody::RigidBody::CloneToScalar
         struct /* CloneToScalar */ {
           // Source: drake/multibody/tree/rigid_body.h
@@ -7442,7 +7598,11 @@ supplied at construction when specifying this body's SpatialInertia.
 
 Returns ``p_BoBcm_B``:
     The position of this body B's center of mass ``Bcm`` measured from
-    Bo (B's frame origin) and expressed in B (body B's frame).)""";
+    Bo (B's frame origin) and expressed in B (body B's frame).
+
+Raises:
+    RuntimeError if this is a shadow link, which has no mass
+    properties of its own; ask its primary_link() instead.)""";
         } default_com;
         // Symbol: drake::multibody::RigidBody::default_mass
         struct /* default_mass */ {
@@ -7455,7 +7615,11 @@ Note:
     In general, a body's mass can be a constant property stored in
     this body's SpatialInertia or a parameter that is stored in a
     Context. The default constant mass value is used to initialize the
-    mass parameter in the Context.)""";
+    mass parameter in the Context.
+
+Raises:
+    RuntimeError if this is a shadow link, which has no mass
+    properties of its own; ask its primary_link() instead.)""";
         } default_mass;
         // Symbol: drake::multibody::RigidBody::default_rotational_inertia
         struct /* default_rotational_inertia */ {
@@ -7467,7 +7631,11 @@ frame). This value is calculated from the SpatialInertia supplied at
 construction of this body.
 
 Returns ``I_BBo_B``:
-    body B's rotational inertia about Bo, expressed in B.)""";
+    body B's rotational inertia about Bo, expressed in B.
+
+Raises:
+    RuntimeError if this is a shadow link, which has no mass
+    properties of its own; ask its primary_link() instead.)""";
         } default_rotational_inertia;
         // Symbol: drake::multibody::RigidBody::default_spatial_inertia
         struct /* default_spatial_inertia */ {
@@ -7477,7 +7645,11 @@ R"""(Gets the default value of this RigidBody (%Link) B's SpatialInertia
 about Bo (B's origin) and expressed in B (this body's frame).
 
 Returns ``M_BBo_B``:
-    body B's spatial inertia about Bo, expressed in B.)""";
+    body B's spatial inertia about Bo, expressed in B.
+
+Raises:
+    RuntimeError if this is a shadow link, which has no mass
+    properties of its own; ask its primary_link() instead.)""";
         } default_spatial_inertia;
         // Symbol: drake::multibody::RigidBody::default_unit_inertia
         struct /* default_unit_inertia */ {
@@ -7489,7 +7661,11 @@ This value is initially supplied at construction when specifying this
 body's SpatialInertia.
 
 Returns ``G_BBo_B``:
-    rigid body B's unit inertia about Bo, expressed in B.)""";
+    rigid body B's unit inertia about Bo, expressed in B.
+
+Raises:
+    RuntimeError if this is a shadow link, which has no mass
+    properties of its own; ask its primary_link() instead.)""";
         } default_unit_inertia;
         // Symbol: drake::multibody::RigidBody::floating_position_suffix
         struct /* floating_position_suffix */ {
@@ -7574,6 +7750,24 @@ Precondition:
 See also:
     is_floating_base_body(), MultibodyPlant∷Finalize())""";
         } floating_velocity_suffix;
+        // Symbol: drake::multibody::RigidBody::get_M_LLo_L
+        struct /* get_M_LLo_L */ {
+          // Source: drake/multibody/tree/rigid_body.h
+          const char* doc =
+R"""((Internal use only) Returns M_LLo_L, this link L's spatial inertia
+about its origin Lo, expressed in L, as the dynamics use it. That is
+L's full mass properties unless Finalize() split L to break a
+kinematic loop. Then the primary link and each of its shadow links
+carry an even share of the primary's mass properties, and this returns
+L's share. Unlike the mass-property getters above, this doesn't throw
+for a shadow link.
+
+Parameter ``frame_body_pose_cache``:
+    The FrameBodyPoseCache, evaluated from the Context of interest.
+
+Precondition:
+    ``frame_body_pose_cache`` is up to date (this is not checked).)""";
+        } get_M_LLo_L;
         // Symbol: drake::multibody::RigidBody::get_angular_acceleration_in_world
         struct /* get_angular_acceleration_in_world */ {
           // Source: drake/multibody/tree/rigid_body.h
@@ -7610,7 +7804,11 @@ Parameter ``context``:
     contains the state of the multibody system.
 
 Precondition:
-    the context makes sense for use by this RigidBody.)""";
+    the context makes sense for use by this RigidBody.
+
+Raises:
+    RuntimeError if this is a shadow link, which has no mass
+    properties of its own; ask its primary_link() instead.)""";
         } get_mass;
         // Symbol: drake::multibody::RigidBody::get_origin_acceleration_in_world
         struct /* get_origin_acceleration_in_world */ {
@@ -7801,6 +7999,21 @@ R"""((Internal use only) Returns this Link's unique ordinal. Currently
 identical to the index but will differ when we permit removal of Links
 as we do for Joints.)""";
         } ordinal;
+        // Symbol: drake::multibody::RigidBody::primary_link
+        struct /* primary_link */ {
+          // Source: drake/multibody/tree/rigid_body.h
+          const char* doc =
+R"""(Returns the "primary" link of this RigidBody (%Link). To break a
+kinematic loop, Finalize() can split a link into a primary link and
+one or more "shadow" links. For a shadow link, this returns the link
+it was split from; otherwise returns ``*this``. (Although mass
+properties are shared between a primary and its shadows, mass
+properties are only accessible through the primary.)
+
+Raises:
+    RuntimeError if this element is not associated with a
+    MultibodyPlant.)""";
+        } primary_link;
         // Symbol: drake::multibody::RigidBody::scoped_name
         struct /* scoped_name */ {
           // Source: drake/multibody/tree/rigid_body.h

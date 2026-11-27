@@ -30,6 +30,7 @@ constexpr double kVelocityUpperLimit = 1.6;
 constexpr double kAccelerationLowerLimit = -1.2;
 constexpr double kAccelerationUpperLimit = 1.7;
 constexpr double kDamping = 3;
+constexpr double kDryFriction = 0.7;
 
 class RevoluteJointTest : public ::testing::Test {
  public:
@@ -69,6 +70,7 @@ class RevoluteJointTest : public ::testing::Test {
     mutable_joint1_->set_acceleration_limits(
         Vector1<double>::Constant(kAccelerationLowerLimit),
         Vector1<double>::Constant(kAccelerationUpperLimit));
+    mutable_joint1_->set_default_dry_friction(kDryFriction);
 
     return model;
   }
@@ -136,6 +138,32 @@ TEST_F(RevoluteJointTest, Damping) {
   EXPECT_THROW(joint.set_default_damping(-1), std::exception);
 }
 
+TEST_F(RevoluteJointTest, DryFriction) {
+  std::unique_ptr<internal::MultibodyTree<double>> model = MakeModel();
+  auto& joint = model->GetMutableJointByName<RevoluteJoint>("Joint1");
+  EXPECT_EQ(joint.default_dry_friction(), kDryFriction);
+  const double new_dry_friction = 2.0 * kDryFriction;
+  joint.set_default_dry_friction(new_dry_friction);
+  EXPECT_EQ(joint.default_dry_friction(), new_dry_friction);
+  // Dry friction can be turned off.
+  joint.set_default_dry_friction(0.0);
+  EXPECT_EQ(joint.default_dry_friction(), 0.0);
+
+  // Expect to throw on invalid dry friction values.
+  EXPECT_THROW(joint.set_default_dry_friction(-1), std::exception);
+  EXPECT_THROW(
+      joint.set_default_dry_friction(std::numeric_limits<double>::quiet_NaN()),
+      std::exception);
+  EXPECT_THROW(
+      joint.set_default_dry_friction(std::numeric_limits<double>::infinity()),
+      std::exception);
+
+  // Expect to throw for a joint that is not part of a model.
+  RevoluteJoint<double> orphan("orphan", joint.frame_on_parent(),
+                               joint.frame_on_child(), Vector3d::UnitZ());
+  EXPECT_THROW(orphan.set_default_dry_friction(1.0), std::exception);
+}
+
 // Context-dependent value access.
 TEST_F(RevoluteJointTest, ContextDependentAccess) {
   const double some_value = M_PI_2;
@@ -163,6 +191,20 @@ TEST_F(RevoluteJointTest, ContextDependentAccess) {
   // Expect to throw on invalid damping values.
   EXPECT_THROW(joint1_->SetDamping(context_.get(), -1), std::exception);
   EXPECT_THROW(joint1_->SetDampingVector(context_.get(), Vector1d(-1)),
+               std::exception);
+
+  // Dry friction.
+  EXPECT_EQ(joint1_->GetDryFriction(*context_), kDryFriction);
+  EXPECT_NO_THROW(joint1_->SetDryFriction(context_.get(), some_value));
+  EXPECT_EQ(joint1_->GetDryFriction(*context_), some_value);
+
+  // Expect to throw on invalid dry friction values.
+  EXPECT_THROW(joint1_->SetDryFriction(context_.get(), -1), std::exception);
+  EXPECT_THROW(joint1_->SetDryFriction(
+                   context_.get(), std::numeric_limits<double>::quiet_NaN()),
+               std::exception);
+  EXPECT_THROW(joint1_->SetDryFriction(context_.get(),
+                                       std::numeric_limits<double>::infinity()),
                std::exception);
 }
 
@@ -230,6 +272,7 @@ TEST_F(RevoluteJointTest, Clone) {
     EXPECT_EQ(clone->acceleration_upper_limits(),
               joint1_->acceleration_upper_limits());
     EXPECT_EQ(clone->default_damping(), joint1_->default_damping());
+    EXPECT_EQ(clone->default_dry_friction(), joint1_->default_dry_friction());
     EXPECT_EQ(clone->get_default_angle(), joint1_->get_default_angle());
   }
 }

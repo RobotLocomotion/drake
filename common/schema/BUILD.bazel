@@ -15,6 +15,7 @@ drake_cc_package_library(
         ":rotation",
         ":stochastic",
         ":transform",
+        ":unchanged",
     ],
 )
 
@@ -55,6 +56,11 @@ drake_cc_library(
         "//common:name_value",
         "//math:geometric_transform",
     ],
+)
+
+drake_cc_library(
+    name = "unchanged",
+    hdrs = ["unchanged.h"],
 )
 
 # === test/ ===

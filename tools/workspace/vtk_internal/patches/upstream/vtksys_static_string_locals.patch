@@ -1,0 +1,18 @@
+SystemTools: Avoid static string locals
+
+See https://gitlab.kitware.com/utils/kwsys/-/merge_requests/391, which has been
+merged upstream but not yet (as of writing) adopted by VTK.
+
+--- Utilities/KWSys/vtksys/SystemTools.cxx
++++ Utilities/KWSys/vtksys/SystemTools.cxx
+@@ -3279,8 +3279,8 @@ static void SystemToolsAppendComponents(
+   std::vector<std::string>::iterator first,
+   std::vector<std::string>::iterator last)
+ {
+-  static std::string const up = "..";
+-  static std::string const cur = ".";
++  static constexpr char up[] = "..";
++  static constexpr char cur[] = ".";
+   for (std::vector<std::string>::const_iterator i = first; i != last; ++i) {
+     if (*i == up) {
+       // Remove the previous component if possible.  Ignore ../ components

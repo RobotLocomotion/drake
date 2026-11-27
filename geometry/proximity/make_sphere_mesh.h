@@ -6,7 +6,6 @@
 #include <utility>
 #include <vector>
 
-#include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/sorted_pair.h"
 #include "drake/geometry/proximity/tessellation_strategy.h"

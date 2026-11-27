@@ -18,6 +18,9 @@
 /// C++, see simple_continuous_time_system.cc and/or
 /// simple_discrete_time_system.cc.
 ///
+/// See @ref system_multithreading for guidance on concurrent computation with
+/// shared Systems and per-thread or frozen shared Contexts.
+///
 /// @}
 
 // Define systems here so that we can control the order in which they appear
@@ -114,7 +117,8 @@
 ///        are available (via the Python bindings) <a
 ///        href="https://github.com/RussTedrake/underactuated/tree/master/underactuated">here</a>.
 ///   </li>
-///   <li> <a href="https://github.com/RussTedrake/underactuated/tree/master/underactuated">
+///   <li> <a
+///   href="https://github.com/RussTedrake/underactuated/tree/master/underactuated">
 ///        A matplotlib visualization for planar rigid body systems</a>.</li>
 /// </ul>
 /// @}

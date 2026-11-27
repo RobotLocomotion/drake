@@ -1,5 +1,6 @@
 #include "drake/multibody/cenic/cenic_integrator.h"
 
+#include <cmath>
 #include <limits>
 #include <memory>
 #include <set>
@@ -12,13 +13,25 @@
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/common/yaml/yaml_io.h"
 #include "drake/multibody/parsing/parser.h"
+#include "drake/multibody/plant/externally_applied_spatial_force.h"
 #include "drake/multibody/plant/multibody_plant.h"
+#include "drake/multibody/plant/multibody_plant_config_functions.h"
+#include "drake/multibody/tree/prismatic_joint.h"
+#include "drake/multibody/tree/prismatic_spring.h"
+#include "drake/multibody/tree/revolute_joint.h"
+#include "drake/multibody/tree/uniform_gravity_field_element.h"
+#include "drake/multibody/tree/weld_joint.h"
+#include "drake/systems/analysis/runge_kutta3_integrator.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/analysis/test_utilities/spring_mass_system.h"
 #include "drake/systems/controllers/pid_controller.h"
+#include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/diagram_builder.h"
+#include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/primitives/constant_vector_source.h"
+#include "drake/systems/primitives/gain.h"
 
 namespace drake {
 namespace multibody {
@@ -28,6 +41,7 @@ namespace {
 using contact_solvers::icf::IcfSolverParameters;
 using Eigen::MatrixXd;
 using Eigen::Vector2d;
+using Eigen::Vector3d;
 using Eigen::Vector4d;
 using Eigen::VectorXd;
 using math::RigidTransformd;
@@ -86,7 +100,13 @@ class SimulationTestScenario : public testing::TestWithParam<TestParam> {
     plant_depth_ = std::get<0>(params);
     external_depth_ = std::get<1>(params);
     have_scene_graph_ = std::get<2>(params);
-    plant_ = AddPlant(builder_.get(), have_scene_graph_);
+    if (have_scene_graph_) {
+      auto result = AddMultibodyPlantSceneGraph(builder_.get(), 0.0);
+      plant_ = &result.plant;
+      scene_graph_ = &result.scene_graph;
+    } else {
+      plant_ = builder_->AddNamedSystem<MultibodyPlant<double>>("plant", 0.0);
+    }
     plant_nest_ = plant_;
     AddModels();
   }
@@ -177,14 +197,6 @@ class SimulationTestScenario : public testing::TestWithParam<TestParam> {
     integrator_->set_target_accuracy(1e-3);
   }
 
-  static MultibodyPlant<double>* AddPlant(DiagramBuilder<double>* builder,
-                                          bool have_scene_graph) {
-    if (have_scene_graph) {
-      return &AddMultibodyPlantSceneGraph(builder, 0.0).plant;
-    }
-    return builder->AddNamedSystem<MultibodyPlant<double>>("plant", 0.0);
-  }
-
   // Only available prior to Build().
   std::unique_ptr<DiagramBuilder<double>> builder_{
       std::make_unique<DiagramBuilder<double>>()};
@@ -201,6 +213,8 @@ class SimulationTestScenario : public testing::TestWithParam<TestParam> {
   bool have_scene_graph_{false};
   // A direct reference to the plant. Use it for type-specific API access.
   MultibodyPlant<double>* plant_{nullptr};
+  // The scene graph, iff have_scene_graph_.
+  geometry::SceneGraph<double>* scene_graph_{nullptr};
 
   // Depending on the value of plant_depth_, plant_nest_ will either be a
   // pointer to the plant (depth 0), or a pointer to a stack of diagrams
@@ -316,18 +330,54 @@ TEST_P(DoublePendulum, Stats) {
   validate_empty_stats(integrator_->GetStatisticsSummary(), "reset");
 }
 
-/* Checks that solver parameter setting is effective. Since the methods tested
-here only forward to the ICF solver, only one field is checked. Detailed
-testing of parameter effects can be found in icf_solver_test. */
+/* Checks that setting parameters is effective: a changed ICF solver parameter
+(max_iterations here) takes hold on the next step. Only that one field is
+checked; detailed testing of the effects of individual solver parameters can be
+found in icf_solver_test. */
 TEST_P(DoublePendulum, Parameters) {
   Build();
   EXPECT_NO_THROW(simulator_->AdvanceTo(1e-2));
-  IcfSolverParameters params = integrator_->get_solver_parameters();
-  params.max_iterations = 1;  // Force solver failure.
-  integrator_->SetSolverParameters(params);
+  CenicIntegratorParameters params = integrator_->GetParameters();
+  params.icf_solver.max_iterations = 1;  // Force solver failure.
+  integrator_->SetParameters(params);
   DRAKE_EXPECT_THROWS_MESSAGE(simulator_->AdvanceTo(2e-2),
                               ".*optimization failed.*");
 }
+
+/* Checks that GetParameters() and SetParameters() round trip. */
+TEST_P(DoublePendulum, CenicParameters) {
+  Build();
+  EXPECT_FALSE(integrator_->GetParameters().explicit_external_inputs);
+
+  CenicIntegratorParameters params;
+  params.explicit_external_inputs = true;
+  params.icf_solver.max_iterations = 7;
+  integrator_->SetParameters(params);
+  EXPECT_TRUE(integrator_->GetParameters().explicit_external_inputs);
+  EXPECT_EQ(integrator_->GetParameters().icf_solver.max_iterations, 7);
+}
+
+// Remove on 2027-03-01 per deprecation of the solver-only accessors.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+/* Checks that the deprecated solver-only accessors are consistent with
+GetParameters() and SetParameters(). */
+TEST_P(DoublePendulum, DeprecatedSolverParameters) {
+  Build();
+  CenicIntegratorParameters params;
+  params.explicit_external_inputs = true;
+  params.icf_solver.max_iterations = 7;
+  integrator_->SetParameters(params);
+  EXPECT_EQ(integrator_->get_solver_parameters().max_iterations, 7);
+
+  // Setting only the solver parameters leaves the CENIC parameters alone.
+  IcfSolverParameters solver_params = integrator_->get_solver_parameters();
+  solver_params.max_iterations = 9;
+  integrator_->SetSolverParameters(solver_params);
+  EXPECT_TRUE(integrator_->GetParameters().explicit_external_inputs);
+  EXPECT_EQ(integrator_->GetParameters().icf_solver.max_iterations, 9);
+}
+#pragma GCC diagnostic pop
 
 /* Checks that a double pendulum simulation in fixed-step mode matches the
 discrete solver. Simulation time and stepping are carefully chosen to
@@ -589,6 +639,7 @@ TEST_P(DoublePendulum, EffortLimits) {
     // analytically.
     joint.set_default_damping_vector(VectorXd::Zero(1));
   }
+  plant_->SetUseSampledOutputPorts(true);
   Build();
 
   // Apply large torques that would exceed the effort limits.
@@ -619,12 +670,20 @@ TEST_P(DoublePendulum, EffortLimits) {
   EXPECT_TRUE(u_requested[1] > 0.2);
 
   // Applied actuation should be clamped to effort limits.
-  // TODO(#24074): report this in plant.get_net_actuation_output_port().
   const VectorXd v = plant_->GetVelocities(*plant_context_);
   const VectorXd u_applied = M * (v - v0) / h + k;
 
   EXPECT_NEAR(u_applied[0], 0.1, 10 * kEpsilon);
   EXPECT_NEAR(u_applied[1], 0.2, 10 * kEpsilon);
+
+  // The sampled net_actuation port reports the clamped actuation, and the
+  // sampled generalized_acceleration port reports the step's acceleration.
+  const VectorXd u_net =
+      plant_->get_net_actuation_output_port().Eval(*plant_context_);
+  EXPECT_TRUE(CompareMatrices(u_net, Vector2d(0.1, 0.2), 1e-6));
+  const VectorXd vdot =
+      plant_->get_generalized_acceleration_output_port().Eval(*plant_context_);
+  EXPECT_TRUE(CompareMatrices(vdot, (v - v0) / h, 1e-6));
 }
 
 /* Checks that coupler constraints are handled correctly by the integrator. */
@@ -835,9 +894,9 @@ GTEST_TEST(CenicIntegrator, IslandsWithJointLocking) {
     auto& integrator = simulator.reset_integrator<CenicIntegrator<double>>();
     integrator.set_maximum_step_size(0.01);
     integrator.set_fixed_step_mode(true);
-    IcfSolverParameters params = integrator.get_solver_parameters();
-    params.use_islands = use_islands;
-    integrator.SetSolverParameters(params);
+    CenicIntegratorParameters params = integrator.GetParameters();
+    params.icf_solver.use_islands = use_islands;
+    integrator.SetParameters(params);
     simulator.AdvanceTo(0.5);
 
     Result result{.x = plant.GetPositionsAndVelocities(plant_context)};
@@ -858,11 +917,1623 @@ GTEST_TEST(CenicIntegrator, IslandsWithJointLocking) {
             without_islands.num_factorizations);
 }
 
+/* Returns the sum of the masses of all bodies in the plant, except world. */
+double CalcTotalMass(const MultibodyPlant<double>& plant,
+                     const Context<double>& context) {
+  double mass = 0.0;
+  for (BodyIndex i(1); i < plant.num_bodies(); ++i) {
+    mass += plant.get_body(i).get_mass(context);
+  }
+  return mass;
+}
+
+const std::vector<SpatialForce<double>>& EvalReactionForces(
+    const MultibodyPlant<double>& plant, const Context<double>& context) {
+  return plant.get_reaction_forces_output_port()
+      .Eval<std::vector<SpatialForce<double>>>(context);
+}
+
+const ContactResults<double>& EvalContactResults(
+    const MultibodyPlant<double>& plant, const Context<double>& context) {
+  return plant.get_contact_results_output_port().Eval<ContactResults<double>>(
+      context);
+}
+
+/* Checks that the sampled output ports report the same contact forces whether
+or not the ICF problem is partitioned into islands. Two balls resting on the
+table, far from each other, are two independent islands; each one's contact
+force must be reported (here, via the generalized contact forces ports, contact
+results, reaction forces and accelerations). */
+GTEST_TEST(CenicIntegrator, SampledPortsWithIslands) {
+  struct Result {
+    std::vector<VectorXd> tau_contact;
+    std::vector<Eigen::Vector3d> contact_force;
+    VectorXd vdot;
+    std::vector<SpatialForce<double>> reactions;
+    double weight{};
+  };
+  auto simulate = [](bool use_islands) {
+    DiagramBuilder<double> builder;
+    auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.0);
+    Parser parser(&plant);
+    parser.SetAutoRenaming(true);
+    parser.AddModelsFromString(kBallOnTableMjcf, "xml");
+    // A second ball (and no second table), to share the first model's floor.
+    parser.AddModelsFromString(R"""(
+      <?xml version="1.0"?>
+      <mujoco model="ball_2">
+        <worldbody>
+          <body name="link1" pos="0 0 1.0">
+            <joint name="joint1" type="free"/>
+            <geom type="sphere" size="0.1" pos="0 0 0"/>
+          </body>
+        </worldbody>
+      </mujoco>)""",
+                               "xml");
+    plant.SetUseSampledOutputPorts(true);
+    plant.Finalize();
+    auto diagram = builder.Build();
+
+    Simulator<double> simulator(*diagram);
+    Context<double>& plant_context =
+        plant.GetMyMutableContextFromRoot(&simulator.get_mutable_context());
+    // Rest the balls on the table, one meter apart.
+    const double radius = 0.1;
+    VectorXd q = plant.GetPositions(plant_context);
+    DRAKE_DEMAND(q.size() == 14);
+    q[6] = radius;
+    q[7 + 4] = 1.0;  // Second ball's x.
+    q[7 + 6] = radius;
+    plant.SetPositions(&plant_context, q);
+
+    auto& integrator = simulator.reset_integrator<CenicIntegrator<double>>();
+    integrator.set_maximum_step_size(0.01);
+    integrator.set_fixed_step_mode(true);
+    CenicIntegratorParameters params = integrator.GetParameters();
+    params.icf_solver.use_islands = use_islands;
+    integrator.SetParameters(params);
+    simulator.AdvanceTo(0.5);
+
+    Result result;
+    for (const char* name : {"robot", "ball_2"}) {
+      result.tau_contact.push_back(
+          plant
+              .get_generalized_contact_forces_output_port(
+                  plant.GetModelInstanceByName(name))
+              .Eval(plant_context));
+    }
+    const ContactResults<double>& contact_results =
+        EvalContactResults(plant, plant_context);
+    EXPECT_EQ(contact_results.num_point_pair_contacts(), 2);
+    for (int i = 0; i < contact_results.num_point_pair_contacts(); ++i) {
+      const PointPairContactInfo<double>& info =
+          contact_results.point_pair_contact_info(i);
+      // The force on the ball: contact_force() is the force on body B.
+      const bool ball_is_b =
+          plant.get_body(info.bodyB_index()).name() == "link1";
+      result.contact_force.push_back((ball_is_b ? 1.0 : -1.0) *
+                                     info.contact_force());
+    }
+    result.vdot =
+        plant.get_generalized_acceleration_output_port().Eval(plant_context);
+    result.reactions = EvalReactionForces(plant, plant_context);
+    result.weight =
+        plant.GetBodyByName("link1", plant.GetModelInstanceByName("robot"))
+            .get_mass(plant_context) *
+        UniformGravityFieldElement<double>::kDefaultStrength;
+    return result;
+  };
+
+  const Result with_islands = simulate(true);
+  const Result without_islands = simulate(false);
+  const double weight = with_islands.weight;
+  const double tolerance = 0.05 * weight;
+  const VectorXd expected_tau_contact =
+      (VectorXd(6) << 0, 0, 0, 0, 0, weight).finished();
+  ASSERT_EQ(with_islands.tau_contact.size(), 2);
+  for (int i = 0; i < 2; ++i) {
+    // Each ball's contact force balances its weight, in both modes, and the
+    // modes agree up to the solver's convergence tolerance.
+    EXPECT_TRUE(CompareMatrices(with_islands.tau_contact[i],
+                                expected_tau_contact, tolerance));
+    EXPECT_TRUE(CompareMatrices(with_islands.tau_contact[i],
+                                without_islands.tau_contact[i], 1e-3 * weight));
+  }
+  ASSERT_EQ(with_islands.contact_force.size(), 2);
+  for (int i = 0; i < 2; ++i) {
+    EXPECT_TRUE(CompareMatrices(with_islands.contact_force[i],
+                                Eigen::Vector3d(0, 0, weight), tolerance));
+    EXPECT_TRUE(CompareMatrices(with_islands.contact_force[i],
+                                without_islands.contact_force[i],
+                                1e-3 * weight));
+  }
+  EXPECT_TRUE(CompareMatrices(with_islands.vdot, without_islands.vdot, 1e-2));
+  ASSERT_EQ(with_islands.reactions.size(), without_islands.reactions.size());
+  for (int i = 0; i < std::ssize(with_islands.reactions); ++i) {
+    EXPECT_TRUE(CompareMatrices(with_islands.reactions[i].get_coeffs(),
+                                without_islands.reactions[i].get_coeffs(),
+                                1e-3 * weight));
+  }
+}
+
+/* Checks the sampled dynamics output ports of a continuous plant integrated by
+CENIC, for a system without contact or constraints. */
+TEST_P(DoublePendulum, SampledOutputPorts) {
+  plant_->SetUseSampledOutputPorts(true);
+  Build();
+  const int nv = plant_->num_velocities();
+  const auto& vdot_port = plant_->get_generalized_acceleration_output_port();
+
+  // Before the first step (but once CENIC is initialized), the sampled dynamics
+  // ports are all zero or empty.
+  simulator_->Initialize();
+  for (const SpatialForce<double>& F :
+       EvalReactionForces(*plant_, *plant_context_)) {
+    EXPECT_TRUE(F.get_coeffs().isZero());
+  }
+  EXPECT_TRUE(vdot_port.Eval(*plant_context_).isZero());
+  EXPECT_EQ(
+      EvalContactResults(*plant_, *plant_context_).num_point_pair_contacts(),
+      0);
+
+  // Take a single fixed step of size h.
+  const double h = 1e-3;
+  const VectorXd x0 = plant_->GetPositionsAndVelocities(*plant_context_);
+  integrator_->set_fixed_step_mode(true);
+  integrator_->set_maximum_step_size(h);
+  simulator_->AdvanceTo(h);
+  ASSERT_EQ(integrator_->get_num_steps_taken(), 1);
+  const VectorXd v0 = x0.tail(nv);
+  const VectorXd v1 = plant_->GetVelocities(*plant_context_);
+
+  // The sampled acceleration is exactly the step's finite difference.
+  EXPECT_TRUE(CompareMatrices(vdot_port.Eval(*plant_context_), (v1 - v0) / h,
+                              100 * kEpsilon));
+
+  // The sampled reaction forces match the live reaction forces of an identical
+  // (unsampled) continuous plant at the state where the step started, up to
+  // O(h) differences (e.g., joint damping is implicit in the ICF step).
+  MultibodyPlant<double> reference_plant(0.0);
+  Parser(&reference_plant).AddModelsFromString(kDoublePendulumMjcf, "xml");
+  reference_plant.Finalize();
+  auto reference_context = reference_plant.CreateDefaultContext();
+  reference_plant.SetPositionsAndVelocities(reference_context.get(), x0);
+  const std::vector<SpatialForce<double>>& expected =
+      EvalReactionForces(reference_plant, *reference_context);
+  const std::vector<SpatialForce<double>>& actual =
+      EvalReactionForces(*plant_, *plant_context_);
+  ASSERT_EQ(actual.size(), expected.size());
+  for (int i = 0; i < std::ssize(actual); ++i) {
+    EXPECT_TRUE(CompareMatrices(actual[i].get_coeffs(),
+                                expected[i].get_coeffs(), 1e-3,
+                                MatrixCompareType::absolute));
+    EXPECT_GT(actual[i].translational().norm(), 1e-3);
+  }
+
+  // Continue in error-controlled mode. The sample is refreshed on every step
+  // and remains physically reasonable.
+  integrator_->set_fixed_step_mode(false);
+  integrator_->set_maximum_step_size(0.1);
+  simulator_->AdvanceTo(0.5);
+  const double weight = CalcTotalMass(*plant_, *plant_context_) *
+                        UniformGravityFieldElement<double>::kDefaultStrength;
+  const std::vector<SpatialForce<double>>& reactions =
+      EvalReactionForces(*plant_, *plant_context_);
+  EXPECT_TRUE(reactions[0].get_coeffs().allFinite());
+  EXPECT_GT(reactions[0].translational().norm(), 0.1 * weight);
+  EXPECT_LT(reactions[0].translational().norm(), 10.0 * weight);
+  EXPECT_FALSE(vdot_port.Eval(*plant_context_).isZero());
+}
+
+/* The motivating case for sampled reporting: a near-rigid weld constraint with
+a small initial violation. Evaluating the ICF constraint force law at the
+current configuration would report a huge (unphysical) force; the impulse of the
+solve that actually advanced the state is O(weight). */
+TEST_P(DoublePendulum, SampledReactionForcesWithWeldConstraint) {
+  // Find the pose of link2 in link1 at the zero configuration.
+  RigidTransformd X_L1L2;
+  {
+    MultibodyPlant<double> scratch(0.0);
+    Parser(&scratch).AddModelsFromString(kDoublePendulumMjcf, "xml");
+    scratch.Finalize();
+    auto context = scratch.CreateDefaultContext();
+    X_L1L2 = scratch.CalcRelativeTransform(
+        *context, scratch.GetBodyByName("link1").body_frame(),
+        scratch.GetBodyByName("link2").body_frame());
+  }
+
+  // Weld link2 to link1 at that pose, offset by a tiny violation.
+  const double violation = 1e-8;
+  const auto& link1 = plant_->GetBodyByName("link1");
+  const auto& link2 = plant_->GetBodyByName("link2");
+  plant_->AddWeldConstraint(
+      link1, X_L1L2 * RigidTransformd(Eigen::Vector3d(0.0, 0.0, violation)),
+      link2, RigidTransformd());
+  plant_->SetUseSampledOutputPorts(true);
+  Build();
+
+  // Start at the zero configuration for joint2 (consistent with the weld up
+  // to the violation) with joint2 at rest, and joint1 swinging.
+  plant_->SetPositions(plant_context_, Vector2d(M_PI / 4, 0.0));
+  plant_->SetVelocities(plant_context_, Vector2d(0.1, 0.0));
+  const double weight = CalcTotalMass(*plant_, *plant_context_) *
+                        UniformGravityFieldElement<double>::kDefaultStrength;
+
+  const double h = 1e-3;
+  integrator_->set_fixed_step_mode(true);
+  integrator_->set_maximum_step_size(h);
+  simulator_->AdvanceTo(h);
+  ASSERT_EQ(integrator_->get_num_steps_taken(), 1);
+
+  // The weld holds joint2 (near) still.
+  const VectorXd v = plant_->GetVelocities(*plant_context_);
+  EXPECT_NEAR(v[1], 0.0, 1e-3);
+
+  // Reaction forces are O(weight); both joints carry load.
+  const std::vector<SpatialForce<double>>& reactions =
+      EvalReactionForces(*plant_, *plant_context_);
+  ASSERT_EQ(std::ssize(reactions), 2);
+  for (const SpatialForce<double>& F : reactions) {
+    EXPECT_TRUE(F.get_coeffs().allFinite());
+    EXPECT_LT(F.translational().norm(), 10.0 * weight);
+    EXPECT_GT(F.translational().norm(), 0.01 * weight);
+  }
+  const VectorXd vdot =
+      plant_->get_generalized_acceleration_output_port().Eval(*plant_context_);
+  EXPECT_TRUE(vdot.allFinite());
+  EXPECT_LT(vdot.cwiseAbs().maxCoeff(), 1e3);
+}
+
+/* Checks that the impulses of distance constraints are reported as applied
+forces. A distance constraint between the two links holds the elbow bent; it is
+an internal force, so neither (free) hinge should report a reaction torque about
+its axis beyond its small damping torque. If the constraint force were missing
+from the applied forces, inverse dynamics would attribute it to the joints. */
+TEST_P(DoublePendulum, SampledReactionForcesWithDistanceConstraint) {
+  // Points P on link1 (its origin) and Q on link2 (its tip), and their distance
+  // with the elbow bent at a right angle.
+  const Vector2d q0(M_PI / 4, M_PI / 2);
+  const Eigen::Vector3d p_L1P(0.0, 0.0, 0.0);
+  const Eigen::Vector3d p_L2Q(0.0, 0.0, -0.3);
+  double distance{};
+  {
+    MultibodyPlant<double> scratch(0.0);
+    Parser(&scratch).AddModelsFromString(kDoublePendulumMjcf, "xml");
+    scratch.Finalize();
+    auto context = scratch.CreateDefaultContext();
+    scratch.SetPositions(context.get(), q0);
+    Eigen::Vector3d p_L1Q;
+    scratch.CalcPointsPositions(
+        *context, scratch.GetBodyByName("link2").body_frame(), p_L2Q,
+        scratch.GetBodyByName("link1").body_frame(), &p_L1Q);
+    distance = (p_L1Q - p_L1P).norm();
+  }
+
+  plant_->AddDistanceConstraint(plant_->GetBodyByName("link1"), p_L1P,
+                                plant_->GetBodyByName("link2"), p_L2Q,
+                                distance);
+  plant_->SetUseSampledOutputPorts(true);
+  Build();
+  const Vector2d v0(0.5, 0.0);  // Consistent with the constraint.
+  plant_->SetPositions(plant_context_, q0);
+  plant_->SetVelocities(plant_context_, v0);
+
+  const double h = 1e-3;
+  integrator_->set_fixed_step_mode(true);
+  integrator_->set_maximum_step_size(h);
+  simulator_->AdvanceTo(h);
+  ASSERT_EQ(integrator_->get_num_steps_taken(), 1);
+
+  // The constraint holds the elbow (near) still.
+  const VectorXd v = plant_->GetVelocities(*plant_context_);
+  EXPECT_NEAR(v[1], 0.0, 1e-3);
+
+  // Each hinge transmits only its damping torque about its axis (y), up to the
+  // O(h) inconsistency between the implicit ICF step and inverse dynamics.
+  const std::vector<SpatialForce<double>>& reactions =
+      EvalReactionForces(*plant_, *plant_context_);
+  for (const char* name : {"joint1", "joint2"}) {
+    SCOPED_TRACE(name);
+    const auto& joint = plant_->GetJointByName<RevoluteJoint>(name);
+    const SpatialForce<double>& F = reactions[joint.ordinal()];
+    EXPECT_TRUE(F.get_coeffs().allFinite());
+    EXPECT_GT(F.translational().norm(), 1e-3);
+    EXPECT_NEAR(F.rotational()[1],
+                -joint.default_damping() * v0[joint.velocity_start()], 1e-3);
+  }
+}
+
+/* Checks sampled reaction forces when joint locking reduces the ICF problem:
+the locked joint must still report the load it carries. */
+TEST_P(DoublePendulum, SampledReactionForcesWithJointLocking) {
+  plant_->SetUseSampledOutputPorts(true);
+  Build();
+  plant_->SetPositions(plant_context_, Vector2d(M_PI / 4, 0.3));
+  plant_->SetVelocities(plant_context_, Vector2d(0.5, 0.0));
+  const auto& joint2 = plant_->GetJointByName("joint2");
+  joint2.Lock(plant_context_);
+
+  const double h = 1e-3;
+  integrator_->set_fixed_step_mode(true);
+  integrator_->set_maximum_step_size(h);
+  simulator_->AdvanceTo(h);
+  ASSERT_EQ(integrator_->get_num_steps_taken(), 1);
+
+  const VectorXd vdot =
+      plant_->get_generalized_acceleration_output_port().Eval(*plant_context_);
+  EXPECT_EQ(vdot[1], 0.0);  // Locked.
+  EXPECT_NE(vdot[0], 0.0);
+
+  // The locked joint2 carries link2: its reaction force is nonzero, and the
+  // reaction torque about the hinge axis (y) is nonzero, unlike for a free
+  // hinge.
+  const std::vector<SpatialForce<double>>& reactions =
+      EvalReactionForces(*plant_, *plant_context_);
+  const SpatialForce<double>& F_joint2 = reactions[joint2.ordinal()];
+  EXPECT_TRUE(F_joint2.get_coeffs().allFinite());
+  EXPECT_GT(F_joint2.translational().norm(), 1e-3);
+  EXPECT_GT(std::abs(F_joint2.rotational()[1]), 1e-4);
+
+  // For comparison, the unlocked hinge transmits only its (small) damping
+  // torque about its axis, up to the O(h) inconsistency between the implicit
+  // ICF step and inverse dynamics at the start of the step.
+  const auto& joint1 = plant_->GetJointByName<RevoluteJoint>("joint1");
+  const double v1_0 = 0.5;  // Initial rate of joint1, set above.
+  EXPECT_NEAR(reactions[joint1.ordinal()].rotational()[1],
+              -joint1.default_damping() * v1_0, 1e-4);
+}
+
+/* Checks that explicit_external_inputs skips the finite
+differencing of external inputs: an upstream feedback system is evaluated far
+fewer times, and the (fixed-step) trajectory stays close to the implicit one. */
+GTEST_TEST(CenicIntegrator, ExplicitExternalInputs) {
+  // Applied generalized forces τ = -Kd⋅v, counting how often they're computed.
+  class CountingDamper final : public systems::LeafSystem<double> {
+   public:
+    CountingDamper() {
+      DeclareVectorInputPort("x", 4);
+      DeclareVectorOutputPort("tau", 2, &CountingDamper::CalcTau);
+    }
+    int num_evals() const { return num_evals_; }
+
+   private:
+    void CalcTau(const Context<double>& context,
+                 systems::BasicVector<double>* output) const {
+      ++num_evals_;
+      output->SetFromVector(-1e-4 * get_input_port().Eval(context).tail<2>());
+    }
+    mutable int num_evals_{0};
+  };
+
+  struct Result {
+    VectorXd x;
+    int num_evals{};
+  };
+  auto simulate = [](bool explicit_inputs, bool connect_damper = true) {
+    DiagramBuilder<double> builder;
+    auto& plant = *builder.AddSystem<MultibodyPlant<double>>(0.0);
+    Parser(&plant).AddModelsFromString(kDoublePendulumMjcf, "xml");
+    plant.Finalize();
+    auto& damper = *builder.AddSystem<CountingDamper>();
+    builder.Connect(plant.get_state_output_port(), damper.get_input_port());
+    if (connect_damper) {
+      builder.Connect(damper.get_output_port(),
+                      plant.get_applied_generalized_force_input_port());
+    }
+    auto diagram = builder.Build();
+
+    Simulator<double> simulator(*diagram);
+    Context<double>& plant_context =
+        plant.GetMyMutableContextFromRoot(&simulator.get_mutable_context());
+    plant.SetPositions(&plant_context, Vector2d(M_PI / 4, M_PI / 2));
+    plant.SetVelocities(&plant_context, Vector2d(0.1, 0.2));
+
+    auto& integrator = simulator.reset_integrator<CenicIntegrator<double>>();
+    integrator.set_maximum_step_size(0.0005);
+    integrator.set_fixed_step_mode(true);
+    {
+      CenicIntegratorParameters params = integrator.GetParameters();
+      params.explicit_external_inputs = explicit_inputs;
+      integrator.SetParameters(params);
+    }
+    simulator.AdvanceTo(0.5);
+    return Result{.x = plant.GetPositionsAndVelocities(plant_context),
+                  .num_evals = damper.num_evals()};
+  };
+
+  const Result implicit_result = simulate(false);
+  const Result explicit_result = simulate(true);
+  const Result undamped_result = simulate(true, false);
+  // Explicit evaluation costs one evaluation per step (plus a few for setup),
+  // while finite differences cost roughly nv + 2 per step.
+  EXPECT_LT(explicit_result.num_evals * 2, implicit_result.num_evals);
+  // The schemes differ at O(h), so they agree closely for a small step.
+  EXPECT_TRUE(CompareMatrices(explicit_result.x, implicit_result.x, 1e-2,
+                              MatrixCompareType::relative));
+  // Sanity check that the held damper force is actually applied: leaving the
+  // damper disconnected must change the result by far more than the difference
+  // between the explicit and implicit treatments.
+  const VectorXd undamped_x = simulate(true, false).x;
+  EXPECT_GT((explicit_result.x - undamped_x).norm(),
+            10 * (explicit_result.x - implicit_result.x).norm());
+}
+
+/* Checks that actuation held explicitly still passes through the effort-limit
+constraint: a huge commanded torque behaves like a torque at the limit. */
+GTEST_TEST(CenicIntegrator, ExplicitExternalInputsEffortLimits) {
+  auto simulate = [](double u, bool explicit_inputs) -> VectorXd {
+    DiagramBuilder<double> builder;
+    auto& plant = *builder.AddSystem<MultibodyPlant<double>>(0.0);
+    Parser(&plant).AddModelsFromString(kDoublePendulumMjcf, "xml");
+    const auto& joint1 = plant.GetJointByName("joint1");
+    plant.AddJointActuator("actuator1", joint1, /* effort_limit = */ 1e-3);
+    plant.Finalize();
+    auto diagram = builder.Build();
+
+    Simulator<double> simulator(*diagram);
+    Context<double>& plant_context =
+        plant.GetMyMutableContextFromRoot(&simulator.get_mutable_context());
+    plant.SetPositions(&plant_context, Vector2d(M_PI / 4, M_PI / 2));
+    plant.get_actuation_input_port().FixValue(&plant_context, Vector1d(u));
+
+    auto& integrator = simulator.reset_integrator<CenicIntegrator<double>>();
+    integrator.set_maximum_step_size(0.01);
+    integrator.set_fixed_step_mode(true);
+    {
+      CenicIntegratorParameters params = integrator.GetParameters();
+      params.explicit_external_inputs = explicit_inputs;
+      integrator.SetParameters(params);
+    }
+    simulator.AdvanceTo(0.2);
+    return plant.GetPositionsAndVelocities(plant_context);
+  };
+
+  const VectorXd at_limit = simulate(1e-3, true);
+  const VectorXd over_limit = simulate(100.0, true);
+  const VectorXd over_limit_implicit = simulate(100.0, false);
+  const VectorXd unactuated = simulate(0.0, true);
+  EXPECT_TRUE(
+      CompareMatrices(over_limit, at_limit, 1e-9, MatrixCompareType::relative));
+  EXPECT_TRUE(CompareMatrices(over_limit, over_limit_implicit, 1e-9,
+                              MatrixCompareType::relative));
+  // Sanity check that the actuation matters at all.
+  EXPECT_GT((at_limit - unactuated).norm(), 1e-4);
+}
+
+/* Checks that explicit external inputs run to completion together with error
+control, including steps that error control rejects and retries. The input is
+constant, so the implicit treatment gives the same result; this test does not
+show that the held input is applied (see the damper test above for that). */
+GTEST_TEST(CenicIntegrator, ExplicitExternalInputsWithErrorControl) {
+  auto simulate = [](bool explicit_inputs) -> VectorXd {
+    DiagramBuilder<double> builder;
+    auto& plant = *builder.AddSystem<MultibodyPlant<double>>(0.0);
+    Parser(&plant).AddModelsFromString(kDoublePendulumMjcf, "xml");
+    plant.AddJointActuator("actuator1", plant.GetJointByName("joint1"));
+    plant.Finalize();
+    auto diagram = builder.Build();
+
+    Simulator<double> simulator(*diagram);
+    Context<double>& plant_context =
+        plant.GetMyMutableContextFromRoot(&simulator.get_mutable_context());
+    plant.SetPositions(&plant_context, Vector2d(M_PI / 4, M_PI / 2));
+    plant.SetVelocities(&plant_context, Vector2d(0.1, 0.2));
+    plant.get_actuation_input_port().FixValue(&plant_context, Vector1d(1e-3));
+
+    // A large maximum step with tight accuracy forces step rejections.
+    auto& integrator = simulator.reset_integrator<CenicIntegrator<double>>();
+    integrator.set_maximum_step_size(0.1);
+    integrator.set_target_accuracy(1e-6);
+    {
+      CenicIntegratorParameters params = integrator.GetParameters();
+      params.explicit_external_inputs = explicit_inputs;
+      integrator.SetParameters(params);
+    }
+    simulator.AdvanceTo(0.5);
+    EXPECT_GT(integrator.get_num_step_shrinkages_from_error_control(), 0);
+    return plant.GetPositionsAndVelocities(plant_context);
+  };
+
+  // A constant input has no velocity dependence, so the explicit and implicit
+  // treatments coincide exactly.
+  EXPECT_TRUE(CompareMatrices(simulate(true), simulate(false), 1e-9,
+                              MatrixCompareType::relative));
+}
+
+/* Makes a plant with a body spinning on a pin joint named "pin", driven by an
+actuator with PD gains Kp and Kd. The body's moment of inertia about the pin is
+I = 0.004 kg⋅m², and the pin is vertical, so gravity exerts no torque about it.
+*/
+std::unique_ptr<MultibodyPlant<double>> MakeServoedPin(double Kp, double Kd) {
+  auto plant = std::make_unique<MultibodyPlant<double>>(0.0);
+  const RigidBody<double>& body = plant->AddRigidBody(
+      "body", SpatialInertia<double>::SolidSphereWithMass(1.0, 0.1));
+  const auto& pin =
+      plant->AddJoint<RevoluteJoint>("pin", plant->world_body(), std::nullopt,
+                                     body, std::nullopt, Vector3d::UnitZ());
+  plant
+      ->get_mutable_joint_actuator(
+          plant->AddJointActuator("motor", pin).index())
+      .set_controller_gains({.p = Kp, .d = Kd});
+  plant->SetUseSampledOutputPorts(true);
+  plant->Finalize();
+  return plant;
+}
+
+/* Checks that an actuator's PD controller drives its joint to the desired
+velocity (#25289). A pure velocity servo (Kp = 0) with a constant feedforward
+torque u settles where the two balance, at vd + u/Kd. That holds whether the
+external inputs are treated implicitly or explicitly; the feedforward torque
+makes the two treatments take different paths there. */
+GTEST_TEST(CenicIntegrator, DesiredVelocity) {
+  const double Kd = 1.0;
+  const double vd = 1.0;
+  const double u = 0.5;
+  for (const bool explicit_inputs : {false, true}) {
+    SCOPED_TRACE(fmt::format("explicit_inputs = {}", explicit_inputs));
+    const std::unique_ptr<MultibodyPlant<double>> plant =
+        MakeServoedPin(0.0, Kd);
+    const auto& pin = plant->GetJointByName<RevoluteJoint>("pin");
+    Simulator<double> simulator(*plant);
+    Context<double>& context = simulator.get_mutable_context();
+    plant->get_desired_state_input_port(default_model_instance())
+        .FixValue(&context, Vector2d(0.0, vd));
+    plant->get_actuation_input_port().FixValue(&context, Vector1d(u));
+    auto& integrator = simulator.reset_integrator<CenicIntegrator<double>>();
+    integrator.set_maximum_step_size(0.01);
+    CenicIntegratorParameters params = integrator.GetParameters();
+    params.explicit_external_inputs = explicit_inputs;
+    integrator.SetParameters(params);
+
+    // The servo's time constant is I/Kd = 0.004 s, so it has settled by
+    // t = 1 s. (The measured residual is 4e-6.)
+    simulator.AdvanceTo(1.0);
+    EXPECT_NEAR(pin.get_angular_rate(context), vd + u / Kd, 1e-4);
+  }
+}
+
+/* Checks that an actuator's PD controller drives its joint to the desired
+position: a position servo settles at qd. The fixed step is longer than the
+servo's natural period, so it settles only because CENIC's linearization treats
+the servo's stiffness implicitly (the h⋅Kp in Kᵤ); treated explicitly, the
+servo would oscillate with growing amplitude. */
+GTEST_TEST(CenicIntegrator, DesiredPosition) {
+  // The natural period is 2π⋅√(I/Kp) ≈ 0.04 s, and the damping ratio is
+  // Kd/(2⋅√(Kp⋅I)) ≈ 0.8.
+  const double Kp = 100.0;
+  const double Kd = 1.0;
+  const double qd = 0.5;
+  const std::unique_ptr<MultibodyPlant<double>> plant = MakeServoedPin(Kp, Kd);
+  const auto& pin = plant->GetJointByName<RevoluteJoint>("pin");
+  Simulator<double> simulator(*plant);
+  Context<double>& context = simulator.get_mutable_context();
+  plant->get_desired_state_input_port(default_model_instance())
+      .FixValue(&context, Vector2d(qd, 0.0));
+  auto& integrator = simulator.reset_integrator<CenicIntegrator<double>>();
+  integrator.set_maximum_step_size(0.05);
+  integrator.set_fixed_step_mode(true);
+
+  simulator.AdvanceTo(1.0);
+  EXPECT_NEAR(pin.get_angle(context), qd, 1e-6);
+  EXPECT_NEAR(pin.get_angular_rate(context), 0.0, 1e-6);
+}
+
 INSTANTIATE_TEST_SUITE_P(
     AllParamsPendulum, DoublePendulum,
     testing::Combine(testing::Range(0, 3), testing::Range(0, 3),
                      testing::Bool()),
     [](const testing::TestParamInfo<DoublePendulum::ParamType>& x) {
+      return fmt::format("plant_depth_{}_external_depth_{}_scene_graph_{}",
+                         std::get<0>(x.param), std::get<1>(x.param),
+                         std::get<2>(x.param));
+    });
+
+/* Checks the sampled contact-related output ports for a ball resting on the
+table. When `hydroelastic` is true, the ball and table are made compliant
+hydroelastic so that contact is reported as a contact surface; otherwise as a
+point pair. */
+class BallOnTableSampled : public BallOnTable {
+ protected:
+  void CheckSampledContact(bool hydroelastic) {
+    if (have_scene_graph_ && hydroelastic) {
+      geometry::SceneGraphConfig config;
+      config.default_proximity_properties.compliance_type = "compliant";
+      config.default_proximity_properties.resolution_hint = 0.05;
+      scene_graph_->set_config(config);
+    }
+    plant_->SetUseSampledOutputPorts(true);
+    Build();
+
+    // Place the ball on the table at rest.
+    const double radius = 0.1;
+    VectorXd q0 = plant_->GetPositions(*plant_context_);
+    q0[6] = radius;
+    plant_->SetPositions(plant_context_, q0);
+    const auto& ball = plant_->GetBodyByName("link1");
+    const double g = UniformGravityFieldElement<double>::kDefaultStrength;
+    const double weight = ball.get_mass(*plant_context_) * g;
+
+    // Let it settle (error-controlled steps).
+    simulator_->AdvanceTo(1.0);
+
+    const ContactResults<double>& contact_results =
+        EvalContactResults(*plant_, *plant_context_);
+    EXPECT_EQ(contact_results.plant(), plant_);
+    const VectorXd vdot =
+        plant_->get_generalized_acceleration_output_port().Eval(
+            *plant_context_);
+    const VectorXd tau_contact =
+        plant_
+            ->get_generalized_contact_forces_output_port(ball.model_instance())
+            .Eval(*plant_context_);
+    const std::vector<SpatialForce<double>>& reactions =
+        EvalReactionForces(*plant_, *plant_context_);
+    ASSERT_EQ(std::ssize(reactions), 1);
+
+    if (!have_scene_graph_) {
+      // Without geometry, the ball is in free fall.
+      EXPECT_EQ(contact_results.num_point_pair_contacts(), 0);
+      EXPECT_EQ(contact_results.num_hydroelastic_contacts(), 0);
+      EXPECT_TRUE(CompareMatrices(
+          vdot, (VectorXd(6) << 0, 0, 0, 0, 0, -g).finished(), 1e-9));
+      EXPECT_TRUE(tau_contact.isZero());
+      return;
+    }
+
+    // At rest, the contact force balances the weight, the ball does not
+    // accelerate, and the free joint transmits no force.
+    const double tolerance = 0.05 * weight;
+    EXPECT_LT(vdot.cwiseAbs().maxCoeff(), 0.05 * g);
+    EXPECT_LT(reactions[0].get_coeffs().norm(), tolerance);
+    EXPECT_TRUE(CompareMatrices(
+        tau_contact, (VectorXd(6) << 0, 0, 0, 0, 0, weight).finished(),
+        tolerance));
+    const auto& accelerations =
+        plant_->get_body_spatial_accelerations_output_port()
+            .Eval<std::vector<SpatialAcceleration<double>>>(*plant_context_);
+    EXPECT_LT(accelerations[ball.index()].get_coeffs().norm(), 0.05 * g);
+
+    // The contact results report the force on the ball.
+    const geometry::SceneGraphInspector<double>& inspector =
+        scene_graph_->model_inspector();
+    if (hydroelastic) {
+      ASSERT_EQ(contact_results.num_hydroelastic_contacts(), 1);
+      EXPECT_EQ(contact_results.num_point_pair_contacts(), 0);
+      const HydroelasticContactInfo<double>& info =
+          contact_results.hydroelastic_contact_info(0);
+      const RigidBody<double>* body_M = plant_->GetBodyFromFrameId(
+          inspector.GetFrameId(info.contact_surface().id_M()));
+      ASSERT_NE(body_M, nullptr);
+      // F_Ac_W is the force on body M (== A). The force on the ball is +weight.
+      const double sign = (body_M->index() == ball.index()) ? 1.0 : -1.0;
+      EXPECT_TRUE(CompareMatrices(sign * info.F_Ac_W().translational(),
+                                  Eigen::Vector3d(0, 0, weight), tolerance));
+      EXPECT_LT(info.F_Ac_W().rotational().norm(), tolerance * radius);
+    } else {
+      ASSERT_EQ(contact_results.num_point_pair_contacts(), 1);
+      EXPECT_EQ(contact_results.num_hydroelastic_contacts(), 0);
+      const PointPairContactInfo<double>& info =
+          contact_results.point_pair_contact_info(0);
+      const RigidBody<double>* body_A = plant_->GetBodyFromFrameId(
+          inspector.GetFrameId(info.point_pair().id_A));
+      const RigidBody<double>* body_B = plant_->GetBodyFromFrameId(
+          inspector.GetFrameId(info.point_pair().id_B));
+      ASSERT_NE(body_A, nullptr);
+      ASSERT_NE(body_B, nullptr);
+      EXPECT_EQ(info.bodyA_index(), body_A->index());
+      EXPECT_EQ(info.bodyB_index(), body_B->index());
+      // contact_force() is the force on body B. The force on the ball is
+      // +weight.
+      const double sign = (info.bodyB_index() == ball.index()) ? 1.0 : -1.0;
+      EXPECT_TRUE(CompareMatrices(sign * info.contact_force(),
+                                  Eigen::Vector3d(0, 0, weight), tolerance));
+      // The contact point is at the bottom of the ball, near the table.
+      EXPECT_NEAR(info.contact_point()[2], 0.0, 1e-3);
+      EXPECT_NEAR(info.separation_speed(), 0.0, 1e-3);
+      EXPECT_NEAR(info.slip_speed(), 0.0, 1e-3);
+    }
+
+    // Lock the ball. As for a discrete plant, MultibodyPlant filters out
+    // contacts between bodies that both have no degrees of freedom (here the
+    // locked ball and the world), so the sample reports no contact, no
+    // contact forces, and no acceleration -- rather than stale values from
+    // before the lock.
+    ball.Lock(plant_context_);
+    simulator_->AdvanceTo(1.1);
+    const ContactResults<double>& locked_results =
+        EvalContactResults(*plant_, *plant_context_);
+    EXPECT_EQ(locked_results.num_hydroelastic_contacts(), 0);
+    EXPECT_EQ(locked_results.num_point_pair_contacts(), 0);
+    EXPECT_TRUE(
+        plant_
+            ->get_generalized_contact_forces_output_port(ball.model_instance())
+            .Eval(*plant_context_)
+            .isZero());
+    EXPECT_TRUE(plant_->get_generalized_acceleration_output_port()
+                    .Eval(*plant_context_)
+                    .isZero());
+    // With no contact in the model, the locked joint now carries the weight.
+    const SpatialForce<double>& F_locked =
+        EvalReactionForces(*plant_, *plant_context_)[0];
+    EXPECT_TRUE(CompareMatrices(F_locked.translational(),
+                                Eigen::Vector3d(0, 0, weight), tolerance));
+  }
+};
+
+TEST_P(BallOnTableSampled, PointContact) {
+  CheckSampledContact(/* hydroelastic = */ false);
+}
+
+TEST_P(BallOnTableSampled, HydroelasticContact) {
+  CheckSampledContact(/* hydroelastic = */ true);
+}
+
+/* Takes the first accepted step of a stiff spring-mass system, with error
+control and a large maximum step size so that the first trial is rejected. The
+plant has sampled output ports. If `with_feedback`, the sampled generalized
+acceleration is fed back as a force of equal magnitude and opposite sign. */
+struct FirstStepResult {
+  double time{};
+  VectorXd x;
+  int num_shrinkages{};
+};
+FirstStepResult TakeFirstStepOfStiffSpringMass(bool with_feedback) {
+  DiagramBuilder<double> builder;
+  auto& plant = *builder.AddSystem<MultibodyPlant<double>>(0.0);
+  const RigidBody<double>& body =
+      plant.AddRigidBody("body", SpatialInertia<double>::MakeUnitary());
+  const auto& slider = plant.AddJoint<PrismaticJoint>(
+      "slider", plant.world_body(), std::nullopt, body, std::nullopt,
+      Eigen::Vector3d::UnitZ());
+  plant.AddForceElement<PrismaticSpring>(slider, 0.0, 1e4);
+  plant.SetUseSampledOutputPorts(true);
+  plant.Finalize();
+  if (with_feedback) {
+    auto& gain = *builder.AddSystem<systems::Gain<double>>(-1.0, 1);
+    builder.Connect(plant.get_generalized_acceleration_output_port(),
+                    gain.get_input_port());
+    builder.Connect(gain.get_output_port(),
+                    plant.get_applied_generalized_force_input_port());
+  }
+  auto diagram = builder.Build();
+  auto context = diagram->CreateDefaultContext();
+  slider.set_translation(&plant.GetMyMutableContextFromRoot(context.get()),
+                         1.0);
+
+  CenicIntegrator<double> integrator(*diagram, context.get());
+  integrator.set_maximum_step_size(0.5);
+  integrator.set_target_accuracy(1e-6);
+  integrator.Initialize();
+  const double inf = std::numeric_limits<double>::infinity();
+  integrator.IntegrateNoFurtherThanTime(inf, inf, 1.0);
+  return {.time = context->get_time(),
+          .x = plant.GetPositionsAndVelocities(
+              plant.GetMyContextFromRoot(*context)),
+          .num_shrinkages = static_cast<int>(
+              integrator.get_num_step_shrinkages_from_error_control())};
+}
+
+/* Error control restores only time and continuous state when it rejects a
+step, but each trial records a sample into the plant's abstract state. Checks
+that a retried step doesn't see the rejected trial's sample through sampled
+output ports. Before the first step the sample is zero, so feeding the sampled
+acceleration back as a force applies no force during the entire first step,
+however many trials it takes. The first accepted step must therefore be
+identical to that of the system without feedback. */
+GTEST_TEST(CenicIntegrator, SampledFeedbackIgnoresRejectedTrialSample) {
+  const FirstStepResult reference = TakeFirstStepOfStiffSpringMass(false);
+  // The scenario only means something if the first step was rejected.
+  ASSERT_GT(reference.num_shrinkages, 0);
+  const FirstStepResult feedback = TakeFirstStepOfStiffSpringMass(true);
+  EXPECT_EQ(feedback.num_shrinkages, reference.num_shrinkages);
+  EXPECT_EQ(feedback.time, reference.time);
+  EXPECT_TRUE(CompareMatrices(feedback.x, reference.x, 1e-12));
+}
+
+/* A body welded to the world carries no dynamics in the ICF problem, but its
+weld joint still transmits the loads applied to it. Checks that a shelf welded
+to the world reports the weight of the ball resting on it (via contact) in
+addition to its own weight. */
+GTEST_TEST(CenicIntegrator, SampledReactionForcesThroughAnchoredBody) {
+  DiagramBuilder<double> builder;
+  auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.0);
+  Parser(&plant).AddModelsFromString(R"""(
+    <sdf version="1.9">
+      <model name="m">
+        <link name="shelf">
+          <inertial>
+            <mass>2</mass>
+            <inertia>
+              <ixx>1</ixx><iyy>1</iyy><izz>1</izz>
+              <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
+            </inertia>
+          </inertial>
+          <collision name="shelf_collision">
+            <geometry><box><size>1 1 0.2</size></box></geometry>
+          </collision>
+        </link>
+        <link name="ball">
+          <pose>0 0 0.2 0 0 0</pose>
+          <inertial>
+            <mass>1</mass>
+            <inertia>
+              <ixx>0.01</ixx><iyy>0.01</iyy><izz>0.01</izz>
+              <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
+            </inertia>
+          </inertial>
+          <collision name="ball_collision">
+            <geometry><sphere><radius>0.1</radius></sphere></geometry>
+          </collision>
+        </link>
+        <joint name="weld" type="fixed">
+          <parent>world</parent>
+          <child>shelf</child>
+        </joint>
+      </model>
+    </sdf>)""",
+                                     "sdf");
+  plant.SetUseSampledOutputPorts(true);
+  plant.Finalize();
+  auto diagram = builder.Build();
+
+  Simulator<double> simulator(*diagram);
+  auto& integrator = simulator.reset_integrator<CenicIntegrator<double>>();
+  integrator.set_maximum_step_size(0.01);
+  integrator.set_fixed_step_mode(true);
+  simulator.AdvanceTo(0.5);
+
+  const Context<double>& plant_context =
+      plant.GetMyContextFromRoot(simulator.get_context());
+  const double g = UniformGravityFieldElement<double>::kDefaultStrength;
+  const double weight = (2.0 + 1.0) * g;
+  const JointIndex weld = plant.GetJointByName("weld").index();
+  const SpatialForce<double>& F_weld =
+      EvalReactionForces(plant, plant_context)[weld];
+  EXPECT_NEAR(F_weld.translational().norm(), weight, 0.05 * weight);
+}
+
+/* Reinitializing the integrator with a fresh context (the supported
+`reset_context(); Initialize();` workflow) must not leave state from earlier
+steps behind. The first step after a reset starts at the same time as the last
+step before it, which must not be mistaken for a retry of a rejected step. We
+need contact so that the stale model would have a different geometry than the
+rebuilt one. */
+GTEST_TEST(CenicIntegrator, SampledReportingSurvivesContextReset) {
+  DiagramBuilder<double> builder;
+  auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.0);
+  Parser(&plant).AddModelsFromString(R"""(
+    <sdf version="1.9">
+      <model name="m">
+        <link name="shelf">
+          <inertial>
+            <mass>2</mass>
+            <inertia>
+              <ixx>1</ixx><iyy>1</iyy><izz>1</izz>
+              <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
+            </inertia>
+          </inertial>
+          <collision name="shelf_collision">
+            <geometry><box><size>1 1 0.2</size></box></geometry>
+          </collision>
+        </link>
+        <link name="ball">
+          <pose>0 0 0.2 0 0 0</pose>
+          <inertial>
+            <mass>1</mass>
+            <inertia>
+              <ixx>0.01</ixx><iyy>0.01</iyy><izz>0.01</izz>
+              <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
+            </inertia>
+          </inertial>
+          <collision name="ball_collision">
+            <geometry><sphere><radius>0.1</radius></sphere></geometry>
+          </collision>
+        </link>
+        <joint name="weld" type="fixed">
+          <parent>world</parent>
+          <child>shelf</child>
+        </joint>
+      </model>
+    </sdf>)""",
+                                     "sdf");
+  plant.SetUseSampledOutputPorts(true);
+  plant.Finalize();
+  auto diagram = builder.Build();
+
+  Simulator<double> simulator(*diagram);
+  auto& integrator = simulator.reset_integrator<CenicIntegrator<double>>();
+  integrator.set_maximum_step_size(0.01);
+  integrator.set_fixed_step_mode(true);
+  simulator.Initialize();
+  simulator.AdvanceTo(0.01);
+
+  // Start over from an identical initial context, at the same time as before.
+  simulator.reset_context(diagram->CreateDefaultContext());
+  simulator.Initialize();
+  simulator.AdvanceTo(0.01);
+
+  const Context<double>& plant_context =
+      plant.GetMyContextFromRoot(simulator.get_context());
+  const double g = UniformGravityFieldElement<double>::kDefaultStrength;
+  const double weight = (2.0 + 1.0) * g;
+  const JointIndex weld = plant.GetJointByName("weld").index();
+  EXPECT_NEAR(
+      EvalReactionForces(plant, plant_context)[weld].translational().norm(),
+      weight, 0.05 * weight);
+}
+
+/* Joint locking reduces the ICF problem, and reduction re-derives the
+regularization of constraints that touch locked bodies (the locked body no
+longer contributes its inverse mass). The reported impulse must be the one that
+advanced the state, not the full model's impulse at the same velocity. Locks a
+whole tree: two bodies on separate vertical sliders, joined by a ball
+constraint, with A locked and B free. B hangs from A through the constraint, so
+B's support force is B's weight, and B's free slider must transmit nothing. */
+GTEST_TEST(CenicIntegrator, SampledReactionForcesWithWholeTreeLocked) {
+  DiagramBuilder<double> builder;
+  auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.0);
+  const auto& body_a = plant.AddRigidBody(
+      "A", SpatialInertia<double>::SolidSphereWithMass(1.0, 0.1));
+  const auto& body_b = plant.AddRigidBody(
+      "B", SpatialInertia<double>::SolidSphereWithMass(1.0, 0.1));
+  const Vector3d z = Vector3d::UnitZ();
+  const auto& slider_a = plant.AddJoint<PrismaticJoint>(
+      "slider_a", plant.world_body(), std::nullopt, body_a, std::nullopt, z);
+  const auto& slider_b = plant.AddJoint<PrismaticJoint>(
+      "slider_b", plant.world_body(), std::nullopt, body_b, std::nullopt, z);
+  plant.AddBallConstraint(body_a, Vector3d::Zero(), body_b, Vector3d::Zero());
+  plant.SetUseSampledOutputPorts(true);
+  plant.Finalize();
+  auto diagram = builder.Build();
+
+  Simulator<double> simulator(*diagram);
+  auto& integrator = simulator.reset_integrator<CenicIntegrator<double>>();
+  const double h = 0.01;
+  integrator.set_maximum_step_size(h);
+  integrator.set_fixed_step_mode(true);
+  Context<double>& plant_context =
+      plant.GetMyMutableContextFromRoot(&simulator.get_mutable_context());
+  slider_a.Lock(&plant_context);
+  simulator.Initialize();
+  simulator.AdvanceTo(h);
+
+  const double g = UniformGravityFieldElement<double>::kDefaultStrength;
+  const std::vector<SpatialForce<double>>& reactions =
+      EvalReactionForces(plant, plant_context);
+  // B is (nearly) stationary and held up by the constraint alone, so its
+  // free slider transmits no axial force. (It would report the constraint's
+  // missing half if the impulse were re-derived from the full model.)
+  EXPECT_NEAR(reactions[slider_b.ordinal()].translational()[2], 0.0, 1e-3);
+  // The locked slider carries A's weight plus the load B puts on A through
+  // the constraint.
+  EXPECT_NEAR(reactions[slider_a.ordinal()].translational()[2], 2 * g,
+              0.01 * g);
+}
+
+/* Like SampledReactionForcesWithWholeTreeLocked, but the constraint is
+contact: a ball rests on a platform whose slider is locked. Reduction flips the
+contact patch (the locked platform becomes anchored) and re-derives its
+friction regularization, and the platform's locked slider must carry the
+weights of both bodies. */
+GTEST_TEST(CenicIntegrator, SampledContactReactionsWithWholeTreeLocked) {
+  DiagramBuilder<double> builder;
+  auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.0);
+  Parser(&plant).AddModelsFromString(R"""(
+    <sdf version="1.9">
+      <model name="m">
+        <link name="shelf">
+          <inertial>
+            <mass>2</mass>
+            <inertia>
+              <ixx>1</ixx><iyy>1</iyy><izz>1</izz>
+              <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
+            </inertia>
+          </inertial>
+          <collision name="shelf_collision">
+            <geometry><box><size>1 1 0.2</size></box></geometry>
+          </collision>
+        </link>
+        <link name="ball">
+          <pose>0 0 0.2 0 0 0</pose>
+          <inertial>
+            <mass>1</mass>
+            <inertia>
+              <ixx>0.01</ixx><iyy>0.01</iyy><izz>0.01</izz>
+              <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
+            </inertia>
+          </inertial>
+          <collision name="ball_collision">
+            <geometry><sphere><radius>0.1</radius></sphere></geometry>
+          </collision>
+        </link>
+        <joint name="slide" type="prismatic">
+          <parent>world</parent>
+          <child>shelf</child>
+          <axis><xyz>0 0 1</xyz></axis>
+        </joint>
+      </model>
+    </sdf>)""",
+                                     "sdf");
+  plant.SetUseSampledOutputPorts(true);
+  plant.Finalize();
+  auto diagram = builder.Build();
+
+  Simulator<double> simulator(*diagram);
+  auto& integrator = simulator.reset_integrator<CenicIntegrator<double>>();
+  integrator.set_maximum_step_size(0.01);
+  integrator.set_fixed_step_mode(true);
+  const auto& slide = plant.GetJointByName<PrismaticJoint>("slide");
+  Context<double>& plant_context =
+      plant.GetMyMutableContextFromRoot(&simulator.get_mutable_context());
+  slide.Lock(&plant_context);
+  simulator.Initialize();
+  simulator.AdvanceTo(0.1);
+
+  const double g = UniformGravityFieldElement<double>::kDefaultStrength;
+  const double weight = (2.0 + 1.0) * g;
+  EXPECT_NEAR(EvalReactionForces(plant, plant_context)[slide.ordinal()]
+                  .translational()
+                  .norm(),
+              weight, 0.01 * weight);
+  // The ball is carried by the contact force, which is the generalized contact
+  // force on the ball's z velocity (the last dof).
+  const VectorXd tau_contact = plant
+                                   .get_generalized_contact_forces_output_port(
+                                       plant.GetModelInstanceByName("m"))
+                                   .Eval(plant_context);
+  EXPECT_NEAR(tau_contact[tau_contact.size() - 1], g, 0.01 * g);
+  // The ball presses down on the platform with the same force, which the
+  // platform's locked slider still carries.
+  EXPECT_NEAR(tau_contact[slide.velocity_start()], -g, 0.01 * g);
+}
+
+/* Joint locking drops contact patches whose bodies are all locked, but the
+plant still lists their geometry (it filters contact by tree, not by clique), so
+the reported contact results must still have an entry per point pair. A locked
+sphere rests (slightly penetrating) on the floor next to an unlocked sibling
+branch that keeps the contact in the geometry list. */
+GTEST_TEST(CenicIntegrator, SampledContactResultsWithDroppedPatch) {
+  DiagramBuilder<double> builder;
+  auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.0);
+  Parser(&plant).AddModelsFromString(R"""(
+    <sdf version="1.9">
+      <model name="m">
+        <link name="floor">
+          <pose>0 0 -0.1 0 0 0</pose>
+          <collision name="floor_collision">
+            <geometry><box><size>2 2 0.2</size></box></geometry>
+          </collision>
+        </link>
+        <joint name="floor_weld" type="fixed">
+          <parent>world</parent><child>floor</child>
+        </joint>
+        <link name="base"/>
+        <joint name="base_weld" type="fixed">
+          <parent>world</parent><child>base</child>
+        </joint>
+        <link name="locked_sphere">
+          <pose>0 0 0.09 0 0 0</pose>
+          <inertial><mass>1</mass>
+            <inertia><ixx>0.01</ixx><iyy>0.01</iyy><izz>0.01</izz>
+              <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz></inertia></inertial>
+          <collision name="sphere_collision">
+            <geometry><sphere><radius>0.1</radius></sphere></geometry>
+          </collision>
+        </link>
+        <joint name="locked_slider" type="prismatic">
+          <parent>base</parent><child>locked_sphere</child>
+          <axis><xyz>0 0 1</xyz></axis>
+        </joint>
+        <link name="free_body">
+          <pose>1 0 0.5 0 0 0</pose>
+          <inertial><mass>1</mass>
+            <inertia><ixx>0.01</ixx><iyy>0.01</iyy><izz>0.01</izz>
+              <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz></inertia></inertial>
+        </link>
+        <joint name="free_slider" type="prismatic">
+          <parent>base</parent><child>free_body</child>
+          <axis><xyz>0 0 1</xyz></axis>
+        </joint>
+      </model>
+    </sdf>)""",
+                                     "sdf");
+  plant.SetUseSampledOutputPorts(true);
+  plant.Finalize();
+  auto diagram = builder.Build();
+
+  Simulator<double> simulator(*diagram);
+  auto& integrator = simulator.reset_integrator<CenicIntegrator<double>>();
+  integrator.set_maximum_step_size(0.01);
+  integrator.set_fixed_step_mode(true);
+  const auto& slider = plant.GetJointByName<PrismaticJoint>("locked_slider");
+  Context<double>& plant_context =
+      plant.GetMyMutableContextFromRoot(&simulator.get_mutable_context());
+  slider.Lock(&plant_context);
+  simulator.Initialize();
+  simulator.AdvanceTo(0.01);
+
+  const ContactResults<double>& results =
+      EvalContactResults(plant, plant_context);
+  EXPECT_EQ(results.num_point_pair_contacts(), 1);
+  // The locked sphere's slider carries the contact load, shared with its own
+  // weight: the contact pushes up on the sphere, so the generalized contact
+  // force on the slider is positive and nonzero.
+  const VectorXd tau_contact = plant
+                                   .get_generalized_contact_forces_output_port(
+                                       plant.GetModelInstanceByName("m"))
+                                   .Eval(plant_context);
+  EXPECT_GT(tau_contact[slider.velocity_start()], 0.0);
+}
+
+/* A system with no continuous state is never stepped, so sampled output ports
+could never be populated; CENIC refuses rather than reporting zeros forever.
+With live output ports the same system is fine. */
+GTEST_TEST(CenicIntegrator, SampledPortsRequireContinuousState) {
+  for (const bool sampled : {true, false}) {
+    SCOPED_TRACE(fmt::format("sampled = {}", sampled));
+    DiagramBuilder<double> builder;
+    auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.0);
+    const auto& body = plant.AddRigidBody(
+        "body", SpatialInertia<double>::SolidSphereWithMass(1.0, 0.1));
+    const auto& weld =
+        plant.AddJoint<WeldJoint>("weld", plant.world_body(), std::nullopt,
+                                  body, std::nullopt, math::RigidTransformd());
+    if (sampled) plant.SetUseSampledOutputPorts(true);
+    plant.Finalize();
+    auto diagram = builder.Build();
+
+    Simulator<double> simulator(*diagram);
+    auto& integrator = simulator.reset_integrator<CenicIntegrator<double>>();
+    integrator.set_maximum_step_size(0.01);
+    ASSERT_EQ(simulator.get_context().num_continuous_states(), 0);
+    if (sampled) {
+      DRAKE_EXPECT_THROWS_MESSAGE(simulator.Initialize(),
+                                  ".*no continuous state.*");
+    } else {
+      simulator.AdvanceTo(0.1);
+      const double g = UniformGravityFieldElement<double>::kDefaultStrength;
+      EXPECT_NEAR(
+          EvalReactionForces(plant, plant.GetMyContextFromRoot(
+                                        simulator.get_context()))[weld.index()]
+              .translational()
+              .norm(),
+          g, 1e-8);
+    }
+  }
+}
+
+/* A continuous-time plant with sampled output ports only works with an
+integrator that records the samples. Under any other integrator the ports have
+nothing to report, so evaluating them throws. */
+GTEST_TEST(CenicIntegrator, SampledPortsRequireRecordedSample) {
+  for (const bool sampled : {true, false}) {
+    for (const bool use_cenic : {true, false}) {
+      SCOPED_TRACE(
+          fmt::format("sampled = {}, use_cenic = {}", sampled, use_cenic));
+      DiagramBuilder<double> builder;
+      auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.0);
+      Parser(&plant).AddModelsFromString(R"""(
+        <sdf version="1.9">
+          <model name="m">
+            <link name="shelf">
+              <inertial>
+                <mass>2</mass>
+                <inertia>
+                  <ixx>1</ixx><iyy>1</iyy><izz>1</izz>
+                  <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
+                </inertia>
+              </inertial>
+              <collision name="shelf_collision">
+                <geometry><box><size>1 1 0.2</size></box></geometry>
+              </collision>
+            </link>
+            <link name="ball">
+              <pose>0 0 0.2 0 0 0</pose>
+              <inertial>
+                <mass>1</mass>
+                <inertia>
+                  <ixx>0.01</ixx><iyy>0.01</iyy><izz>0.01</izz>
+                  <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
+                </inertia>
+              </inertial>
+              <collision name="ball_collision">
+                <geometry><sphere><radius>0.1</radius></sphere></geometry>
+              </collision>
+            </link>
+            <joint name="weld" type="fixed">
+              <parent>world</parent>
+              <child>shelf</child>
+            </joint>
+          </model>
+        </sdf>)""",
+                                         "sdf");
+      if (sampled) plant.SetUseSampledOutputPorts(true);
+      plant.Finalize();
+      auto diagram = builder.Build();
+
+      Simulator<double> simulator(*diagram);
+      if (use_cenic) {
+        auto& integrator =
+            simulator.reset_integrator<CenicIntegrator<double>>();
+        integrator.set_maximum_step_size(0.01);
+        integrator.set_fixed_step_mode(true);
+      }
+      simulator.Initialize();
+      simulator.AdvanceTo(0.01);
+      const auto& plant_context =
+          plant.GetMyContextFromRoot(simulator.get_context());
+      if (sampled && !use_cenic) {
+        DRAKE_EXPECT_THROWS_MESSAGE(EvalReactionForces(plant, plant_context),
+                                    ".*no integrator has recorded a sample.*");
+        DRAKE_EXPECT_THROWS_MESSAGE(
+            plant.get_contact_results_output_port()
+                .Eval<ContactResults<double>>(plant_context),
+            ".*no integrator has recorded a sample.*");
+      } else {
+        EXPECT_NO_THROW(EvalReactionForces(plant, plant_context));
+      }
+      if (sampled && use_cenic) {
+        // Reinitializing with a fresh context starts over.
+        simulator.reset_context(diagram->CreateDefaultContext());
+        simulator.Initialize();
+        simulator.AdvanceTo(0.01);
+      }
+    }
+  }
+}
+
+/* A system that reads the plant's contact results when the Simulator
+initializes, like a visualizer or logger does. */
+class ContactResultsReader final : public systems::LeafSystem<double> {
+ public:
+  ContactResultsReader() {
+    DeclareAbstractInputPort("contact_results",
+                             Value<ContactResults<double>>());
+    DeclareInitializationPublishEvent(&ContactResultsReader::Read);
+  }
+
+ private:
+  systems::EventStatus Read(const Context<double>& context) const {
+    get_input_port().Eval<ContactResults<double>>(context);
+    return systems::EventStatus::Succeeded();
+  }
+};
+
+/* After CenicIntegrator::Initialize() the sampled ports report zeros until the
+first step, as for a discrete-time plant. A later Initialize() starts over. */
+GTEST_TEST(CenicIntegrator, SampledPortsAreZeroAfterInitialize) {
+  DiagramBuilder<double> builder;
+  auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.0);
+  Parser(&plant).AddModelsFromString(R"""(
+    <sdf version="1.9">
+      <model name="m">
+        <link name="body">
+          <inertial>
+            <mass>1</mass>
+            <inertia>
+              <ixx>1</ixx><iyy>1</iyy><izz>1</izz>
+              <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
+            </inertia>
+          </inertial>
+        </link>
+        <joint name="slider" type="prismatic">
+          <parent>world</parent>
+          <child>body</child>
+          <axis><xyz>0 0 1</xyz></axis>
+        </joint>
+      </model>
+    </sdf>)""",
+                                     "sdf");
+  plant.SetUseSampledOutputPorts(true);
+  plant.Finalize();
+  auto diagram = builder.Build();
+
+  Simulator<double> simulator(*diagram);
+  auto& integrator = simulator.reset_integrator<CenicIntegrator<double>>();
+  integrator.set_maximum_step_size(0.01);
+  integrator.set_fixed_step_mode(true);
+  const auto& plant_context =
+      plant.GetMyContextFromRoot(simulator.get_context());
+  const auto expect_empty_sample = [&]() {
+    EXPECT_EQ(
+        plant.get_generalized_acceleration_output_port().Eval(plant_context),
+        VectorXd::Zero(plant.num_velocities()));
+    EXPECT_EQ(plant
+                  .get_generalized_contact_forces_output_port(
+                      plant.GetModelInstanceByName("m"))
+                  .Eval(plant_context),
+              VectorXd::Zero(plant.num_velocities()));
+    for (const SpatialForce<double>& F :
+         EvalReactionForces(plant, plant_context)) {
+      EXPECT_EQ(F.get_coeffs(), Vector6d::Zero());
+    }
+    EXPECT_EQ(plant.get_contact_results_output_port()
+                  .Eval<ContactResults<double>>(plant_context)
+                  .num_point_pair_contacts(),
+              0);
+  };
+
+  // The diagram's default context has no sample yet.
+  DRAKE_EXPECT_THROWS_MESSAGE(EvalReactionForces(plant, plant_context),
+                              ".*no integrator has recorded a sample.*");
+  simulator.Initialize();
+  expect_empty_sample();
+
+  // Gravity accelerates the body, so the first step records a sample.
+  simulator.AdvanceTo(0.01);
+  const double a =
+      plant.get_generalized_acceleration_output_port().Eval(plant_context)[0];
+  EXPECT_NEAR(a, -UniformGravityFieldElement<double>::kDefaultStrength, 1e-8);
+
+  // Initializing again starts over from the empty sample.
+  simulator.Initialize();
+  expect_empty_sample();
+
+  // The sample lives in the context, so it outlives CENIC: a nonrecording
+  // integrator that replaces CENIC reports its last sample while the state
+  // moves on. (That is a cost of the design, not a feature.)
+  simulator.AdvanceTo(0.02);
+  simulator.reset_integrator<systems::RungeKutta3Integrator<double>>()
+      .set_maximum_step_size(0.01);
+  simulator.Initialize();
+  const VectorXd stale =
+      plant.get_generalized_acceleration_output_port().Eval(plant_context);
+  EXPECT_NEAR(stale[0], a, 1e-8);
+  simulator.AdvanceTo(0.03);
+  EXPECT_EQ(
+      plant.get_generalized_acceleration_output_port().Eval(plant_context),
+      stale);
+}
+
+/* Without a recording integrator, a sampled continuous plant throws as soon
+as anything reads its dynamics ports, e.g., a visualizer in the Simulator's
+initialization publish. With CENIC the same diagram initializes. Nothing about
+initialization events themselves is special: ExecuteInitializationEvents() and
+suppress_initialization_events work with a sampled continuous plant. */
+GTEST_TEST(CenicIntegrator, SampledPortsReadAtInitialization) {
+  for (const bool use_cenic : {true, false}) {
+    SCOPED_TRACE(fmt::format("use_cenic = {}", use_cenic));
+    DiagramBuilder<double> builder;
+    auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.0);
+    Parser(&plant).AddModelsFromString(R"""(
+    <sdf version="1.9">
+      <model name="m">
+        <link name="body">
+          <inertial>
+            <mass>1</mass>
+            <inertia>
+              <ixx>1</ixx><iyy>1</iyy><izz>1</izz>
+              <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
+            </inertia>
+          </inertial>
+        </link>
+        <joint name="slider" type="prismatic">
+          <parent>world</parent>
+          <child>body</child>
+          <axis><xyz>0 0 1</xyz></axis>
+        </joint>
+      </model>
+    </sdf>)""",
+                                       "sdf");
+    plant.SetUseSampledOutputPorts(true);
+    plant.Finalize();
+    auto* reader = builder.AddSystem<ContactResultsReader>();
+    builder.Connect(plant.get_contact_results_output_port(),
+                    reader->get_input_port());
+    auto diagram = builder.Build();
+
+    Simulator<double> simulator(*diagram);
+    if (use_cenic) {
+      auto& integrator = simulator.reset_integrator<CenicIntegrator<double>>();
+      integrator.set_maximum_step_size(0.01);
+      integrator.set_fixed_step_mode(true);
+      EXPECT_NO_THROW(simulator.Initialize());
+    } else {
+      simulator.reset_integrator<systems::RungeKutta3Integrator<double>>()
+          .set_maximum_step_size(0.01);
+      DRAKE_EXPECT_THROWS_MESSAGE(simulator.Initialize(),
+                                  ".*no integrator has recorded a sample.*");
+    }
+
+    // Suppressing the initialization events (including the reader's publish)
+    // skips nothing important either way.
+    EXPECT_NO_THROW(
+        simulator.Initialize({.suppress_initialization_events = true}));
+  }
+
+  // The plant declares no initialization event of its own for sampling.
+  DiagramBuilder<double> builder;
+  auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.0);
+  plant.SetUseSampledOutputPorts(true);
+  plant.Finalize();
+  auto diagram = builder.Build();
+  auto context = diagram->CreateDefaultContext();
+  EXPECT_NO_THROW(diagram->ExecuteInitializationEvents(context.get()));
+}
+
+/* The plant config (e.g., from YAML) can request sampled output ports for a
+continuous-time plant, so that CENIC reports its own forces. */
+GTEST_TEST(CenicIntegrator, SampledPortsFromPlantConfig) {
+  auto run = [](const char* yaml) {
+    const auto config = yaml::LoadYamlString<MultibodyPlantConfig>(
+        yaml, {}, {}, yaml::LoadYamlOptions{.allow_cpp_with_no_yaml = true});
+    DiagramBuilder<double> builder;
+    auto [plant, scene_graph] = AddMultibodyPlant(config, &builder);
+    Parser(&plant).AddModelsFromString(R"""(
+      <sdf version="1.9">
+        <model name="m">
+          <link name="body">
+            <inertial>
+              <mass>1</mass>
+              <inertia>
+                <ixx>1</ixx><iyy>1</iyy><izz>1</izz>
+                <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
+              </inertia>
+            </inertial>
+          </link>
+          <joint name="slider" type="prismatic">
+            <parent>world</parent>
+            <child>body</child>
+            <axis><xyz>1 0 0</xyz></axis>
+          </joint>
+        </model>
+      </sdf>)""",
+                                       "sdf");
+    plant.Finalize();
+    auto diagram = builder.Build();
+    Simulator<double> simulator(*diagram);
+    auto& integrator = simulator.reset_integrator<CenicIntegrator<double>>();
+    integrator.set_maximum_step_size(0.01);
+    integrator.set_fixed_step_mode(true);
+    simulator.Initialize();
+    simulator.AdvanceTo(0.02);
+    return plant.has_sampled_output_ports();
+  };
+
+  EXPECT_TRUE(run("time_step: 0.0\nuse_sampled_output_ports: true\n"));
+  EXPECT_FALSE(run("time_step: 0.0\nuse_sampled_output_ports: false\n"));
+  EXPECT_FALSE(run("time_step: 0.0\n"));
+}
+
+/* If CenicIntegrator::Initialize() fails (here, because ICF rejects two
+actuators on one joint), it must not leave a sample behind: the sampled ports
+still have nothing to report, even after swapping in another integrator. */
+GTEST_TEST(CenicIntegrator, FailedInitializeLeavesNoSample) {
+  DiagramBuilder<double> builder;
+  auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.0);
+  Parser(&plant).AddModelsFromString(R"""(
+    <sdf version="1.9">
+      <model name="m">
+        <link name="body">
+          <inertial>
+            <mass>1</mass>
+            <inertia>
+              <ixx>1</ixx><iyy>1</iyy><izz>1</izz>
+              <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
+            </inertia>
+          </inertial>
+        </link>
+        <joint name="slider" type="prismatic">
+          <parent>world</parent>
+          <child>body</child>
+          <axis><xyz>0 0 1</xyz></axis>
+        </joint>
+      </model>
+    </sdf>)""",
+                                     "sdf");
+  const Joint<double>& slider = plant.GetJointByName("slider");
+  plant.AddJointActuator("first", slider);
+  plant.AddJointActuator("second", slider);
+  plant.SetUseSampledOutputPorts(true);
+  plant.Finalize();
+  auto diagram = builder.Build();
+
+  Simulator<double> simulator(*diagram);
+  auto& integrator = simulator.reset_integrator<CenicIntegrator<double>>();
+  integrator.set_maximum_step_size(0.01);
+  integrator.set_fixed_step_mode(true);
+  DRAKE_EXPECT_THROWS_MESSAGE(simulator.Initialize(),
+                              ".*more than one actuator.*");
+  const auto& plant_context =
+      plant.GetMyContextFromRoot(simulator.get_context());
+  DRAKE_EXPECT_THROWS_MESSAGE(EvalReactionForces(plant, plant_context),
+                              ".*no integrator has recorded a sample.*");
+
+  simulator.reset_integrator<systems::RungeKutta3Integrator<double>>()
+      .set_maximum_step_size(0.01);
+  simulator.Initialize();
+  DRAKE_EXPECT_THROWS_MESSAGE(EvalReactionForces(plant, plant_context),
+                              ".*no integrator has recorded a sample.*");
+}
+
+/* Applies the spatial force F = -K v (on the body's origin) to a body, which
+depends on the body's spatial velocity. */
+class SpatialVelocityDamper final : public systems::LeafSystem<double> {
+ public:
+  SpatialVelocityDamper(BodyIndex body, double K) : body_(body), K_(K) {
+    DeclareAbstractInputPort("body_spatial_velocities",
+                             Value<std::vector<SpatialVelocity<double>>>());
+    DeclareAbstractOutputPort("spatial_forces",
+                              &SpatialVelocityDamper::CalcForces);
+  }
+
+ private:
+  void CalcForces(
+      const Context<double>& context,
+      std::vector<ExternallyAppliedSpatialForce<double>>* forces) const {
+    const auto& V_WB_all =
+        get_input_port().Eval<std::vector<SpatialVelocity<double>>>(context);
+    ExternallyAppliedSpatialForce<double> force;
+    force.body_index = body_;
+    force.p_BoBq_B = Eigen::Vector3d::Zero();
+    force.F_Bq_W = SpatialForce<double>(Eigen::Vector3d::Zero(),
+                                        -K_ * V_WB_all[body_].translational());
+    forces->assign(1, force);
+  }
+
+  const BodyIndex body_;
+  const double K_;
+};
+
+/* Documents a known limitation of the reported reaction forces. The ICF step is
+implicit in (the linearization of) external forces, but the reaction forces are
+computed from the external spatial forces evaluated at the start of the step,
+because the linearization is in generalized coordinates and doesn't retain
+per-body forces. For a strongly velocity-dependent external force the reported
+reaction is therefore inconsistent with the step's acceleration.
+
+Here a free 1 kg body without gravity starts at 1 m/s with F = -1000 v, and
+takes one step of h = 0.01. The ICF step gives v₁ = 1/11 (acceleration
+-90.909 m/s²) and the force at the start of the step is -1000 N. The floating
+joint should transmit no force, but the reported reaction is 909.091 N. If this
+test fails because the approximation was improved, update it (and the docs
+that describe the limitation) to expect zero. */
+GTEST_TEST(CenicIntegrator, SampledReactionForcesWithStiffExternalForce) {
+  const double h = 0.01;
+  const double K = 1000.0;
+  DiagramBuilder<double> builder;
+  auto& plant = *builder.AddSystem<MultibodyPlant<double>>(0.0);
+  plant.mutable_gravity_field().set_gravity_vector(Eigen::Vector3d::Zero());
+  const RigidBody<double>& body =
+      plant.AddRigidBody("body", SpatialInertia<double>::MakeUnitary());
+  plant.SetUseSampledOutputPorts(true);
+  plant.Finalize();
+  auto& damper = *builder.AddSystem<SpatialVelocityDamper>(body.index(), K);
+  builder.Connect(plant.get_body_spatial_velocities_output_port(),
+                  damper.get_input_port());
+  builder.Connect(damper.get_output_port(),
+                  plant.get_applied_spatial_force_input_port());
+  auto diagram = builder.Build();
+
+  Simulator<double> simulator(*diagram);
+  Context<double>& plant_context =
+      plant.GetMyMutableContextFromRoot(&simulator.get_mutable_context());
+  plant.SetFreeBodySpatialVelocity(
+      &plant_context, body,
+      SpatialVelocity<double>(Eigen::Vector3d::Zero(),
+                              Eigen::Vector3d(1.0, 0.0, 0.0)));
+  auto& integrator = simulator.reset_integrator<CenicIntegrator<double>>();
+  integrator.set_maximum_step_size(h);
+  integrator.set_fixed_step_mode(true);
+  simulator.AdvanceTo(h);
+  ASSERT_EQ(integrator.get_num_steps_taken(), 1);
+
+  const double v1 = plant.GetVelocities(plant_context)[3];
+  EXPECT_NEAR(v1, 1.0 / (1.0 + K * h), 1e-9);
+  const VectorXd vdot =
+      plant.get_generalized_acceleration_output_port().Eval(plant_context);
+  EXPECT_NEAR(vdot[3], (v1 - 1.0) / h, 1e-9);
+  ASSERT_EQ(plant.num_joints(), 1);
+  const SpatialForce<double>& F_reaction =
+      EvalReactionForces(plant, plant_context)[0];
+  EXPECT_NEAR(std::abs(F_reaction.translational()[0]), 909.091, 1e-2);
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    AllParamsBallSampled, BallOnTableSampled,
+    testing::Combine(testing::Range(0, 2), testing::Range(0, 1),
+                     testing::Bool()),
+    [](const testing::TestParamInfo<BallOnTableSampled::ParamType>& x) {
       return fmt::format("plant_depth_{}_external_depth_{}_scene_graph_{}",
                          std::get<0>(x.param), std::get<1>(x.param),
                          std::get<2>(x.param));

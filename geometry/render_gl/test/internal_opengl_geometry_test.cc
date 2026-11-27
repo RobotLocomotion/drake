@@ -26,6 +26,13 @@ using render::RenderLabel;
 // OpenGlGeometry class which does not depend on the object names to actually
 // refer to objects in an OpenGL context.
 
+// A default-constructed geometry's vertex bound is empty (min > max), so that
+// geometry whose bound is never set is excluded from shadow-camera fitting.
+GTEST_TEST(OpenGlGeometryTest, DefaultBoundIsEmpty) {
+  const OpenGlGeometry geometry;
+  EXPECT_TRUE((geometry.p_N_min.array() > geometry.p_N_max.array()).all());
+}
+
 GTEST_TEST(OpenGlGeometryTest, Construction) {
   // clang-format off
   const Matrix4f T_MN = (Matrix4f() << 1,  2,  3,  4,
@@ -35,6 +42,8 @@ GTEST_TEST(OpenGlGeometryTest, Construction) {
   const Matrix3f N_MN = (Matrix3f() << 21, 22, 23,
                                        24, 25, 26,
                                        27, 28, 29).finished();
+  const Vector3f p_N_min(-1, -2, -3);
+  const Vector3f p_N_max(4, 5, 6);
   // clang-format on
   const OpenGlGeometry geometry{.vertex_array = 1,
                                 .vertex_buffer = 2,
@@ -43,6 +52,8 @@ GTEST_TEST(OpenGlGeometryTest, Construction) {
                                 .index_count = 5,
                                 .type = 17,
                                 .mode = 18,
+                                .p_N_min = p_N_min,
+                                .p_N_max = p_N_max,
                                 .T_MN = T_MN,
                                 .N_MN = N_MN};
   EXPECT_EQ(geometry.vertex_array, 1);
@@ -52,6 +63,8 @@ GTEST_TEST(OpenGlGeometryTest, Construction) {
   EXPECT_EQ(geometry.index_count, 5);
   EXPECT_EQ(geometry.type, 17);
   EXPECT_EQ(geometry.mode, 18);
+  EXPECT_TRUE(CompareMatrices(geometry.p_N_min, p_N_min));
+  EXPECT_TRUE(CompareMatrices(geometry.p_N_max, p_N_max));
   EXPECT_TRUE(CompareMatrices(geometry.T_MN, T_MN));
   EXPECT_TRUE(CompareMatrices(geometry.N_MN, N_MN));
 }
@@ -131,12 +144,14 @@ GTEST_TEST(OpenGlInstanceTest, Validity) {
   const ShaderProgramData color_data(ShaderId::get_new_id(),
                                      AbstractValue::Make(33));
   const bool casts_shadows = true;
+  const bool receives_shadows = true;
 
   const OpenGlInstance instance(geometry_index, scale.head<3>(), geometry,
                                 color_data, depth_data, label_data,
-                                casts_shadows);
+                                receives_shadows, casts_shadows);
 
   EXPECT_EQ(instance.geometry, geometry_index);
+  EXPECT_EQ(instance.receives_shadows, receives_shadows);
   EXPECT_EQ(instance.casts_shadows, casts_shadows);
   EXPECT_TRUE(CompareMatrices(instance.T_GN, T_GN_expected));
   EXPECT_TRUE(CompareMatrices(instance.N_GN, N_GN_expected));

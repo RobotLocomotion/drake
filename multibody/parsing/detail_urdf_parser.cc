@@ -410,8 +410,8 @@ void UrdfParser::ParseJointDynamics(XMLElement* node, double* damping) {
         coulomb_friction != 0.0) {
       Warning(*dynamics_node,
               "A joint has specified a non-zero value for the"
-              " 'friction' attribute of a joint/dynamics tag. MultibodyPlant"
-              " does not currently support non-zero joint friction.");
+              " 'friction' attribute of a joint/dynamics tag. The URDF parser"
+              " does not currently parse joint friction and ignores it.");
     }
     if (ParseScalarAttribute(dynamics_node, "coulomb_window",
                              &coulomb_window)) {
@@ -1505,7 +1505,7 @@ std::pair<std::optional<ModelInstanceIndex>, std::string> UrdfParser::Parse() {
   }
 
   if (node->FirstChildElement("loop_joint")) {
-    Error(*node, "loop joints are not supported in MultibodyPlant");
+    Error(*node, "The obsolete <loop_joint> element is not supported.");
     return std::make_pair(model_instance_, model_name);
   }
 

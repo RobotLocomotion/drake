@@ -2,7 +2,6 @@
 
 #include <array>
 #include <queue>
-#include <unordered_map>
 #include <unordered_set>
 
 #include "drake/common/default_scalars.h"

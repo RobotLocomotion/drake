@@ -105,6 +105,7 @@ std::unique_ptr<Joint<T>> Joint<T>::ShallowClone() const {
   // N.B. We can't call set_default_damping_vector because it segfaults when
   // there's no parent tree.
   result->damping_ = this->damping_;
+  result->dry_friction_ = this->dry_friction_;
   result->set_position_limits(position_lower_limits(), position_upper_limits());
   result->set_velocity_limits(velocity_lower_limits(), velocity_upper_limits());
   result->set_acceleration_limits(acceleration_lower_limits(),

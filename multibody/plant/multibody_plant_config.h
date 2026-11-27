@@ -1,8 +1,10 @@
 #pragma once
 
 #include <string>
+#include <variant>
 
 #include "drake/common/name_value.h"
+#include "drake/common/schema/unchanged.h"
 
 namespace drake {
 namespace multibody {
@@ -25,6 +27,7 @@ struct MultibodyPlantConfig {
     a->Visit(DRAKE_NVP(sap_near_rigid_threshold));
     a->Visit(DRAKE_NVP(contact_surface_representation));
     a->Visit(DRAKE_NVP(adjacent_bodies_collision_filters));
+    a->Visit(DRAKE_NVP(enable_loop_topology));
   }
 
   /// Configures the MultibodyPlant::MultibodyPlant() constructor time_step.
@@ -35,8 +38,14 @@ struct MultibodyPlantConfig {
   double time_step{0.001};
 
   /// Configures the MultibodyPlant::SetUseSampledOutputPorts().
-  /// Ignored when the time_step is zero.
-  bool use_sampled_output_ports{true};
+  /// When set to Unchanged, the MultibodyPlant setting remains unchanged
+  /// (sampled for a discrete-time plant, live for a continuous-time plant).
+  /// For a continuous-time plant, `true` is only useful with an integrator
+  /// that records samples (e.g., CenicIntegrator, which reports the forces of
+  /// its own solve); the dynamics output ports of such a plant throw if no
+  /// integrator has recorded a sample.
+  std::variant<bool, schema::Unchanged> use_sampled_output_ports{
+      schema::Unchanged{}};
 
   // TODO(amcastro-tri): deprecate. Defaults should always come from
   // DefaultProximityProperties.
@@ -94,6 +103,9 @@ struct MultibodyPlantConfig {
 
   /// Configures the MultibodyPlant::set_adjacent_bodies_collision_filters().
   bool adjacent_bodies_collision_filters{true};
+
+  /// Configures the MultibodyPlant::SetEnableLoopTopology().
+  bool enable_loop_topology{true};
 };
 
 }  // namespace multibody

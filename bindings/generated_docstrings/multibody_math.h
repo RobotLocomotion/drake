@@ -949,12 +949,17 @@ Parameter ``other``:
     spatial vector to subtract from ``this`` spatial vector.
 
 Returns:
-    The following quantities in a tuple, in the order below. std∷tuple
-    | Description
-    -----------------|-------------------------------------------------
-    w_max_difference | Maximum absolute difference in rotation
-    components v_max_difference | Maximum absolute difference in
-    translation components)""";
+    The following quantities in a tuple, in the order below.
+
+.. list-table::
+   :header-rows: 1
+
+   * - std∷tuple
+     - Description
+   * - w_max_difference
+     - Maximum absolute difference in rotation components
+   * - v_max_difference
+     - Maximum absolute difference in translation components)""";
         } GetMaximumAbsoluteDifferences;
         // Symbol: drake::multibody::SpatialVector::IsApprox
         struct /* IsApprox */ {

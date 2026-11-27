@@ -173,20 +173,24 @@ class Cassie : public benchmark::Fixture {
     }
   }
 
-  // Runs the HessianSpatialVelocity benchmark: the derivatives Dᵢ(Jv_V_WB_W)
-  // along v = eᵢ of the left toe's spatial velocity Jacobian in the world.
+  // Runs the HessianSpatialVelocity benchmarks: the derivatives Dᵢ(Jv_V_AB_A)
+  // along v = eᵢ of the left toe's spatial velocity Jacobian in frame A. With
+  // invalidate_state = false, the kinematics stay cached and only the Hessian
+  // is timed.
   // NOLINTNEXTLINE(runtime/references)
-  void DoHessianSpatialVelocity(benchmark::State& state) {
+  void DoHessianSpatialVelocity(benchmark::State& state,
+                                const Frame<T>& frame_A,
+                                bool invalidate_state) {
     DRAKE_DEMAND(want_grad_v(state) == false);
     DRAKE_DEMAND(want_grad_vdot(state) == false);
     DRAKE_DEMAND(want_grad_u(state) == false);
     const Frame<T>& frame_B = plant_->GetFrameByName("toe_left");
-    std::vector<Matrix6X<T>> Hv_V_WB_W;
+    std::vector<Matrix6X<T>> Hv_V_AB_A;
     for (auto _ : state) {
-      InvalidateState();
-      plant_->CalcHessianSpatialVelocity(
-          *context_, JacobianWrtVariable::kV, frame_B, Vector3<T>::Zero(),
-          plant_->world_frame(), plant_->world_frame(), &Hv_V_WB_W);
+      if (invalidate_state) InvalidateState();
+      plant_->CalcHessianSpatialVelocity(*context_, JacobianWrtVariable::kV,
+                                         frame_B, Vector3<T>::Zero(), frame_A,
+                                         frame_A, &Hv_V_AB_A);
     }
   }
 
@@ -455,9 +459,31 @@ BENCHMARK_REGISTER_F(CassieDouble, JacobianSpatialVelocity)
 BENCHMARK_DEFINE_F(CassieDouble, HessianSpatialVelocity)
 // NOLINTNEXTLINE(runtime/references)
 (benchmark::State& state) {
-  DoHessianSpatialVelocity(state);
+  DoHessianSpatialVelocity(state, plant_->world_frame(),
+                           /* invalidate_state = */ true);
 }
 BENCHMARK_REGISTER_F(CassieDouble, HessianSpatialVelocity)
+    ->Unit(benchmark::kMicrosecond)
+    ->Arg(kWantNoGrad);
+
+// The pelvis is the floating base, so E moves with the first six velocities.
+BENCHMARK_DEFINE_F(CassieDouble, HessianSpatialVelocityInPelvis)
+// NOLINTNEXTLINE(runtime/references)
+(benchmark::State& state) {
+  DoHessianSpatialVelocity(state, plant_->GetFrameByName("pelvis"),
+                           /* invalidate_state = */ true);
+}
+BENCHMARK_REGISTER_F(CassieDouble, HessianSpatialVelocityInPelvis)
+    ->Unit(benchmark::kMicrosecond)
+    ->Arg(kWantNoGrad);
+
+BENCHMARK_DEFINE_F(CassieDouble, HessianSpatialVelocityInPelvisWarm)
+// NOLINTNEXTLINE(runtime/references)
+(benchmark::State& state) {
+  DoHessianSpatialVelocity(state, plant_->GetFrameByName("pelvis"),
+                           /* invalidate_state = */ false);
+}
+BENCHMARK_REGISTER_F(CassieDouble, HessianSpatialVelocityInPelvisWarm)
     ->Unit(benchmark::kMicrosecond)
     ->Arg(kWantNoGrad);
 

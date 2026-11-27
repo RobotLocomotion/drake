@@ -3,7 +3,6 @@
 #include <algorithm>
 #include <array>
 #include <tuple>
-#include <utility>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/is_less_than_comparable.h"

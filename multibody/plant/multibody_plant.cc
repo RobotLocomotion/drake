@@ -292,6 +292,23 @@ bool HasNaN(const EigenMatrix& x) {
   }
 }
 
+// Returns the quoted names of the joints of `plant` with non-zero default dry
+// friction.
+template <typename T>
+std::vector<std::string> GetJointsWithDefaultDryFriction(
+    const MultibodyPlant<T>& plant) {
+  std::vector<std::string> joint_names;
+  for (JointIndex joint_index : plant.GetJointIndices()) {
+    const Joint<T>& joint = plant.get_joint(joint_index);
+    // Only joints with a single degree of freedom model dry friction.
+    if (joint.num_velocities() != 1) continue;
+    if (joint.default_dry_friction() != 0.0) {
+      joint_names.push_back(fmt::format("'{}'", joint.name()));
+    }
+  }
+  return joint_names;
+}
+
 }  // namespace
 
 template <typename T>
@@ -428,9 +445,6 @@ template <typename T>
 void MultibodyPlant<T>::SetUseSampledOutputPorts(
     bool use_sampled_output_ports) {
   DRAKE_MBP_THROW_IF_FINALIZED();
-  if (!is_discrete()) {
-    DRAKE_THROW_UNLESS(use_sampled_output_ports == false);
-  }
   use_sampled_output_ports_ = use_sampled_output_ports;
 }
 
@@ -1426,10 +1440,11 @@ void MultibodyPlant<T>::Finalize() {
   collision_geometries_.resize(num_bodies());
 
   // Next, register the shadow links with SceneGraph so that we can visualize
-  // them. This enables Meshcat to visualize the shadow link inertia ellipsoids,
-  // and can be used to add visual geometry to the shadow links if desired
-  // (typically for pedagogical or debugging purposes -- shadows links are
-  // normally invisible).
+  // them. This can be used to add visual geometry to the shadow links if
+  // desired (typically for pedagogical or debugging purposes -- shadow links
+  // are normally invisible). A shadow link's mass properties are defined by
+  // its primary link so a shadow won't get an inertia ellipsoid in the
+  // visualizer. Instead the primary shows the full inertia.
   for (BodyIndex index(0); index < num_bodies(); ++index) {
     const RigidBody<T>& body = get_body(index);
     if (body.is_ephemeral()) {
@@ -1599,6 +1614,11 @@ void MultibodyPlant<T>::FinalizePlantOnly() {
   // support" message, rather than silently producing a degenerate plant that
   // fails downstream with an inscrutable error.
   RemoveUnsupportedScalars(*physical_models_);
+  // Likewise, joint dry friction is not supported for T = symbolic::Expression.
+  if (!GetJointsWithDefaultDryFriction(*this).empty()) {
+    this->get_mutable_system_scalar_converter()
+        .template Remove<symbolic::Expression, T>();
+  }
 
   DeclareInputPorts();
   DeclareParameters();
@@ -1766,6 +1786,31 @@ void MultibodyPlant<T>::ApplyDefaultCollisionFilters() {
   for (const auto& subgraph : subgraphs) {
     // Only operate on non-trivial weld subgraphs.
     if (subgraph.size() <= 1) {
+      continue;
+    }
+    if (subgraph.contains(world_index())) {
+      // Bodies welded to the world cannot move as a function of state, so we
+      // tell SceneGraph to anchor their frames rather than filtering the
+      // subgraph pairwise. That covers the same pairs -- no two anchored
+      // geometries can collide -- as an O(1) predicate instead of n(n-1)/2
+      // materialized pairs, and it additionally keeps their geometry out of
+      // the dynamic broadphase. For a few hundred static bodies the pairwise
+      // form dominates Finalize() time and per-context memory.
+      std::vector<geometry::FrameId> frame_ids;
+      frame_ids.reserve(subgraph.size());
+      for (BodyIndex body_index : subgraph) {
+        // RegisterRigidBodyWithSceneGraph() registers a frame for every body,
+        // so this should always have a value; we skip a missing one
+        // defensively rather than assume it.
+        std::optional<geometry::FrameId> frame_id =
+            GetBodyFrameIdIfExists(body_index);
+        if (frame_id.has_value()) frame_ids.push_back(*frame_id);
+      }
+      // Every body frame is registered as a child of the world frame (see
+      // RegisterRigidBodyWithSceneGraph()), so the parent rule is satisfied
+      // trivially. The world body's own frame *is* the world frame, which is
+      // already anchored; AnchorFrames() treats that as a no-op.
+      scene_graph_->AnchorFrames(frame_ids);
       continue;
     }
     // Map body indices to pointers.
@@ -2159,9 +2204,10 @@ void MultibodyPlant<T>::EstimatePointContactParameters(
   //  - Only scan free bodies for weight.
   //  - Consider an estimate of maximum velocities (context dependent).
   // Right now we are being very conservative and use the maximum mass in the
-  // system.
+  // system. Shadow bodies (see SetEnableLoopTopology()) are ignored here;
+  // we only consider the mass of user-defined bodies.
   double mass = 0.0;
-  for (BodyIndex body_index(0); body_index < num_bodies(); ++body_index) {
+  for (BodyIndex body_index(0); body_index < num_user_bodies(); ++body_index) {
     const RigidBody<T>& body = get_body(body_index);
     mass = std::max(mass, body.default_mass());
   }
@@ -2237,23 +2283,26 @@ void MultibodyPlant<T>::CalcContactResultsOutput(
   }
 
   // Use is_discrete() and use_sampled_output_ports() to govern the approach.
-  if (this->is_discrete()) {
-    if constexpr (sampled) {
-      DRAKE_DEMAND(use_sampled_output_ports_);
-      const DiscreteStepMemory::Data<T>* const memory =
-          get_discrete_step_memory(context);
-      if (memory != nullptr) {
-        discrete_update_manager_->CalcContactResults(*memory, output);
-      } else {
-        // The plant has not been stepped yet.
-        *output = ContactResults<T>{};
-        output->set_plant(this);
-      }
+  if constexpr (sampled) {
+    DRAKE_DEMAND(use_sampled_output_ports_);
+    const DiscreteStepMemory::Data<T>* const memory =
+        get_discrete_step_memory(context);
+    ThrowIfSampleMissing(memory != nullptr);
+    if (memory == nullptr) {
+      // The plant has not been stepped yet.
+      *output = ContactResults<T>{};
+      output->set_plant(this);
+    } else if (is_discrete()) {
+      discrete_update_manager_->CalcContactResults(*memory, output);
     } else {
-      discrete_update_manager_->CalcContactResults(context, output);
+      // For a continuous plant, the integrator that recorded the step memory
+      // is responsible for having assembled the contact results already.
+      *output = memory->contact_results;
+      output->set_plant(this);
     }
+  } else if (is_discrete()) {
+    discrete_update_manager_->CalcContactResults(context, output);
   } else {
-    DRAKE_DEMAND(!sampled);
     CalcContactResultsContinuous(context, output);
   }
 }
@@ -3012,22 +3061,20 @@ void MultibodyPlant<T>::CalcNetActuationOutput(const Context<T>& context,
   DRAKE_DEMAND(output != nullptr);
   DRAKE_DEMAND(output->size() == num_actuated_dofs());
   // Use is_discrete() and use_sampled_output_ports() to govern the approach.
-  if (is_discrete()) {
-    if constexpr (sampled) {
-      DRAKE_DEMAND(use_sampled_output_ports_);
-      const DiscreteStepMemory::Data<T>* const memory =
-          get_discrete_step_memory(context);
-      if (memory != nullptr) {
-        output->SetFromVector(memory->net_actuation);
-      } else {
-        // The plant has not been stepped yet.
-        output->SetZero();
-      }
+  if constexpr (sampled) {
+    DRAKE_DEMAND(use_sampled_output_ports_);
+    const DiscreteStepMemory::Data<T>* const memory =
+        get_discrete_step_memory(context);
+    ThrowIfSampleMissing(memory != nullptr);
+    if (memory != nullptr) {
+      output->SetFromVector(memory->net_actuation);
     } else {
-      output->SetFromVector(discrete_update_manager_->EvalActuation(context));
+      // The plant has not been stepped yet.
+      output->SetZero();
     }
+  } else if (is_discrete()) {
+    output->SetFromVector(discrete_update_manager_->EvalActuation(context));
   } else {
-    DRAKE_DEMAND(!sampled);
     output->SetFromVector(EvalNetActuationContinuous(context));
   }
 }
@@ -3409,10 +3456,12 @@ void MultibodyPlant<T>::CalcAndAddSpatialContactForcesContinuous(
 
 template <typename T>
 void MultibodyPlant<T>::ThrowIfUnsupportedContinuousTimeDynamics(
-    const systems::Context<T>&) const {
-  // Reject constraints.
-  // TODO(#23759,#23760,#23762,#23763,#23992): revisit this check and error
-  // message as constraints are implemented for CENIC.
+    const systems::Context<T>& context) const {
+  // Reject constraints in the standard continuous-time dynamics path. CENIC
+  // computes constrained dynamics separately.
+  // TODO(#23763,#23992): Once CENIC supports tendon constraints and couplers
+  // between joints in different trees, simplify the advice below about
+  // "supported constraint types".
   if (num_constraints() > 0) {
     // Loop constraints are not the user's doing -- Finalize() added them to
     // close the kinematic loops in the model -- so say where they came from
@@ -3435,12 +3484,39 @@ void MultibodyPlant<T>::ThrowIfUnsupportedContinuousTimeDynamics(
           num_constraints(), sc, num_loops, sl);
     }
     throw std::logic_error(fmt::format(
-        "Currently this MultibodyPlant is set to use continuous time. "
-        "Continuous time does not support constraints, but this model has {}. "
-        "Use a discrete time model and set_discrete_contact_approximation() to "
-        "set a model approximation that uses the SAP solver instead (kSap, "
-        "kSimilar, or kLagged).",
+        "Standard continuous-time dynamics do not support constraints, but "
+        "this model has {}. Use the CENIC integrator (integration scheme "
+        "'cenic', with SetUseSampledOutputPorts(true) on the plant) to "
+        "simulate supported constraint types, or use a discrete-time plant "
+        "with SAP.",
         constraints));
+  }
+
+  // Reject joint dry friction. Dry friction is not supported for
+  // T = symbolic::Expression (see Joint::SetDryFriction()), so there is nothing
+  // to reject for symbolic plants.
+  // TODO(xuchen-han): Remove this scan over all joints on every evaluation of
+  // the dynamics, e.g. by caching the indices of the joints with a single
+  // degree of freedom at Finalize().
+  if constexpr (scalar_predicate<T>::is_bool) {
+    std::vector<std::string> joints_with_dry_friction;
+    for (JointIndex joint_index : GetJointIndices()) {
+      const Joint<T>& joint = get_joint(joint_index);
+      // Only joints with a single degree of freedom model dry friction.
+      if (joint.num_velocities() != 1) continue;
+      if (joint.GetDryFriction(context) != 0.0) {
+        joints_with_dry_friction.push_back(fmt::format("'{}'", joint.name()));
+      }
+    }
+    if (!joints_with_dry_friction.empty()) {
+      const char* s = (joints_with_dry_friction.size() == 1 ? "" : "s");
+      throw std::logic_error(fmt::format(
+          "Standard continuous-time dynamics do not support joint dry "
+          "friction, but it is non-zero for joint{} {}. Use a discrete-time "
+          "plant with SAP, or set the dry friction of the joint{} to zero, see "
+          "Joint::SetDryFriction().",
+          s, fmt::join(joints_with_dry_friction, ", "), s));
+    }
   }
 
   // TODO(#24061): consider rejecting models with joint limits here, once CENIC
@@ -3541,10 +3617,10 @@ const AccelerationKinematicsCache<T>&
 MultibodyPlant<T>::EvalAccelerationKinematicsCacheForOutputPortCalc(
     const systems::Context<T>& context) const {
   if constexpr (sampled) {
-    DRAKE_DEMAND(is_discrete());
     DRAKE_DEMAND(use_sampled_output_ports_);
     const DiscreteStepMemory::Data<T>* const memory =
         get_discrete_step_memory(context);
+    ThrowIfSampleMissing(memory != nullptr);
     if (memory == nullptr) {
       DRAKE_DEMAND(zero_acceleration_kinematics_placeholder_ != nullptr);
       return *zero_acceleration_kinematics_placeholder_;
@@ -3704,10 +3780,66 @@ systems::EventStatus MultibodyPlant<T>::CalcSurfaceDisplacementUpdate(
 }
 
 template <typename T>
+const DiscreteStepMemory& MultibodyPlant<T>::GetStepMemory(
+    const Context<T>& context) const {
+  this->ValidateContext(context);
+  DRAKE_DEMAND(use_sampled_output_ports_);
+  return context.template get_abstract_state<DiscreteStepMemory>(0);
+}
+
+template <typename T>
+DiscreteStepMemory& MultibodyPlant<T>::GetMutableStepMemory(
+    Context<T>* context) const {
+  this->ValidateContext(context);
+  DRAKE_DEMAND(use_sampled_output_ports_);
+  return context->template get_mutable_abstract_state<DiscreteStepMemory>(0);
+}
+
+template <typename T>
+void MultibodyPlant<T>::SetEmptyStepMemory(Context<T>* context) const {
+  this->ValidateContext(context);
+  DRAKE_DEMAND(use_sampled_output_ports_);
+  DRAKE_DEMAND(zero_acceleration_kinematics_placeholder_ != nullptr);
+  // Allocate() sizes the storage but doesn't zero it, so set every value that
+  // the sampled output ports read.
+  DiscreteStepMemory::Data<T>& memory =
+      GetMutableStepMemory(context).template Allocate<T>(
+          internal_tree().forest());
+  memory.net_actuation = VectorX<T>::Zero(num_actuated_dofs());
+  memory.acceleration_kinematics_cache =
+      *zero_acceleration_kinematics_placeholder_;
+  memory.contact_solver_results.tau_contact =
+      VectorX<T>::Zero(num_velocities());
+  memory.reaction_forces.assign(num_joints(), SpatialForce<T>::Zero());
+  memory.contact_results.set_plant(this);
+}
+
+template <typename T>
+void MultibodyPlant<T>::ThrowIfSampleMissing(bool has_sample) const {
+  if (!has_sample && !is_discrete()) {
+    throw std::logic_error(
+        "MultibodyPlant: this continuous-time plant has sampled output ports "
+        "(SetUseSampledOutputPorts(true)), but no integrator has recorded a "
+        "sample for them, so the dynamics output ports have nothing to report. "
+        "Use an integrator that records samples (e.g., CenicIntegrator) and "
+        "initialize it first, or call SetUseSampledOutputPorts(false) before "
+        "Finalize().");
+  }
+}
+
+template <typename T>
 void MultibodyPlant<T>::DeclareStateUpdate() {
   // The model must be finalized.
   DRAKE_DEMAND(this->is_finalized());
-  if (is_discrete()) {
+  if (!is_discrete()) {
+    // A continuous plant has no update events of its own. When output port
+    // sampling is requested, we still declare the step memory State so that an
+    // integrator that understands it (e.g., CenicIntegrator) can record the
+    // dynamics of each step it takes for use by the sampled output ports.
+    if (use_sampled_output_ports_) {
+      this->DeclareAbstractState(Value<DiscreteStepMemory>{});
+    }
+  } else {
     // Declare our periodic update step, and also permit triggering a step via
     // a Forced update. For output port sampling, we also need additional State.
     if (use_sampled_output_ports_) {
@@ -4153,24 +4285,21 @@ void MultibodyPlant<T>::CalcInstanceGeneralizedContactForcesOutput(
   // Vector of generalized contact forces for the entire multibody system.
   // We will find a pointer to it based on the discrete / sampled mode.
   const VectorX<T>* tau_contact{};
-  if (is_discrete()) {
-    if constexpr (sampled) {
-      DRAKE_DEMAND(use_sampled_output_ports_);
-      const DiscreteStepMemory::Data<T>* const memory =
-          get_discrete_step_memory(context);
-      if (memory == nullptr) {
-        // The plant has not been stepped yet.
-        DRAKE_DEMAND(sampled == true);
-        output->SetZero();
-        return;
-      }
-      tau_contact = &memory->contact_solver_results.tau_contact;
-    } else {
-      tau_contact = &discrete_update_manager_->EvalContactSolverResults(context)
-                         .tau_contact;
+  if constexpr (sampled) {
+    DRAKE_DEMAND(use_sampled_output_ports_);
+    const DiscreteStepMemory::Data<T>* const memory =
+        get_discrete_step_memory(context);
+    ThrowIfSampleMissing(memory != nullptr);
+    if (memory == nullptr) {
+      // The plant has not been stepped yet.
+      output->SetZero();
+      return;
     }
+    tau_contact = &memory->contact_solver_results.tau_contact;
+  } else if (is_discrete()) {
+    tau_contact = &discrete_update_manager_->EvalContactSolverResults(context)
+                       .tau_contact;
   } else {
-    DRAKE_DEMAND(sampled == false);
     tau_contact = &EvalGeneralizedContactForcesContinuous(context);
   }
   DRAKE_DEMAND(tau_contact != nullptr);
@@ -4431,6 +4560,7 @@ void MultibodyPlant<T>::CalcReactionForcesOutput(
   if constexpr (sampled) {
     const DiscreteStepMemory::Data<T>* memory =
         get_discrete_step_memory(context);
+    ThrowIfSampleMissing(memory != nullptr);
     if (memory == nullptr) {
       for (SpatialForce<T>& item : *output) {
         item.SetZero();
@@ -4456,7 +4586,6 @@ void MultibodyPlant<T>::CalcReactionForces(
   // dynamics, consistent with the value of vdot obtained below.
   MultibodyForces<T> applied_forces(*this);
   auto& Fapplied_Bo_W_array = applied_forces.mutable_body_forces();
-  auto& tau_applied = applied_forces.mutable_generalized_forces();
   if (is_discrete()) {
     applied_forces =
         discrete_update_manager_->EvalDiscreteUpdateMultibodyForces(context);
@@ -4474,6 +4603,21 @@ void MultibodyPlant<T>::CalcReactionForces(
   //  DiscreteUpdateManager::EvalReactionForces() to ensure the manager performs
   //  this computation consistently with its discrete update.
   const VectorX<T>& vdot = this->EvalForwardDynamics(context).get_vdot();
+  CalcReactionForcesGivenAppliedForcesAndVdot(context, applied_forces, vdot,
+                                              output);
+}
+
+template <typename T>
+void MultibodyPlant<T>::CalcReactionForcesGivenAppliedForcesAndVdot(
+    const systems::Context<T>& context,
+    const MultibodyForces<T>& applied_forces, const VectorX<T>& vdot,
+    std::vector<SpatialForce<T>>* output) const {
+  DRAKE_DEMAND(output != nullptr);
+  DRAKE_DEMAND(ssize(*output) == num_joints());
+  DRAKE_DEMAND(applied_forces.CheckHasRightSizeForModel(*this));
+  DRAKE_DEMAND(vdot.size() == num_velocities());
+  const auto& Fapplied_Bo_W_array = applied_forces.body_forces();
+  const auto& tau_applied = applied_forces.generalized_forces();
   std::vector<SpatialAcceleration<T>> A_WB_vector(num_bodies());
   std::vector<SpatialForce<T>> F_BMo_W_vector(num_bodies());
   VectorX<T> tau_id(num_velocities());
@@ -4544,6 +4688,30 @@ void MultibodyPlant<T>::CalcReactionForces(
     // Perform  the M->Jc shift.
     F_CJc_Jc = F_CMo_Jc.Shift(p_MoJco_Jc);
   }
+}
+
+template <typename T>
+void MultibodyPlant<T>::CalcAccelerationKinematicsAndReactionForces(
+    const systems::Context<T>& context,
+    const MultibodyForces<T>& applied_forces, const VectorX<T>& vdot,
+    AccelerationKinematicsCache<T>* ac,
+    std::vector<SpatialForce<T>>* reaction_forces) const {
+  this->ValidateContext(context);
+  DRAKE_DEMAND(ac != nullptr);
+  DRAKE_DEMAND(reaction_forces != nullptr);
+  DRAKE_DEMAND(applied_forces.CheckHasRightSizeForModel(*this));
+  DRAKE_DEMAND(vdot.size() == num_velocities());
+
+  // Acceleration kinematics, consistent with the given vdot.
+  ac->get_mutable_vdot() = vdot;
+  internal_tree().CalcSpatialAccelerationsFromVdot(
+      context, EvalPositionKinematics(context), EvalVelocityKinematics(context),
+      ac->get_vdot(), &ac->get_mutable_A_WB_pool());
+
+  // Joint reaction forces, consistent with the applied forces and vdot.
+  reaction_forces->resize(num_joints());
+  CalcReactionForcesGivenAppliedForcesAndVdot(context, applied_forces, vdot,
+                                              reaction_forces);
 }
 
 template <typename T>
@@ -4648,6 +4816,17 @@ std::string MultibodyPlant<T>::GetUnsupportedScalarConversionMessage(
   };
   if (physical_models_ != nullptr) collect(*physical_models_);
   if (discrete_update_manager_ != nullptr) collect(*discrete_update_manager_);
+  // NOLINTNEXTLINE(readability/casting) False positive.
+  if (destination_type == typeid(symbolic::Expression)) {
+    const std::vector<std::string> joints_with_dry_friction =
+        GetJointsWithDefaultDryFriction(*this);
+    if (!joints_with_dry_friction.empty()) {
+      const bool plural = joints_with_dry_friction.size() > 1;
+      causes.push_back(fmt::format(
+          "joint{} {} {} non-zero dry friction", plural ? "s" : "",
+          fmt::join(joints_with_dry_friction, ", "), plural ? "have" : "has"));
+    }
+  }
   if (!causes.empty()) {
     result += fmt::format(" (because {})", fmt::join(causes, " and "));
   }

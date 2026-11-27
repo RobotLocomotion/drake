@@ -97,17 +97,6 @@ bool IsError(const sdf::Error& report) {
   }
 }
 
-bool PropagateErrors(sdf::Errors&& input_errors, sdf::Errors* output_errors) {
-  bool result = false;
-  for (auto& e : input_errors) {
-    if (IsError(e)) {
-      result = true;
-    }
-    output_errors->push_back(std::move(e));
-  }
-  return result;
-}
-
 void CheckSupportedElements(const SDFormatDiagnostic& diagnostic,
                             sdf::ElementConstPtr root_element,
                             const std::set<std::string>& supported_elements) {

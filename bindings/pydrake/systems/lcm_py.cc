@@ -7,6 +7,8 @@
 
 #include "drake/bindings/generated_docstrings/lcm.h"
 #include "drake/bindings/generated_docstrings/systems_lcm.h"
+#include "drake/bindings/pydrake/common/ref_cycle_pybind.h"
+#include "drake/bindings/pydrake/lcm_type_hook_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/systems/lcm_py_bind_cpp_serializers.h"
 #include "drake/lcm/drake_lcm.h"
@@ -82,18 +84,30 @@ class PySerializerInterface : public SerializerInterface {
   }
 };
 
-// Define warning related to lack of multiple inheritance with our fork of
-// pybind11. This will be sufficient for workflows in pure Python, but will
-// not readily support intermingling of C++-constructed LcmInterfaceSystem
-// classes which are then passed to Python.
+// Define warning related to lack of multiple inheritance (not supported by
+// nanobind, nor by our fork of pybind11). This will be sufficient for workflows
+// in pure Python, but will not readily support intermingling of
+// C++-constructed LcmInterfaceSystem classes which are then passed to Python.
 constexpr char kLcmInterfaceSystemClassWarning[] = R"""(
 
 Warning:
     In C++, this class inherits both LeafSystem and DrakeLcmInterface. However,
-    in Python, this only inherits from LeafSystem since our fork of pybind11
-    does not support multiple inheritance. Additionally, it only exposes the
+    in Python, this only inherits from LeafSystem since multiple inheritance
+    is not supported by our binding libraries. Additionally, it only exposes the
     constructor accepting a DrakeLcmInterface, so that it can still be used in
-    interface code.
+    interface code. When using nanobind, a bus returned by LcmBuses.Find() is
+    presented as a plain DrakeLcmInterface (not an LcmInterfaceSystem, and not a
+    LeafSystem), so that it can be passed to any function that accepts a
+    DrakeLcmInterface, but not to any function that accepts a LeafSystem. When
+    using pybind11, it is presented as an LcmInterfaceSystem.
+)""";
+
+constexpr char kLcmBusesFindNote[] = R"""(
+
+Note:
+    When using nanobind, a configured bus is returned as a plain
+    DrakeLcmInterface rather than an LcmInterfaceSystem; see the warning on
+    LcmInterfaceSystem. When using pybind11, it is an LcmInterfaceSystem.
 )""";
 
 }  // namespace
@@ -167,7 +181,7 @@ PYDRAKE_MODULE(lcm, m) {
   {
     using Class = LcmBuses;
     constexpr auto& cls_doc = doc.LcmBuses;
-    class_<Class> cls(m, "LcmBuses");
+    class_<Class> cls(m, "LcmBuses", py::dynamic_attr());
     cls  // BR
         .def_ro_static("kLcmUrlMemqNull", &Class::kLcmUrlMemqNull
             // TODO(jwnimmer-tri) The `cls_doc.kLcmUrlMemqNull.doc` docstring
@@ -177,20 +191,30 @@ PYDRAKE_MODULE(lcm, m) {
             )
         .def(py::init(), cls_doc.ctor.doc)
         .def("size", &Class::size, cls_doc.size.doc)
+        // The returned bus is an alias into memory that the LcmBuses keeps
+        // alive (via Add, or via ApplyLcmBusConfig's link to the builder), so
+        // keep the LcmBuses alive for as long as the bus is.
         .def("Find", &Class::Find, py::arg("description_of_caller"),
-            py::arg("bus_name"), py_rvp::reference_internal, cls_doc.Find.doc)
+            py::arg("bus_name"), py_rvp::reference, internal::ref_cycle<0, 1>(),
+            (std::string(cls_doc.Find.doc) + kLcmBusesFindNote).c_str())
         .def("GetAllBusNames", &Class::GetAllBusNames,
             cls_doc.GetAllBusNames.doc)
         .def("Add", &Class::Add, py::arg("bus_name"), py::arg("bus"),
-            // Keep alive, ownership: `self` keeps `bus` alive.
-            py::keep_alive<1, 3>(), cls_doc.Add.doc);
+            // `self` keeps `bus` alive. This is a ref_cycle (not keep_alive) to
+            // match Find(), so that the cycle collector can free them.
+            internal::ref_cycle<1, 3>(), cls_doc.Add.doc);
   }
 
   m.def("ApplyLcmBusConfig",
       py::overload_cast<
           const std::map<std::string, std::optional<DrakeLcmParams>>&,
           systems::DiagramBuilder<double>*>(&ApplyLcmBusConfig),
-      py::arg("lcm_buses"), py::arg("builder"), doc.ApplyLcmBusConfig.doc);
+      py::arg("lcm_buses"), py::arg("builder"),
+      // The LcmBuses aliases into memory owned by the builder, so keep the
+      // builder alive for as long as the LcmBuses is. Unlike keep_alive, this
+      // cycle is visible to garbage collection, so a system that stores a bus
+      // and is added to the builder can still be collected.
+      internal::ref_cycle<0, 2>(), doc.ApplyLcmBusConfig.doc);
 
   {
     using Class = LcmPublisherSystem;

@@ -14,6 +14,7 @@ from pydrake.common import FindResourceOrThrow, Parallelism
 from pydrake.common.cpp_param import List
 from pydrake.common.deprecation import install_numpy_warning_filters
 from pydrake.common.eigen_geometry import Quaternion_
+from pydrake.common.schema import Unchanged
 from pydrake.common.test_utilities import numpy_compare
 from pydrake.common.test_utilities.pickle_compare import assert_pickle
 from pydrake.common.value import AbstractValue, Value
@@ -202,11 +203,12 @@ class TestPlant(unittest.TestCase):
         plant.SetUseSampledOutputPorts(use_sampled_output_ports=False)
         self.assertEqual(plant.has_sampled_output_ports(), False)
         self.assertEqual(plant.time_step(), 0.0)
-        self.assertEqual(plant.GetEnableLoopTopology(), False)
-        plant.SetEnableLoopTopology(enable=True)
         self.assertEqual(plant.GetEnableLoopTopology(), True)
         plant.SetEnableLoopTopology(enable=False)
+        self.assertEqual(plant.GetEnableLoopTopology(), False)
+        plant.SetEnableLoopTopology(enable=True)
         self.assertEqual(plant.num_loop_constraints(), 0)
+        self.assertEqual(plant.num_user_bodies(), plant.num_bodies())
         spatial_inertia = SpatialInertia.NaN()
         body = plant.AddRigidBody(name="new_body", M_BBo_B=spatial_inertia)
         body.default_mass()
@@ -352,6 +354,7 @@ class TestPlant(unittest.TestCase):
     def test_multibody_plant_config(self):
         MultibodyPlantConfig()
         config = MultibodyPlantConfig(time_step=0.01)
+        self.assertIsInstance(config.use_sampled_output_ports, Unchanged)
         self.assertEqual(config.time_step, 0.01)
         self.assertIn("time_step", repr(config))
         copy.copy(config)
@@ -674,6 +677,7 @@ class TestPlant(unittest.TestCase):
         self._test_multibody_tree_element_mixin(T, body)
         self.assertIsInstance(body.name(), str)
         self.assertIsInstance(body.scoped_name(), ScopedName)
+        self.assertIs(body.primary_link(), body)
         self.assertIsInstance(body.is_floating_base_body(), bool)
         self.assertIsInstance(body.has_quaternion_dofs(), bool)
         self.assertIsInstance(body.default_mass(), float)
@@ -2373,6 +2377,8 @@ class TestPlant(unittest.TestCase):
         array_T = np.vectorize(T)
         damping = 2.0
         different_damping = 3.4
+        dry_friction = 0.25
+        different_dry_friction = 0.5
         x_axis = [1.0, 0.0, 0.0]
         X_PC = RigidTransform_[float](p=[1.0, 2.0, 3.0])
 
@@ -2527,6 +2533,27 @@ class TestPlant(unittest.TestCase):
                 )
                 joint.set_default_damping_vector(damping=damping_vector)
 
+            # Only joints with one degree of freedom model dry friction.
+            if joint.num_velocities() == 1:
+                # Joints model no dry friction by default.
+                self.assertEqual(joint.default_dry_friction(), 0.0)
+                if T == Expression:
+                    # Dry friction is not supported for symbolic scalars.
+                    with self.assertRaisesRegex(
+                        RuntimeError, "not supported for T = symbolic"
+                    ):
+                        joint.set_default_dry_friction(
+                            dry_friction=dry_friction
+                        )
+                else:
+                    joint.set_default_dry_friction(
+                        dry_friction=different_dry_friction
+                    )
+                    self.assertEqual(
+                        joint.default_dry_friction(), different_dry_friction
+                    )
+                    joint.set_default_dry_friction(dry_friction=dry_friction)
+
             if joint.name() in ["prismatic", "revolute"]:
                 # This must be called pre-Finalize().
                 joint.set_default_damping(damping=damping)
@@ -2575,6 +2602,33 @@ class TestPlant(unittest.TestCase):
                     array_T(different_damping_vector),
                 )
                 joint.SetDampingVector(context, array_T(damping_vector))
+
+            if joint.num_velocities() == 1:
+                if T == Expression:
+                    # Dry friction is not supported for symbolic scalars.
+                    numpy_compare.assert_equal(
+                        joint.GetDryFriction(context=context), T(0.0)
+                    )
+                    with self.assertRaisesRegex(
+                        RuntimeError, "not supported for T = symbolic"
+                    ):
+                        joint.SetDryFriction(
+                            context=context, dry_friction=T(dry_friction)
+                        )
+                else:
+                    numpy_compare.assert_equal(
+                        joint.GetDryFriction(context=context), T(dry_friction)
+                    )
+                    joint.SetDryFriction(
+                        context=context, dry_friction=T(different_dry_friction)
+                    )
+                    numpy_compare.assert_equal(
+                        joint.GetDryFriction(context=context),
+                        T(different_dry_friction),
+                    )
+                    joint.SetDryFriction(
+                        context=context, dry_friction=T(dry_friction)
+                    )
 
             if joint.name() == "ball_rpy":
                 self.assertEqual(joint.default_damping(), damping)

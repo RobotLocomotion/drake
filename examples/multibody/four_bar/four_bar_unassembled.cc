@@ -116,10 +116,16 @@ class FourBarUnassembledDemo final {
     Parser(&builder_).AddModelsFromUrl(
         "package://drake/examples/multibody/four_bar/four_bar_unassembled.sdf");
 
-    // We are done defining the model. Opt in to automatic modeling of closed
-    // topologies (otherwise Finalize() would throw). Splitting a link,
-    // retargeting a joint, and adding a weld happens here.
-    four_bar_->SetEnableLoopTopology(true);
+    // CENIC does not integrate the plant's own contact model, so ask for
+    // sampled output ports to make the plant report the forces of CENIC's
+    // solve.
+    if (FLAGS_time_step == 0.0 &&
+        FLAGS_simulator_integration_scheme == "cenic") {
+      four_bar_->SetUseSampledOutputPorts(true);
+    }
+
+    // We are done defining the model. Splitting a link, retargeting a joint,
+    // and adding a weld happens here.
     four_bar_->Finalize();
     if (four_bar_->num_loop_constraints() != 1) {
       throw std::runtime_error(

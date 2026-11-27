@@ -51,6 +51,8 @@ Integrator with a new one; be careful not to keep old references around.)
   integrator and the simulator.
 @param[in,out] simulator On input, a valid pointer to a Simulator. On output
   the integrator for `simulator` is reset according to the given `config`.
+@throw std::exception if `config.integrator_params` holds parameters for an
+  integrator other than the one selected by `config.integration_scheme`.
 @tparam_nonsymbolic_scalar
 
 @ingroup simulator_configuration
@@ -62,7 +64,9 @@ void ApplySimulatorConfig(const SimulatorConfig& config,
 /** Reports the simulator's current configuration, including the configuration
 of the integrator.
 The start_time of the extracted config is set to the current time of the
-simulator context.
+simulator context. If the integrator has integrator-specific parameters (e.g.,
+CENIC), they are reported in `integrator_params`; otherwise it is left unset
+(std::monostate).
 
 @param[in] simulator The Simulator to extract the configuration from.
 @tparam_nonsymbolic_scalar
@@ -81,12 +85,13 @@ SimulatorConfig ExtractSimulatorConfig(
   maintain a reference to the system in perpetuity, so the integrator must not
   outlive the system.
 @param integrator_config Configuration to be used. Only values relevant to the
-  integrator (integration_scheme, max_step_size, use_error_control, accuracy)
-  are applied.
+  integrator (integration_scheme, max_step_size, use_error_control, accuracy,
+  integrator_params) are applied.
 @pre `system != nullptr`.
 @throw std::exception if the integration scheme does not match any of
-  GetIntegrationSchemes(), or if the integration scheme does not support the
-  scalar type T.
+  GetIntegrationSchemes(), if the integration scheme does not support the
+  scalar type T, or if `integrator_config.integrator_params` holds parameters
+  for an integrator other than the one selected by the integration scheme.
 @tparam_default_scalar
 
 @ingroup simulator_configuration */

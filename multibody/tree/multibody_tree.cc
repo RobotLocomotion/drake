@@ -511,14 +511,38 @@ template <typename T>
 std::vector<JointActuatorIndex> MultibodyTree<T>::GetJointActuatorIndices(
     ModelInstanceIndex model_instance) const {
   DRAKE_THROW_UNLESS(model_instances_.has_element(model_instance));
-  return model_instances_.get_element(model_instance).GetJointActuatorIndices();
+  if (is_finalized()) {
+    return model_instances_.get_element(model_instance)
+        .GetJointActuatorIndices();
+  }
+  // The ModelInstance's list of actuators is only populated during Finalize(),
+  // so pre-finalize we scan all of the actuators instead. Like the
+  // ModelInstance list, the result is sorted by JointActuatorIndex.
+  std::vector<JointActuatorIndex> indices;
+  for (const JointActuator<T>* actuator : actuators_.elements()) {
+    if (actuator->model_instance() == model_instance) {
+      indices.push_back(actuator->index());
+    }
+  }
+  return indices;
 }
 
 template <typename T>
 std::vector<JointIndex> MultibodyTree<T>::GetActuatedJointIndices(
     ModelInstanceIndex model_instance) const {
   DRAKE_THROW_UNLESS(model_instances_.has_element(model_instance));
-  return model_instances_.get_element(model_instance).GetActuatedJointIndices();
+  if (is_finalized()) {
+    return model_instances_.get_element(model_instance)
+        .GetActuatedJointIndices();
+  }
+  // Pre-finalize, derive the joints from GetJointActuatorIndices() so there is
+  // only one definition of "the actuators in this model instance".
+  std::vector<JointIndex> indices;
+  for (JointActuatorIndex actuator_index :
+       GetJointActuatorIndices(model_instance)) {
+    indices.push_back(get_joint_actuator(actuator_index).joint().index());
+  }
+  return indices;
 }
 
 template <typename T>
@@ -1083,15 +1107,13 @@ void MultibodyTree<T>::Finalize() {
 
   if (!enable_loop_topology_ && !graph.loop_constraints().empty()) {
     link_joint_graph_.InvalidateForest();
-    throw std::runtime_error(fmt::format(
-        "The bodies and joints of this system form one or more loops in the "
-        "system graph. Automatic modeling of such systems is disabled by "
-        "default; you can enable it by calling "
-        "MultibodyPlant::SetEnableLoopTopology(true) before Finalize() "
-        "but: the feature is in development and not yet functional even when "
-        "enabled. For now, loops can be modeled with some input changes. See "
+    throw std::runtime_error(
+        "This model contains kinematic loops, but automatic loop modeling "
+        "is disabled. Before Finalize(), call "
+        "MultibodyPlant::SetEnableLoopTopology(true), or apply "
+        "MultibodyPlantConfig with enable_loop_topology=true. See "
         "https://drake.mit.edu/troubleshooting.html#mbp-loops-in-graph "
-        "for advice on how to model systems with loops."));
+        "for more about modeling systems with loops.");
   }
 
   /* Add the shadow Links. BuildForest() creates a shadow Link for each
@@ -1101,36 +1123,25 @@ void MultibodyTree<T>::Finalize() {
   immediately after the user links, so that each new shadow link's index
   matches its graph shadow-link index.
 
-  We give each shadow a default spatial inertia equal to the primary link's
-  share of the even split -- mass/(N+1) with the same com and unit inertia,
-  where N is the primary's shadow count -- so that the shadow's user-facing
-  default reflects the split rather than being zero. This default is
-  informational only; the effective runtime inertias of both the primary and its
-  shadows are still (re)computed in CalcFrameBodyPoses() by dividing the
-  primary's parameterized inertia, which remains the single source of truth for
-  the split (so runtime changes to the primary's mass re-split correctly). */
-  // TODO(sherm1) Consider making shadow link inertias NaN and prohibiting
-  //  anyone from asking about shadow default mass properties since they are
-  //  not used at all.
+  A shadow link has no mass properties of its own (its mass-property accessors
+  throw), so it gets a NaN default spatial inertia that nothing reads. The
+  dynamics give the primary and each of its shadows an even share of the
+  primary's parameterized inertia, computed in CalcFrameBodyPoses(), so the
+  primary remains the single source of truth and runtime changes to its mass
+  re-split correctly. */
   for (LinkOrdinal shadow_ordinal(graph.num_user_links());
        shadow_ordinal < graph.num_links(); ++shadow_ordinal) {
     const LinkJointGraph::Link& shadow_graph_link = graph.links(shadow_ordinal);
     DRAKE_DEMAND(!shadow_graph_link.is_world());
     DRAKE_DEMAND(shadow_graph_link.is_shadow());
-    const LinkIndex primary_index = shadow_graph_link.primary_link();
     const LinkJointGraph::Link& primary_graph_link =
-        graph.link_by_index(primary_index);
+        graph.link_by_index(shadow_graph_link.primary_link());
     DRAKE_DEMAND(
         !primary_graph_link.is_world());  // Shouldn't ever split World.
     DRAKE_DEMAND(!primary_graph_link.is_shadow());
-    const int num_copies = primary_graph_link.num_shadows() + 1;
-    const SpatialInertia<double>& M_primary =
-        links_.get_element(primary_index).default_spatial_inertia();
-    const SpatialInertia<double> M_shadow(M_primary.get_mass() / num_copies,
-                                          M_primary.get_com(),
-                                          M_primary.get_unit_inertia());
     const Link<T>& shadow_link = AddEphemeralLink(
-        shadow_graph_link.name(), shadow_graph_link.model_instance(), M_shadow);
+        shadow_graph_link.name(), shadow_graph_link.model_instance(),
+        SpatialInertia<double>::NaN());
     DRAKE_DEMAND(shadow_link.index() == shadow_graph_link.index());
 
     /* BuildForest() broke the loop by retargeting one of a joint's ends from
@@ -1874,7 +1885,7 @@ void MultibodyTree<T>::CalcFrameBodyPoses(
     for (const LinkOrdinal& link_ordinal : mobod.follower_link_ordinals()) {
       // Mass properties are split evenly among a primary link and any shadow
       // links that were created to break loops. We source the inertia from the
-      // primary link (a shadow link's default spatial inertia is ignored) and
+      // primary link (a shadow link has no mass properties of its own) and
       // divide by the number of copies (primary + shadows). Because a shadow's
       // link frame coincides with its primary's (they are welded at identity),
       // the body-frame inertia values are identical, so a shadow and its
@@ -1885,15 +1896,15 @@ void MultibodyTree<T>::CalcFrameBodyPoses(
       const int num_copies =
           graph().link_by_index(primary_index).num_shadows() + 1;
       const Link<T>& source_link = links_.get_element(primary_index);
-      // Read the primary's inertia straight from its parameter (the source of
-      // truth) rather than via CalcSpatialInertiaInBodyFrame(), which now reads
-      // back from the very cache we are building here.
       SpatialInertia<T> M_LLo_L =
-          source_link.CalcSpatialInertiaInBodyFrameFromParameters(context);
+          source_link.CalcSpatialInertiaInBodyFrame(context);
       if (num_copies > 1) {
-        M_LLo_L =
-            SpatialInertia<T>(M_LLo_L.get_mass() / num_copies,
-                              M_LLo_L.get_com(), M_LLo_L.get_unit_inertia());
+        // Like the parameter conversion that produced M_LLo_L, we skip the
+        // validity check. A kinematics-only model may leave mass properties
+        // NaN, and dividing a valid mass by num_copies leaves it valid.
+        M_LLo_L = SpatialInertia<T>(
+            M_LLo_L.get_mass() / num_copies, M_LLo_L.get_com(),
+            M_LLo_L.get_unit_inertia(), /* skip_validity_check = */ true);
       }
       frame_body_poses->SetM_LLo_L(link_ordinal, M_LLo_L);
 
@@ -2019,12 +2030,15 @@ void MultibodyTree<T>::CalcDynamicBiasForces(
 
   const VelocityKinematicsCache<T>& vc = this->EvalVelocityKinematics(context);
 
-  // Skip the world.
-  for (BodyIndex body_index(1); body_index < num_links(); ++body_index) {
-    const RigidBody<T>& body = get_link(body_index);
+  // World has no bias force. As for the other bias terms, we set its entry to
+  // NaN so that any accidental use leaves a trail of NaNs back to the source.
+  (*Fb_Bo_W_all)[world_mobod_index()].SetNaN();
 
+  // Compute Fb_Bo_W for each mobilized body B (except World). Note that M_B_W
+  // includes the mass properties of every link that follows B.
+  for (MobodIndex mobod_index(1); mobod_index < num_mobods(); ++mobod_index) {
     const SpatialInertia<T>& M_B_W =
-        spatial_inertia_in_world_cache[body.mobod_index()];
+        spatial_inertia_in_world_cache[mobod_index];
 
     const T& mass = M_B_W.get_mass();
     // B's center of mass measured in B and expressed in W.
@@ -2034,9 +2048,9 @@ void MultibodyTree<T>::CalcDynamicBiasForces(
 
     // Gyroscopic spatial force Fb_Bo_W(q, v) on body B about Bo, expressed in
     // W.
-    const SpatialVelocity<T>& V_WB = vc.get_V_WB(body.mobod_index());
+    const SpatialVelocity<T>& V_WB = vc.get_V_WB(mobod_index);
     const Vector3<T>& w_WB = V_WB.rotational();
-    SpatialForce<T>& Fb_Bo_W = (*Fb_Bo_W_all)[body.mobod_index()];
+    SpatialForce<T>& Fb_Bo_W = (*Fb_Bo_W_all)[mobod_index];
     Fb_Bo_W = mass * SpatialForce<T>(
                          w_WB.cross(G_B_W * w_WB), /* rotational */
                          w_WB.cross(w_WB.cross(p_BoBcm_W)) /* translational */);
@@ -2584,10 +2598,11 @@ void MultibodyTree<T>::CalcPointsVelocities(
 
 template <typename T>
 T MultibodyTree<T>::CalcTotalMass(const systems::Context<T>& context) const {
+  const FrameBodyPoseCache<T>& frame_cache = EvalFrameBodyPoses(context);
   T total_mass = 0;
   for (BodyIndex body_index(1); body_index < num_links(); ++body_index) {
     const RigidBody<T>& body = get_link(body_index);
-    const T& body_mass = body.get_mass(context);
+    const T& body_mass = body.get_M_LLo_L(frame_cache).get_mass();
     total_mass += body_mass;
   }
   return total_mass;
@@ -2597,12 +2612,13 @@ template <typename T>
 T MultibodyTree<T>::CalcTotalMass(
     const systems::Context<T>& context,
     const std::vector<ModelInstanceIndex>& model_instances) const {
+  const FrameBodyPoseCache<T>& frame_cache = EvalFrameBodyPoses(context);
   T total_mass = 0;
   for (BodyIndex body_index(1); body_index < num_links(); ++body_index) {
     const RigidBody<T>& body = get_link(body_index);
     if (std::find(model_instances.begin(), model_instances.end(),
                   body.model_instance()) != model_instances.end()) {
-      const T& body_mass = body.get_mass(context);
+      const T& body_mass = body.get_M_LLo_L(frame_cache).get_mass();
       total_mass += body_mass;
     }
   }
@@ -2620,6 +2636,7 @@ Vector3<T> MultibodyTree<T>::CalcCenterOfMassPositionInWorld(
     throw std::logic_error(message);
   }
 
+  const FrameBodyPoseCache<T>& frame_cache = EvalFrameBodyPoses(context);
   T total_mass = 0;
   Vector3<T> sum_mi_pi = Vector3<T>::Zero();
 
@@ -2628,11 +2645,11 @@ Vector3<T> MultibodyTree<T>::CalcCenterOfMassPositionInWorld(
     const RigidBody<T>& body = get_link(body_index);
 
     // total_mass = ∑ mᵢ.
-    const T& body_mass = body.get_mass(context);
+    const T& body_mass = body.get_M_LLo_L(frame_cache).get_mass();
     total_mass += body_mass;
 
     // sum_mi_pi = ∑ mᵢ * pi_WoBcm_W.
-    const Vector3<T> pi_BoBcm_B = body.CalcCenterOfMassInBodyFrame(context);
+    const Vector3<T>& pi_BoBcm_B = body.get_M_LLo_L(frame_cache).get_com();
     const Vector3<T> pi_WoBcm_W = body.EvalPoseInWorld(context) * pi_BoBcm_B;
     sum_mi_pi += body_mass * pi_WoBcm_W;
   }
@@ -2660,6 +2677,7 @@ Vector3<T> MultibodyTree<T>::CalcCenterOfMassPositionInWorld(
     throw std::logic_error(message);
   }
 
+  const FrameBodyPoseCache<T>& frame_cache = EvalFrameBodyPoses(context);
   T total_mass = 0;
   Vector3<T> sum_mi_pi = Vector3<T>::Zero();
 
@@ -2676,12 +2694,12 @@ Vector3<T> MultibodyTree<T>::CalcCenterOfMassPositionInWorld(
     const RigidBody<T>& body = get_link(body_index);
     if (std::find(model_instances.begin(), model_instances.end(),
                   body.model_instance()) != model_instances.end()) {
-      const T& body_mass = body.get_mass(context);
+      const T& body_mass = body.get_M_LLo_L(frame_cache).get_mass();
       total_mass += body_mass;  // total_mass = ∑ mᵢ.
       ++number_of_non_world_bodies_processed;
 
       // sum_mi_pi = ∑ mᵢ * pi_WoBcm_W.
-      const Vector3<T> pi_BoBcm_B = body.CalcCenterOfMassInBodyFrame(context);
+      const Vector3<T>& pi_BoBcm_B = body.get_M_LLo_L(frame_cache).get_com();
       const Vector3<T> pi_WoBcm_W = body.EvalPoseInWorld(context) * pi_BoBcm_B;
       sum_mi_pi += body_mass * pi_WoBcm_W;
     }
@@ -2733,15 +2751,14 @@ SpatialInertia<T> MultibodyTree<T>::CalcSpatialInertia(
   // Add each link L's spatial inertia in the world frame W to this system
   // S's spatial inertia in W about Wo (world origin), expressed in W.
   SpatialInertia<T> M_SWo_W = SpatialInertia<T>::Zero();
+  std::vector<bool> is_added(num_links(), false);
 
-  for (LinkIndex link_index : link_indexes) {
-    if (link_index == world_index()) continue;  // World inertia does not add.
-
-    // Ensure MultibodyPlant method contains a valid link_index.
-    if (link_index >= num_links()) {
-      throw std::logic_error(
-          "CalcSpatialInertia(): contains an invalid BodyIndex (LinkIndex).");
-    }
+  // Define a lambda that (a) ignores any link that has already been processed,
+  // and (b) otherwise efficiently adds the link's spatial inertia to the
+  // world frame total spatial inertia M_SWo_W.
+  auto add_link_inertia = [&](LinkIndex link_index) {
+    if (is_added[link_index]) return;
+    is_added[link_index] = true;
 
     // If link L is an unfused body (one-link Mobod), use the Mobod's cached
     // value for M_LLo_W (a more efficient way to do this calculation).
@@ -2774,6 +2791,33 @@ SpatialInertia<T> MultibodyTree<T>::CalcSpatialInertia(
       const Vector3<T>& p_WoLo_W = X_WL.translation();
       M_SWo_W += M_LLo_W.Shift(-p_WoLo_W);  // Shift from Lo to Wo by p_LoWo_W.
     }
+  };
+
+  // Now add in all the links' spatial inertias to M_SWo_W, ignoring World and
+  // accounting for all shards of a split link.
+  for (LinkIndex link_index : link_indexes) {
+    if (link_index == world_index()) continue;  // World inertia does not add.
+
+    // Ensure MultibodyPlant method contains a valid link_index.
+    if (link_index >= num_links()) {
+      throw std::logic_error(
+          "CalcSpatialInertia(): contains an invalid BodyIndex (LinkIndex).");
+    }
+
+    // A link that Finalize() split to break a kinematic loop counts as a whole,
+    // and only once, whether link_indexes names its primary, a shadow, or
+    // several of these. So we add every copy, each with its share of the mass
+    // properties at its own pose. That is what the dynamics see, even while
+    // the loop is unassembled. Any other link is its own primary and has no
+    // shadows. Since we add a primary and its shadows together, a primary that
+    // is already added means its link has already been counted.
+    const LinkJointGraph::Link& primary =
+        graph().link_by_index(graph().link_by_index(link_index).primary_link());
+    if (is_added[primary.index()]) continue;
+    add_link_inertia(primary.index());
+    for (LinkIndex shadow_index : primary.shadow_links()) {
+      add_link_inertia(shadow_index);
+    }
   }
 
   // If frame_F is the world frame W, return now.
@@ -2800,6 +2844,7 @@ Vector3<T> MultibodyTree<T>::CalcCenterOfMassTranslationalVelocityInWorld(
     throw std::logic_error(message);
   }
 
+  const FrameBodyPoseCache<T>& frame_cache = EvalFrameBodyPoses(context);
   T total_mass = 0;
   Vector3<T> sum_mi_vi = Vector3<T>::Zero();
 
@@ -2808,12 +2853,12 @@ Vector3<T> MultibodyTree<T>::CalcCenterOfMassTranslationalVelocityInWorld(
     const RigidBody<T>& body = get_link(body_index);
 
     // total_mass = ∑ mᵢ.
-    const T& body_mass = body.get_mass(context);
+    const T& body_mass = body.get_M_LLo_L(frame_cache).get_mass();
     total_mass += body_mass;
 
     // sum_mi_vi = ∑ mᵢ * vi_WBcm_W.
     const Vector3<T> vi_WBcm_W =
-        body.CalcCenterOfMassTranslationalVelocityInWorld(context);
+        CalcLinkCenterOfMassTranslationalVelocityInWorld(context, body);
     sum_mi_vi += body_mass * vi_WBcm_W;
   }
 
@@ -2844,6 +2889,7 @@ Vector3<T> MultibodyTree<T>::CalcCenterOfMassTranslationalVelocityInWorld(
     throw std::logic_error(message);
   }
 
+  const FrameBodyPoseCache<T>& frame_cache = EvalFrameBodyPoses(context);
   T total_mass = 0;
   Vector3<T> sum_mi_vi = Vector3<T>::Zero();
 
@@ -2860,13 +2906,13 @@ Vector3<T> MultibodyTree<T>::CalcCenterOfMassTranslationalVelocityInWorld(
     const RigidBody<T>& body = get_link(body_index);
     if (std::find(model_instances.begin(), model_instances.end(),
                   body.model_instance()) != model_instances.end()) {
-      const T& body_mass = body.get_mass(context);
+      const T& body_mass = body.get_M_LLo_L(frame_cache).get_mass();
       total_mass += body_mass;  // total_mass = ∑ mᵢ.
       ++number_of_non_world_bodies_processed;
 
       // sum_mi_vi = ∑ mᵢ * vi_WBcm_W.
       const Vector3<T> vi_WBcm_W =
-          body.CalcCenterOfMassTranslationalVelocityInWorld(context);
+          CalcLinkCenterOfMassTranslationalVelocityInWorld(context, body);
       sum_mi_vi += body_mass * vi_WBcm_W;
     }
   }
@@ -2900,6 +2946,8 @@ Vector3<T> MultibodyTree<T>::CalcCenterOfMassTranslationalAccelerationInWorld(
     throw std::logic_error(message);
   }
 
+  const FrameBodyPoseCache<T>& frame_cache = EvalFrameBodyPoses(context);
+
   // To ensure a sensible exception message is issued if the system's mass is
   // zero or negative, check if ∑ mᵢ ≤ 0 _before_ calculating ∑ mᵢ * aᵢ.
   // Why? Acceleration calculations may require a dynamic analysis that will
@@ -2908,7 +2956,7 @@ Vector3<T> MultibodyTree<T>::CalcCenterOfMassTranslationalAccelerationInWorld(
   T total_mass = 0;
   for (BodyIndex body_index(1); body_index < num_links(); ++body_index) {
     const RigidBody<T>& body = get_link(body_index);
-    const T& body_mass = body.get_mass(context);
+    const T& body_mass = body.get_M_LLo_L(frame_cache).get_mass();
     total_mass += body_mass;  // total_mass = ∑ mᵢ.
   }
 
@@ -2922,9 +2970,9 @@ Vector3<T> MultibodyTree<T>::CalcCenterOfMassTranslationalAccelerationInWorld(
   Vector3<T> sum_mi_ai = Vector3<T>::Zero();
   for (BodyIndex body_index(1); body_index < num_links(); ++body_index) {
     const RigidBody<T>& body = get_link(body_index);
-    const T& body_mass = body.get_mass(context);
+    const T& body_mass = body.get_M_LLo_L(frame_cache).get_mass();
     const Vector3<T> ai_WBcm_W =
-        body.CalcCenterOfMassTranslationalAccelerationInWorld(context);
+        CalcLinkCenterOfMassTranslationalAccelerationInWorld(context, body);
     sum_mi_ai += body_mass * ai_WBcm_W;  // sum_mi_ai = ∑ mᵢ * ai_WBcm_W.
   }
 
@@ -2947,6 +2995,8 @@ Vector3<T> MultibodyTree<T>::CalcCenterOfMassTranslationalAccelerationInWorld(
     throw std::logic_error(message);
   }
 
+  const FrameBodyPoseCache<T>& frame_cache = EvalFrameBodyPoses(context);
+
   // To ensure a sensible exception message is issued if the system's mass is
   // zero or negative, check if ∑ mᵢ ≤ 0 _before_ calculating ∑ mᵢ * aᵢ.
   // Why? Acceleration calculations may require a dynamic analysis that will
@@ -2960,7 +3010,7 @@ Vector3<T> MultibodyTree<T>::CalcCenterOfMassTranslationalAccelerationInWorld(
     const RigidBody<T>& body = get_link(body_index);
     if (std::find(model_instances.begin(), model_instances.end(),
                   body.model_instance()) != model_instances.end()) {
-      const T& body_mass = body.get_mass(context);
+      const T& body_mass = body.get_M_LLo_L(frame_cache).get_mass();
       total_mass += body_mass;  // total_mass = ∑ mᵢ.
       ++number_of_non_world_bodies_processed;
     }
@@ -2994,9 +3044,9 @@ Vector3<T> MultibodyTree<T>::CalcCenterOfMassTranslationalAccelerationInWorld(
     const RigidBody<T>& body = get_link(body_index);
     if (std::find(model_instances.begin(), model_instances.end(),
                   body.model_instance()) != model_instances.end()) {
-      const T& body_mass = body.get_mass(context);
+      const T& body_mass = body.get_M_LLo_L(frame_cache).get_mass();
       const Vector3<T> ai_WBcm_W =
-          body.CalcCenterOfMassTranslationalAccelerationInWorld(context);
+          CalcLinkCenterOfMassTranslationalAccelerationInWorld(context, body);
       sum_mi_ai += body_mass * ai_WBcm_W;  // sum_mi_ai = ∑ mᵢ * ai_WBcm_W.
     }
   }
@@ -3152,6 +3202,43 @@ MultibodyTree<T>::EvalLinkSpatialAccelerationInWorld(
   DRAKE_MBT_THROW_IF_NOT_FINALIZED();
   link_L.HasThisParentTreeOrThrow(this);
   return EvalAccelerationKinematics(context).get_A_WB(link_L.mobod_index());
+}
+
+template <typename T>
+Vector3<T> MultibodyTree<T>::CalcLinkCenterOfMassTranslationalVelocityInWorld(
+    const systems::Context<T>& context, const Link<T>& link_L) const {
+  // Form p_LoLcm_W, the position of Lcm from Lo, expressed in W. (Splitting a
+  // link to break a loop changes only its mass, not its center of mass.)
+  const Vector3<T>& p_LoLcm_L =
+      link_L.get_M_LLo_L(EvalFrameBodyPoses(context)).get_com();
+  const RotationMatrix<T>& R_WL =
+      EvalLinkPoseInWorld(context, link_L).rotation();
+  const Vector3<T> p_LoLcm_W = R_WL * p_LoLcm_L;
+
+  // Shift L's spatial velocity in W from Lo to Lcm.
+  const SpatialVelocity<T>& V_WLo_W =
+      EvalLinkSpatialVelocityInWorld(context, link_L);
+  return V_WLo_W.Shift(p_LoLcm_W).translational();
+}
+
+template <typename T>
+Vector3<T>
+MultibodyTree<T>::CalcLinkCenterOfMassTranslationalAccelerationInWorld(
+    const systems::Context<T>& context, const Link<T>& link_L) const {
+  // Form p_LoLcm_W, the position of Lcm from Lo, expressed in W.
+  const Vector3<T>& p_LoLcm_L =
+      link_L.get_M_LLo_L(EvalFrameBodyPoses(context)).get_com();
+  const RotationMatrix<T>& R_WL =
+      EvalLinkPoseInWorld(context, link_L).rotation();
+  const Vector3<T> p_LoLcm_W = R_WL * p_LoLcm_L;
+
+  // Shift L's spatial acceleration in W from Lo to Lcm. That needs L's angular
+  // velocity in W, expressed in W.
+  const SpatialAcceleration<T>& A_WLo_W =
+      EvalLinkSpatialAccelerationInWorld(context, link_L);
+  const Vector3<T>& w_WL_W =
+      EvalLinkSpatialVelocityInWorld(context, link_L).rotational();
+  return A_WLo_W.Shift(p_LoLcm_W, w_WL_W).translational();
 }
 
 template <typename T>
@@ -3531,8 +3618,6 @@ void MultibodyTree<T>::CalcHessianSpatialVelocity(
   const std::vector<MobodIndex> path_B = forest.FindPathFromWorld(mobod_B);
   const std::vector<MobodIndex> path_A = forest.FindPathFromWorld(mobod_A);
   const std::vector<MobodIndex> path_E = forest.FindPathFromWorld(mobod_E);
-  const bool A_is_world = forest.mobods(mobod_A).is_world();
-  const bool E_is_world = forest.mobods(mobod_E).is_world();
   const int level_C =
       forest.mobods(forest.FindFirstCommonAncestor(mobod_B, mobod_A)).level();
   // Mobilities on E's path at levels > level_CE are on neither A's nor B's.
@@ -3573,36 +3658,17 @@ void MultibodyTree<T>::CalcHessianSpatialVelocity(
     slice.setZero();
   }
 
-  // The Jacobians of B and of A, both at point P, as in
-  // CalcJacobianSpatialVelocity(), and E's angular velocity Jacobian.
-  // TODO(cohnt) These allocate; an allocation-free version would read the
-  //  H_PB_W cache directly instead.
-  Vector3<T> p_WP;
-  CalcPointsPositions(context, frame_B, p_BP, world_frame(), &p_WP);
-  Matrix6X<T> Js_V_WBp(6, n);
-  auto Js_w_WBp = Js_V_WBp.template topRows<3>();
-  auto Js_v_WBp = Js_V_WBp.template bottomRows<3>();
-  CalcJacobianAngularAndOrTranslationalVelocityInWorld(
-      context, with_respect_to, frame_B, p_WP, &Js_w_WBp, &Js_v_WBp);
-  Matrix6X<T> Js_V_WAp(6, n);
-  auto Js_w_WAp = Js_V_WAp.template topRows<3>();
-  auto Js_v_WAp = Js_V_WAp.template bottomRows<3>();
-  if (A_is_world) {
-    Js_V_WAp.setZero();
-  } else {
-    CalcJacobianAngularAndOrTranslationalVelocityInWorld(
-        context, with_respect_to, frame_A, p_WP, &Js_w_WAp, &Js_v_WAp);
-  }
-  Matrix3X<T> Js_w_WE(3, n);
-  if (E_is_world) {
-    Js_w_WE.setZero();
-  } else {
-    CalcJacobianAngularAndOrTranslationalVelocityInWorld(
-        context, with_respect_to, frame_E, p_WP, &Js_w_WE, nullptr);
-  }
-
   const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
   const FrameBodyPoseCache<T>& fbpc = EvalFrameBodyPoses(context);
+  const std::vector<Vector6<T>>& H_PB_W_cache =
+      EvalAcrossNodeJacobianWrtVExpressedInWorld(context);
+  Vector3<T> p_WP;
+  CalcPointsPositions(context, frame_B, p_BP, world_frame(), &p_WP);
+  // All terms are formed directly in E, using R_EW⋅(a×b) = (R_EW⋅a)×(R_EW⋅b).
+  const bool E_is_W = frame_E.is_world_frame();
+  const math::RotationMatrix<T> R_EW =
+      E_is_W ? math::RotationMatrix<T>()
+             : CalcRelativeRotationMatrix(context, frame_E, world_frame());
 
   // The first index in 𝑠 and the number of speeds of a mobilized body.
   auto span = [&](const SpanningForest::Mobod& mobod) {
@@ -3610,33 +3676,78 @@ void MultibodyTree<T>::CalcHessianSpatialVelocity(
                        : std::pair(mobod.v_start(), mobod.nv());
   };
 
+  // Column j of Js_V_WP_E is the unit twist [w_j; v_j] of mobility j at P, as
+  // in CalcJacobianAngularAndOrTranslationalVelocityInWorld(), expressed in E.
+  // Only the columns of the mobilities on the paths to B, A and E are set (for
+  // E, only w_j), and only those are read.
+  Matrix6X<T> Js_V_WP_E(6, n);
+  Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, 0, 6, 7> Nplus;
+  auto set_unit_twists = [&](const std::vector<MobodIndex>& path,
+                             const int first_level, const bool want_v) {
+    for (int level = first_level; level < ssize(path); ++level) {
+      const BodyNode<T>& node = *body_nodes_[path[level]];
+      const auto [start, count] = span(node.mobod());
+      if (count == 0) continue;
+      Eigen::Map<const MatrixUpTo6<T>> H_PB_W =
+          node.GetJacobianFromArray(H_PB_W_cache);
+      const auto Hw_PB_W = H_PB_W.template topRows<3>();
+      const auto Hv_PB_W = H_PB_W.template bottomRows<3>();
+      auto Js_w_j = Js_V_WP_E.block(0, start, 3, count);
+      auto Js_v_j = Js_V_WP_E.block(3, start, 3, count);
+      const Vector3<T> p_BoP_W =
+          p_WP - pc.get_X_WB(node.mobod_index()).translation();
+      if (is_wrt_qdot) {
+        Nplus.resize(node.mobod().nv(), node.mobod().nq());
+        node.get_mobilizer().CalcNplusMatrix(context, &Nplus);
+        Js_w_j = Hw_PB_W * Nplus;
+        if (want_v) {
+          Js_v_j = (Hv_PB_W + Hw_PB_W.colwise().cross(p_BoP_W)) * Nplus;
+        }
+      } else {
+        Js_w_j = Hw_PB_W;
+        if (want_v) Js_v_j = Hv_PB_W + Hw_PB_W.colwise().cross(p_BoP_W);
+      }
+      if (!E_is_W) {
+        for (int c = 0; c < count; ++c) {
+          Js_w_j.col(c) = R_EW * Vector3<T>(Js_w_j.col(c));
+          if (want_v) Js_v_j.col(c) = R_EW * Vector3<T>(Js_v_j.col(c));
+        }
+      }
+    }
+  };
+  set_unit_twists(path_B, 1, true);
+  set_unit_twists(path_A, level_C + 1, true);
+  set_unit_twists(path_E, level_CE + 1, false);
+
   // Stack-allocated buffers for the same-node terms (nq ≤ 7, nv ≤ 6).
   Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, 0, 42, 6> dH_FM_dq;
   Eigen::Matrix<T, 6, Eigen::Dynamic, 0, 6, 6> DiH_FM;
 
-  // Calls f(j) for each potentially nonzero column j of the output, i.e., those
-  // of the mobilities outboard of C on the paths to B and A.
+  // Calls f(j, sign) for each potentially nonzero column j of the output, i.e.,
+  // those of the mobilities outboard of C on the paths to B (sign = 1) and A
+  // (sign = −1).
   auto for_each_column = [&](auto&& f) {
-    for (const std::vector<MobodIndex>* path : {&path_B, &path_A}) {
+    for (const auto& [path, sign] :
+         {std::pair(&path_B, 1.0), std::pair(&path_A, -1.0)}) {
       for (int level = level_C + 1; level < ssize(*path); ++level) {
         const auto [start, count] = span(forest.mobods((*path)[level]));
-        for (int jj = 0; jj < count; ++jj) f(start + jj);
+        for (int jj = 0; jj < count; ++jj) f(start + jj, sign);
       }
     }
   };
 
   // Accumulates sign ⋅ Dₘ(J.col(j)) into slice m, column j, for the
   // mobilities m of the node at level_m on `path` and the columns j of that
-  // path, where J (= Js_V_WBp or Js_V_WAp) is the path's Jacobian at P and
-  // column j of J is the unit twist [w_j; v_j] of mobility j at P:
+  // path. J is the path's Jacobian at P, with column j the unit twist
+  // [w_j; v_j] = Js_V_WP_E.col(j). Dₘ is the derivative in W, expressed in E;
+  // the term from E's rotation is added separately below:
   //  - m upstream of j:    [w_m×w_j; w_m×v_j]   (j's node and P move with m);
   //  - m downstream of j:  [0; w_j×v_m]         (only P moves);
   //  - same node:          [a; b + a×p_MoP + w_j×(w_m×p_MoP)], where
-  //    [a; b] = R_WF⋅DₘH_FM.col(j), DₘH_FM = Σₖ N(k,m)⋅∂H_FM/∂qₖ, and
+  //    [a; b] = R_EF⋅DₘH_FM.col(j), DₘH_FM = Σₖ N(k,m)⋅∂H_FM/∂qₖ, and
   //    p_MoP rotates at rate w_m×p_MoP.
   auto add_path_terms = [&](const std::vector<MobodIndex>& path,
-                            const Matrix6X<T>& J, const int level_m,
-                            const double sign) {
+                            const int level_m, const double sign) {
     const BodyNode<T>& node_m = *body_nodes_[path[level_m]];
     const SpanningForest::Mobod& mobod_m = node_m.mobod();
     const int nv_m = mobod_m.nv();
@@ -3647,19 +3758,22 @@ void MultibodyTree<T>::CalcHessianSpatialVelocity(
     // Same-node terms occur only if node_m is itself a column node.
     const bool has_same_node_terms = (level_m > level_C);
     const Mobilizer<T>& mobilizer_m = node_m.get_mobilizer();
-    math::RotationMatrix<T> R_WF;
-    Vector3<T> p_MoP_W;
+    math::RotationMatrix<T> R_EF;
+    Vector3<T> p_MoP_E;
     if (has_same_node_terms) {
       const Frame<T>& frame_F = node_m.inboard_frame();
       const Frame<T>& frame_M = node_m.outboard_frame();
-      R_WF = pc.get_R_WB(node_m.inboard_mobod_index()) *
-             frame_F.get_X_BF(fbpc).rotation();
+      const math::RotationMatrix<T> R_WF =
+          pc.get_R_WB(node_m.inboard_mobod_index()) *
+          frame_F.get_X_BF(fbpc).rotation();
+      R_EF = E_is_W ? R_WF : R_EW * R_WF;
       const math::RigidTransform<T>& X_WB = pc.get_X_WB(mobod_m.index());
       Vector3<T> p_WoMo = X_WB.translation();
       if (!frame_M.is_X_BF_identity(fbpc)) {
         p_WoMo += X_WB.rotation() * frame_M.get_X_BF(fbpc).translation();
       }
-      p_MoP_W = p_WP - p_WoMo;
+      const Vector3<T> p_MoP_W = p_WP - p_WoMo;
+      p_MoP_E = E_is_W ? p_MoP_W : R_EW * p_MoP_W;
       dH_FM_dq.resize(6 * nq_m, nv_m);
       mobilizer_m.CalcHMatrixPartials(context, &dH_FM_dq);
       // TODO(cohnt): Use DₘH_FM = Σₖ N(k,m)⋅∂H_FM/∂qₖ once a mobilizer with
@@ -3682,8 +3796,8 @@ void MultibodyTree<T>::CalcHessianSpatialVelocity(
     for (int i = 0; i < ns_m; ++i) {
       const int m = start_m + i;
       Matrix6X<T>& slice = (*Hs_V_ABp_E)[m];
-      const Vector3<T> w_m = J.col(m).template head<3>();
-      const Vector3<T> v_m = J.col(m).template tail<3>();
+      const Vector3<T> w_m = Js_V_WP_E.col(m).template head<3>();
+      const Vector3<T> v_m = Js_V_WP_E.col(m).template tail<3>();
       if (has_same_node_terms) {
         if (mobilizer_m.is_velocity_equal_to_qdot()) {
           DiH_FM = dH_FM_dq.middleRows(6 * i, 6);
@@ -3695,8 +3809,8 @@ void MultibodyTree<T>::CalcHessianSpatialVelocity(
         const auto [start_j, count_j] = span(forest.mobods(path[level_j]));
         for (int jj = 0; jj < count_j; ++jj) {
           const int j = start_j + jj;
-          const Vector3<T> w_j = J.col(j).template head<3>();
-          const Vector3<T> v_j = J.col(j).template tail<3>();
+          const Vector3<T> w_j = Js_V_WP_E.col(j).template head<3>();
+          const Vector3<T> v_j = Js_V_WP_E.col(j).template tail<3>();
           auto column = slice.col(j);
           if (level_m < level_j) {
             column.template head<3>() += sign * w_m.cross(w_j);
@@ -3704,32 +3818,33 @@ void MultibodyTree<T>::CalcHessianSpatialVelocity(
           } else if (level_m > level_j) {
             column.template tail<3>() += sign * w_j.cross(v_m);
           } else {
-            const Vector3<T> a = R_WF * DiH_FM.col(jj).template head<3>();
-            const Vector3<T> b = R_WF * DiH_FM.col(jj).template tail<3>();
+            const Vector3<T> a = R_EF * DiH_FM.col(jj).template head<3>();
+            const Vector3<T> b = R_EF * DiH_FM.col(jj).template tail<3>();
             column.template head<3>() += sign * a;
             column.template tail<3>() +=
-                sign * (b + a.cross(p_MoP_W) + w_j.cross(w_m.cross(p_MoP_W)));
+                sign * (b + a.cross(p_MoP_E) + w_j.cross(w_m.cross(p_MoP_E)));
           }
         }
       }
     }
   };
 
-  // Js_V_WAp is evaluated at the point of A coincident with P, which moves
-  // relative to A at rate Dₘ(p_AoP) = v^B_m − v^A_m. This adds
-  // −[0; w^A_j×(v^B_m − v^A_m)] to slice m for the columns j from A's path.
+  // A's Jacobian is evaluated at the point of A coincident with P, which moves
+  // relative to A at rate Dₘ(p_AoP) = v^B_m − v^A_m, i.e., sign ⋅ v_m for m
+  // outboard of C on B's (sign = 1) or A's (sign = −1) path. This adds
+  // −[0; w_j×Dₘ(p_AoP)] to slice m for the columns j from A's path.
   auto add_point_motion_terms = [&](const std::vector<MobodIndex>& path,
-                                    const int level_m) {
+                                    const int level_m, const double sign) {
     const auto [start_m, ns_m] = span(forest.mobods(path[level_m]));
     for (int i = 0; i < ns_m; ++i) {
       const int m = start_m + i;
       Matrix6X<T>& slice = (*Hs_V_ABp_E)[m];
-      const Vector3<T> dp_AoP = Js_v_WBp.col(m) - Js_v_WAp.col(m);
+      const Vector3<T> dp_AoP = sign * Js_V_WP_E.col(m).template tail<3>();
       for (int level_j = level_C + 1; level_j < ssize(path_A); ++level_j) {
         const auto [start_j, count_j] = span(forest.mobods(path_A[level_j]));
         for (int jj = 0; jj < count_j; ++jj) {
           const int j = start_j + jj;
-          const Vector3<T> w_A_j = Js_w_WAp.col(j);
+          const Vector3<T> w_A_j = Js_V_WP_E.col(j).template head<3>();
           slice.col(j).template tail<3>() -= w_A_j.cross(dp_AoP);
         }
       }
@@ -3738,55 +3853,37 @@ void MultibodyTree<T>::CalcHessianSpatialVelocity(
 
   // Mobilities at levels ≤ level_C are on both paths and move A and B alike.
   for (int level = 1; level < ssize(path_B); ++level) {
-    add_path_terms(path_B, Js_V_WBp, level, 1.0);
-    if (level <= level_C) add_path_terms(path_A, Js_V_WAp, level, -1.0);
+    add_path_terms(path_B, level, 1.0);
+    if (level <= level_C) add_path_terms(path_A, level, -1.0);
   }
   for (int level = level_C + 1; level < ssize(path_A); ++level) {
-    add_path_terms(path_A, Js_V_WAp, level, -1.0);
+    add_path_terms(path_A, level, -1.0);
   }
   for (int level = level_C + 1; level < ssize(path_B); ++level) {
-    add_point_motion_terms(path_B, level);
+    add_point_motion_terms(path_B, level, 1.0);
   }
   for (int level = level_C + 1; level < ssize(path_A); ++level) {
-    add_point_motion_terms(path_A, level);
+    add_point_motion_terms(path_A, level, -1.0);
   }
 
-  // Re-express in E. Since Ṙ_EW = −R_EW⋅[w_WE]ₓ, the derivative of
-  // R_EW⋅J𝑠_V_ABp_W is R_EW⋅(Dₘ(J𝑠_V_ABp_W) − w^E_m × J𝑠_V_ABp_W), the cross
-  // product applied to both 3-row blocks, with w^E_m ≠ 0 only on E's path.
-  if (!frame_E.is_world_frame()) {
-    const math::RotationMatrix<T> R_EW =
-        CalcRelativeRotationMatrix(context, frame_E, world_frame());
-    auto reexpress_slices = [&](const std::vector<MobodIndex>& path,
-                                const int level_m, const bool m_is_on_path_E) {
-      const auto [start_m, ns_m] = span(forest.mobods(path[level_m]));
+  // Since Ṙ_EW = −R_EW⋅[w_WE]ₓ, the derivative in E also has −w^E_m ×
+  // J𝑠_V_ABp_E, the cross product applied to both 3-row blocks, for the
+  // mobilities m on E's path.
+  if (!E_is_W) {
+    for (int level = 1; level < ssize(path_E); ++level) {
+      const auto [start_m, ns_m] = span(forest.mobods(path_E[level]));
       for (int i = 0; i < ns_m; ++i) {
         const int m = start_m + i;
         Matrix6X<T>& slice = (*Hs_V_ABp_E)[m];
-        for_each_column([&](const int j) {
-          Vector6<T> column = slice.col(j);
-          if (m_is_on_path_E) {
-            const Vector3<T> w_E_m = Js_w_WE.col(m);
-            const Vector6<T> J_W_j = Js_V_WBp.col(j) - Js_V_WAp.col(j);
-            column.template head<3>() -= w_E_m.cross(J_W_j.template head<3>());
-            column.template tail<3>() -= w_E_m.cross(J_W_j.template tail<3>());
-          }
-          slice.col(j).template head<3>() = R_EW * column.template head<3>();
-          slice.col(j).template tail<3>() = R_EW * column.template tail<3>();
+        const Vector3<T> w_E_m = Js_V_WP_E.col(m).template head<3>();
+        for_each_column([&](const int j, const double sign) {
+          const Vector6<T> J_E_j = sign * Js_V_WP_E.col(j);
+          slice.col(j).template head<3>() -=
+              w_E_m.cross(J_E_j.template head<3>());
+          slice.col(j).template tail<3>() -=
+              w_E_m.cross(J_E_j.template tail<3>());
         });
       }
-    };
-    auto is_on_path_E = [&](const MobodIndex mobod, const int level) {
-      return level < ssize(path_E) && path_E[level] == mobod;
-    };
-    for (int level = 1; level < ssize(path_B); ++level) {
-      reexpress_slices(path_B, level, is_on_path_E(path_B[level], level));
-    }
-    for (int level = level_C + 1; level < ssize(path_A); ++level) {
-      reexpress_slices(path_A, level, is_on_path_E(path_A[level], level));
-    }
-    for (int level = level_CE + 1; level < ssize(path_E); ++level) {
-      reexpress_slices(path_E, level, true);
     }
   }
 }
@@ -4101,16 +4198,17 @@ void MultibodyTree<T>::CalcJacobianCenterOfMassTranslationalVelocity(
     throw std::logic_error(message);
   }
 
+  const FrameBodyPoseCache<T>& frame_cache = EvalFrameBodyPoses(context);
   Js_v_AScm_E->setZero();
   T composite_mass = 0;
   for (BodyIndex body_index(1); body_index < num_links(); ++body_index) {
     const RigidBody<T>& body = get_link(body_index);
-    const Vector3<T> pi_BoBcm = body.CalcCenterOfMassInBodyFrame(context);
+    const Vector3<T>& pi_BoBcm = body.get_M_LLo_L(frame_cache).get_com();
     MatrixX<T> Jsi_v_ABcm_E(3, num_columns);
     CalcJacobianTranslationalVelocity(
         context, with_respect_to, body.body_frame(), body.body_frame(),
         pi_BoBcm, frame_A, frame_E, &Jsi_v_ABcm_E);
-    const T& body_mass = body.get_mass(context);
+    const T& body_mass = body.get_M_LLo_L(frame_cache).get_mass();
     *Js_v_AScm_E += body_mass * Jsi_v_ABcm_E;
     composite_mass += body_mass;
   }
@@ -4145,6 +4243,7 @@ void MultibodyTree<T>::CalcJacobianCenterOfMassTranslationalVelocity(
     throw std::logic_error(message);
   }
 
+  const FrameBodyPoseCache<T>& frame_cache = EvalFrameBodyPoses(context);
   T total_mass = 0;
   Js_v_AScm_E->setZero();
 
@@ -4161,14 +4260,14 @@ void MultibodyTree<T>::CalcJacobianCenterOfMassTranslationalVelocity(
     const RigidBody<T>& body = get_link(body_index);
     if (std::find(model_instances.begin(), model_instances.end(),
                   body.model_instance()) != model_instances.end()) {
-      const T& body_mass = body.get_mass(context);
+      const T& body_mass = body.get_M_LLo_L(frame_cache).get_mass();
       total_mass += body_mass;  // total_mass = ∑ mᵢ.
       ++number_of_non_world_bodies_processed;
 
       // sum_mi_Ji = ∑ (mᵢ Jᵢ), where mᵢ is the mass of the iᵗʰ body and
       // Jᵢ is Bᵢcm's translational velocity Jacobian in frame A, expressed in
       // frame E (Bᵢcm is the center of mass of the iᵗʰ body).
-      const Vector3<T> pi_BoBcm = body.CalcCenterOfMassInBodyFrame(context);
+      const Vector3<T>& pi_BoBcm = body.get_M_LLo_L(frame_cache).get_com();
       MatrixX<T> Jsi_v_ABcm_E(3, num_columns);
       CalcJacobianTranslationalVelocity(
           context, with_respect_to, body.body_frame(), body.body_frame(),
@@ -4209,15 +4308,16 @@ Vector3<T> MultibodyTree<T>::CalcBiasCenterOfMassTranslationalAcceleration(
     throw std::logic_error(message);
   }
 
+  const FrameBodyPoseCache<T>& frame_cache = EvalFrameBodyPoses(context);
   T composite_mass = 0;
   Vector3<T> asBias_AScm_E = Vector3<T>::Zero();
   for (BodyIndex body_index(1); body_index < num_links(); ++body_index) {
     const RigidBody<T>& body = get_link(body_index);
-    const Vector3<T> pi_BoBcm_B = body.CalcCenterOfMassInBodyFrame(context);
+    const Vector3<T>& pi_BoBcm_B = body.get_M_LLo_L(frame_cache).get_com();
     const Frame<T>& frame_B = body.body_frame();
     const SpatialAcceleration<T> AsBiasi_AScm_E = CalcBiasSpatialAcceleration(
         context, with_respect_to, frame_B, pi_BoBcm_B, frame_A, frame_E);
-    const T& body_mass = body.get_mass(context);
+    const T& body_mass = body.get_M_LLo_L(frame_cache).get_mass();
     asBias_AScm_E += body_mass * AsBiasi_AScm_E.translational();
     composite_mass += body_mass;
   }
@@ -4246,6 +4346,7 @@ Vector3<T> MultibodyTree<T>::CalcBiasCenterOfMassTranslationalAcceleration(
     throw std::logic_error(message);
   }
 
+  const FrameBodyPoseCache<T>& frame_cache = EvalFrameBodyPoses(context);
   T total_mass = 0;
   Vector3<T> sum_mi_aBiasi = Vector3<T>::Zero();
   // Sum over all bodies contained in model_instances except for the 0th body
@@ -4261,7 +4362,7 @@ Vector3<T> MultibodyTree<T>::CalcBiasCenterOfMassTranslationalAcceleration(
     const RigidBody<T>& body = get_link(body_index);
     if (std::find(model_instances.begin(), model_instances.end(),
                   body.model_instance()) != model_instances.end()) {
-      const T& body_mass = body.get_mass(context);
+      const T& body_mass = body.get_M_LLo_L(frame_cache).get_mass();
       total_mass += body_mass;  // total_mass = ∑ mᵢ.
       ++number_of_non_world_bodies_processed;
 
@@ -4269,7 +4370,7 @@ Vector3<T> MultibodyTree<T>::CalcBiasCenterOfMassTranslationalAcceleration(
       // and aBiasᵢ is Bᵢcm's bias translational acceleration in frame A,
       // expressed in frame E (Bᵢcm is the center of mass of the iᵗʰ body).
       const Frame<T>& frame_B = body.body_frame();
-      const Vector3<T> pi_BoBcm_B = body.CalcCenterOfMassInBodyFrame(context);
+      const Vector3<T>& pi_BoBcm_B = body.get_M_LLo_L(frame_cache).get_com();
       const Vector3<T> aBiasi_ABcm_E = CalcBiasTranslationalAcceleration(
           context, with_respect_to, frame_B, pi_BoBcm_B, frame_A, frame_E);
       sum_mi_aBiasi += body_mass * aBiasi_ABcm_E;
@@ -4316,9 +4417,10 @@ T MultibodyTree<T>::CalcKineticEnergy(
   const VelocityKinematicsCache<T>& vc = EvalVelocityKinematics(context);
   const VectorX<T>& reflected_inertia = EvalReflectedInertiaCache(context);
   T twice_kinetic_energy_W = 0.0;
-  // Add contributions from each body (except World).
-  for (BodyIndex body_index(1); body_index < num_links(); ++body_index) {
-    const MobodIndex mobod_index = get_link(body_index).mobod_index();
+  // Add contributions from each mobilized body B (except World). Note that
+  // M_B_W includes the mass properties of every link that follows (is welded
+  // to) B.
+  for (MobodIndex mobod_index(1); mobod_index < num_mobods(); ++mobod_index) {
     const SpatialInertia<T>& M_B_W = M_Bi_W[mobod_index];
     const SpatialVelocity<T>& V_WB = vc.get_V_WB(mobod_index);
     const SpatialMomentum<T> L_WB = M_B_W * V_WB;
@@ -4440,19 +4542,28 @@ void MultibodyTree<T>::ThrowIfTerminalBodyHasBadDefaultMassProperties(
   const bool can_rotate = active_mobilizer.can_rotate();
   const bool can_translate = active_mobilizer.can_translate();
 
-  const std::string& active_link_name = get_link(link_assembly[0]).name();
+  // A shadow link has no mass properties of its own; the dynamics give it an
+  // even share of its primary's. That share is zero or NaN exactly when the
+  // primary's mass properties are, so we check (and name) the primaries.
+  std::vector<BodyIndex> mass_sources;
+  mass_sources.reserve(link_assembly.size());
+  for (BodyIndex link_index : link_assembly) {
+    mass_sources.push_back(graph().link_by_index(link_index).primary_link());
+  }
+
+  const std::string& active_link_name = get_link(mass_sources[0]).name();
   const char* description = is_assembly
                                 ? "the active body for a terminal assembly"
                                 : "a terminal body";
 
-  if (can_translate && (CalcTotalDefaultMass(link_assembly) == 0)) {
+  if (can_translate && (CalcTotalDefaultMass(mass_sources) == 0)) {
     throw std::logic_error(
         fmt::format("Body {} is {} that is massless, but its joint has a "
                     "translational degree of freedom.",
                     active_link_name, description));
   }
 
-  if (can_rotate && IsAnyDefaultRotationalInertiaNaN(link_assembly)) {
+  if (can_rotate && IsAnyDefaultRotationalInertiaNaN(mass_sources)) {
     throw std::logic_error(
         fmt::format("Body {} is {} that has a NaN rotational inertia, but "
                     "its joint has a "
@@ -4460,7 +4571,7 @@ void MultibodyTree<T>::ThrowIfTerminalBodyHasBadDefaultMassProperties(
                     active_link_name, description));
   }
 
-  if (can_rotate && AreAllDefaultRotationalInertiaZero(link_assembly)) {
+  if (can_rotate && AreAllDefaultRotationalInertiaZero(mass_sources)) {
     throw std::logic_error(fmt::format(
         "Body {} is {} that has zero rotational inertia, but its joint has a "
         "rotational degree of freedom.",

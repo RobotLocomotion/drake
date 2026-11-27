@@ -160,12 +160,24 @@ when registering visual geometry, categorized by rendered image type.
 
 **RGB images**
 
-| Group name | Property Name | Required | Property Type | Property
-Description | | :--------: | :-----------: | :------: |
-:-------------: | :------------------- | | phong | diffuse | no¹ |
-Eigen∷Vector4d | The rgba value of the object surface. | | phong |
-diffuse_map | no² | std∷string | The path to a texture to apply to the
-geometry.³⁴ |
+.. list-table::
+   :header-rows: 1
+
+   * - Group name
+     - Property Name
+     - Required
+     - Property Type
+     - Property Description
+   * - phong
+     - diffuse
+     - no¹
+     - Eigen∷Vector4d
+     - The rgba value of the object surface.
+   * - phong
+     - diffuse_map
+     - no²
+     - std∷string
+     - The path to a texture to apply to the geometry.³⁴
 
 ¹ If no diffuse value is given, a default rgba value will be applied.
 The default color is a bright orange. This default value can be
@@ -197,10 +209,19 @@ No specific properties required.
 
 **Label images**
 
-| Group name | Property Name | Required | Property Type | Property
-Description | | :--------: | :-----------: | :-----------: |
-:-------------: | :------------------- | | label | id | no⁵ |
-RenderLabel | The label to render into the image. |
+.. list-table::
+   :header-rows: 1
+
+   * - Group name
+     - Property Name
+     - Required
+     - Property Type
+     - Property Description
+   * - label
+     - id
+     - no⁵
+     - RenderLabel
+     - The label to render into the image.
 
 ⁵ When the label property is not set, RenderEngineVtk uses a default
 render label of RenderLabel∷kDontCare.

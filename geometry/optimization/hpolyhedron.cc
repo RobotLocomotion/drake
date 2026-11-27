@@ -18,6 +18,7 @@
 #include <libqhullcpp/QhullFacet.h>
 #include <libqhullcpp/QhullFacetList.h>
 
+#include "drake/common/fmt_eigen.h"
 #include "drake/common/overloaded.h"
 #include "drake/common/text_logging.h"
 #include "drake/geometry/optimization/affine_subspace.h"
@@ -1601,7 +1602,8 @@ void HPolyhedron::CheckInvariants() const {
   // Note: If necessary, we could support infinite b, either by removing the
   // corresponding rows of A (since the constraint is vacuous), or checking
   // this explicitly in all relevant computations (like IsBounded).
-  DRAKE_THROW_UNLESS(b_.array().isFinite().all());
+  DRAKE_THROW_UNLESS(b_.array().isFinite().all(), fmt_eigen(b_));
+  DRAKE_THROW_UNLESS(A_.allFinite(), fmt_eigen(A_));
 }
 
 }  // namespace optimization
