@@ -12,11 +12,11 @@ def mosek_repository(
         # - tools/wheel/image/setup.py must also be updated
         # - LICENSE.third_party may also need updating to match
         #   https://docs.mosek.com/latest/licensing/license-agreement-info.html
-        version = "11.1.2",
+        version = "12.0.1",
         sha256 = {
-            "mosektoolslinuxaarch64.tar.bz2": "59bec3262d3654d6754a89ea0a787f039ac90ca37f2093d2c6fd883672350ec8",  # noqa
-            "mosektoolslinux64x86.tar.bz2": "61416cc09c9354e6e90fb65a48c97dc4d86d5e0634ac0380a9c4e7ffbd73bf00",  # noqa
-            "mosektoolsosxaarch64.tar.bz2": "e09457a0ff2a74f701f366474bd135ae7f4d3caf08ef32b5666f2b5c1ced4b97",  # noqa
+            "mosektoolslinuxaarch64.tar.bz2": "6b552c24f81562ff07fda31af65d85c431873c453df8bad79373957df8baddd7",  # noqa
+            "mosektoolslinux64x86.tar.bz2": "b600e25146e5e45dc10842ccc01c2d0a6ada8b801e8166e3f116189049b471e4",  # noqa
+            "mosektoolsosxaarch64.tar.bz2": "c6c86d11aab55ca035caccd64c3aec4aec4140212e4dd8a32aacd5d66c1b83fa",  # noqa
         },
         mirrors = mirrors,
     )
