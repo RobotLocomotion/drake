@@ -123,14 +123,27 @@ PYDRAKE_MODULE(optimization, m) {
         // Keep alive, reference: `self` keeps `plant` alive.
         py::keep_alive<1, 2>(),
         // Keep alive, reference: `self` keeps `plant_context` alive.
-        py::keep_alive<1, 8>(), cls_doc.ctor.doc);
+        py::keep_alive<1, 8>(), cls_doc.ctor.doc_autodiff);
+    cls.def(
+        py::init<const MultibodyPlant<double>*, const Frame<double>&,
+            const Eigen::Ref<const Eigen::Vector3d>&,
+            const Eigen::Ref<const Eigen::Vector3d>&, const Frame<double>&,
+            const Eigen::Ref<const Eigen::Vector3d>&, systems::Context<double>*,
+            const std::optional<Class::AngularVelocityBounds>&>(),
+        py::arg("plant"), py::arg("frameA"), py::arg("v_AC_lower"),
+        py::arg("v_AC_upper"), py::arg("frameB"), py::arg("p_BCo"),
+        py::arg("plant_context"), py::arg("w_AC_bounds") = std::nullopt,
+        // Keep alive, reference: `self` keeps `plant` alive.
+        py::keep_alive<1, 2>(),
+        // Keep alive, reference: `self` keeps `plant_context` alive.
+        py::keep_alive<1, 8>(), cls_doc.ctor.doc_double);
 
     using Avb = SpatialVelocityConstraint::AngularVelocityBounds;
     constexpr auto& avb_doc =
         doc.SpatialVelocityConstraint.AngularVelocityBounds;
     class_<SpatialVelocityConstraint::AngularVelocityBounds>(
         cls, "AngularVelocityBounds", avb_doc.doc)
-        .def(py::init<>(), cls_doc.ctor.doc)
+        .def(py::init<>(), avb_doc.doc)
         .def_rw("magnitude_lower", &Avb::magnitude_lower,
             avb_doc.magnitude_lower.doc)
         .def_rw("magnitude_upper", &Avb::magnitude_upper,

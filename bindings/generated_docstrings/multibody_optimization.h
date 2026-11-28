@@ -556,7 +556,7 @@ to avoid numerical difficulties.)""";
         // Symbol: drake::multibody::SpatialVelocityConstraint::SpatialVelocityConstraint
         struct /* ctor */ {
           // Source: drake/multibody/optimization/spatial_velocity_constraint.h
-          const char* doc =
+          const char* doc_autodiff =
 R"""(Constructs SpatialVelocityConstraint object.
 
 Parameter ``plant``:
@@ -607,6 +607,11 @@ Raises:
 
 Raises:
     RuntimeError if invalid w_AC_bounds are provided.)""";
+          // Source: drake/multibody/optimization/spatial_velocity_constraint.h
+          const char* doc_double =
+R"""(Overloaded constructor. Same as the constructor above, but using
+MultibodyPlant<double> and Context<double>. The gradient is computed
+without autodiff through ``plant``, which makes evaluation faster.)""";
         } ctor;
       } SpatialVelocityConstraint;
       // Symbol: drake::multibody::StaticEquilibriumConstraint

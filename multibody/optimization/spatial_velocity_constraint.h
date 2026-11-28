@@ -70,6 +70,7 @@ class SpatialVelocityConstraint final : public solvers::Constraint {
    * @throws std::exception if `plant` is nullptr.
    * @throws std::exception if `plant_context` is nullptr.
    * @throws std::exception if invalid w_AC_bounds are provided.
+   * @pydrake_mkdoc_identifier{autodiff}
    */
   SpatialVelocityConstraint(
       const MultibodyPlant<AutoDiffXd>* plant, const Frame<AutoDiffXd>& frameA,
@@ -78,6 +79,21 @@ class SpatialVelocityConstraint final : public solvers::Constraint {
       const Frame<AutoDiffXd>& frameB,
       const Eigen::Ref<const Eigen::Vector3d>& p_BCo,
       systems::Context<AutoDiffXd>* plant_context,
+      const std::optional<AngularVelocityBounds>& w_AC_bounds = std::nullopt);
+
+  /**
+   * Overloaded constructor. Same as the constructor above, but using
+   * MultibodyPlant<double> and Context<double>. The gradient is computed
+   * without autodiff through `plant`, which makes evaluation faster.
+   * @pydrake_mkdoc_identifier{double}
+   */
+  SpatialVelocityConstraint(
+      const MultibodyPlant<double>* plant, const Frame<double>& frameA,
+      const Eigen::Ref<const Eigen::Vector3d>& v_AC_lower,
+      const Eigen::Ref<const Eigen::Vector3d>& v_AC_upper,
+      const Frame<double>& frameB,
+      const Eigen::Ref<const Eigen::Vector3d>& p_BCo,
+      systems::Context<double>* plant_context,
       const std::optional<AngularVelocityBounds>& w_AC_bounds = std::nullopt);
 
   ~SpatialVelocityConstraint() final;
@@ -99,8 +115,22 @@ class SpatialVelocityConstraint final : public solvers::Constraint {
         "variables.");
   }
 
-  const MultibodyPlant<AutoDiffXd>* const plant_{};
-  systems::Context<AutoDiffXd>* const context_{};
+  // Base constructor; the public constructors delegate to it. The dummy
+  // integer parameter disambiguates it from the public constructors.
+  template <typename T>
+  SpatialVelocityConstraint(
+      const MultibodyPlant<T>* plant, const Frame<T>& frameA,
+      const Eigen::Ref<const Eigen::Vector3d>& v_AC_lower,
+      const Eigen::Ref<const Eigen::Vector3d>& v_AC_upper,
+      const Frame<T>& frameB, const Eigen::Ref<const Eigen::Vector3d>& p_BCo,
+      systems::Context<T>* plant_context,
+      const std::optional<AngularVelocityBounds>& w_AC_bounds, int);
+
+  // Exactly one of the double and AutoDiffXd plant/context pairs is non-null.
+  const MultibodyPlant<double>* const plant_double_{};
+  systems::Context<double>* const context_double_{};
+  const MultibodyPlant<AutoDiffXd>* const plant_autodiff_{};
+  systems::Context<AutoDiffXd>* const context_autodiff_{};
   const FrameIndex frameA_index_;
   const FrameIndex frameB_index_;
   const Eigen::Vector3d p_BC_;

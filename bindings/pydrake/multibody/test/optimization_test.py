@@ -311,6 +311,38 @@ class TestSpatialVelocityConstraint(unittest.TestCase):
             dut.upper_bound(), [4, 5, 6, 0.16, 1]
         )
 
+    def test_double_plant(self):
+        plant = MultibodyPlant(time_step=0.0)
+        Parser(plant).AddModels(
+            FindResourceOrThrow(
+                "drake/bindings/pydrake/multibody/test/two_bodies.sdf"
+            )
+        )
+        plant.Finalize()
+        context = plant.CreateDefaultContext()
+        w_AC_bounds = SpatialVelocityConstraint.AngularVelocityBounds()
+        w_AC_bounds.magnitude_lower = 0.2
+        w_AC_bounds.magnitude_upper = 0.4
+        dut = SpatialVelocityConstraint(
+            plant=plant,
+            frameA=plant.GetFrameByName("body1"),
+            v_AC_lower=[1, 2, 3],
+            v_AC_upper=[4, 5, 6],
+            frameB=plant.GetFrameByName("body2"),
+            p_BCo=[0.2, 0.3, 0.6],
+            plant_context=context,
+            w_AC_bounds=w_AC_bounds,
+        )
+        self.assertIsInstance(dut, mp.Constraint)
+        np.testing.assert_array_almost_equal(
+            dut.lower_bound(), [1, 2, 3, 0.04, -1]
+        )
+        np.testing.assert_array_almost_equal(
+            dut.upper_bound(), [4, 5, 6, 0.16, 1]
+        )
+        x = plant.GetPositionsAndVelocities(context)
+        self.assertEqual(dut.Eval(x).shape, (5,))
+
 
 class TestContactWrenchFromForceInWorldFrameEvaluator(unittest.TestCase):
     def test(self):
