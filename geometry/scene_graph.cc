@@ -10,6 +10,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/nice_type_name.h"
 #include "drake/common/text_logging.h"
+#include "drake/geometry/collision_backend.h"
 #include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/geometry_state.h"
 #include "drake/systems/framework/context.h"
@@ -122,12 +123,16 @@ class SceneGraph<T>::Hub {
 
   const SceneGraphConfig& config() const { return config_; }
 
-  SceneGraphConfig& mutable_config() {
+  void SetConfig(const SceneGraphConfig& config) {
     // This doesn't need a lock_guard. Users should already know that non-const
     // methods of an instance should never be called simultaneously with any
     // other method on that same instance.
     augmented_model_cache_.reset();
-    return config_;
+    model_.SetCollisionBackend(
+        config.collision_backend.empty()
+            ? std::nullopt
+            : ParseCollisionBackend(config.collision_backend));
+    config_ = config;
   }
 
   const GeometryState<T>& model() const { return model_; }
@@ -198,7 +203,7 @@ SceneGraph<T>::SceneGraph()
 template <typename T>
 SceneGraph<T>::SceneGraph(const SceneGraphConfig& config) : SceneGraph() {
   config.ValidateOrThrow();
-  hub_.mutable_config() = config;
+  hub_.SetConfig(config);
 }
 
 template <typename T>
@@ -208,7 +213,7 @@ template <typename T>
 template <typename U>
 SceneGraph<T>::SceneGraph(const SceneGraph<U>& other) : SceneGraph() {
   ++scalar_conversion_count_;
-  hub_.mutable_config() = other.hub_.config();
+  hub_.SetConfig(other.hub_.config());
   hub_.mutable_model() = GeometryState<T>(other.hub_.model());
 
   // We need to guarantee that the same source ids map to the same port indices.
@@ -251,7 +256,7 @@ SourceId SceneGraph<T>::RegisterSource(const std::string& name) {
 template <typename T>
 void SceneGraph<T>::set_config(const SceneGraphConfig& config) {
   config.ValidateOrThrow();
-  hub_.mutable_config() = config;
+  hub_.SetConfig(config);
 }
 
 template <typename T>

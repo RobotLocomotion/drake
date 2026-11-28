@@ -6,22 +6,22 @@ namespace drake {
 namespace geometry {
 namespace internal {
 
-std::string_view FclBackend::NodeTypeName(NodeType node_type) {
+ShapeKind FclBackend::Classify(NodeType node_type) {
   switch (node_type) {
     case fcl::GEOM_BOX:
-      return "Box";
+      return ShapeKind::kBox;
     case fcl::GEOM_CAPSULE:
-      return "Capsule";
+      return ShapeKind::kCapsule;
     case fcl::GEOM_CONVEX:
-      return "Convex";
+      return ShapeKind::kConvex;
     case fcl::GEOM_CYLINDER:
-      return "Cylinder";
+      return ShapeKind::kCylinder;
     case fcl::GEOM_ELLIPSOID:
-      return "Ellipsoid";
+      return ShapeKind::kEllipsoid;
     case fcl::GEOM_HALFSPACE:
-      return "Halfspace";
+      return ShapeKind::kHalfspace;
     case fcl::GEOM_SPHERE:
-      return "Sphere";
+      return ShapeKind::kSphere;
     case fcl::BV_UNKNOWN:
     case fcl::BV_AABB:
     case fcl::BV_OBB:
@@ -36,7 +36,7 @@ std::string_view FclBackend::NodeTypeName(NodeType node_type) {
     case fcl::GEOM_PLANE:
     case fcl::GEOM_TRIANGLE:
     case fcl::NODE_COUNT:
-      return "Unsupported";
+      return ShapeKind::kUnsupported;
   }
   DRAKE_UNREACHABLE();
 }

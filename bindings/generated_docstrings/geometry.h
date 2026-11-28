@@ -8607,6 +8607,36 @@ Serialization" for background.)""";
           // Source: drake/geometry/scene_graph_config.h
           const char* doc = R"""(Throws if the values are inconsistent.)""";
         } ValidateOrThrow;
+        // Symbol: drake::geometry::SceneGraphConfig::collision_backend
+        struct /* collision_backend */ {
+          // Source: drake/geometry/scene_graph_config.h
+          const char* doc =
+R"""(Selects the collision library used for proximity queries. The selection
+is local to this SceneGraph. The supported values are:
+
+* ``"fcl"`` selects the Flexible Collision Library, Drake's current
+  default.
+
+* ``"coal"`` selects the Coal collision library.
+
+* ``""`` selects the process-wide default.
+
+The process-wide default is initialized once, when first needed, from
+the ``DRAKE_PROXIMITY_BACKEND`` environment variable. The environment
+variable accepts ``"fcl"`` or ``"coal"`` case-insensitively. If it is
+unset, empty, or unrecognized, the default is FCL (an unrecognized value
+also produces a warning). A non-empty value here takes precedence over
+the process-wide default.
+
+Both backends provide the same proximity-query API, but their
+floating-point results are not necessarily identical; callers should
+not expect bitwise equivalence when changing backends.
+
+The backend can be changed with SceneGraph.set_config() only while no
+proximity geometry is registered. Once proximity geometry has been
+registered, attempting to select a different backend throws an
+exception.)""";
+        } collision_backend;
         // Symbol: drake::geometry::SceneGraphConfig::default_proximity_properties
         struct /* default_proximity_properties */ {
           // Source: drake/geometry/scene_graph_config.h
@@ -8616,6 +8646,7 @@ been otherwise specified.)""";
         } default_proximity_properties;
         auto Serialize__fields() const {
           return std::array{
+            std::make_pair("collision_backend", collision_backend.doc),
             std::make_pair("default_proximity_properties", default_proximity_properties.doc),
           };
         }

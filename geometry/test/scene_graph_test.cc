@@ -19,6 +19,7 @@
 #include "drake/geometry/geometry_set.h"
 #include "drake/geometry/geometry_state.h"
 #include "drake/geometry/make_mesh_for_deformable.h"
+#include "drake/geometry/proximity/collision_backend.h"
 #include "drake/geometry/proximity_properties.h"
 #include "drake/geometry/query_object.h"
 #include "drake/geometry/render/render_label.h"
@@ -458,6 +459,48 @@ TEST_F(SceneGraphTest, ApplyConfig) {
   EXPECT_TRUE(props->HasGroup(kHydroGroup));
   // The specific non-default property was removed.
   EXPECT_FALSE(props->HasProperty(kHydroGroup, kPointStiffness));
+}
+
+GTEST_TEST(SceneGraphTestStandalone, ConfigSelectsCollisionBackend) {
+  SceneGraphConfig config;
+  config.collision_backend = "coal";
+  SceneGraph<double> scene_graph(config);
+  auto context = scene_graph.CreateDefaultContext();
+  EXPECT_EQ(SceneGraphTester::GetGeometryState(scene_graph, *context)
+                .collision_backend(),
+            CollisionBackend::kCoal);
+
+  config.collision_backend = "fcl";
+  scene_graph.set_config(config);
+  context = scene_graph.CreateDefaultContext();
+  EXPECT_EQ(SceneGraphTester::GetGeometryState(scene_graph, *context)
+                .collision_backend(),
+            CollisionBackend::kFcl);
+}
+
+GTEST_TEST(SceneGraphTestStandalone, EmptyConfigUsesProcessDefaultBackend) {
+  SceneGraph<double> scene_graph(SceneGraphConfig{});
+  const auto context = scene_graph.CreateDefaultContext();
+  EXPECT_EQ(SceneGraphTester::GetGeometryState(scene_graph, *context)
+                .collision_backend(),
+            internal::GetDefaultCollisionBackend());
+}
+
+GTEST_TEST(SceneGraphTestStandalone,
+           CannotChangeBackendAfterRegisteringProximityGeometry) {
+  SceneGraphConfig config;
+  config.collision_backend = "fcl";
+  SceneGraph<double> scene_graph(config);
+  const SourceId source_id = scene_graph.RegisterSource();
+  auto geometry = make_sphere_instance();
+  geometry->set_proximity_properties(ProximityProperties{});
+  scene_graph.RegisterAnchoredGeometry(source_id, std::move(geometry));
+
+  config.collision_backend = "coal";
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      scene_graph.set_config(config),
+      "SceneGraph's collision backend cannot be changed after proximity "
+      "geometry has been registered\\.");
 }
 
 template <typename T>

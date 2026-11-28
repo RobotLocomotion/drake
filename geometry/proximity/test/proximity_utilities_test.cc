@@ -65,6 +65,17 @@ GTEST_TEST(EncodedData, ConstructionFromFclObject) {
   }
 }
 
+GTEST_TEST(ShapeKindTest, ToString) {
+  EXPECT_EQ(to_string(ShapeKind::kBox), "Box");
+  EXPECT_EQ(to_string(ShapeKind::kCapsule), "Capsule");
+  EXPECT_EQ(to_string(ShapeKind::kConvex), "Convex");
+  EXPECT_EQ(to_string(ShapeKind::kCylinder), "Cylinder");
+  EXPECT_EQ(to_string(ShapeKind::kEllipsoid), "Ellipsoid");
+  EXPECT_EQ(to_string(ShapeKind::kHalfspace), "Halfspace");
+  EXPECT_EQ(to_string(ShapeKind::kSphere), "Sphere");
+  EXPECT_EQ(to_string(ShapeKind::kUnsupported), "Unsupported");
+}
+
 class VolumeMeshUtilities : public ::testing::Test {
  public:
   void SetUp() override {

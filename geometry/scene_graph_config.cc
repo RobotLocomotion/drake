@@ -68,6 +68,13 @@ void DefaultProximityProperties::ValidateOrThrow() const {
 }
 
 void SceneGraphConfig::ValidateOrThrow() const {
+  if (!collision_backend.empty() && collision_backend != "fcl" &&
+      collision_backend != "coal") {
+    throw std::logic_error(fmt::format(
+        "Unknown collision backend: '{}'. The supported values are 'fcl' and "
+        "'coal'.",
+        collision_backend));
+  }
   default_proximity_properties.ValidateOrThrow();
 }
 

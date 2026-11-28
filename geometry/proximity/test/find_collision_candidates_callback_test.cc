@@ -4,11 +4,12 @@
 #include <unordered_set>
 #include <vector>
 
-#include <fcl/fcl.h>
 #include <gtest/gtest.h>
 
+#include "drake/geometry/proximity/coal_backend.h"
 #include "drake/geometry/proximity/fcl_backend.h"
 #include "drake/geometry/proximity/proximity_utilities.h"
+#include "drake/geometry/proximity/test/backend_test_utilities.h"
 
 namespace drake {
 namespace geometry {
@@ -16,14 +17,12 @@ namespace internal {
 namespace find_collision_candidates {
 namespace {
 
-using fcl::Boxd;
-using fcl::CollisionObjectd;
 using std::make_shared;
 using std::vector;
 
 // Confirms that the callback properly returns a sorted pair for the
 // corresponding geometry ids.
-GTEST_TEST(Callback, PairsProperlyFormed) {
+DRAKE_BACKEND_GTEST(FindCollisionCandidatesTest, PairsProperlyFormed) {
   const GeometryId id_A = GeometryId::get_new_id();
   const GeometryId id_B = GeometryId::get_new_id();
   CollisionFilter collision_filter;
@@ -33,14 +32,16 @@ GTEST_TEST(Callback, PairsProperlyFormed) {
   collision_filter.AddGeometry(data_A.id(), /* is_anchored = */ false);
   collision_filter.AddGeometry(data_B.id(), /* is_anchored = */ false);
 
-  CollisionObjectd box_A(make_shared<Boxd>(0.25, 0.3, 0.4));
-  data_A.write_to<FclBackend>(&box_A);
-  CollisionObjectd box_B(make_shared<Boxd>(0.4, 0.3, 0.2));
-  data_B.write_to<FclBackend>(&box_B);
+  typename Backend::Object box_A(
+      make_shared<typename Backend::Box>(0.25, 0.3, 0.4));
+  data_A.write_to<Backend>(&box_A);
+  typename Backend::Object box_B(
+      make_shared<typename Backend::Box>(0.4, 0.3, 0.2));
+  data_B.write_to<Backend>(&box_B);
 
   vector<SortedPair<GeometryId>> pairs;
   CallbackData data(&collision_filter, &pairs);
-  Callback(&box_A, &box_B, &data);
+  Callback<Backend>(&box_A, &box_B, &data);
   ASSERT_EQ(pairs.size(), 1u);
   const SortedPair<GeometryId> expected_pair{id_A, id_B};
   EXPECT_EQ(pairs[0], expected_pair);
@@ -48,13 +49,13 @@ GTEST_TEST(Callback, PairsProperlyFormed) {
   // We verify that the order the callback receives it doesn't affect the
   // results.
   pairs.clear();
-  Callback(&box_B, &box_A, &data);
+  Callback<Backend>(&box_B, &box_A, &data);
   ASSERT_EQ(pairs.size(), 1u);
   EXPECT_EQ(pairs[0], expected_pair);
 }
 
 // This test verifies that the broad-phase callback respects filtering.
-GTEST_TEST(Callback, RespectsCollisionFilter) {
+DRAKE_BACKEND_GTEST(FindCollisionCandidatesTest, RespectsCollisionFilter) {
   CollisionFilter collision_filter;
 
   EncodedData data_A(GeometryId::get_new_id(), true);
@@ -72,14 +73,16 @@ GTEST_TEST(Callback, RespectsCollisionFilter) {
                              GeometrySet{data_A.id(), data_B.id()}),
                          extract, false /* is_invariant */);
 
-  CollisionObjectd box_A(make_shared<Boxd>(0.25, 0.3, 0.4));
-  data_A.write_to<FclBackend>(&box_A);
-  CollisionObjectd box_B(make_shared<Boxd>(0.4, 0.3, 0.2));
-  data_B.write_to<FclBackend>(&box_B);
+  typename Backend::Object box_A(
+      make_shared<typename Backend::Box>(0.25, 0.3, 0.4));
+  data_A.write_to<Backend>(&box_A);
+  typename Backend::Object box_B(
+      make_shared<typename Backend::Box>(0.4, 0.3, 0.2));
+  data_B.write_to<Backend>(&box_B);
 
   vector<SortedPair<GeometryId>> pairs;
   CallbackData data(&collision_filter, &pairs);
-  Callback(&box_A, &box_B, &data);
+  Callback<Backend>(&box_A, &box_B, &data);
   EXPECT_EQ(pairs.size(), 0u);
 }
 

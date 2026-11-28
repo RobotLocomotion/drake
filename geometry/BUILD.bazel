@@ -29,6 +29,7 @@ drake_cc_package_library(
     name = "geometry",
     visibility = ["//visibility:public"],
     deps = [
+        ":collision_backend",
         ":collision_filter_declaration",
         ":collision_filter_manager",
         ":deformable_mesh_with_bvh",
@@ -71,6 +72,13 @@ drake_cc_package_library(
 )
 
 drake_cc_library(
+    name = "collision_backend",
+    srcs = ["collision_backend.cc"],
+    hdrs = ["collision_backend.h"],
+    deps = ["//common:essential"],
+)
+
+drake_cc_library(
     name = "proximity_engine",
     srcs = [
         "proximity_engine.cc",
@@ -90,6 +98,7 @@ drake_cc_library(
         "//geometry/proximity:collision_filter",
         "//geometry/proximity:deformable_contact_internal",
         "//geometry/proximity:hydroelastic_internal",
+        "//geometry/proximity:proximity_utilities",
         "//geometry/query_results",
         "//math",
     ],
@@ -97,15 +106,14 @@ drake_cc_library(
         ":read_obj",
         ":utilities",
         "//geometry/proximity",
+        "//geometry/proximity:collision_backend",
         "//geometry/proximity:collisions_exist_callback",
         "//geometry/proximity:deformable_contact_geometries",
         "//geometry/proximity:distance_to_point_callback",
         "//geometry/proximity:distance_to_shape_callback",
-        "//geometry/proximity:fcl_backend",
         "//geometry/proximity:find_collision_candidates_callback",
         "//geometry/proximity:hydroelastic_calculator",
         "//geometry/proximity:penetration_as_point_pair_callback",
-        "@fcl_internal//:fcl",
         "@fmt",
     ],
 )
@@ -1023,6 +1031,31 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "proximity_engine_backend_agreement_test",
+    deps = [
+        ":proximity_engine",
+        ":shape_specification",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//geometry/proximity:proximity_utilities",
+        "//math",
+    ],
+)
+
+drake_cc_googletest(
+    name = "proximity_engine_coal_test",
+    data = [":test_obj_files"],
+    deps = [
+        ":proximity_engine",
+        ":shape_specification",
+        "//common:find_resource",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//geometry/proximity:collision_backend",
+        "//geometry/proximity:proximity_utilities",
+        "//math",
+    ],
+)
+
+drake_cc_googletest(
     name = "proximity_engine_test",
     data = [
         ":test_obj_files",
@@ -1218,6 +1251,7 @@ drake_cc_googletest(
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:expect_throws_message",
+        "//geometry/proximity:collision_backend",
         "//geometry/test_utilities:dummy_render_engine",
     ],
 )
