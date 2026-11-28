@@ -8,6 +8,7 @@ import numpy as np
 
 from pydrake.common import Parallelism, RandomGenerator, temp_directory
 from pydrake.common.test_utilities.pickle_compare import assert_pickle
+from pydrake.common.yaml import yaml_dump_typed, yaml_load_typed
 from pydrake.geometry import (
     Box,
     Capsule,
@@ -360,6 +361,64 @@ class TestGeometryOptimization(unittest.TestCase):
         hpoly = mut.HPolyhedron(prog=prog)
         self.assertEqual(hpoly.ambient_dimension(), 1)
         self.assertEqual(hpoly.A().shape, (1, 1))
+
+    def test_h_polyhedron_yaml(self):
+        # Compatible with C++ YAML in both directions.
+        regions = {"box": mut.HPolyhedron.MakeBox(lb=[-1, -2], ub=[3, 4])}
+        filename = f"{temp_directory()}/hpolyhedron.yaml"
+        mut.SaveIrisRegionsYamlFile(filename=filename, regions=regions)
+        from_cpp = yaml_load_typed(
+            schema=dict[str, mut.HPolyhedron], filename=filename
+        )
+        np.testing.assert_array_equal(from_cpp["box"].A(), regions["box"].A())
+        np.testing.assert_array_equal(from_cpp["box"].b(), regions["box"].b())
+        yaml_dump_typed(
+            regions, schema=dict[str, mut.HPolyhedron], filename=filename
+        )
+        to_cpp = mut.LoadIrisRegionsYamlFile(filename=filename)
+        np.testing.assert_array_equal(to_cpp["box"].A(), regions["box"].A())
+        np.testing.assert_array_equal(to_cpp["box"].b(), regions["box"].b())
+
+        # An empty HPolyhedron round-trips; its A dumps as [].
+        loaded = yaml_load_typed(
+            schema=mut.HPolyhedron, data=yaml_dump_typed(mut.HPolyhedron())
+        )
+        self.assertEqual(loaded.A().shape, (0, 0))
+        # Like C++, an Nx0 A loads as 0x0.
+        loaded = yaml_load_typed(
+            schema=mut.HPolyhedron, data="ambient_dimension: 0\nA: [[], []]"
+        )
+        self.assertEqual(loaded.A().shape, (0, 0))
+
+        # Loading over a default with a different dimension.
+        loaded = yaml_load_typed(
+            schema=mut.HPolyhedron,
+            data="ambient_dimension: 1\nA: [[2.0]]\nb: [3.0]",
+            defaults=mut.HPolyhedron.MakeUnitBox(dim=2),
+        )
+        self.assertEqual(loaded.ambient_dimension(), 1)
+        # Fields that the YAML omits keep their default values.
+        box = mut.HPolyhedron.MakeUnitBox(dim=2)
+        loaded = yaml_load_typed(
+            schema=mut.HPolyhedron,
+            data="ambient_dimension: 2\nA: [[2, 0], [0, 2], [-2, 0], [0, -2]]",
+            defaults=box,
+        )
+        np.testing.assert_array_equal(loaded.A(), 2 * box.A())
+        np.testing.assert_array_equal(loaded.b(), box.b())
+
+        # Each field's setter runs HPolyhedron::CheckInvariants.
+        for data, message in [
+            ("ambient_dimension: -1", "A_.cols"),
+            ("ambient_dimension: 3\nA: [[1.0]]\nb: [1.0]", "A_.cols"),
+            ("ambient_dimension: 1\nA: [[.inf]]\nb: [1.0]", "A_.allFinite"),
+            ("ambient_dimension: 1\nA: [[1.0]]\nb: [1.0, 2.0]", "b_.size"),
+        ]:
+            with (
+                self.subTest(data=data),
+                self.assertRaisesRegex(SystemExit, message),
+            ):
+                yaml_load_typed(schema=mut.HPolyhedron, data=data)
 
     def test_hyper_ellipsoid(self):
         mut.Hyperellipsoid()

@@ -2,12 +2,17 @@
  drake::geometry::optimization namespace. They can be found in the
  pydrake.geometry.optimization module. */
 
+#include <algorithm>
 #include <memory>
+#include <optional>
 #include <string>
+#include <string_view>
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
 #include <vector>
+
+#include <fmt/format.h>
 
 #include "drake/bindings/generated_docstrings/geometry_optimization.h"
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
@@ -391,6 +396,101 @@ void DefineConvexSetBaseClassAndSubclasses(py::module_ m) {
         [](const Class& self) { return std::make_pair(self.A(), self.b()); },
         [](Class* self, std::pair<Eigen::MatrixXd, Eigen::VectorXd> args) {
           new (self) Class(std::get<0>(args), std::get<1>(args));
+        });
+    // Add the same __fields__ that DefAttributesUsingSerialize would have
+    // (which we can't use, because it would skip CheckInvariants). Keep in sync
+    // with HPolyhedron::Serialize.
+    {
+      py::list fields;
+      auto add_field = [&fields](const char* name, py::object type) {
+        auto field = py::module_::import_("types").attr("SimpleNamespace")();
+        py::setattr(field, "name", py::str(name));
+        py::setattr(field, "type", type);
+        fields.append(field);
+      };
+      const py::object ndarray = py::module_::import_("numpy").attr("ndarray");
+      add_field(
+          "ambient_dimension", py::module_::import_("builtins").attr("int"));
+      add_field("A", ndarray);
+      add_field("b", ndarray);
+      cls.def_prop_ro_static("__fields__",
+          [fields_tuple = py::tuple(fields)](py::object /* cls */) {  // BR
+            return fields_tuple;
+          });
+    }
+    // Use _rewrite_yaml_dump_attr_name to instruct yaml_dump_typed to access
+    // the "_foo" property instead of "foo" (which is a method). Override
+    // __setattr__ to instruct yaml_load_typed to do the same.
+    cls.def_static("_rewrite_yaml_dump_attr_name",
+        [](std::string_view name) { return fmt::format("_{}", name); });
+    cls.def("__setattr__", [](Class& self, py::str name, py::object value) {
+      const std::string_view name_str(name.c_str());
+      if (name_str == "ambient_dimension" || name_str == "A" ||
+          name_str == "b") {
+        name = py::str(fmt::format("_{}", name_str).c_str());
+      }
+      py::module_::import_("builtins")
+          .attr("object")
+          .attr("__setattr__")(py::cast(self, py_rvp::reference), name, value);
+    });
+    // An adapter to set the serialized fields, so that Serialize checks the
+    // invariants.
+    struct Archive {
+      void Visit(const NameValue<int>& nv) {
+        if (ambient_dimension.has_value()) {
+          *nv.value() = *ambient_dimension;
+        }
+      }
+      void Visit(const NameValue<Eigen::MatrixXd>& nv) {
+        if (A.has_value()) {
+          *nv.value() = std::move(*A);
+        }
+      }
+      void Visit(const NameValue<Eigen::VectorXd>& nv) {
+        if (b.has_value()) {
+          *nv.value() = std::move(*b);
+        }
+      }
+      std::optional<int> ambient_dimension;
+      std::optional<Eigen::MatrixXd> A;
+      std::optional<Eigen::VectorXd> b;
+    };
+    // Setting a field also replaces any later fields that no longer fit with
+    // placeholders that pass CheckInvariants. This is fine because
+    // deserialization matches __fields__ order, so yaml_load_typed overwrites
+    // the placeholders next.
+    cls.def_prop_rw(
+        "_ambient_dimension",
+        [](const Class& self) { return self.ambient_dimension(); },
+        [](Class& self, int ambient_dimension) {
+          Archive archive{.ambient_dimension = ambient_dimension};
+          if (self.A().cols() != ambient_dimension) {
+            archive.A = Eigen::MatrixXd(0, std::max(ambient_dimension, 0));
+            archive.b = Eigen::VectorXd(0);
+          }
+          self.Serialize(&archive);
+        });
+    cls.def_prop_rw(
+        "_A", [](const Class& self) { return Eigen::MatrixXd(self.A()); },
+        [](Class& self, const py::object& A_in) {
+          // Like the C++ YAML reader, read an empty A (e.g., [] or [[], []])
+          // as 0x0.
+          Eigen::MatrixXd A(0, 0);
+          if (py::cast<int>(A_in.attr("size")) > 0) {
+            A = py::cast<Eigen::MatrixXd>(A_in);
+          }
+          const int num_rows = A.rows();
+          Archive archive{.A = std::move(A)};
+          if (self.b().size() != num_rows) {
+            archive.b = Eigen::VectorXd::Zero(num_rows);
+          }
+          self.Serialize(&archive);
+        });
+    cls.def_prop_rw(
+        "_b", [](const Class& self) { return Eigen::VectorXd(self.b()); },
+        [](Class& self, const Eigen::VectorXd& b) {
+          Archive archive{.b = b};
+          self.Serialize(&archive);
         });
   }
 
