@@ -77,6 +77,7 @@ class FrameTests : public ::testing::Test {
     frameR_ = &model->AddFrame<FixedOffsetFrame>(
         "R", *frameP_, math::RigidTransformd::Identity());
     EXPECT_FALSE(frameR_->is_ephemeral());
+    EXPECT_FALSE(frameR_->is_implementation_detail());
 
     // Frame S is arbitrary, but named, with a specific model instance, and
     // ephemeral.
@@ -87,11 +88,32 @@ class FrameTests : public ::testing::Test {
             "S", model->world_frame(), X_WS_, extra_instance_));
     EXPECT_EQ(frameS_->scoped_name().get_full(), "extra_instance::S");
     EXPECT_TRUE(frameS_->is_ephemeral());
+    EXPECT_FALSE(frameS_->is_implementation_detail());
 
     // Ensure that the model instance propagates implicitly.
     frameSChild_ = &model->AddFrame<FixedOffsetFrame>(
         "SChild", *frameS_, math::RigidTransformd::Identity());
     EXPECT_EQ(frameSChild_->scoped_name().get_full(), "extra_instance::SChild");
+
+    // Frame T is an implementation detail and is not ephemeral. Frame U is
+    // both. The flag must be set before the frame is added to the tree.
+    auto frame_T = std::make_unique<FixedOffsetFrame<double>>(
+        "T", *frameP_, math::RigidTransformd::Identity());
+    frame_T->set_is_implementation_detail(true);
+    frameT_ = &model->AddFrame(std::move(frame_T));
+    EXPECT_TRUE(frameT_->is_implementation_detail());
+    EXPECT_FALSE(frameT_->is_ephemeral());
+    auto frame_U = std::make_unique<FixedOffsetFrame<double>>(
+        "U", *frameP_, math::RigidTransformd::Identity());
+    frame_U->set_is_implementation_detail(true);
+    frameU_ = &model->AddEphemeralFrame(std::move(frame_U));
+    EXPECT_TRUE(frameU_->is_implementation_detail());
+    EXPECT_TRUE(frameU_->is_ephemeral());
+    // Too late to change it.
+    EXPECT_THROW(const_cast<FixedOffsetFrame<double>&>(
+                     dynamic_cast<const FixedOffsetFrame<double>&>(*frameT_))
+                     .set_is_implementation_detail(false),
+                 std::exception);
 
     // We are done adding modeling elements. Transfer tree to system and get
     // a Context.
@@ -133,6 +155,8 @@ class FrameTests : public ::testing::Test {
   const Frame<double>* frameR_{};
   const Frame<double>* frameS_{};
   const Frame<double>* frameSChild_{};
+  const Frame<double>* frameT_{};
+  const Frame<double>* frameU_{};
   // Poses:
   math::RigidTransformd X_BP_;
   math::RigidTransformd X_PQ_;
@@ -405,6 +429,14 @@ TEST_F(FrameTests, ShallowCloneTests) {
   const auto& downcast_clone =
       dynamic_cast<const FixedOffsetFrame<double>&>(*clone_of_frameS);
   EXPECT_TRUE(downcast_clone.GetFixedPoseInBodyFrame().IsExactlyEqualTo(X_WS_));
+
+  // The implementation-detail flag is preserved, in both states.
+  EXPECT_FALSE(clone_of_frameS->is_implementation_detail());
+  EXPECT_TRUE(frameT_->ShallowClone()->is_implementation_detail());
+  EXPECT_FALSE(frameT_->ShallowClone()->is_ephemeral());
+  EXPECT_TRUE(frameU_->ShallowClone()->is_implementation_detail());
+  EXPECT_TRUE(frameU_->ShallowClone()->is_ephemeral());
+  EXPECT_FALSE(frameB_->ShallowClone()->is_implementation_detail());
 }
 
 TEST_F(FrameTests, DeepCloneTests) {
@@ -429,6 +461,25 @@ TEST_F(FrameTests, DeepCloneTests) {
       dynamic_cast<const FixedOffsetFrame<AutoDiffXd>&>(clone_of_frameS);
   EXPECT_TRUE(downcast_clone.GetFixedPoseInBodyFrame().IsExactlyEqualTo(
       X_WS_.cast<AutoDiffXd>()));
+
+  // The implementation-detail flag is preserved, in both states.
+  EXPECT_FALSE(clone_of_frameS.is_implementation_detail());
+  const Frame<AutoDiffXd>& clone_of_frameT =
+      cloned_tree->get_frame(frameT_->index());
+  EXPECT_TRUE(clone_of_frameT.is_implementation_detail());
+  EXPECT_FALSE(clone_of_frameT.is_ephemeral());
+  const Frame<AutoDiffXd>& clone_of_frameU =
+      cloned_tree->get_frame(frameU_->index());
+  EXPECT_TRUE(clone_of_frameU.is_implementation_detail());
+  EXPECT_TRUE(clone_of_frameU.is_ephemeral());
+
+  // Same for symbolic scalars.
+  auto symbolic_tree = tree_ptr_->CloneToScalar<symbolic::Expression>();
+  EXPECT_TRUE(
+      symbolic_tree->get_frame(frameT_->index()).is_implementation_detail());
+  EXPECT_FALSE(
+      symbolic_tree->get_frame(frameB_->index()).is_implementation_detail());
+  EXPECT_FALSE(clone_of_frameB.is_implementation_detail());
 }
 
 }  // namespace

@@ -214,6 +214,8 @@ void DoScalarDependentDefinitions(py::module_ m, T) {
         .def("is_world_frame", &Class::is_world_frame,
             cls_doc.is_world_frame.doc)
         .def("is_body_frame", &Class::is_body_frame, cls_doc.is_body_frame.doc)
+        .def("is_implementation_detail", &Class::is_implementation_detail,
+            cls_doc.is_implementation_detail.doc)
         .def("name", &Class::name, cls_doc.name.doc)
         .def("scoped_name", &Class::scoped_name, cls_doc.scoped_name.doc)
         .def("GetFixedPoseInBodyFrame", &Frame<T>::GetFixedPoseInBodyFrame,

@@ -68,6 +68,12 @@ class FixedOffsetFrame final : public Frame<T> {
 
   ~FixedOffsetFrame() override;
 
+  /// (Internal use only) Sets the value reported by
+  /// is_implementation_detail(). Call it before adding the frame to a
+  /// MultibodyTree.
+  /// @throws std::exception if the frame has already been added to one.
+  using Frame<T>::set_is_implementation_detail;
+
   /// Sets the pose of `this` frame F in its parent frame P.
   /// @param[in,out] context of the multibody plant associated with this frame.
   /// @param[in] X_PF Rigid transform that characterizes `this` frame F's pose
