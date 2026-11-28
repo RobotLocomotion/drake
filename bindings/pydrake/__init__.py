@@ -11,9 +11,13 @@ the `Doxygen C++ Documentation
 
 For examples and tutorials that tie in and use this API, please see
 `here <https://drake.mit.edu/#tutorials-and-examples>`_.
+
+``pydrake.__version__`` reports the installed ``drake`` distribution version,
+or ``"0.0.0"`` when distribution metadata is unavailable (e.g., a source build).
 """
 
 import functools
+import importlib.metadata as _metadata
 import os
 import sys
 import warnings
@@ -167,5 +171,13 @@ For more information, please see https://drake.mit.edu/installation.html
 """
         print(message)
     raise
+
+# Wheel installations record the version under the distribution name "drake",
+# while the importable package is named "pydrake". Source builds without that
+# metadata use the same fallback as tools/wheel/image/setup.py.
+try:
+    __version__ = _metadata.version("drake")
+except _metadata.PackageNotFoundError:
+    __version__ = "0.0.0"
 
 __all__ = ["common", "getDrakePath"]
