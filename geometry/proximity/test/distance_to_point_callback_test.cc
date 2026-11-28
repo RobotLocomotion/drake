@@ -14,7 +14,7 @@
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/proximity/fcl_backend.h"
 #include "drake/geometry/proximity/proximity_utilities.h"
-#include "drake/geometry/proximity/test/fcl_utilities.h"
+#include "drake/geometry/proximity/test/backend_utilities.h"
 #include "drake/geometry/shape_specification.h"
 #include "drake/geometry/utilities.h"
 #include "drake/math/autodiff_gradient.h"
@@ -1547,7 +1547,8 @@ struct SignedDistanceToPointTest
     fcl::CollisionObjectd query_point = MakeQueryPoint(data.p_WQ);
 
     std::unique_ptr<fcl::CollisionObjectd> geometry_object =
-        MakeFclObject(*data.geometry, id, /* is_dynamic= */ true);
+        MakeBackendObject<FclBackend>(*data.geometry, id,
+                                      /* is_dynamic= */ true);
 
     vector<SignedDistanceToPoint<double>> distances;
     MeshDistanceBoundaryCache no_meshes;
@@ -1597,7 +1598,7 @@ TEST_P(SignedDistanceToPointTest, SingleQueryPointSymbolic) {
   fcl::CollisionObjectd query_point = MakeQueryPoint(data.p_WQ);
 
   std::unique_ptr<fcl::CollisionObjectd> geometry_object =
-      MakeFclObject(*data.geometry, id, /* is_dynamic= */ true);
+      MakeBackendObject<FclBackend>(*data.geometry, id, /* is_dynamic= */ true);
 
   vector<SignedDistanceToPoint<Expression>> sym_distances;
   unordered_map<GeometryId, RigidTransform<Expression>> X_WGs_sym{
