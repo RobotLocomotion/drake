@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <optional>
 #include <set>
+#include <span>
 #include <utility>
 #include <vector>
 
@@ -140,6 +141,23 @@ class BlockSparseLowerTriangularOrSymmetricMatrix {
     DRAKE_ASSERT(old_value.rows() == Aij.rows());
     DRAKE_ASSERT(old_value.cols() == Aij.cols());
     old_value += Aij;
+  }
+
+  /* Adds s⋅Aij to the rows and columns of the ij-th block selected by `rows`
+   and `cols`; i.e., block(i, j)(rows[r], cols[c]) += s⋅Aij(r, c). This lets a
+   caller whose contribution touches only a few rows and columns of a large
+   block add it without forming the whole block.
+   @pre Same as for AddToBlock(i, j, Aij), for the block that results.
+   @pre Aij.rows() == rows.size() and Aij.cols() == cols.size().
+   @pre Every entry of `rows` and `cols` is in range for the ij-th block. */
+  void AddToBlock(int i, int j, std::span<const int> rows,
+                  std::span<const int> cols, const Scalar& s,
+                  const Eigen::Ref<const MatrixType>& Aij) {
+    DRAKE_ASSERT_VOID(AssertValid(i, j, std::nullopt, __func__));
+    DRAKE_ASSERT(ssize(rows) == Aij.rows());
+    DRAKE_ASSERT(ssize(cols) == Aij.cols());
+    const int flat = block_row_to_flat_[j][i];
+    blocks_[j][flat](rows, cols) += s * Aij;
   }
 
   /* Overwrites the ij-th block with `Aij`. If `this` matrix is symmetric,

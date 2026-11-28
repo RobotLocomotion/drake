@@ -686,6 +686,41 @@ TEST_P(WeldConstraintsPoolParamTestD, Reduce) {
   check_reduced(all_locked);
 }
 
+/* With every body in one clique, each body's Jacobian is nonzero in only six
+of the clique's 18 columns, and the pool forms its Hessian blocks over only
+those columns. Weld 1 connects bodies 2 and 3, whose columns don't overlap.
+Checks that the Hessian still matches the derivative of the gradient. */
+GTEST_TEST(WeldConstraintsPool, SingleCliqueHessianSparsity) {
+  IcfModel<AutoDiffXd> model;
+  MakeUnconstrainedModel(&model, /* single_clique = */ true);
+  AddWeldConstraints(&model);
+  model.SetSparsityPattern();
+  ASSERT_EQ(model.num_cliques(), 1);
+  ASSERT_EQ(model.clique_size(0), 18);
+
+  IcfData<AutoDiffXd> data;
+  model.ResizeData(&data);
+  const int nv = model.num_velocities();
+  VectorX<AutoDiffXd> v(nv);
+  math::InitializeAutoDiff(VectorXd::LinSpaced(nv, -10, 10.0), &v);
+  model.CalcAllData(v, &data);
+
+  std::vector<IcfHessian<AutoDiffXd>> island_hessians;
+  for (int i = 0; i < model.partition().num_islands(); ++i) {
+    island_hessians.emplace_back(*model.MakeHessian(i, data));
+  }
+  const MatrixXd hessian =
+      math::ExtractValue(CombineSubHessians(model.sparsity_pattern(),
+                                            model.partition(), island_hessians)
+                             ->MakeDenseMatrix());
+  const MatrixXd gradient_derivatives = math::ExtractGradient(data.gradient());
+  EXPECT_TRUE(CompareMatrices(hessian, gradient_derivatives, 10 * kEpsilon,
+                              MatrixCompareType::relative));
+
+  // Weld 1 couples bodies 2 and 3.
+  EXPECT_GT((hessian.block<6, 6>(12, 6).norm()), 0.0);
+}
+
 INSTANTIATE_TEST_SUITE_P(FlipIslandsD, WeldConstraintsPoolParamTestD,
                          ::testing::Bool());
 INSTANTIATE_TEST_SUITE_P(FlipIslandsAd, WeldConstraintsPoolParamTestAd,

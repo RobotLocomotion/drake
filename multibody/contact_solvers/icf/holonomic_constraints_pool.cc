@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <iterator>
 #include <utility>
 
 #include "drake/common/autodiff.h"
@@ -16,6 +17,25 @@ namespace multibody {
 namespace contact_solvers {
 namespace icf {
 namespace internal {
+namespace {
+
+/* Returns the indices of the columns of J that aren't exactly zero, in
+increasing order. For a body's Jacobian, these are the columns of the dofs on
+its path to the root; the others are exactly zero (with zero derivatives) at
+every configuration. */
+template <typename T>
+std::vector<int> NonzeroColumns(
+    const typename IcfModel<T>::ConstJacobianView& J) {
+  std::vector<int> result;
+  for (int j = 0; j < J.cols(); ++j) {
+    if ((J.col(j).array() != 0.0).any()) {
+      result.push_back(j);
+    }
+  }
+  return result;
+}
+
+}  // namespace
 
 template <typename T, int N, typename Derived>
 HolonomicConstraintsPool<T, N, Derived>::HolonomicConstraintsPool(
@@ -144,9 +164,7 @@ void HolonomicConstraintsPool<T, N, Derived>::AccumulateGradient(
 }
 
 template <typename T, int N, typename Derived>
-void HolonomicConstraintsPool<T, N, Derived>::PrecomputeHessianBlocks() {
-  hessian_blocks_.resize(num_constraints());
-
+void HolonomicConstraintsPool<T, N, Derived>::UpdateRegularization() {
   using std::isinf;
   // Near-rigid parameter β.
   const double kBeta = IcfModel<T>::kBeta;
@@ -161,19 +179,12 @@ void HolonomicConstraintsPool<T, N, Derived>::PrecomputeHessianBlocks() {
   for (int k = 0; k < num_constraints(); ++k) {
     const int bodyA = body_pairs_[k].first;
     const int bodyB = body_pairs_[k].second;
-    const int c_B = model().body_to_clique(bodyB);
-    const int c_A = model().body_to_clique(bodyA);  // negative if anchored.
-
-    HessianBlock& hb = hessian_blocks_[k];
-    hb.c_B = c_B;
-    hb.c_A = c_A;
-    hb.A_is_dynamic = !model().is_anchored(bodyA);
 
     // Approximate W_B = J_WB⋅diag(M_B)⁻¹⋅J_WBᵀ using body mass.
     // For a single rigid body, this is approximately 1/mass for translational
     // DOFs. We use a scalar approximation: w ≈ 1/m_B (+ 1/m_A if not anchored).
     T w = 1.0 / model().body_mass(bodyB);
-    if (hb.A_is_dynamic) w += 1.0 / model().body_mass(bodyA);
+    if (!model().is_anchored(bodyA)) w += 1.0 / model().body_mass(bodyA);
     const T R_near_rigid = r_scale * w;
 
     // Compliant regularization for the user supplied stiffness/damping:
@@ -200,57 +211,58 @@ void HolonomicConstraintsPool<T, N, Derived>::PrecomputeHessianBlocks() {
     }
     R_[k] = R;
     v_hat_[k] = -g0_[k] / (dt + tau_eff);
-    const T R_inv = 1.0 / R;
+  }
+}
+
+template <typename T, int N, typename Derived>
+void HolonomicConstraintsPool<T, N, Derived>::PrecomputeHessianBlocks() {
+  UpdateRegularization();
+  hessian_blocks_.resize(num_constraints());
+
+  for (int k = 0; k < num_constraints(); ++k) {
+    const int bodyA = body_pairs_[k].first;
+    const int bodyB = body_pairs_[k].second;
+    const int c_B = model().body_to_clique(bodyB);
+    const int c_A = model().body_to_clique(bodyA);  // negative if anchored.
+
+    HessianBlock& hb = hessian_blocks_[k];
+    hb.c_B = c_B;
+    hb.c_A = c_A;
+    hb.A_is_dynamic = !model().is_anchored(bodyA);
 
     // The derived builds the 6×6 body-space Hessian blocks
-    // G_Xp = Φ(p_X)ᵀ⋅G⋅Φ(p_X). G_Ap/G_cross are only needed when
-    // A is dynamic.
+    // G_Xp = Φ(p_X)ᵀ⋅G⋅Φ(p_X), for R = 1 (see HessianBlock).
+    // G_Ap/G_cross are only needed when A is dynamic.
     Matrix6<T> G_Bp, G_Ap, G_cross;
-    derived().CalcHessianBlocks(k, R_inv, &G_Bp,
-                                hb.A_is_dynamic ? &G_Ap : nullptr,
+    derived().CalcHessianBlocks(k, &G_Bp, hb.A_is_dynamic ? &G_Ap : nullptr,
                                 hb.A_is_dynamic ? &G_cross : nullptr);
+
+    // Find the dofs the blocks cover (see HessianBlock).
+    DRAKE_ASSERT(!model().is_anchored(bodyB));
+    hb.dofs_B = NonzeroColumns<T>(model().J_WB(bodyB));
+    if (hb.A_is_dynamic) {
+      hb.dofs_A = NonzeroColumns<T>(model().J_WB(bodyA));
+      if (c_A == c_B) {
+        std::vector<int> dofs;
+        std::ranges::set_union(hb.dofs_B, hb.dofs_A, std::back_inserter(dofs));
+        hb.dofs_A = dofs;
+        hb.dofs_B = std::move(dofs);
+      }
+    }
 
     // Body B contribution.
     // H_BB = J_WBᵀ⋅G_Bp⋅J_WB
-    DRAKE_ASSERT(!model().is_anchored(bodyB));
-    auto J_WB = model().J_WB(bodyB);
-    if (model().is_floating(bodyB)) {
-      hb.H_BB = G_Bp;
-    } else {
-      const int nv_b = model().clique_size(c_B);
-      Matrix6X<T> GJb(6, nv_b);
-      GJb.noalias() = G_Bp * J_WB;
-      hb.H_BB.resize(nv_b, nv_b);
-      hb.H_BB.noalias() = J_WB.transpose() * GJb;
-    }
+    const Matrix6X<T> J_WB = model().J_WB(bodyB)(eigen_all, hb.dofs_B);
+    hb.H_BB = J_WB.transpose() * G_Bp * J_WB;
 
     // Body A contribution, only if not anchored.
     // H_AA = J_WAᵀ⋅G_Ap⋅J_WA
     if (hb.A_is_dynamic) {
-      auto J_WA = model().J_WB(bodyA);
-      if (model().is_floating(bodyA)) {
-        hb.H_AA = G_Ap;
-      } else {
-        const int nv_a = model().clique_size(c_A);
-        Matrix6X<T> GJa(6, nv_a);
-        GJa.noalias() = G_Ap * J_WA;
-        hb.H_AA.resize(nv_a, nv_a);
-        hb.H_AA.noalias() = J_WA.transpose() * GJa;
-      }
+      const Matrix6X<T> J_WA = model().J_WB(bodyA)(eigen_all, hb.dofs_A);
+      hb.H_AA = J_WA.transpose() * G_Ap * J_WA;
 
       // Cross term: H_BA = −J_WBᵀ⋅G_cross⋅J_WA
-      const int nv_a = model().clique_size(c_A);
-      const int nv_b = model().clique_size(c_B);
-      MatrixX<T> H_BA(nv_b, nv_a);
-      {
-        Matrix6X<T> GJa(6, nv_a);
-        GJa.noalias() = G_cross * J_WA;
-        if (model().is_floating(bodyB)) {
-          H_BA = GJa;
-        } else {
-          H_BA.noalias() = J_WB.transpose() * GJa;
-        }
-      }
+      const MatrixX<T> H_BA = J_WB.transpose() * G_cross * J_WA;
 
       // Store the final cross block in the correct orientation for AddToBlock.
       if (c_B > c_A) {
@@ -279,14 +291,21 @@ void HolonomicConstraintsPool<T, N, Derived>::AccumulateHessian(
 
   for (int k : constraints) {
     const HessianBlock& hb = hessian_blocks_[k];
+    const T R_inv = 1.0 / R_[k];
     const int block_B = clique_to_block[hb.c_B];
-    hessian->AddToBlock(block_B, block_B, hb.H_BB);
+    hessian->AddToBlock(block_B, block_B, hb.dofs_B, hb.dofs_B, R_inv, hb.H_BB);
 
     if (hb.A_is_dynamic) {
       const int block_A = clique_to_block[hb.c_A];
-      hessian->AddToBlock(block_A, block_A, hb.H_AA);
+      hessian->AddToBlock(block_A, block_A, hb.dofs_A, hb.dofs_A, R_inv,
+                          hb.H_AA);
+      const std::vector<int>& cross_rows =
+          hb.cross_row == hb.c_B ? hb.dofs_B : hb.dofs_A;
+      const std::vector<int>& cross_cols =
+          hb.cross_col == hb.c_A ? hb.dofs_A : hb.dofs_B;
       hessian->AddToBlock(clique_to_block[hb.cross_row],
-                          clique_to_block[hb.cross_col], hb.H_cross);
+                          clique_to_block[hb.cross_col], cross_rows, cross_cols,
+                          R_inv, hb.H_cross);
     }
   }
 }

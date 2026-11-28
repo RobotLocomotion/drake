@@ -80,8 +80,8 @@ class WeldConstraintsPool
                                     const Vector6<T>* V_WA) const;
   void CalcSpatialImpulses(int k, const Vector6<T>& gamma, Vector6<T>* Gamma_Bo,
                            Vector6<T>* Gamma_Ao) const;
-  void CalcHessianBlocks(int k, const T& R_inv, Matrix6<T>* G_Bp,
-                         Matrix6<T>* G_Ap, Matrix6<T>* G_cross) const;
+  void CalcHessianBlocks(int k, Matrix6<T>* G_Bp, Matrix6<T>* G_Ap,
+                         Matrix6<T>* G_cross) const;
   const WeldConstraintsDataPool<T>& GetDataPool(const IcfData<T>& data) const {
     return data.weld_constraints_data();
   }

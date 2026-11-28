@@ -104,16 +104,16 @@ class HolonomicConstraintsPool {
                            Vector6<T>* Gamma_Ao) const = delete;
 
   /* Computes the body-space Hessian blocks G_Xp = Φ(p_X)ᵀ⋅G⋅Φ(p_X) of the k-th
-  constraint, with the constraint-space Hessian G = R⁻¹.
+  constraint, for a unit regularization R = 1. The constraint-space Hessian is
+  then G = R⁻¹⋅these, so the caller scales the blocks by R⁻¹.
   @param k The index of the constraint within the pool.
-  @param R_inv The inverse regularization R⁻¹ of the k-th constraint.
   @param[out] G_Bp The Hessian block for body B.
   @param[out] G_Ap The Hessian block for body A.
   @param[out] G_cross The Hessian block for the A/B cross term.
   @note G_Ap and G_cross are either both non-null (body A dynamic) or both null
   (body A anchored). */
-  void CalcHessianBlocks(int k, const T& R_inv, Matrix6<T>* G_Bp,
-                         Matrix6<T>* G_Ap, Matrix6<T>* G_cross) const = delete;
+  void CalcHessianBlocks(int k, Matrix6<T>* G_Bp, Matrix6<T>* G_Ap,
+                         Matrix6<T>* G_cross) const = delete;
 
   /* Returns the derived pool's typed data pool stored within `data`.
   @param data The IcfData holding this pool's per-constraint data. */
@@ -169,9 +169,14 @@ class HolonomicConstraintsPool {
   void CalcSparsityPattern(std::vector<std::vector<int>>* sparsity) const;
 
   /* Precomputes the iteration-invariant regularization R, bias v̂, and Hessian
-  blocks. Must be called after all Set() calls and whenever the time step
-  changes (R and v̂ depend on δt). */
+  blocks. Must be called after all Set() calls. When only the time step
+  changes, UpdateRegularization() suffices. */
   void PrecomputeHessianBlocks();
+
+  /* Recomputes only the regularization R and bias v̂, which depend on the time
+  step. The precomputed Hessian blocks don't, since AccumulateHessian() scales
+  them by R⁻¹. */
+  void UpdateRegularization();
 
   /* Computes the first and second derivatives of the cost ℓ̃(α) = ℓ(v + α⋅w),
   for only the listed constraints.
@@ -212,12 +217,21 @@ class HolonomicConstraintsPool {
                  const T& stiffness, const T& damping);
 
   // Precomputed, iteration-invariant Hessian blocks. Rank-N per constraint.
+  // They are formed for R⁻¹ = 1; AccumulateHessian() scales them by R⁻¹.
+  // A body's Jacobian is nonzero only in the columns of the dofs on its path
+  // to the root, typically far fewer than its clique's size, so each block
+  // covers only those dofs: H_BB covers dofs_B × dofs_B, H_AA covers
+  // dofs_A × dofs_A, and H_cross covers the dofs of its row and column
+  // cliques. When A and B share a clique, dofs_A and dofs_B are both the union
+  // of the two bodies' dofs.
   struct HessianBlock {
-    int c_B{-1};         // Clique index for body B (always valid).
-    int c_A{-1};         // Clique index for body A (-1 if anchored).
-    MatrixX<T> H_BB;     // Diagonal block for body B's clique.
-    MatrixX<T> H_AA;     // Diagonal block for body A's clique (if dynamic).
-    MatrixX<T> H_cross;  // Off-diagonal (or same-clique cross) block.
+    int c_B{-1};              // Clique index for body B (always valid).
+    int c_A{-1};              // Clique index for body A (-1 if anchored).
+    std::vector<int> dofs_B;  // Clique-local dofs of c_B the blocks cover.
+    std::vector<int> dofs_A;  // Clique-local dofs of c_A the blocks cover.
+    MatrixX<T> H_BB;          // Diagonal block for body B's clique.
+    MatrixX<T> H_AA;          // Diagonal block for body A's clique.
+    MatrixX<T> H_cross;       // Off-diagonal (or same-clique cross) block.
     int cross_row{-1};
     int cross_col{-1};
     bool A_is_dynamic{false};
@@ -236,7 +250,7 @@ class HolonomicConstraintsPool {
   std::vector<T> damping_;
 
   // Scalar regularization R and bias v̂ per constraint, computed in
-  // PrecomputeHessianBlocks() (depend on the time step, so recomputed on
+  // UpdateRegularization() (depend on the time step, so recomputed on
   // UpdateTimeStep).
   std::vector<T> R_;
   EigenPool<ConstraintVector> v_hat_;

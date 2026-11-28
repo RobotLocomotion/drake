@@ -83,12 +83,11 @@ void WeldConstraintsPool<T>::CalcSpatialImpulses(int k, const Vector6<T>& gamma,
 }
 
 template <typename T>
-void WeldConstraintsPool<T>::CalcHessianBlocks(int k, const T& R_inv,
-                                               Matrix6<T>* G_Bp,
+void WeldConstraintsPool<T>::CalcHessianBlocks(int k, Matrix6<T>* G_Bp,
                                                Matrix6<T>* G_Ap,
                                                Matrix6<T>* G_cross) const {
-  // G = diag(R⁻¹) ∈ ℝ⁶ˣ⁶, with rotational and translational blocks Gr and Gt.
-  const Matrix3<T> Gr = R_inv * Matrix3<T>::Identity();
+  // G = I₆ (for R = 1), with rotational and translational blocks Gr and Gt.
+  const Matrix3<T> Gr = Matrix3<T>::Identity();
   const Matrix3<T>& Gt = Gr;
   const Vector3<T>& p_PoQo = p_PoQo_W_[k];
   const Vector3<T> p_BoBm_W = p_BQ_W_[k] - 0.5 * p_PoQo;
