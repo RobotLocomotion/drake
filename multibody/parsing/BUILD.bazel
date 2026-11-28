@@ -570,6 +570,7 @@ drake_cc_googletest(
     deps = [
         ":detail_misc",
         "//common/test_utilities",
+        "//multibody/tree",
     ],
 )
 

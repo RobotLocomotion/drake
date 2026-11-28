@@ -94,7 +94,8 @@ class UrdfParser {
   void ParseMimicTag(XMLElement* node);
   const RigidBody<double>* GetBodyForElement(const std::string& element_name,
                                              const std::string& link_name);
-  void ParseJointDynamics(XMLElement* node, double* damping);
+  void ParseJointDynamics(XMLElement* node, double* damping,
+                          double* dry_friction);
   void ParseJointLimits(XMLElement* node, double* lower, double* upper,
                         double* velocity, double* acceleration, double* effort);
   void ParseJointKeyParams(XMLElement* node, std::string* name,
@@ -398,21 +399,16 @@ void UrdfParser::ParseJointLimits(XMLElement* node, double* lower,
   }
 }
 
-void UrdfParser::ParseJointDynamics(XMLElement* node, double* damping) {
+void UrdfParser::ParseJointDynamics(XMLElement* node, double* damping,
+                                    double* dry_friction) {
   *damping = 0.0;
-  double coulomb_friction = 0.0;
+  *dry_friction = 0.0;
   double coulomb_window = std::numeric_limits<double>::epsilon();
 
   XMLElement* dynamics_node = node->FirstChildElement("dynamics");
   if (dynamics_node) {
     ParseScalarAttribute(dynamics_node, "damping", damping);
-    if (ParseScalarAttribute(dynamics_node, "friction", &coulomb_friction) &&
-        coulomb_friction != 0.0) {
-      Warning(*dynamics_node,
-              "A joint has specified a non-zero value for the"
-              " 'friction' attribute of a joint/dynamics tag. The URDF parser"
-              " does not currently parse joint friction and ignores it.");
-    }
+    ParseScalarAttribute(dynamics_node, "friction", dry_friction);
     if (ParseScalarAttribute(dynamics_node, "coulomb_window",
                              &coulomb_window)) {
       Warning(*dynamics_node,
@@ -581,6 +577,7 @@ void UrdfParser::ParseJoint(JointEffortLimits* joint_effort_limits,
 
   // Dynamic properties
   double damping = 0;
+  double dry_friction = 0;
 
   // Limits
   double upper = std::numeric_limits<double>::infinity();
@@ -628,7 +625,7 @@ void UrdfParser::ParseJoint(JointEffortLimits* joint_effort_limits,
   if (type.compare("revolute") == 0 || type.compare("continuous") == 0) {
     throw_on_custom_joint(false);
     ParseJointLimits(node, &lower, &upper, &velocity, &acceleration, &effort);
-    ParseJointDynamics(node, &damping);
+    ParseJointDynamics(node, &damping, &dry_friction);
     // Frame M is Frame B. Frame F and Frame M are coincident at the zero state
     // of the joint. See Joint class documentation.
     const RigidTransformd& X_PF = X_PB;
@@ -654,7 +651,7 @@ void UrdfParser::ParseJoint(JointEffortLimits* joint_effort_limits,
   } else if (type.compare("prismatic") == 0) {
     throw_on_custom_joint(false);
     ParseJointLimits(node, &lower, &upper, &velocity, &acceleration, &effort);
-    ParseJointDynamics(node, &damping);
+    ParseJointDynamics(node, &damping, &dry_friction);
     // Frame M is Frame B. Frame F and Frame M are coincident at the zero state
     // of the joint. See Joint class documentation.
     const RigidTransformd& X_PF = X_PB;
@@ -675,7 +672,7 @@ void UrdfParser::ParseJoint(JointEffortLimits* joint_effort_limits,
                                name, child_name));
   } else if (type.compare("ball") == 0) {
     throw_on_custom_joint(true);
-    ParseJointDynamics(node, &damping);
+    ParseJointDynamics(node, &damping, &dry_friction);
     // Frame M is Frame B. Frame F and Frame M are coincident at the zero state
     // of the joint. See Joint class documentation.
     const RigidTransformd& X_PF = X_PB;
@@ -693,6 +690,7 @@ void UrdfParser::ParseJoint(JointEffortLimits* joint_effort_limits,
     XMLElement* dynamics_node = node->FirstChildElement("dynamics");
     if (dynamics_node) {
       ParseVectorAttribute(dynamics_node, "damping", &damping_vec);
+      ParseScalarAttribute(dynamics_node, "friction", &dry_friction);
     }
     // URDF convention dictates that the joint frame J is the same as the child
     // frame B, and the joint axis is specified in the joint frame J.
@@ -718,7 +716,7 @@ void UrdfParser::ParseJoint(JointEffortLimits* joint_effort_limits,
                 .index();
   } else if (type.compare("screw") == 0) {
     throw_on_custom_joint(true);
-    ParseJointDynamics(node, &damping);
+    ParseJointDynamics(node, &damping, &dry_friction);
     double screw_thread_pitch;
     ParseScrewJointThreadPitch(node, &screw_thread_pitch);
     // Frame M is Frame B. Frame F and Frame M are coincident at the zero state
@@ -731,7 +729,7 @@ void UrdfParser::ParseJoint(JointEffortLimits* joint_effort_limits,
                 .index();
   } else if (type.compare("universal") == 0) {
     throw_on_custom_joint(true);
-    ParseJointDynamics(node, &damping);
+    ParseJointDynamics(node, &damping, &dry_friction);
     // TODO(xuchenhan-tri): Should use axis information.
     // Frame M is Frame B. Frame F and Frame M are coincident at the zero state
     // of the joint. See Joint class documentation.
@@ -743,7 +741,7 @@ void UrdfParser::ParseJoint(JointEffortLimits* joint_effort_limits,
                 .index();
   } else if (type.compare("curvilinear") == 0) {
     throw_on_custom_joint(true);
-    ParseJointDynamics(node, &damping);
+    ParseJointDynamics(node, &damping, &dry_friction);
     Vector3d initial_tangent(1, 0, 0);
     Vector3d plane_normal(0, 0, 1);
     XMLElement* initial_tangent_node =
@@ -783,6 +781,15 @@ void UrdfParser::ParseJoint(JointEffortLimits* joint_effort_limits,
     Error(*node,
           fmt::format("Joint '{}' has unrecognized type: '{}'", name, type));
     return;
+  }
+
+  if (index.has_value()) {
+    // Point diagnostics at the <dynamics> element that holds the friction.
+    XMLElement* dynamics_node = node->FirstChildElement("dynamics");
+    SetDefaultJointDryFriction(
+        diagnostic_.MakePolicyForNode(dynamics_node != nullptr ? dynamics_node
+                                                               : node),
+        dry_friction, *index, plant);
   }
 
   joint_effort_limits->emplace(name, effort);

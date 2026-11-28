@@ -333,8 +333,47 @@ TEST_F(UrdfParserTest, JointBadDynamicsAttributes) {
   warning_records_.clear();
 }
 
-TEST_F(UrdfParserTest, DrakeFrictionWarning) {
+// A planar joint parses its dynamics separately from the joints with one
+// degree of freedom, and ignores the friction with a warning.
+TEST_F(UrdfParserTest, DryFrictionIgnoredOnPlanarJoint) {
   EXPECT_NE(AddModelFromUrdfString(R"""(
+    <robot name='a'>
+      <link name='parent'/>
+      <link name='child'/>
+      <joint name='a' type='planar'>
+        <parent link='parent'/>
+        <child link='child'/>
+        <dynamics friction='10'/>
+      </joint>
+    </robot>)""",
+                                   ""),
+            std::nullopt);
+  EXPECT_THAT(TakeWarning(),
+              MatchesRegex(".*'a'.*one degree of freedom.*ignored.*"));
+}
+
+// An invalid value is an error. The diagnostic points at the <dynamics>
+// element, on line 8.
+TEST_F(UrdfParserTest, InvalidDryFriction) {
+  EXPECT_NE(AddModelFromUrdfString(R"""(
+    <robot name='a'>
+      <link name='parent'/>
+      <link name='child'/>
+      <joint name='a' type='revolute'>
+        <parent link='parent'/>
+        <child link='child'/>
+        <dynamics friction='-1'/>
+      </joint>
+    </robot>)""",
+                                   ""),
+            std::nullopt);
+  EXPECT_THAT(TakeError(), MatchesRegex(".*:8: error: Joint 'a' has an "
+                                        "invalid dry friction of -1.*"));
+}
+
+// A continuous plant ignores the friction with a warning.
+TEST_F(UrdfParserTestContinuous, DryFrictionIgnoredInContinuousPlant) {
+  constexpr char kUrdf[] = R"""(
     <robot name='a'>
       <link name='parent'/>
       <link name='child'/>
@@ -343,10 +382,14 @@ TEST_F(UrdfParserTest, DrakeFrictionWarning) {
         <child link='child'/>
         <dynamics friction='10'/>
       </joint>
-    </robot>)""",
-                                   ""),
-            std::nullopt);
-  EXPECT_THAT(TakeWarning(), MatchesRegex(".*joint friction.*"));
+    </robot>)""";
+  const std::optional<ModelInstanceIndex> model =
+      AddModelFromUrdfString(kUrdf, "");
+  ASSERT_NE(model, std::nullopt);
+  EXPECT_THAT(TakeWarning(),
+              MatchesRegex(".*:8: warning: Joint 'a'.*only discrete.*"
+                           "ignored.*"));
+  EXPECT_EQ(plant_.GetJointByName("a", *model).default_dry_friction(), 0.0);
 }
 
 TEST_F(UrdfParserTest, DrakeCoulombWarning) {
@@ -945,6 +988,7 @@ TEST_F(UrdfParserTest, JointParsingTest) {
   EXPECT_EQ(revolute_joint.child_body().name(), "link2");
   EXPECT_EQ(revolute_joint.revolute_axis(), Vector3d::UnitZ());
   EXPECT_EQ(revolute_joint.default_damping(), 0.1);
+  EXPECT_EQ(revolute_joint.default_dry_friction(), 0.2);
   EXPECT_TRUE(
       CompareMatrices(revolute_joint.position_lower_limits(), Vector1d(-1)));
   EXPECT_TRUE(
@@ -974,6 +1018,7 @@ TEST_F(UrdfParserTest, JointParsingTest) {
   EXPECT_EQ(prismatic_joint.child_body().name(), "link3");
   EXPECT_EQ(prismatic_joint.translation_axis(), Vector3d::UnitZ());
   EXPECT_EQ(prismatic_joint.default_damping(), 0.1);
+  EXPECT_EQ(prismatic_joint.default_dry_friction(), 0.3);
   EXPECT_TRUE(
       CompareMatrices(prismatic_joint.position_lower_limits(), Vector1d(-2)));
   EXPECT_TRUE(
@@ -1098,6 +1143,7 @@ TEST_F(UrdfParserTest, JointParsingTest) {
   EXPECT_EQ(screw_joint.screw_axis(), Vector3d::UnitX());
   EXPECT_EQ(screw_joint.screw_pitch(), 0.04);
   EXPECT_EQ(screw_joint.default_damping(), 0.1);
+  EXPECT_EQ(screw_joint.default_dry_friction(), 0.4);
   EXPECT_TRUE(CompareMatrices(screw_joint.position_lower_limits(), neg_inf));
   EXPECT_TRUE(CompareMatrices(screw_joint.position_upper_limits(), inf));
   EXPECT_TRUE(CompareMatrices(screw_joint.velocity_lower_limits(), neg_inf));

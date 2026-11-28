@@ -111,6 +111,20 @@ For Drake extensions to SDFormat files, see
 Drake's parser does not implement all of the features of SDFormat. In the
 future, we intend to update this documentation to itemize what isn't supported.
 
+@subsection sdf_joint_dry_friction Joint dry friction
+
+The `//joint/axis/dynamics/friction` element sets the dry friction of a joint
+with one degree of freedom, see drake::multibody::Joint::default_dry_friction().
+For a joint with more than one degree of freedom, or in a continuous
+MultibodyPlant model, a non-zero value provokes a warning that the value is
+being ignored. Fixed joints don't read joint dynamics, so their friction is not
+parsed. A negative, infinite or NaN value is an error, whether or not the value
+would be used. A MultibodyPlant with any non-zero joint dry friction does not
+support scalar conversion to symbolic::Expression.
+
+The URDF attribute `/robot/joint/dynamics/@friction` and the MJCF attribute
+`//joint/@frictionloss` get the same treatment.
+
 @subsection model_composition SDFormat model composition
 
 Drake's SDFormat parsing supports composing multiple models into a single
@@ -217,6 +231,11 @@ Drake supports URDF files as described here: http://wiki.ros.org/urdf/XML.
 
 For Drake extensions to URDF format files, see
 @ref multibody_parsing_drake_extensions.
+
+@subsection urdf_joint_dry_friction Joint dry friction
+
+The `/robot/joint/dynamics/@friction` attribute sets the dry friction of a
+joint, with the same rules as for SDFormat; see @ref sdf_joint_dry_friction.
 
 @subsection multibody_parsing_urdf_unsupported URDF not supported by Drake
 

@@ -1452,7 +1452,7 @@ TEST_F(MujocoParserTest, Joint) {
   <default>
     <geom type="sphere" size="1"/>
     <default class="default_joint">
-      <joint type="hinge" damping="0.24" pos="-.1 -.2 -.3"
+      <joint type="hinge" damping="0.24" frictionloss="0.15" pos="-.1 -.2 -.3"
              axis="1 0 0" limited="true" range="-30 60" />
     </default>
   </default>
@@ -1467,12 +1467,12 @@ TEST_F(MujocoParserTest, Joint) {
       <joint type="ball" name="ball" damping="0.1" pos=".1 .2 .3"/>
     </body>
     <body name="slide" pos="1 2 3" euler="30 45 60">
-      <joint type="slide" name="slide" damping="0.2" pos=".1 .2 .3"
-             axis="1 0 0" limited="true" range="-2 1.5"/>
+      <joint type="slide" name="slide" damping="0.2" frictionloss="0.7"
+             pos=".1 .2 .3" axis="1 0 0" limited="true" range="-2 1.5"/>
     </body>
     <body name="hinge" pos="1 2 3" euler="30 45 60">
-      <joint type="hinge" name="hinge" damping="0.3" pos=".1 .2 .3"
-             axis="0 1 0" limited="true" range="-30 60"/>
+      <joint type="hinge" name="hinge" damping="0.3" frictionloss="0.8"
+             pos=".1 .2 .3" axis="0 1 0" limited="true" range="-30 60"/>
     </body>
     <body name="hinge_w_joint_defaults" pos="1 2 3" euler="30 45 60">
       <joint type="hinge" name="hinge_w_joint_defaults" class="default_joint" />
@@ -1540,6 +1540,7 @@ TEST_F(MujocoParserTest, Joint) {
   const PrismaticJoint<double>& slide_joint =
       plant_->GetJointByName<PrismaticJoint>("slide");
   EXPECT_EQ(slide_joint.default_damping(), 0.2);
+  EXPECT_EQ(slide_joint.default_dry_friction(), 0.7);
   EXPECT_TRUE(slide_joint.frame_on_child()
                   .CalcPoseInBodyFrame(*context)
                   .IsNearlyEqualTo(RigidTransformd(pos), 1e-14));
@@ -1556,6 +1557,7 @@ TEST_F(MujocoParserTest, Joint) {
   const RevoluteJoint<double>& hinge_joint =
       plant_->GetJointByName<RevoluteJoint>("hinge");
   EXPECT_EQ(hinge_joint.default_damping(), 0.3);
+  EXPECT_EQ(hinge_joint.default_dry_friction(), 0.8);
   EXPECT_TRUE(hinge_joint.frame_on_child()
                   .CalcPoseInBodyFrame(*context)
                   .IsNearlyEqualTo(RigidTransformd(pos), 1e-14));
@@ -1571,6 +1573,7 @@ TEST_F(MujocoParserTest, Joint) {
   const RevoluteJoint<double>& hinge_w_joint_defaults_joint =
       plant_->GetJointByName<RevoluteJoint>("hinge_w_joint_defaults");
   EXPECT_EQ(hinge_w_joint_defaults_joint.default_damping(), 0.24);
+  EXPECT_EQ(hinge_w_joint_defaults_joint.default_dry_friction(), 0.15);
   EXPECT_TRUE(
       hinge_w_joint_defaults_joint.frame_on_child()
           .CalcPoseInBodyFrame(*context)
@@ -1665,11 +1668,11 @@ TEST_F(MujocoParserTest, JointErrors) {
 <mujoco model="test">
   <worldbody>
     <body name="free" pos="1 2 3" euler="30 45 60">
-      <joint type="free" name="free" damping="10"/>
+      <joint type="free" name="free" damping="10" frictionloss="1"/>
       <joint type="hinge"/>
     </body>
     <body>
-      <joint type="ball" limited="true" range="-1 1"/>
+      <joint type="ball" limited="true" range="-1 1" frictionloss="1"/>
     </body>
     <body>
       <joint type="impossible"/>
@@ -1681,9 +1684,30 @@ TEST_F(MujocoParserTest, JointErrors) {
   AddModelFromString(xml, "test");
   EXPECT_THAT(TakeWarning(),
               MatchesRegex(".*Damping.*not supported for free.*"));
+  EXPECT_THAT(TakeWarning(),
+              MatchesRegex(".*Friction loss.*not supported for free.*"));
   EXPECT_THAT(TakeWarning(), MatchesRegex(".*range.*unsupported.*ignored.*"));
+  EXPECT_THAT(TakeWarning(),
+              MatchesRegex(".*one degree of freedom.*ignored.*"));
   EXPECT_THAT(TakeError(), MatchesRegex(".*a free joint is defined.*"));
   EXPECT_THAT(TakeError(), MatchesRegex(".*Unknown joint type.*"));
+}
+
+// A free joint adds no Joint, but an invalid friction loss is still an error,
+// as it is for every other joint type.
+TEST_F(MujocoParserTest, FreeJointInvalidFrictionLoss) {
+  std::string xml = R"""(
+<mujoco model="test">
+  <worldbody>
+    <body name="free" pos="1 2 3">
+      <joint type="free" name="free" frictionloss="-1"/>
+    </body>
+  </worldbody>
+</mujoco>
+)""";
+
+  AddModelFromString(xml, "test");
+  EXPECT_THAT(TakeError(), MatchesRegex(".*'free'.*invalid dry friction.*"));
 }
 
 std::string MakeAutoLimitsXML(bool auto_limits,

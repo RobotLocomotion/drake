@@ -391,6 +391,38 @@ double ParseJointDamping(const SDFormatDiagnostic& diagnostic,
   return damping;
 }
 
+// Validates the dry friction, //axis/dynamics/friction, of each axis of
+// `joint_spec`, and returns the first valid non-zero value together with the
+// element that specifies it, so that diagnostics point at that element. If no
+// axis specifies a valid non-zero value, returns zero and the joint element.
+// For a joint with two axes, the first valid non-zero value is returned;
+// MultibodyPlant does not support dry friction for such a joint, so the caller
+// warns and ignores it either way.
+std::pair<double, const sdf::Element*> GetJointDryFriction(
+    const SDFormatDiagnostic& diagnostic, const sdf::Joint& joint_spec) {
+  double dry_friction = 0.0;
+  const sdf::Element* element = joint_spec.Element().get();
+  for (const unsigned int axis_index : {0u, 1u}) {
+    const sdf::JointAxis* axis = joint_spec.Axis(axis_index);
+    if (axis == nullptr || axis->Element() == nullptr) {
+      continue;
+    }
+    const sdf::ElementPtr dynamics = axis->Element()->FindElement("dynamics");
+    const sdf::Element* axis_element =
+        dynamics != nullptr ? dynamics.get() : axis->Element().get();
+    const double axis_dry_friction = axis->Friction();
+    if (!ValidateJointDryFriction(diagnostic.MakePolicyForNode(*axis_element),
+                                  axis_dry_friction, joint_spec.Name())) {
+      continue;
+    }
+    if (dry_friction == 0.0 && axis_dry_friction != 0.0) {
+      dry_friction = axis_dry_friction;
+      element = axis_element;
+    }
+  }
+  return {dry_friction, element};
+}
+
 // We interpret a value of exactly zero to specify un-actuated joints. Thus, the
 // user would say <effort>0</effort>. The effort_limit should be non-negative.
 // SDFormat internally interprets a negative effort limit as infinite and only
@@ -1080,6 +1112,13 @@ bool AddJointFromSpecification(
     return false;
   }
 
+  auto set_dry_friction = [&](const Joint<double>& joint) {
+    const auto [dry_friction, element] =
+        GetJointDryFriction(diagnostic, joint_spec);
+    SetDefaultJointDryFriction(diagnostic.MakePolicyForNode(*element),
+                               dry_friction, joint.index(), plant);
+  };
+
   // These will only be populated for prismatic and revolute joints.
   double lower_limit = 0;
   double upper_limit = 0;
@@ -1110,6 +1149,7 @@ bool AddJointFromSpecification(
       plant->get_mutable_joint(joint.index())
           .set_acceleration_limits(Vector1d(-acceleration_limit),
                                    Vector1d(acceleration_limit));
+      set_dry_friction(joint);
       AddJointActuatorFromSpecification(diagnostic, joint_spec, joint, plant);
       AddPrismaticSpringFromSpecification(diagnostic, joint_spec, joint, plant);
       break;
@@ -1131,6 +1171,7 @@ bool AddJointFromSpecification(
       plant->get_mutable_joint(joint.index())
           .set_acceleration_limits(Vector1d(-acceleration_limit),
                                    Vector1d(acceleration_limit));
+      set_dry_friction(joint);
       AddJointActuatorFromSpecification(diagnostic, joint_spec, joint, plant);
       if (!AddRevoluteSpringFromSpecification(diagnostic, joint_spec, joint,
                                               plant)) {
@@ -1174,6 +1215,7 @@ bool AddJointFromSpecification(
         frames_I.X_CJc = frames->X_CJc.value_or(RigidTransformd()) * X_JI;
         const auto& joint = AddJointBetweenFrames<UniversalJoint>(
             plant, joint_spec.Name(), frames_I, damping);
+        set_dry_friction(joint);
         // At most, this prints a warning (it does not add an actuator).
         AddJointActuatorFromSpecification(diagnostic, joint_spec, joint, plant);
       }
@@ -1183,6 +1225,7 @@ bool AddJointFromSpecification(
       const double damping = ParseJointDamping(diagnostic, joint_spec);
       const auto& joint = AddJointBetweenFrames<BallRpyJoint>(
           plant, joint_spec.Name(), *frames, damping);
+      set_dry_friction(joint);
       // At most, this prints a warning (it does not add an actuator).
       AddJointActuatorFromSpecification(diagnostic, joint_spec, joint, plant);
       break;
@@ -1203,6 +1246,7 @@ bool AddJointFromSpecification(
       plant->get_mutable_joint(joint.index())
           .set_acceleration_limits(Vector1d(-acceleration_limit),
                                    Vector1d(acceleration_limit));
+      set_dry_friction(joint);
       AddJointActuatorFromSpecification(diagnostic, joint_spec, joint, plant);
       if (!AddRevoluteSpringFromSpecification(diagnostic, joint_spec, joint,
                                               plant)) {
@@ -1219,6 +1263,7 @@ bool AddJointFromSpecification(
       const auto& joint = AddJointBetweenFrames<ScrewJoint>(
           plant, joint_spec.Name(), *frames, axis_J, screw_thread_pitch,
           damping);
+      set_dry_friction(joint);
       AddJointActuatorFromSpecification(diagnostic, joint_spec, joint, plant);
       break;
     }
