@@ -248,6 +248,15 @@ struct OptionalBytesStruct {
   std::optional<std::vector<std::byte>> value;
 };
 
+struct OptionalVectorStruct {
+  template <typename Archive>
+  void Serialize(Archive* a) {
+    a->Visit(DRAKE_NVP(value));
+  }
+
+  std::optional<std::vector<double>> value;
+};
+
 struct OptionalStruct {
   template <typename Archive>
   void Serialize(Archive* a) {
