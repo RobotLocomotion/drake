@@ -58,6 +58,7 @@ from pydrake.solvers import (
     MinimumValueLowerBoundConstraint,
     MinimumValueUpperBoundConstraint,
     ProjectedGradientDescentSolver,
+    SolverInterface,
 )
 from pydrake.systems.analysis import (
     ApplySimulatorConfig,
@@ -486,6 +487,26 @@ def _dut_projected_gradient_descent_projection(cyclic):
     return _sentinels_for("projected_gradient_descent_projection", solver)
 
 
+class _PythonSolverInterface(SolverInterface):
+    """A solver interface implemented in Python, which can refer to an owner."""
+
+    def __init__(self, owner):
+        super().__init__()
+        self.owner = owner
+
+
+def _dut_projected_gradient_descent_projection_interface(cyclic):
+    solver = ProjectedGradientDescentSolver()
+    interface = _PythonSolverInterface(solver if cyclic else None)
+    solver.SetProjectionSolverInterface(interface)
+    return {
+        _make_sentinel(solver, "projected_gradient_descent_interface::solver"),
+        _make_sentinel(
+            interface, "projected_gradient_descent_interface::interface"
+        ),
+    }
+
+
 def _dut_projected_gradient_descent_gradient(cyclic):
     solver = ProjectedGradientDescentSolver()
     solver.SetCustomGradientFunction(_make_callback(solver, cyclic))
@@ -708,6 +729,7 @@ class TestPythonMemoryLeaks(unittest.TestCase):
             _dut_program_visualization_callback,
             _dut_projected_gradient_descent_gradient,
             _dut_projected_gradient_descent_projection,
+            _dut_projected_gradient_descent_projection_interface,
             _dut_minimum_value_constraint,
             _dut_minimum_value_penalty_function,
             _dut_gurobi_mip_node_callback,

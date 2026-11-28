@@ -38,8 +38,22 @@ void DefineSolversProjectedGradientDescent(py::module_ m) {
             py::arg("custom_gradient_function"),
             internal::ensure_callback_lifetime<1, 2>(),
             cls_doc.SetCustomGradientFunction.doc)
-        .def("SetProjectionSolverInterface",
-            &Class::SetProjectionSolverInterface,
+        .def(
+            "SetProjectionSolverInterface",
+            [](py::object self_py,
+                const SolverInterface* projection_solver_interface) {
+              // The solver stores a raw pointer to the interface. The Python
+              // object of the solver keeps the interface alive in a single
+              // slot, in a way that Python's GC can see. Replacing the
+              // interface (or passing None) releases the previous one.
+              Class& self = py::cast<Class&>(self_py);
+              self.SetProjectionSolverInterface(projection_solver_interface);
+              self_py.attr("_projection_solver_interface") =
+                  (projection_solver_interface == nullptr)
+                      ? py::object(py::none())
+                      : py::cast(
+                            projection_solver_interface, py_rvp::reference);
+            },
             py::arg("projection_solver_interface").none(),
             cls_doc.SetProjectionSolverInterface.doc)
         .def_static("ConvergenceTolOptionName",
