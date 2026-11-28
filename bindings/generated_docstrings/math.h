@@ -41,6 +41,7 @@
 // #include "drake/math/quadratic_form.h"
 // #include "drake/math/quaternion.h"
 // #include "drake/math/random_rotation.h"
+// #include "drake/math/real_roots.h"
 // #include "drake/math/rigid_transform.h"
 // #include "drake/math/roll_pitch_yaw.h"
 // #include "drake/math/rotation_conversion_gradient.h"
@@ -1211,6 +1212,28 @@ Note:
 See also:
     DiscardGradient(), drake∷ExtractDoubleOrThrow())""";
       } ExtractValue;
+      // Symbol: drake::math::FindQuadraticRealRoots
+      struct /* FindQuadraticRealRoots */ {
+        // Source: drake/math/real_roots.h
+        const char* doc =
+R"""(Computes the real roots of the quadratic polynomial a⋅x² + b⋅x + c.
+
+The roots are returned in ascending order, with NaN padding for
+missing roots, and finite roots always come before the padding: - two
+real roots (including a repeated root): ``{x₀, x₁}`` with x₀ ≤ x₁; -
+one real root (i.e., when ``a`` is zero and the polynomial is linear):
+``{x₀, NaN}``; - no real roots: ``{NaN, NaN}``. This includes the
+identically-zero polynomial, whose roots cannot be enumerated.
+
+The coefficients may have any finite magnitudes; they are internally
+rescaled so that intermediate computations neither overflow nor
+underflow. A root whose magnitude exceeds the largest finite double is
+not reported (e.g., the large root of a⋅x² + x - 1 for subnormal
+``a``), and is treated like any other missing root.
+
+Raises:
+    RuntimeError if any coefficient is not finite.)""";
+      } FindQuadraticRealRoots;
       // Symbol: drake::math::GeneratePythonCsc
       struct /* GeneratePythonCsc */ {
         // Source: drake/math/matrix_util.h
